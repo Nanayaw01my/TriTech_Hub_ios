@@ -21,7 +21,8 @@ const PORT = process.env.PORT || 5000;
 // Helmet: sets various HTTP security headers
 app.use(
   helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow serving uploaded files
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: false,
   })
 );
 
