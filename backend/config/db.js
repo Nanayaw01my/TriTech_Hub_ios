@@ -28,8 +28,8 @@ const connectDB = async () => {
       console.error(`MongoDB connection attempt ${retries} failed: ${error.message}`);
 
       if (retries >= maxRetries) {
-        console.error('Max retries reached. Could not connect to MongoDB.');
-        process.exit(1);
+        console.error('Max retries reached. Server will stay up but DB is unavailable.');
+        return null;
       }
 
       const delay = Math.min(1000 * Math.pow(2, retries), 30000);
