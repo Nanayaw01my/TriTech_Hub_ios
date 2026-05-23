@@ -285,28 +285,24 @@ const seedDatabase = async () => {
 // ─── SERVER START ─────────────────────────────────────────────────────────────
 
 const startServer = async () => {
+  // Bind port FIRST so Render sees the service as alive
+  app.listen(PORT, () => {
+    console.log(`\n========================================`);
+    console.log(`  Tritech Hub iOS API`);
+    console.log(`  Server running on port ${PORT}`);
+    console.log(`  Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`  Health: http://localhost:${PORT}/health`);
+    console.log(`========================================\n`);
+  });
+
+  // Then connect to MongoDB (retries in background)
   try {
-    // Connect to MongoDB
     await connectDB();
-
-    // Seed default data
     await seedDatabase();
-
-    // Start scheduled jobs (overdue payment checker)
     startScheduler();
-
-    // Start the HTTP server
-    app.listen(PORT, () => {
-      console.log(`\n========================================`);
-      console.log(`  Tritech Hub iOS API`);
-      console.log(`  Server running on port ${PORT}`);
-      console.log(`  Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`  Health: http://localhost:${PORT}/health`);
-      console.log(`========================================\n`);
-    });
   } catch (error) {
-    console.error('Failed to start server:', error.message);
-    process.exit(1);
+    console.error('MongoDB init failed:', error.message);
+    // Server stays up; requests will fail gracefully until DB is reachable
   }
 };
 
