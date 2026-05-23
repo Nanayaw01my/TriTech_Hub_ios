@@ -1,5 +1,5 @@
 services:
-  # ── Backend: Node.js API ─────────────────────────────────────────────────────
+  # ── Backend: Node.js API (Free Web Service) ──────────────────────────────────
   - type: web
     name: tritech-hub-backend
     env: node
@@ -14,13 +14,13 @@ services:
       - key: PORT
         value: 10000
       - key: MONGODB_URI
-        sync: false          # set manually in Render dashboard
+        sync: false
       - key: JWT_SECRET
         sync: false
       - key: JWT_EXPIRE
         value: 7d
       - key: FRONTEND_URL
-        sync: false          # paste your frontend Render URL here after deploy
+        sync: false
       - key: PAYSTACK_SECRET_KEY
         sync: false
       - key: PAYSTACK_PUBLIC_KEY
@@ -44,21 +44,16 @@ services:
       - key: MAX_FILE_SIZE
         value: 5242880
 
-  # ── Frontend: React Static Site ──────────────────────────────────────────────
+  # ── Frontend: React Static Site (Always Free) ────────────────────────────────
   - type: web
     name: tritech-hub-frontend
     env: static
-    plan: free
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: no-cache
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        sync: false          # paste your backend Render URL here (no trailing slash)
+        sync: false
