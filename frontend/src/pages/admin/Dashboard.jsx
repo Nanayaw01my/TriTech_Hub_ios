@@ -28,9 +28,9 @@ export default function AdminDashboard() {
     const fetchData = async () => {
       try {
         const [statsRes, txRes, revenueRes] = await Promise.allSettled([
-          api.get('/admin/stats'),
+          api.get('/admin/dashboard'),
           api.get('/admin/transactions?limit=5'),
-          api.get('/admin/reports/revenue?period=monthly'),
+          api.get('/admin/reports?period=monthly'),
         ])
 
         if (statsRes.status === 'fulfilled') {
