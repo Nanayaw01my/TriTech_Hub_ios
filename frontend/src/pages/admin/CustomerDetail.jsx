@@ -93,6 +93,20 @@ export default function AdminCustomerDetail() {
   const plan = customer.payment_plan || customer.plan
   const device = customer.device
 
+  // Convert stored file path or base64 to a usable URL
+  const photoUrl = (p) => {
+    if (!p) return null
+    if (p.startsWith('data:')) return p
+    const filename = p.replace(/\\/g, '/').split('/').pop()
+    return `/uploads/${filename}`
+  }
+
+  const photos = customer.photos || {}
+  const cardFront = photoUrl(photos.ghana_card_front)
+  const cardBack  = photoUrl(photos.ghana_card_back)
+  const custPhoto = photoUrl(photos.customer_photo)
+  const guarPhoto = photoUrl(photos.guarantor_photo)
+
   return (
     <div className="max-w-2xl mx-auto px-4 pb-24 pt-4">
       {/* Back button */}
@@ -168,32 +182,22 @@ export default function AdminCustomerDetail() {
         </div>
       </div>
 
-      {/* Ghana Card Photos */}
-      {(customer.ghana_card_front_url || customer.ghana_card_back_url) && (
+      {/* Customer Photos */}
+      {(cardFront || cardBack || custPhoto || guarPhoto) && (
         <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
-          <h3 className="text-sm font-bold text-gray-800 mb-3">Ghana Card</h3>
+          <h3 className="text-sm font-bold text-gray-800 mb-3">Photos</h3>
           <div className="grid grid-cols-2 gap-3">
-            {customer.ghana_card_front_url && (
-              <div>
-                <p className="text-xs text-gray-500 mb-1.5 font-medium">Front</p>
-                <img
-                  src={customer.ghana_card_front_url}
-                  alt="Ghana Card Front"
-                  className="w-full h-28 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => setImageModal(customer.ghana_card_front_url)}
-                />
-              </div>
+            {cardFront && (
+              <PhotoThumb label="Ghana Card — Front" src={cardFront} onView={() => setImageModal(cardFront)} />
             )}
-            {customer.ghana_card_back_url && (
-              <div>
-                <p className="text-xs text-gray-500 mb-1.5 font-medium">Back</p>
-                <img
-                  src={customer.ghana_card_back_url}
-                  alt="Ghana Card Back"
-                  className="w-full h-28 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => setImageModal(customer.ghana_card_back_url)}
-                />
-              </div>
+            {cardBack && (
+              <PhotoThumb label="Ghana Card — Back" src={cardBack} onView={() => setImageModal(cardBack)} />
+            )}
+            {custPhoto && (
+              <PhotoThumb label="Customer Photo" src={custPhoto} onView={() => setImageModal(custPhoto)} />
+            )}
+            {guarPhoto && (
+              <PhotoThumb label="Guarantor Photo" src={guarPhoto} onView={() => setImageModal(guarPhoto)} />
             )}
           </div>
         </div>
@@ -377,5 +381,29 @@ export default function AdminCustomerDetail() {
         </div>
       )}
     </div>
+  )
+}
+
+function PhotoThumb({ label, src, onView }) {
+  return (
+    <button
+      onClick={onView}
+      className="relative rounded-2xl overflow-hidden bg-gray-100 aspect-[4/3] w-full group"
+    >
+      <img
+        src={src}
+        alt={label}
+        className="w-full h-full object-cover"
+        onError={(e) => { e.target.style.display = 'none' }}
+      />
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5">
+        <p className="text-white text-xs font-semibold leading-tight">{label}</p>
+      </div>
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+        <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+        </svg>
+      </div>
+    </button>
   )
 }
