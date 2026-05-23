@@ -38,13 +38,10 @@ router.post(
       .withMessage('Password is required.')
       .isLength({ min: 1, max: 5 })
       .withMessage('Customer password must be between 1 and 5 characters.'),
-    body('device_id').isMongoId().withMessage('Valid device ID is required.'),
+    body('device_model').notEmpty().trim().withMessage('Device model is required.'),
     body('down_payment')
       .isFloat({ min: 0 })
       .withMessage('Down payment must be a non-negative number.'),
-    body('frequency')
-      .isIn(['daily', 'weekly', 'monthly'])
-      .withMessage('Frequency must be daily, weekly, or monthly.'),
   ],
   addCustomer
 );

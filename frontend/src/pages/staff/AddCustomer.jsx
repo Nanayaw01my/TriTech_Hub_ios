@@ -168,7 +168,8 @@ export default function StaffAddCustomer() {
       }
       const res = await api.post('/staff/customers', payload)
       toast.success('Customer registered successfully!')
-      navigate(`/staff/customers/${res.data?.customer?.id || res.data?.id}`)
+      const customerId = res.data?.data?.customer?._id || res.data?.customer?._id || res.data?.data?.customer?.id
+      navigate(`/staff/customers/${customerId}`)
     } catch (err) {
       const msg = err?.response?.data?.error || 'Registration failed. Please try again.'
       toast.error(msg)

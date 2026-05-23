@@ -1,4 +1,6 @@
 const { validationResult } = require('express-validator');
+const path = require('path');
+const fs = require('fs');
 const User = require('../models/User');
 const Customer = require('../models/Customer');
 const Device = require('../models/Device');
@@ -8,6 +10,22 @@ const AuditLog = require('../models/AuditLog');
 const { generateAccountNumber } = require('../utils/accountGenerator');
 const { initializePayment } = require('../utils/paystack');
 const { v4: uuidv4 } = require('uuid');
+
+// Save a base64-encoded image to disk, return the file path (or null).
+const saveBase64Image = async (base64String, fieldName) => {
+  if (!base64String || typeof base64String !== 'string') return null;
+  const match = base64String.match(/^data:(.+?);base64,(.+)$/);
+  if (!match) return null;
+  const mimeType = match[1];
+  const data = match[2];
+  const ext = mimeType.includes('png') ? '.png' : mimeType.includes('pdf') ? '.pdf' : '.jpg';
+  const uploadDir = process.env.UPLOAD_PATH || './uploads';
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+  const filename = `${fieldName}-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+  const filepath = path.join(uploadDir, filename);
+  await fs.promises.writeFile(filepath, Buffer.from(data, 'base64'));
+  return filepath;
+};
 
 /**
  * Calculate the installment schedule array given a start date, frequency, and total payments.
@@ -154,22 +172,36 @@ const addCustomer = async (req, res) => {
     }
 
     const {
-      // User / Account
       full_name,
       email,
       phone,
       password,
-      // Customer info
       ghana_card_id,
       occupation,
-      income,
-      location,
-      guarantor,
-      // Device & Plan
-      device_id,
+      // flat income fields from frontend
+      income_amount,
+      income_source,
+      // flat location fields from frontend
+      region,
+      district,
+      location: locationTown,
+      landmark,
+      gps_address,
+      // flat guarantor fields from frontend
+      guarantor_name,
+      guarantor_phone,
+      guarantor_ghana_card_id,
+      guarantor_relationship,
+      // device fields (frontend sends model+price, not device_id)
+      device_model,
+      device_price,
       down_payment,
-      frequency,
+      // accept payment_frequency (frontend) or frequency
+      payment_frequency,
+      frequency: frequencyField,
     } = req.body;
+
+    const frequency = payment_frequency || frequencyField || 'monthly';
 
     // --- 1. Validate password length (max 5 chars) ---
     if (!password || password.length > 5) {
@@ -179,13 +211,15 @@ const addCustomer = async (req, res) => {
       });
     }
 
-    // --- 2. Check device availability ---
-    const device = await Device.findById(device_id);
+    // --- 2. Find an available device or create one for this model ---
+    let device = await Device.findOne({ model: device_model, sold_status: 'available' });
     if (!device) {
-      return res.status(404).json({ success: false, message: 'Device not found.' });
-    }
-    if (device.sold_status !== 'available') {
-      return res.status(400).json({ success: false, message: 'Device is not available for sale.' });
+      // Auto-create a device record so the registration can proceed
+      device = await Device.create({
+        model: device_model,
+        price: Number(device_price) || 0,
+        sold_status: 'available',
+      });
     }
 
     // --- 3. Check email uniqueness ---
@@ -207,18 +241,22 @@ const addCustomer = async (req, res) => {
       account_number: accountNumber,
     });
 
-    // --- 6. Handle uploaded photos ---
+    // --- 6. Handle photos: multer files take priority, then base64 from JSON body ---
     const photos = {};
-    if (req.files) {
-      if (req.files.ghana_card_front?.[0]) photos.ghana_card_front = req.files.ghana_card_front[0].path;
-      if (req.files.ghana_card_back?.[0]) photos.ghana_card_back = req.files.ghana_card_back[0].path;
-      if (req.files.customer_photo?.[0]) photos.customer_photo = req.files.customer_photo[0].path;
-      if (req.files.guarantor_photo?.[0]) photos.guarantor_photo = req.files.guarantor_photo[0].path;
+    const photoFields = ['ghana_card_front', 'ghana_card_back', 'customer_photo', 'guarantor_photo'];
+    for (const field of photoFields) {
+      if (req.files?.[field]?.[0]) {
+        photos[field] = req.files[field][0].path;
+      } else if (req.body[field]) {
+        photos[field] = await saveBase64Image(req.body[field], field);
+      }
     }
 
     let proof_of_income = null;
     if (req.files?.proof_of_income?.[0]) {
       proof_of_income = req.files.proof_of_income[0].path;
+    } else if (req.body.proof_of_income) {
+      proof_of_income = await saveBase64Image(req.body.proof_of_income, 'proof_of_income');
     }
 
     // --- 7. Create Customer record ---
@@ -230,9 +268,14 @@ const addCustomer = async (req, res) => {
       ghana_card_id,
       photos,
       occupation,
-      income: income || { amount: 0, source: '' },
-      location: location || {},
-      guarantor: guarantor || {},
+      income: { amount: Number(income_amount) || 0, source: income_source || '' },
+      location: { region, district, town: locationTown, landmark, gps_address },
+      guarantor: {
+        name: guarantor_name,
+        phone: guarantor_phone,
+        ghana_card_id: guarantor_ghana_card_id,
+        relationship: guarantor_relationship,
+      },
       proof_of_income,
       created_by: req.user._id,
     });
@@ -253,7 +296,7 @@ const addCustomer = async (req, res) => {
     }
 
     // Determine total payments by frequency
-    const frequencyPaymentsMap = { daily: 180, weekly: 26, monthly: 6 };
+    const frequencyPaymentsMap = { daily: 90, weekly: 13, monthly: 12 };
     const totalPayments = frequencyPaymentsMap[frequency] || 6;
 
     // Calculate installment amount (round to 2 decimal places)
