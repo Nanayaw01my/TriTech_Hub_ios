@@ -33,12 +33,19 @@ export default function AdminDashboard() {
           api.get('/admin/reports/revenue?period=monthly'),
         ])
 
-        if (statsRes.status === 'fulfilled') setStats(statsRes.value.data)
+        if (statsRes.status === 'fulfilled') {
+          const d = statsRes.value.data
+          setStats(d?.data || d || {})
+        }
         if (txRes.status === 'fulfilled') {
-          setRecentTransactions(txRes.value.data?.transactions || txRes.value.data || [])
+          const d = txRes.value.data
+          const list = d?.data?.transactions || d?.transactions || d?.data || d || []
+          setRecentTransactions(Array.isArray(list) ? list : [])
         }
         if (revenueRes.status === 'fulfilled') {
-          setRevenueData(revenueRes.value.data?.chart || revenueRes.value.data || [])
+          const d = revenueRes.value.data
+          const chart = d?.data?.chart || d?.chart || d?.data || d || []
+          setRevenueData(Array.isArray(chart) ? chart : [])
         }
       } catch (err) {
         console.error('Dashboard error:', err)

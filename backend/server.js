@@ -170,7 +170,7 @@ app.use('/api/webhooks', require('./routes/webhook'));
 
 // ─── SERVE REACT FRONTEND ─────────────────────────────────────────────────────
 
-const frontendDist = path.join(__dirname, '../frontend/dist');
+const frontendDist = path.join(__dirname, 'public');
 app.use(express.static(frontendDist));
 
 // Any non-API route serves index.html so React Router handles it
