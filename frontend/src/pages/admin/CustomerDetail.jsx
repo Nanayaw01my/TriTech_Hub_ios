@@ -310,7 +310,7 @@ export default function AdminCustomerDetail() {
         ) : (
           <div className="space-y-2">
             {transactions.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+              <div key={tx._id || tx.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                 <div>
                   <p className="text-sm font-semibold text-gray-800">
                     GHS {Number(tx.amount).toLocaleString()}

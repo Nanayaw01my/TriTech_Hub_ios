@@ -62,7 +62,7 @@ export default function AdminStaff() {
   const handleDelete = async () => {
     setDeleteLoading(true)
     try {
-      await api.delete(`/admin/staff/${deleteModal.id}`)
+      await api.delete(`/admin/staff/${deleteModal._id || deleteModal.id}`)
       toast.success('Staff member removed')
       setDeleteModal(null)
       fetchStaff()
@@ -104,7 +104,7 @@ export default function AdminStaff() {
       ) : (
         <div className="bg-white rounded-2xl shadow-card divide-y divide-gray-50">
           {staff.map((s) => (
-            <div key={s.id} className="flex items-center gap-3 px-4 py-4">
+            <div key={s._id || s.id} className="flex items-center gap-3 px-4 py-4">
               <div className="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                 <span className="text-blue-700 font-bold">
                   {(s.full_name || s.name || 'S').charAt(0).toUpperCase()}

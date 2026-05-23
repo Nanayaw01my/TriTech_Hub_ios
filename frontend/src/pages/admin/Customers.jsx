@@ -114,8 +114,8 @@ export default function AdminCustomers() {
             <div className="divide-y divide-gray-50">
               {customers.map((c) => (
                 <div
-                  key={c.id}
-                  onClick={() => navigate(`/admin/customers/${c.id}`)}
+                  key={c._id || c.id}
+                  onClick={() => navigate(`/admin/customers/${c._id || c.id}`)}
                   className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-gray-50 transition-colors active:bg-gray-100"
                 >
                   {/* Avatar */}
@@ -138,7 +138,7 @@ export default function AdminCustomers() {
                       <StatusBadge status={c.plan_status || c.status || 'active'} />
                     </div>
                     <p className="text-xs text-gray-500 truncate mt-0.5">
-                      {c.account_number} • {c.phone}
+                      {c.user_id?.account_number || c.account_number} • {c.phone}
                     </p>
                     {c.device_model && (
                       <p className="text-xs text-gray-400 truncate">{c.device_model}</p>

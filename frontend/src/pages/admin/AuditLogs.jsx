@@ -93,7 +93,7 @@ export default function AdminAuditLogs() {
             {logs.map((log) => {
               const colorClass = ACTION_COLORS[log.action] || 'text-gray-600 bg-gray-50'
               return (
-                <div key={log.id} className="flex items-start gap-3 px-4 py-3.5">
+                <div key={log._id || log.id} className="flex items-start gap-3 px-4 py-3.5">
                   <div className={`px-2.5 py-1 rounded-xl text-xs font-bold flex-shrink-0 mt-0.5 ${colorClass}`}>
                     {getActionLabel(log.action)}
                   </div>

@@ -141,8 +141,8 @@ export default function StaffDashboard() {
           <div className="space-y-0 divide-y divide-gray-50">
             {recentCustomers.slice(0, 5).map((c) => (
               <div
-                key={c.id}
-                onClick={() => navigate(`/staff/customers/${c.id}`)}
+                key={c._id || c.id}
+                onClick={() => navigate(`/staff/customers/${c._id || c.id}`)}
                 className="flex items-center gap-3 py-3 cursor-pointer hover:bg-gray-50 -mx-1 px-1 rounded-xl transition-colors"
               >
                 <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">

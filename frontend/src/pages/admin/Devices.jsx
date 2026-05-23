@@ -81,9 +81,10 @@ export default function AdminDevices() {
   const handleLockToggle = async () => {
     setLockLoading(true)
     try {
+      const deviceId = lockModal._id || lockModal.id
       const endpoint = lockModal.is_locked
-        ? `/admin/devices/${lockModal.id}/unlock`
-        : `/admin/devices/${lockModal.id}/lock`
+        ? `/admin/devices/${deviceId}/unlock`
+        : `/admin/devices/${deviceId}/lock`
       await api.post(endpoint)
       toast.success(`Device ${lockModal.is_locked ? 'unlocked' : 'locked'}!`)
       setLockModal(null)
@@ -148,7 +149,7 @@ export default function AdminDevices() {
       ) : (
         <div className="bg-white rounded-2xl shadow-card divide-y divide-gray-50">
           {devices.map((d) => (
-            <div key={d.id} className="flex items-center gap-3 px-4 py-4">
+            <div key={d._id || d.id} className="flex items-center gap-3 px-4 py-4">
               <div className="w-11 h-11 rounded-2xl bg-purple-100 flex items-center justify-center flex-shrink-0">
                 <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
