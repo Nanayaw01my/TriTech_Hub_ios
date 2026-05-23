@@ -33,10 +33,11 @@ const login = async (req, res) => {
       });
     }
 
-    // Build query: match by email, account_number, or staff_id
+    // Build query: email is case-insensitive regex; account_number and staff_id are exact
+    const escaped = loginIdentifier.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const query = {
       $or: [
-        { email: loginIdentifier.toLowerCase().trim() },
+        { email: { $regex: new RegExp(`^${escaped}$`, 'i') } },
         { account_number: loginIdentifier.trim() },
         { staff_id: loginIdentifier.trim() },
       ],
