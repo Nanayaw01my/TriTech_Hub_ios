@@ -30,6 +30,8 @@ app.use(
 const corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = [
+      'https://tritechhub.online',
+      'https://www.tritechhub.online',
       process.env.FRONTEND_URL,
       'http://localhost:3000',
       'http://localhost:5173',
