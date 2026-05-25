@@ -7,7 +7,7 @@ import {
   FiHome, FiShoppingCart, FiPackage, FiTag, FiTruck, FiDollarSign,
   FiAlertCircle, FiUsers, FiShoppingBag, FiInbox, FiFileText,
   FiBarChart2, FiSettings, FiDatabase, FiBell, FiSearch, FiLogOut,
-  FiMenu, FiX, FiCreditCard, FiUser, FiTrendingUp
+  FiMenu, FiX, FiCreditCard, FiUser, FiTrendingUp, FiRotateCcw
 } from 'react-icons/fi'
 import { logout as apiLogout } from '../api/auth'
 import toast from 'react-hot-toast'
@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: FiHome, minLevel: 1 },
   { to: '/pos', label: 'Point of Sale', icon: FiShoppingCart, minLevel: 1 },
   { to: '/expenses', label: 'Expenses', icon: FiDollarSign, minLevel: 1 },
+  { to: '/refunds', label: 'Refunds', icon: FiRotateCcw, minLevel: 1 },
   { to: '/notifications', label: 'Notifications', icon: FiBell, minLevel: 1 },
   { to: '/search', label: 'Search', icon: FiSearch, minLevel: 1 },
   // Manager+

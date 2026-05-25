@@ -25,6 +25,7 @@ import Backup from './pages/Backup'
 import Settings from './pages/Settings'
 import Notifications from './pages/Notifications'
 import Search from './pages/Search'
+import Refunds from './pages/Refunds'
 
 const ROLE_LEVELS = { 'Sales': 1, 'Manager': 2, 'CEO': 3, 'Super Admin': 4 }
 
@@ -77,6 +78,7 @@ export default function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="pos" element={<POS />} />
         <Route path="expenses" element={<Expenses />} />
+        <Route path="refunds" element={<Refunds />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="search" element={<Search />} />
 

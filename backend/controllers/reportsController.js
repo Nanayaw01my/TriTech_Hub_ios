@@ -6,6 +6,7 @@ const User = require('../models/User');
 const StockRequest = require('../models/StockRequest');
 const WorkerPayment = require('../models/WorkerPayment');
 const Purchase = require('../models/Purchase');
+const Refund = require('../models/Refund');
 const { generateReport } = require('../utils/pdfGenerator');
 
 /**
@@ -54,6 +55,7 @@ const getDashboardStats = async (req, res) => {
       totalProducts, lowStockProducts,
       todayExpensesAgg, monthlyExpensesAgg,
       outstandingDebts, activeUsers,
+      todayRefundsAgg, monthlyRefundsAgg,
     ] = await Promise.all([
       Sale.aggregate([{ $match: { sale_date: { $gte: startOfToday } } }, { $group: { _id: null, total: { $sum: '$total_amount' } } }]),
       Sale.aggregate([{ $match: { sale_date: { $gte: startOfMonth } } }, { $group: { _id: null, total: { $sum: '$total_amount' } } }]),
@@ -68,10 +70,14 @@ const getDashboardStats = async (req, res) => {
       Expense.aggregate([{ $match: { expense_date: { $gte: startOfMonth } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
       Debt.find({ status: { $in: ['active', 'overdue'] } }, 'amount_owed amount_paid'),
       User.countDocuments({ is_active: true }),
+      Refund.aggregate([{ $match: { refund_date: { $gte: startOfToday } } }, { $group: { _id: null, total: { $sum: '$refund_amount' } } }]),
+      Refund.aggregate([{ $match: { refund_date: { $gte: startOfMonth } } }, { $group: { _id: null, total: { $sum: '$refund_amount' } } }]),
     ]);
 
-    const todaySales = todaySalesAgg[0]?.total || 0;
-    const monthlySales = monthlySalesAgg[0]?.total || 0;
+    const todayRefunds = todayRefundsAgg[0]?.total || 0;
+    const monthlyRefunds = monthlyRefundsAgg[0]?.total || 0;
+    const todaySales = Math.max(0, (todaySalesAgg[0]?.total || 0) - todayRefunds);
+    const monthlySales = Math.max(0, (monthlySalesAgg[0]?.total || 0) - monthlyRefunds);
     const monthlyCOGS = monthlyCOGSAgg[0]?.total || 0;
     const todayExpenses = todayExpensesAgg[0]?.total || 0;
     const monthlyExpenses = monthlyExpensesAgg[0]?.total || 0;
