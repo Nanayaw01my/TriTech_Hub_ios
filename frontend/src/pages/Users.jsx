@@ -13,8 +13,8 @@ import Badge from '../components/Badge'
 import StatCard from '../components/StatCard'
 
 const ROLES_FOR_LEVEL = {
-  3: ['manager', 'sales'], // CEO can create manager and sales
-  4: ['super_admin', 'ceo', 'manager', 'sales'], // Super admin: all
+  3: ['Manager', 'Sales'],
+  4: ['Super Admin', 'CEO', 'Manager', 'Sales'],
 }
 
 function UserForm({ user: editUser, myRole, onSubmit, loading }) {
@@ -142,12 +142,12 @@ export default function Users() {
   const users = data?.users || data || []
 
   // CEO sees only Manager and Sales
-  const visibleUsers = me?.role === 'ceo'
-    ? users.filter(u => ['manager', 'sales'].includes(u.role))
+  const visibleUsers = me?.role === 'CEO'
+    ? users.filter(u => ['Manager', 'Sales'].includes(u.role))
     : users
 
   // Stats by role
-  const roleStats = ['super_admin', 'ceo', 'manager', 'sales'].reduce((acc, role) => {
+  const roleStats = ['Super Admin', 'CEO', 'Manager', 'Sales'].reduce((acc, role) => {
     acc[role] = visibleUsers.filter(u => u.role === role).length
     return acc
   }, {})
@@ -226,8 +226,8 @@ export default function Users() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         <StatCard icon={FiUser} value={visibleUsers.filter(u => u.isActive).length} label="Active Users" color="green" />
-        <StatCard icon={FiUser} value={roleStats.manager || 0} label="Managers" color="blue" />
-        <StatCard icon={FiUser} value={roleStats.sales || 0} label="Sales Staff" color="orange" />
+        <StatCard icon={FiUser} value={roleStats['Manager'] || 0} label="Managers" color="blue" />
+        <StatCard icon={FiUser} value={roleStats['Sales'] || 0} label="Sales Staff" color="orange" />
         <StatCard icon={FiUser} value={visibleUsers.filter(u => !u.isActive).length} label="Inactive" color="red" />
       </div>
 
