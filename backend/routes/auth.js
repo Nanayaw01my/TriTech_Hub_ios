@@ -2,80 +2,44 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const { authenticate } = require('../middleware/auth');
-const {
-  login,
-  logout,
-  forgotPassword,
-  resetPassword,
-  changePassword,
-} = require('../controllers/authController');
+const { auditLog } = require('../middleware/auditLogger');
+const { login, logout, getMe, changePassword, forgotPassword } = require('../controllers/authController');
 
-/**
- * POST /api/auth/login
- * Login with email/account_number/staff_id + password
- */
+// POST /api/auth/login
 router.post(
   '/login',
   [
-    body('password')
-      .notEmpty()
-      .withMessage('Password is required.'),
+    body('username').notEmpty().withMessage('Username or email is required.'),
+    body('password').notEmpty().withMessage('Password is required.'),
   ],
   login
 );
 
-/**
- * POST /api/auth/logout
- */
-router.post('/logout', authenticate, logout);
+// POST /api/auth/logout
+router.post('/logout', authenticate, auditLog('LOGOUT'), logout);
 
-/**
- * POST /api/auth/forgot-password
- */
-router.post(
-  '/forgot-password',
-  [
-    body('email')
-      .isEmail()
-      .withMessage('A valid email address is required.')
-      .normalizeEmail(),
-  ],
-  forgotPassword
-);
+// GET /api/auth/me
+router.get('/me', authenticate, getMe);
 
-/**
- * POST /api/auth/reset-password
- */
-router.post(
-  '/reset-password',
-  [
-    body('token').notEmpty().withMessage('Reset token is required.'),
-    body('email').isEmail().withMessage('Valid email is required.').normalizeEmail(),
-    body('password')
-      .notEmpty()
-      .withMessage('New password is required.')
-      .isLength({ min: 1 })
-      .withMessage('Password must be at least 1 character.'),
-  ],
-  resetPassword
-);
-
-/**
- * POST /api/auth/change-password
- * Authenticated user changes their own password.
- */
-router.post(
+// PUT /api/auth/change-password
+router.put(
   '/change-password',
   authenticate,
   [
-    body('current_password').notEmpty().withMessage('Current password is required.'),
+    body('old_password').notEmpty().withMessage('Current password is required.'),
     body('new_password')
-      .notEmpty()
-      .withMessage('New password is required.')
-      .isLength({ min: 1 })
-      .withMessage('New password must be at least 1 character.'),
+      .notEmpty().withMessage('New password is required.')
+      .isLength({ min: 6 }).withMessage('New password must be at least 6 characters.'),
   ],
+  auditLog('CHANGE_PASSWORD'),
   changePassword
+);
+
+// POST /api/auth/forgot-password
+router.post(
+  '/forgot-password',
+  [body('email').isEmail().withMessage('Valid email is required.').normalizeEmail()],
+  forgotPassword
 );
 
 module.exports = router;

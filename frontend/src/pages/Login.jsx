@@ -1,43 +1,30 @@
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useNavigate } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import LoadingSpinner from '../components/LoadingSpinner'
+import { FiEye, FiEyeOff, FiSun, FiZap } from 'react-icons/fi'
+import { login } from '../api/auth'
+import useAuthStore from '../store/authStore'
 
 export default function Login() {
-  const [identifier, setIdentifier] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const { login } = useAuth()
   const navigate = useNavigate()
+  const { login: storeLogin } = useAuthStore()
+  const [showPwd, setShowPwd] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
+  const { register, handleSubmit, formState: { errors }, setError } = useForm()
 
-    if (!identifier.trim()) {
-      setError('Please enter your email, account number, or Staff ID')
-      return
-    }
-    if (!password) {
-      setError('Please enter your password')
-      return
-    }
-
+  const onSubmit = async (data) => {
     setLoading(true)
     try {
-      const userData = await login({ identifier: identifier.trim(), password })
-
-      toast.success(`Welcome back, ${userData.full_name || userData.name}!`)
-
-      if (userData.role === 'admin') navigate('/admin/dashboard')
-      else if (userData.role === 'staff') navigate('/staff/dashboard')
-      else navigate('/customer/dashboard')
+      const res = await login({ username: data.username, password: data.password })
+      const { token, user } = res.data
+      storeLogin(user, token)
+      toast.success(`Welcome back, ${user.username}!`)
+      navigate('/dashboard')
     } catch (err) {
-      const msg = err?.response?.data?.error || err?.response?.data?.message || 'Invalid credentials. Please try again.'
-      setError(msg)
+      const msg = err.response?.data?.message || 'Invalid credentials. Please try again.'
+      setError('root', { message: msg })
       toast.error(msg)
     } finally {
       setLoading(false)
@@ -45,121 +32,133 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-green-800 flex flex-col">
-      {/* Top decorative section */}
-      <div className="flex-shrink-0 px-6 pt-16 pb-8 text-center">
-        <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl">
-          <svg className="w-12 h-12 text-green-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
+    <div className="min-h-screen flex">
+      {/* Left - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 flex-col items-center justify-center relative overflow-hidden p-12">
+        {/* Ghana flag stripes accent */}
+        <div className="absolute top-0 left-0 right-0 h-2 flex">
+          <div className="flex-1 bg-red-600" />
+          <div className="flex-1 bg-yellow-400" />
+          <div className="flex-1 bg-green-600" />
         </div>
-        <h1 className="text-3xl font-black text-white tracking-tight">Tritech Hub iOS</h1>
-        <p className="text-green-200 text-base mt-1">iPhone Installment Management</p>
+
+        {/* Background decoration */}
+        <div className="absolute top-20 right-20 w-64 h-64 bg-orange-400 rounded-full opacity-20 blur-3xl" />
+        <div className="absolute bottom-20 left-20 w-48 h-48 bg-yellow-400 rounded-full opacity-15 blur-3xl" />
+
+        <div className="relative z-10 text-center">
+          <div className="w-24 h-24 bg-white rounded-2xl shadow-2xl flex items-center justify-center mx-auto mb-8">
+            <FiSun size={48} className="text-orange-500" />
+          </div>
+
+          <h1 className="text-5xl font-black text-white mb-3 tracking-tight">ITTEK</h1>
+          <h2 className="text-2xl font-bold text-orange-100 mb-2">SOLUTION</h2>
+          <div className="w-16 h-1 bg-yellow-300 rounded-full mx-auto mb-6" />
+          <p className="text-orange-100 text-lg font-semibold mb-1">DAN & DOR SOLAR</p>
+          <p className="text-orange-200 text-base">COMPANY LIMITED</p>
+          <p className="text-orange-300 text-sm mt-1">Accra, Ghana</p>
+
+          <div className="mt-12 space-y-3 text-left">
+            {['Point of Sale & Inventory', 'Financial Management', 'Debt & Credit Tracking', 'Reports & Analytics'].map(f => (
+              <div key={f} className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
+                  <FiZap size={12} className="text-yellow-300" />
+                </div>
+                <span className="text-orange-100 text-sm font-medium">{f}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 h-2 flex">
+          <div className="flex-1 bg-red-600" />
+          <div className="flex-1 bg-yellow-400" />
+          <div className="flex-1 bg-green-600" />
+        </div>
       </div>
 
-      {/* Login Card */}
-      <div className="flex-1 bg-white rounded-t-3xl px-6 pt-8 pb-safe min-h-0">
-        <h2 className="text-2xl font-bold text-gray-900 mb-1">Sign In</h2>
-        <p className="text-gray-500 text-sm mb-6">Enter your credentials to continue</p>
+      {/* Right - Login Form */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 bg-white">
+        {/* Mobile header */}
+        <div className="lg:hidden text-center mb-10">
+          <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <FiSun size={32} className="text-white" />
+          </div>
+          <h1 className="text-2xl font-black text-orange-500">ITTEK SOLUTION</h1>
+          <p className="text-gray-500 text-sm">DAN & DOR SOLAR COMPANY LIMITED</p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm flex items-start gap-2">
-              <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Email, Account Number, or Staff ID
-            </label>
-            <input
-              type="text"
-              value={identifier}
-              onChange={(e) => { setIdentifier(e.target.value); setError('') }}
-              placeholder="e.g. john@example.com or TH-001234"
-              className="w-full px-4 py-3.5 text-base border-2 border-gray-200 rounded-2xl
-                         focus:outline-none focus:border-green-600 bg-white placeholder-gray-400
-                         transition-colors min-h-[52px]"
-              autoComplete="username"
-              autoCapitalize="none"
-              autoCorrect="off"
-              inputMode="email"
-            />
+        <div className="w-full max-w-md">
+          <div className="mb-8">
+            <h2 className="text-2xl font-black text-gray-900">Welcome Back</h2>
+            <p className="text-gray-500 text-sm mt-1">Sign in to your account to continue</p>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Password
-            </label>
-            <div className="relative">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Username</label>
               <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setError('') }}
-                placeholder="Enter your password"
-                className="w-full px-4 py-3.5 pr-12 text-base border-2 border-gray-200 rounded-2xl
-                           focus:outline-none focus:border-green-600 bg-white placeholder-gray-400
-                           transition-colors min-h-[52px]"
-                autoComplete="current-password"
+                type="text"
+                autoComplete="username"
+                autoFocus
+                placeholder="Enter your username"
+                {...register('username', { required: 'Username is required' })}
+                className={`w-full px-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all
+                  ${errors.username ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 hover:bg-white'}`}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600"
-                tabIndex={-1}
-              >
-                {showPassword ? (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
-              </button>
+              {errors.username && (
+                <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.username.message}</p>
+              )}
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 bg-green-800 text-white font-bold text-base rounded-2xl
-                       min-h-[52px] flex items-center justify-center gap-2
-                       active:scale-95 transition-all duration-150
-                       disabled:opacity-60 disabled:cursor-not-allowed
-                       hover:bg-green-900 mt-2"
-          >
-            {loading ? (
-              <>
-                <LoadingSpinner size="sm" color="white" />
-                Signing in...
-              </>
-            ) : (
-              'Sign In'
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
+              <div className="relative">
+                <input
+                  type={showPwd ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  {...register('password', { required: 'Password is required' })}
+                  className={`w-full px-4 py-3 pr-11 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all
+                    ${errors.password ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 hover:bg-white'}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd(!showPwd)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                >
+                  {showPwd ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.password.message}</p>
+              )}
+            </div>
+
+            {errors.root && (
+              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                <p className="text-sm text-red-600 font-medium">{errors.root.message}</p>
+              </div>
             )}
-          </button>
-        </form>
 
-        <div className="text-center mt-6">
-          <Link
-            to="/forgot-password"
-            className="text-green-700 font-semibold text-sm hover:text-green-900 transition-colors"
-          >
-            Forgot Password?
-          </Link>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-orange-200 hover:shadow-orange-300 disabled:shadow-none"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Signing in...
+                </span>
+              ) : 'Sign In'}
+            </button>
+          </form>
         </div>
 
-        <div className="mt-8 p-4 bg-gray-50 rounded-2xl">
-          <p className="text-xs text-gray-500 text-center leading-relaxed">
-            By signing in, you agree to Tritech Hub iOS's terms of service and privacy policy.
-          </p>
-        </div>
+        <p className="mt-12 text-xs text-gray-400 text-center">
+          Powered by <span className="font-bold text-orange-400">ITTEK</span> &copy; {new Date().getFullYear()}
+        </p>
       </div>
     </div>
   )

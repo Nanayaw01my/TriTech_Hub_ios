@@ -1,157 +1,204 @@
 import React from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider, useAuth } from './context/AuthContext'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import useAuthStore from './store/authStore'
+import Layout from './components/Layout'
 import LoadingSpinner from './components/LoadingSpinner'
 
-// Public pages
+// Pages
 import Login from './pages/Login'
-import ForgotPassword from './pages/ForgotPassword'
-import ResetPassword from './pages/ResetPassword'
+import Dashboard from './pages/Dashboard'
+import POS from './pages/POS'
+import Products from './pages/Products'
+import Categories from './pages/Categories'
+import Suppliers from './pages/Suppliers'
+import Expenses from './pages/Expenses'
+import Debts from './pages/Debts'
+import Workers from './pages/Workers'
+import Purchases from './pages/Purchases'
+import StockRequests from './pages/StockRequests'
+import CreditAgreements from './pages/CreditAgreements'
+import Financial from './pages/Financial'
+import Reports from './pages/Reports'
+import Users from './pages/Users'
+import AuditLogs from './pages/AuditLogs'
+import Backup from './pages/Backup'
+import Settings from './pages/Settings'
+import Notifications from './pages/Notifications'
+import Search from './pages/Search'
 
-// Admin pages
-import AdminDashboard from './pages/admin/Dashboard'
-import AdminCustomers from './pages/admin/Customers'
-import AdminCustomerDetail from './pages/admin/CustomerDetail'
-import AdminStaff from './pages/admin/Staff'
-import AdminDevices from './pages/admin/Devices'
-import AdminTransactions from './pages/admin/Transactions'
-import AdminReports from './pages/admin/Reports'
-import AdminAuditLogs from './pages/admin/AuditLogs'
-import AdminSettings from './pages/admin/Settings'
+const ROLE_LEVELS = { sales: 1, manager: 2, ceo: 3, super_admin: 4 }
 
-// Staff pages
-import StaffDashboard from './pages/staff/Dashboard'
-import StaffCustomers from './pages/staff/Customers'
-import StaffAddCustomer from './pages/staff/AddCustomer'
-import StaffCustomerDetail from './pages/staff/CustomerDetail'
-
-// Customer pages
-import CustomerDashboard from './pages/customer/Dashboard'
-import CustomerPayments from './pages/customer/Payments'
-import CustomerProfile from './pages/customer/Profile'
-
-// Layout
-import Layout from './components/Layout'
-
-function ProtectedRoute({ children, allowedRoles }) {
-  const { isAuthenticated, userRole, loading } = useAuth()
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
-  }
+function ProtectedRoute({ children, minLevel = 1, allowedRoles = null }) {
+  const { user, token } = useAuthStore()
+  const isAuthenticated = !!token && !!user
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
 
-  if (allowedRoles && !allowedRoles.includes(userRole)) {
-    // Redirect to appropriate dashboard
-    if (userRole === 'admin') return <Navigate to="/admin/dashboard" replace />
-    if (userRole === 'staff') return <Navigate to="/staff/dashboard" replace />
-    if (userRole === 'customer') return <Navigate to="/customer/dashboard" replace />
-    return <Navigate to="/login" replace />
+  const userLevel = ROLE_LEVELS[user?.role] || 0
+
+  if (allowedRoles && !allowedRoles.includes(user?.role)) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  if (minLevel && userLevel < minLevel) {
+    return <Navigate to="/dashboard" replace />
   }
 
   return children
 }
 
-function RoleRedirect() {
-  const { isAuthenticated, userRole, loading } = useAuth()
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
-  }
-
+function RootRedirect() {
+  const { user, token } = useAuthStore()
+  const isAuthenticated = !!token && !!user
   if (!isAuthenticated) return <Navigate to="/login" replace />
-  if (userRole === 'admin') return <Navigate to="/admin/dashboard" replace />
-  if (userRole === 'staff') return <Navigate to="/staff/dashboard" replace />
-  if (userRole === 'customer') return <Navigate to="/customer/dashboard" replace />
-  return <Navigate to="/login" replace />
+  return <Navigate to="/dashboard" replace />
 }
 
-function AppRoutes() {
+export default function App() {
   return (
     <Routes>
-      {/* Root redirect */}
-      <Route path="/" element={<RoleRedirect />} />
-
-      {/* Public routes */}
+      {/* Public */}
       <Route path="/login" element={<Login />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-      {/* Admin routes */}
+      {/* Root redirect */}
+      <Route path="/" element={<RootRedirect />} />
+
+      {/* Protected routes inside Layout */}
       <Route
-        path="/admin"
+        path="/"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <Layout role="admin" />
+          <ProtectedRoute>
+            <Layout />
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="customers" element={<AdminCustomers />} />
-        <Route path="customers/:id" element={<AdminCustomerDetail />} />
-        <Route path="staff" element={<AdminStaff />} />
-        <Route path="devices" element={<AdminDevices />} />
-        <Route path="transactions" element={<AdminTransactions />} />
-        <Route path="reports" element={<AdminReports />} />
-        <Route path="audit-logs" element={<AdminAuditLogs />} />
-        <Route path="settings" element={<AdminSettings />} />
-      </Route>
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="pos" element={<POS />} />
+        <Route path="expenses" element={<Expenses />} />
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="search" element={<Search />} />
 
-      {/* Staff routes */}
-      <Route
-        path="/staff"
-        element={
-          <ProtectedRoute allowedRoles={['staff']}>
-            <Layout role="staff" />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="/staff/dashboard" replace />} />
-        <Route path="dashboard" element={<StaffDashboard />} />
-        <Route path="customers" element={<StaffCustomers />} />
-        <Route path="customers/add" element={<StaffAddCustomer />} />
-        <Route path="customers/:id" element={<StaffCustomerDetail />} />
-      </Route>
+        {/* Manager+ */}
+        <Route
+          path="debts"
+          element={
+            <ProtectedRoute minLevel={2}>
+              <Debts />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="stock-requests"
+          element={
+            <ProtectedRoute minLevel={2}>
+              <StockRequests />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="credit-agreements"
+          element={
+            <ProtectedRoute minLevel={2}>
+              <CreditAgreements />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Customer routes */}
-      <Route
-        path="/customer"
-        element={
-          <ProtectedRoute allowedRoles={['customer']}>
-            <Layout role="customer" />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="/customer/dashboard" replace />} />
-        <Route path="dashboard" element={<CustomerDashboard />} />
-        <Route path="payments" element={<CustomerPayments />} />
-        <Route path="profile" element={<CustomerProfile />} />
+        {/* CEO+ */}
+        <Route
+          path="products"
+          element={
+            <ProtectedRoute minLevel={3}>
+              <Products />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="categories"
+          element={
+            <ProtectedRoute minLevel={3}>
+              <Categories />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="suppliers"
+          element={
+            <ProtectedRoute minLevel={3}>
+              <Suppliers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="purchases"
+          element={
+            <ProtectedRoute minLevel={3}>
+              <Purchases />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="workers"
+          element={
+            <ProtectedRoute minLevel={3}>
+              <Workers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="financial"
+          element={
+            <ProtectedRoute minLevel={3}>
+              <Financial />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="reports"
+          element={
+            <ProtectedRoute minLevel={3}>
+              <Reports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="users"
+          element={
+            <ProtectedRoute minLevel={3}>
+              <Users />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="audit-logs"
+          element={
+            <ProtectedRoute minLevel={3}>
+              <AuditLogs />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="backup"
+          element={
+            <ProtectedRoute minLevel={3}>
+              <Backup />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <ProtectedRoute minLevel={3}>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
       </Route>
 
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  )
-}
-
-export default function App() {
-  return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </BrowserRouter>
   )
 }

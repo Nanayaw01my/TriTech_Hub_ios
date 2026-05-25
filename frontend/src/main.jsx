@@ -27,19 +27,19 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.error) {
       return (
-        <div style={{ padding: 32, fontFamily: 'monospace', background: '#fff7ed', minHeight: '100vh' }}>
-          <h2 style={{ color: '#ea580c', marginBottom: 16 }}>Application Error</h2>
-          <pre style={{ whiteSpace: 'pre-wrap', color: '#333', fontSize: 13, background: '#fff', padding: 16, borderRadius: 8, border: '1px solid #e5e7eb' }}>
-            {this.state.error?.message}
-            {'\n\n'}
-            {this.state.error?.stack}
-          </pre>
-          <button
-            onClick={() => window.location.reload()}
-            style={{ marginTop: 16, padding: '8px 24px', background: '#f97316', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14 }}
-          >
-            Reload Page
-          </button>
+        <div className="min-h-screen bg-orange-50 flex items-center justify-center p-8">
+          <div className="bg-white rounded-xl shadow-lg p-8 max-w-lg w-full">
+            <h2 className="text-xl font-bold text-orange-600 mb-4">Application Error</h2>
+            <pre className="text-sm text-gray-700 bg-gray-50 p-4 rounded-lg overflow-auto border border-gray-200 mb-4">
+              {this.state.error?.message}
+            </pre>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-semibold"
+            >
+              Reload Page
+            </button>
+          </div>
         </div>
       )
     }

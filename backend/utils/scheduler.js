@@ -1,161 +1,158 @@
 const cron = require('node-cron');
-const InstallmentPlan = require('../models/InstallmentPlan');
-const Device = require('../models/Device');
-const Customer = require('../models/Customer');
-const User = require('../models/User');
-const AuditLog = require('../models/AuditLog');
-const { lockDevice } = require('./simpleMDM');
-const { sendLockNotificationEmail } = require('./email');
 
 /**
- * Check for overdue installment plans and lock devices.
- * An installment plan is considered overdue if:
- * - Status is 'active'
- * - next_due_date is more than 48 hours in the past
+ * Send daily summary email at 11:00 PM.
  */
-const checkOverduePayments = async () => {
-  console.log('[Scheduler] Running checkOverduePayments job...');
-
+const sendDailySummary = async () => {
+  console.log('[Scheduler] Running daily summary email job...');
   try {
-    const cutoffDate = new Date(Date.now() - 48 * 60 * 60 * 1000); // 48 hours ago
+    const Sale = require('../models/Sale');
+    const Expense = require('../models/Expense');
+    const Settings = require('../models/Settings');
+    const { queueEmail, templates } = require('./email');
 
-    // Find all active plans where next_due_date is past the 48-hour cutoff
-    const overduePlans = await InstallmentPlan.find({
-      status: 'active',
-      next_due_date: { $lt: cutoffDate },
-    })
-      .populate({
-        path: 'device_id',
-        select: 'model udid lock_status serial_number',
-      })
-      .populate({
-        path: 'customer_id',
-        select: 'user_id full_name email phone',
-      });
-
-    if (overduePlans.length === 0) {
-      console.log('[Scheduler] No overdue plans found.');
+    const settings = await Settings.findOne();
+    if (!settings?.notification_settings?.email_notifications) {
+      console.log('[Scheduler] Email notifications disabled. Skipping daily summary.');
       return;
     }
 
-    console.log(`[Scheduler] Found ${overduePlans.length} overdue plan(s). Processing...`);
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
 
-    for (const plan of overduePlans) {
-      try {
-        const device = plan.device_id;
-        const customer = plan.customer_id;
+    const sales = await Sale.find({ sale_date: { $gte: startOfDay, $lte: endOfDay } });
+    const expenses = await Expense.find({ expense_date: { $gte: startOfDay, $lte: endOfDay } });
 
-        if (!device || !customer) {
-          console.warn(`[Scheduler] Plan ${plan._id} missing device or customer data. Skipping.`);
-          continue;
-        }
+    const total_revenue = sales.reduce((sum, s) => sum + (s.total_amount || 0), 0);
+    const total_expenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const net_profit = total_revenue - total_expenses;
 
-        // Skip if device is already locked
-        if (device.lock_status === 'locked') {
-          console.log(`[Scheduler] Device ${device.udid || device._id} already locked. Skipping.`);
-          continue;
-        }
+    const statsData = {
+      date: today.toLocaleDateString('en-GH'),
+      sales_count: sales.length,
+      total_revenue,
+      total_expenses,
+      net_profit,
+    };
 
-        // Only lock if device has a UDID (required for MDM)
-        if (!device.udid) {
-          console.warn(
-            `[Scheduler] Device ${device._id} has no UDID. Cannot lock via MDM. Marking plan as defaulted.`
-          );
-          await InstallmentPlan.findByIdAndUpdate(plan._id, { status: 'defaulted' });
-          continue;
-        }
-
-        console.log(
-          `[Scheduler] Locking device ${device.udid} for overdue plan ${plan._id} (customer: ${customer.full_name})`
-        );
-
-        // Attempt to lock the device via SimpleMDM
-        let lockSuccess = false;
-        try {
-          await lockDevice(device.udid);
-          lockSuccess = true;
-        } catch (mdmError) {
-          console.error(
-            `[Scheduler] SimpleMDM lock failed for device ${device.udid}: ${mdmError.message}`
-          );
-          // Continue with local status update even if MDM call fails
-        }
-
-        // Update local device lock status regardless of MDM result
-        await Device.findByIdAndUpdate(device._id, { lock_status: 'locked' });
-
-        // Mark plan as defaulted
-        await InstallmentPlan.findByIdAndUpdate(plan._id, { status: 'defaulted' });
-
-        // Create audit log entry
-        await AuditLog.create({
-          action: 'device_lock',
-          device_udid: device.udid,
-          target_user_id: customer.user_id,
-          details: {
-            reason: 'Automated lock: payment overdue by more than 48 hours',
-            installment_plan_id: plan._id,
-            next_due_date: plan.next_due_date,
-            hours_overdue: Math.round((Date.now() - new Date(plan.next_due_date)) / (1000 * 60 * 60)),
-            mdm_lock_success: lockSuccess,
-            device_model: device.model,
-            customer_name: customer.full_name,
-          },
-          ip_address: 'scheduler',
-        });
-
-        // Send lock notification email to customer
-        try {
-          let customerEmail = customer.email;
-          if (!customerEmail && customer.user_id) {
-            const userRecord = await User.findById(customer.user_id).select('email');
-            customerEmail = userRecord?.email;
-          }
-
-          if (customerEmail) {
-            await sendLockNotificationEmail(customerEmail, customer.full_name, device.model);
-            console.log(`[Scheduler] Lock notification email sent to ${customerEmail}`);
-          }
-        } catch (emailError) {
-          console.error(
-            `[Scheduler] Failed to send lock notification email: ${emailError.message}`
-          );
-          // Don't fail the whole process if email fails
-        }
-
-        console.log(
-          `[Scheduler] Successfully processed overdue plan ${plan._id}: device locked, plan defaulted.`
-        );
-      } catch (planError) {
-        console.error(`[Scheduler] Error processing plan ${plan._id}: ${planError.message}`);
-        // Continue with next plan
-      }
+    const recipientEmail = settings.company_email || process.env.EMAIL_USER;
+    if (recipientEmail) {
+      await queueEmail({
+        to: recipientEmail,
+        subject: `Daily Summary - ${today.toLocaleDateString('en-GH')}`,
+        html: templates.dailySummary(statsData),
+        priority: 'normal',
+      });
+      console.log('[Scheduler] Daily summary queued.');
     }
-
-    console.log('[Scheduler] checkOverduePayments job completed.');
-  } catch (error) {
-    console.error('[Scheduler] Fatal error in checkOverduePayments:', error.message);
+  } catch (err) {
+    console.error('[Scheduler] Daily summary error:', err.message);
   }
 };
 
 /**
- * Start all cron jobs.
- * - Every hour: check for overdue installment plans and lock devices.
+ * Update overdue debt statuses at midnight.
  */
-const startScheduler = () => {
-  console.log('[Scheduler] Initializing scheduled jobs...');
-
-  // Run every hour at minute 0
-  cron.schedule('0 * * * *', async () => {
-    await checkOverduePayments();
-  });
-
-  console.log('[Scheduler] Overdue payment checker scheduled: every hour.');
-
-  // Run an initial check at startup (delayed by 10 seconds to allow DB connection)
-  setTimeout(async () => {
-    await checkOverduePayments();
-  }, 10000);
+const updateOverdueDebts = async () => {
+  console.log('[Scheduler] Updating overdue debts...');
+  try {
+    const Debt = require('../models/Debt');
+    const result = await Debt.updateMany(
+      { status: 'active', due_date: { $lt: new Date() }, amount_paid: { $lt: '$amount_owed' } },
+      { $set: { status: 'overdue' } }
+    );
+    console.log(`[Scheduler] Marked ${result.modifiedCount} debts as overdue.`);
+  } catch (err) {
+    console.error('[Scheduler] Overdue debts error:', err.message);
+  }
 };
 
-module.exports = { startScheduler, checkOverduePayments };
+/**
+ * Check for low stock products at 9 AM and send alerts.
+ */
+const checkLowStock = async () => {
+  console.log('[Scheduler] Checking low stock...');
+  try {
+    const Product = require('../models/Product');
+    const Settings = require('../models/Settings');
+    const { queueEmail, templates } = require('./email');
+
+    const settings = await Settings.findOne();
+    if (!settings?.notification_settings?.email_notifications) return;
+
+    const lowStockProducts = await Product.find({
+      is_active: true,
+      $expr: { $lte: ['$quantity', '$low_stock_level'] },
+    });
+
+    if (lowStockProducts.length === 0) {
+      console.log('[Scheduler] No low stock products found.');
+      return;
+    }
+
+    const recipientEmail = settings.company_email || process.env.EMAIL_USER;
+    if (recipientEmail) {
+      await queueEmail({
+        to: recipientEmail,
+        subject: `Low Stock Alert - ${lowStockProducts.length} product(s)`,
+        html: templates.lowStockAlert(lowStockProducts),
+        priority: 'high',
+      });
+      console.log(`[Scheduler] Low stock alert queued for ${lowStockProducts.length} products.`);
+    }
+  } catch (err) {
+    console.error('[Scheduler] Low stock check error:', err.message);
+  }
+};
+
+/**
+ * Process email queue every 5 minutes.
+ */
+const runEmailQueueProcessor = async () => {
+  try {
+    const { processEmailQueue } = require('./email');
+    await processEmailQueue();
+  } catch (err) {
+    console.error('[Scheduler] Email queue processor error:', err.message);
+  }
+};
+
+/**
+ * Start all scheduled jobs.
+ */
+const startSchedulers = () => {
+  console.log('[Scheduler] Initializing scheduled jobs...');
+
+  // Daily summary at 11:00 PM
+  cron.schedule('0 23 * * *', async () => {
+    await sendDailySummary();
+  });
+  console.log('[Scheduler] Daily summary scheduled at 11:00 PM.');
+
+  // Email queue processor every 5 minutes
+  cron.schedule('*/5 * * * *', async () => {
+    await runEmailQueueProcessor();
+  });
+  console.log('[Scheduler] Email queue processor scheduled every 5 minutes.');
+
+  // Overdue debt updater at midnight
+  cron.schedule('0 0 * * *', async () => {
+    await updateOverdueDebts();
+  });
+  console.log('[Scheduler] Overdue debt updater scheduled at midnight.');
+
+  // Low stock checker at 9:00 AM
+  cron.schedule('0 9 * * *', async () => {
+    await checkLowStock();
+  });
+  console.log('[Scheduler] Low stock checker scheduled at 9:00 AM.');
+};
+
+module.exports = {
+  startSchedulers,
+  sendDailySummary,
+  updateOverdueDebts,
+  checkLowStock,
+  runEmailQueueProcessor,
+};

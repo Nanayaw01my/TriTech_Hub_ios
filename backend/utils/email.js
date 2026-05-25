@@ -1,13 +1,14 @@
 const nodemailer = require('nodemailer');
+const EmailQueue = require('../models/EmailQueue');
 
 /**
- * Create and return a configured nodemailer transporter using Gmail SMTP.
+ * Create and return a configured nodemailer transporter.
  */
 const createTransporter = () => {
   return nodemailer.createTransport({
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: false, // true for 465, false for other ports
+    secure: false,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
@@ -19,316 +20,191 @@ const createTransporter = () => {
 };
 
 /**
- * Send a password reset email with a reset link.
- * @param {string} email - Recipient email address
- * @param {string} name - Recipient's name
- * @param {string} resetUrl - Password reset URL
+ * Queue an email to the EmailQueue collection.
+ * @param {Object} options - { to, toName, subject, html, priority }
  */
-const sendPasswordResetEmail = async (email, name, resetUrl) => {
+const queueEmail = async ({ to, toName = '', subject, html, priority = 'normal' }) => {
+  try {
+    await EmailQueue.create({
+      to_email: to,
+      to_name: toName,
+      subject,
+      body: html,
+      priority,
+      status: 'pending',
+    });
+  } catch (err) {
+    console.error('Failed to queue email:', err.message);
+  }
+};
+
+/**
+ * Send an email directly (bypassing queue).
+ * @param {Object} options - { to, subject, html }
+ */
+const sendEmail = async ({ to, subject, html }) => {
   const transporter = createTransporter();
-
   const mailOptions = {
-    from: process.env.EMAIL_FROM || `Tritech Hub iOS <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: 'Password Reset Request - Tritech Hub iOS',
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Password Reset</title>
-        <style>
-          body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
-          .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-          .header { background-color: #1a73e8; color: white; padding: 30px; text-align: center; }
-          .header h1 { margin: 0; font-size: 24px; }
-          .body { padding: 30px; color: #333333; }
-          .body p { line-height: 1.6; margin-bottom: 16px; }
-          .button { display: inline-block; background-color: #1a73e8; color: white; text-decoration: none; padding: 14px 28px; border-radius: 5px; font-weight: bold; font-size: 16px; margin: 20px 0; }
-          .footer { background-color: #f8f8f8; padding: 20px 30px; text-align: center; font-size: 12px; color: #888888; border-top: 1px solid #eeeeee; }
-          .warning { background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 12px; margin-top: 20px; font-size: 14px; color: #856404; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Tritech Hub iOS</h1>
-          </div>
-          <div class="body">
-            <h2>Hello, ${name}!</h2>
-            <p>We received a request to reset the password for your Tritech Hub iOS account associated with this email address.</p>
-            <p>Click the button below to reset your password. This link is valid for <strong>1 hour</strong>.</p>
-            <div style="text-align: center;">
-              <a href="${resetUrl}" class="button">Reset My Password</a>
-            </div>
-            <p>If the button above doesn't work, copy and paste the following URL into your browser:</p>
-            <p style="word-break: break-all; background-color: #f4f4f4; padding: 10px; border-radius: 4px; font-size: 13px;">${resetUrl}</p>
-            <div class="warning">
-              <strong>Security Notice:</strong> If you did not request a password reset, please ignore this email. Your password will not be changed unless you click the link above and create a new password.
-            </div>
-          </div>
-          <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p>
-            <p>This is an automated message. Please do not reply to this email.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `,
-    text: `
-Hello, ${name}!
-
-We received a request to reset your Tritech Hub iOS account password.
-
-Reset your password by visiting the link below (valid for 1 hour):
-${resetUrl}
-
-If you did not request a password reset, please ignore this email.
-
-© ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.
-    `.trim(),
+    from: process.env.EMAIL_FROM || `ITTEK Solution <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+    html,
   };
-
   const info = await transporter.sendMail(mailOptions);
-  console.log(`Password reset email sent to ${email}: ${info.messageId}`);
+  console.log(`Email sent to ${to}: ${info.messageId}`);
   return info;
 };
 
 /**
- * Send a payment confirmation email to a customer.
- * @param {string} email - Recipient email address
- * @param {string} name - Customer's name
- * @param {number} amount - Payment amount in GHS
- * @param {Object} planDetails - Installment plan details
- * @param {string} planDetails.deviceModel - Device model name
- * @param {number} planDetails.remainingBalance - Remaining balance after this payment
- * @param {number} planDetails.paymentsLeft - Number of payments left
- * @param {Date|string} planDetails.nextDueDate - Next payment due date
- * @param {string} planDetails.reference - Payment reference
+ * Process pending emails from the queue (max 3 retries).
  */
-const sendPaymentConfirmationEmail = async (email, name, amount, planDetails) => {
-  const transporter = createTransporter();
+const processEmailQueue = async () => {
+  try {
+    const pending = await EmailQueue.find({ status: 'pending', retry_count: { $lt: 3 } })
+      .sort({ priority: -1, created_at: 1 })
+      .limit(20);
 
-  const {
-    deviceModel = 'iPhone',
-    remainingBalance = 0,
-    paymentsLeft = 0,
-    nextDueDate = null,
-    reference = 'N/A',
-  } = planDetails || {};
+    if (pending.length === 0) return;
 
-  const formattedAmount = new Intl.NumberFormat('en-GH', {
-    style: 'currency',
-    currency: 'GHS',
-  }).format(amount);
+    const transporter = createTransporter();
 
-  const formattedBalance = new Intl.NumberFormat('en-GH', {
-    style: 'currency',
-    currency: 'GHS',
-  }).format(remainingBalance);
+    for (const email of pending) {
+      try {
+        await transporter.sendMail({
+          from: process.env.EMAIL_FROM || `ITTEK Solution <${process.env.EMAIL_USER}>`,
+          to: email.to_email,
+          subject: email.subject,
+          html: email.body,
+        });
 
-  const formattedNextDue = nextDueDate
-    ? new Date(nextDueDate).toLocaleDateString('en-GH', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : 'N/A';
-
-  const isPaidOff = remainingBalance <= 0;
-
-  const mailOptions = {
-    from: process.env.EMAIL_FROM || `Tritech Hub iOS <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: `Payment Confirmed: ${formattedAmount} - Tritech Hub iOS`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Payment Confirmation</title>
-        <style>
-          body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
-          .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-          .header { background-color: #28a745; color: white; padding: 30px; text-align: center; }
-          .header h1 { margin: 0; font-size: 24px; }
-          .header .amount { font-size: 36px; font-weight: bold; margin: 10px 0 0; }
-          .body { padding: 30px; color: #333333; }
-          .body p { line-height: 1.6; margin-bottom: 16px; }
-          .details-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          .details-table td { padding: 12px; border-bottom: 1px solid #eeeeee; }
-          .details-table td:first-child { font-weight: bold; color: #555555; width: 40%; }
-          .success-badge { display: inline-block; background-color: #28a745; color: white; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; }
-          .footer { background-color: #f8f8f8; padding: 20px 30px; text-align: center; font-size: 12px; color: #888888; border-top: 1px solid #eeeeee; }
-          .completed-notice { background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; padding: 16px; margin-top: 20px; text-align: center; color: #155724; font-size: 16px; font-weight: bold; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Payment Confirmed</h1>
-            <div class="amount">${formattedAmount}</div>
-          </div>
-          <div class="body">
-            <h2>Hello, ${name}!</h2>
-            <p>Your payment has been successfully received. Here are your payment details:</p>
-            <table class="details-table">
-              <tr>
-                <td>Reference</td>
-                <td>${reference}</td>
-              </tr>
-              <tr>
-                <td>Device</td>
-                <td>${deviceModel}</td>
-              </tr>
-              <tr>
-                <td>Amount Paid</td>
-                <td>${formattedAmount}</td>
-              </tr>
-              <tr>
-                <td>Remaining Balance</td>
-                <td>${formattedBalance}</td>
-              </tr>
-              ${!isPaidOff ? `
-              <tr>
-                <td>Payments Left</td>
-                <td>${paymentsLeft}</td>
-              </tr>
-              <tr>
-                <td>Next Due Date</td>
-                <td>${formattedNextDue}</td>
-              </tr>
-              ` : ''}
-              <tr>
-                <td>Status</td>
-                <td><span class="success-badge">PAID</span></td>
-              </tr>
-            </table>
-            ${isPaidOff ? `
-            <div class="completed-notice">
-              Congratulations! You have fully paid for your ${deviceModel}. Your device is now fully unlocked!
-            </div>
-            ` : `
-            <p>Your next payment of <strong>${formattedAmount}</strong> is due on <strong>${formattedNextDue}</strong>. Please ensure timely payment to avoid device lock.</p>
-            `}
-          </div>
-          <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p>
-            <p>This is an automated payment confirmation. Please keep this for your records.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `,
-    text: `
-Hello, ${name}!
-
-Your payment of ${formattedAmount} has been successfully received.
-
-Payment Details:
-- Reference: ${reference}
-- Device: ${deviceModel}
-- Amount Paid: ${formattedAmount}
-- Remaining Balance: ${formattedBalance}
-${!isPaidOff ? `- Payments Left: ${paymentsLeft}\n- Next Due Date: ${formattedNextDue}` : ''}
-
-${isPaidOff ? `Congratulations! You have fully paid for your ${deviceModel}. Your device is now fully unlocked!` : `Your next payment is due on ${formattedNextDue}.`}
-
-© ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.
-    `.trim(),
-  };
-
-  const info = await transporter.sendMail(mailOptions);
-  console.log(`Payment confirmation email sent to ${email}: ${info.messageId}`);
-  return info;
+        email.status = 'sent';
+        email.sent_at = new Date();
+        await email.save();
+        console.log(`[EmailQueue] Sent email to ${email.to_email}`);
+      } catch (err) {
+        email.retry_count += 1;
+        email.error_message = err.message;
+        if (email.retry_count >= 3) {
+          email.status = 'failed';
+        }
+        await email.save();
+        console.error(`[EmailQueue] Failed to send to ${email.to_email}: ${err.message}`);
+      }
+    }
+  } catch (err) {
+    console.error('[EmailQueue] Process error:', err.message);
+  }
 };
 
-/**
- * Send a device lock notification email.
- * @param {string} email - Recipient email address
- * @param {string} name - Customer's name
- * @param {string} deviceModel - Device model name
- */
-const sendLockNotificationEmail = async (email, name, deviceModel) => {
-  const transporter = createTransporter();
+// ─── EMAIL TEMPLATES ─────────────────────────────────────────────────────────
 
-  const mailOptions = {
-    from: process.env.EMAIL_FROM || `Tritech Hub iOS <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: `Important: Your ${deviceModel} Has Been Locked - Tritech Hub iOS`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Device Locked</title>
-        <style>
-          body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
-          .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-          .header { background-color: #dc3545; color: white; padding: 30px; text-align: center; }
-          .header h1 { margin: 0; font-size: 24px; }
-          .header .icon { font-size: 48px; margin: 10px 0 0; }
-          .body { padding: 30px; color: #333333; }
-          .body p { line-height: 1.6; margin-bottom: 16px; }
-          .action-box { background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 16px; margin: 20px 0; }
-          .contact-info { background-color: #e8f4f8; border: 1px solid #bee5eb; border-radius: 4px; padding: 16px; margin: 20px 0; }
-          .footer { background-color: #f8f8f8; padding: 20px 30px; text-align: center; font-size: 12px; color: #888888; border-top: 1px solid #eeeeee; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <div class="icon">🔒</div>
-            <h1>Device Locked</h1>
-          </div>
-          <div class="body">
-            <h2>Hello, ${name}!</h2>
-            <p>We are writing to inform you that your <strong>${deviceModel}</strong> has been locked due to an overdue installment payment.</p>
-            <p>Your payment was due more than <strong>48 hours ago</strong>, and we have not received your installment payment. As per the terms of your installment agreement, we have remotely locked your device.</p>
-            <div class="action-box">
-              <strong>How to Unlock Your Device:</strong>
-              <p style="margin-top: 8px; margin-bottom: 0;">To restore access to your device, please make your overdue installment payment immediately. Once your payment is confirmed, your device will be automatically unlocked within minutes.</p>
-            </div>
-            <div class="contact-info">
-              <strong>Need Help?</strong>
-              <p style="margin-top: 8px; margin-bottom: 0;">If you believe this is an error or need assistance, please contact our support team immediately. We are here to help you resolve this matter quickly.</p>
-            </div>
-            <p>You can make your payment through our app or by visiting any of our authorized payment centers.</p>
-          </div>
-          <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p>
-            <p>This is an automated notification. Please contact support if you need assistance.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `,
-    text: `
-Hello, ${name}!
+const saleSummary = (saleData) => {
+  const { invoice_no, customer_name, total_amount, items, user } = saleData;
+  const itemRows = (items || []).map(
+    (i) => `<tr><td>${i.product_name}</td><td>${i.quantity}</td><td>GH₵${i.unit_price.toFixed(2)}</td><td>GH₵${i.total.toFixed(2)}</td></tr>`
+  ).join('');
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+      <h2 style="color: #2c7a2c;">Sale Completed - ${invoice_no}</h2>
+      <p>A new sale has been processed by <strong>${user || 'staff'}</strong>.</p>
+      <p><strong>Customer:</strong> ${customer_name || 'Walk-in'}</p>
+      <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
+        <tr style="background:#f0f0f0;"><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr>
+        ${itemRows}
+      </table>
+      <p style="font-size:18px;"><strong>Total: GH₵${Number(total_amount).toFixed(2)}</strong></p>
+    </div>`;
+};
 
-Your ${deviceModel} has been locked due to an overdue installment payment.
+const debtCreated = (debtData) => {
+  const { customer_name, amount_owed, due_date } = debtData;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+      <h2 style="color: #cc4400;">New Debt Created</h2>
+      <p><strong>Customer:</strong> ${customer_name}</p>
+      <p><strong>Amount Owed:</strong> GH₵${Number(amount_owed).toFixed(2)}</p>
+      <p><strong>Due Date:</strong> ${new Date(due_date).toLocaleDateString('en-GH')}</p>
+    </div>`;
+};
 
-Your payment was due more than 48 hours ago. As per the terms of your installment agreement, we have remotely locked your device.
+const debtPayment = (paymentData) => {
+  const { customer_name, amount_paid, remaining } = paymentData;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+      <h2 style="color: #2c7a2c;">Debt Payment Received</h2>
+      <p><strong>Customer:</strong> ${customer_name}</p>
+      <p><strong>Amount Paid:</strong> GH₵${Number(amount_paid).toFixed(2)}</p>
+      <p><strong>Remaining Balance:</strong> GH₵${Number(remaining).toFixed(2)}</p>
+    </div>`;
+};
 
-To unlock your device, please make your overdue installment payment immediately. Once your payment is confirmed, your device will be automatically unlocked.
+const stockAlert = (productData) => {
+  const { name, quantity, low_stock_level } = productData;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+      <h2 style="color: #cc4400;">Low Stock Alert</h2>
+      <p>Product <strong>${name}</strong> is running low.</p>
+      <p><strong>Current Stock:</strong> ${quantity} units</p>
+      <p><strong>Low Stock Level:</strong> ${low_stock_level} units</p>
+      <p>Please restock immediately.</p>
+    </div>`;
+};
 
-If you believe this is an error, please contact our support team immediately.
+const dailySummary = (statsData) => {
+  const { date, total_sales, total_revenue, total_expenses, net_profit, sales_count } = statsData;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+      <h2 style="color: #1a5276;">Daily Summary - ${date}</h2>
+      <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
+        <tr><td><strong>Total Sales</strong></td><td>${sales_count || 0} transactions</td></tr>
+        <tr><td><strong>Total Revenue</strong></td><td>GH₵${Number(total_revenue || 0).toFixed(2)}</td></tr>
+        <tr><td><strong>Total Expenses</strong></td><td>GH₵${Number(total_expenses || 0).toFixed(2)}</td></tr>
+        <tr><td><strong>Net Profit</strong></td><td>GH₵${Number(net_profit || 0).toFixed(2)}</td></tr>
+      </table>
+    </div>`;
+};
 
-© ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.
-    `.trim(),
-  };
+const userWelcome = (userData) => {
+  const { username, email, role, password } = userData;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+      <h2 style="color: #1a5276;">Welcome to ITTEK Solution</h2>
+      <p>Hello <strong>${username}</strong>,</p>
+      <p>Your account has been created successfully.</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Role:</strong> ${role}</p>
+      ${password ? `<p><strong>Temporary Password:</strong> ${password}</p><p>Please change your password on first login.</p>` : ''}
+      <p>Company: DAN &amp; DOR SOLAR COMPANY LIMITED</p>
+    </div>`;
+};
 
-  const info = await transporter.sendMail(mailOptions);
-  console.log(`Lock notification email sent to ${email}: ${info.messageId}`);
-  return info;
+const lowStockAlert = (products) => {
+  const rows = products.map(
+    (p) => `<tr><td>${p.name}</td><td>${p.quantity}</td><td>${p.low_stock_level}</td></tr>`
+  ).join('');
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+      <h2 style="color: #cc4400;">Low Stock Report</h2>
+      <p>The following products need restocking:</p>
+      <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
+        <tr style="background:#f0f0f0;"><th>Product</th><th>Current Stock</th><th>Min Level</th></tr>
+        ${rows}
+      </table>
+    </div>`;
 };
 
 module.exports = {
-  sendPasswordResetEmail,
-  sendPaymentConfirmationEmail,
-  sendLockNotificationEmail,
+  createTransporter,
+  sendEmail,
+  queueEmail,
+  processEmailQueue,
+  templates: {
+    saleSummary,
+    debtCreated,
+    debtPayment,
+    stockAlert,
+    dailySummary,
+    userWelcome,
+    lowStockAlert,
+  },
 };
