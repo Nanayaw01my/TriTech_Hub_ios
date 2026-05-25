@@ -1,5 +1,6 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { FiShoppingCart, FiDollarSign, FiPackage, FiAlertTriangle, FiUsers, FiTrendingUp, FiActivity, FiCreditCard } from 'react-icons/fi'
 import StatCard from '../components/StatCard'
@@ -49,11 +50,13 @@ export default function Dashboard() {
 
   const { data: recentSales } = useQuery({
     queryKey: ['recent-sales'],
-    queryFn: () => getSales({ limit: 5, sort: '-createdAt' }).then(r => r.data),
+    queryFn: () => getSales({ limit: 5 }).then(r => r.data),
     enabled: userLevel >= 3,
   })
 
   const stats = statsData || {}
+  const recentSalesList = Array.isArray(recentSales) ? recentSales : []
+  const topProductsList = Array.isArray(topProducts) ? topProducts : (topProducts?.products || [])
 
   // Manager/Sales: simplified view
   if (userLevel <= 2) {
@@ -95,7 +98,7 @@ export default function Dashboard() {
           {userLevel === 2 && (
             <>
               <StatCard
-                icon={FiActivity}
+                icon={FiCreditCard}
                 value={stats.outstandingDebts || 0}
                 label="Outstanding Debts"
                 color="orange"
@@ -116,12 +119,22 @@ export default function Dashboard() {
         <div className="mt-8 bg-orange-50 border border-orange-200 rounded-xl p-5">
           <h3 className="font-bold text-orange-800 mb-3">Quick Actions</h3>
           <div className="flex flex-wrap gap-3">
-            <a href="/pos" className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors">
+            <Link to="/pos" className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors">
               Open POS
-            </a>
-            <a href="/expenses" className="px-4 py-2 bg-white border border-orange-300 text-orange-700 rounded-lg text-sm font-semibold hover:bg-orange-50 transition-colors">
+            </Link>
+            <Link to="/expenses" className="px-4 py-2 bg-white border border-orange-300 text-orange-700 rounded-lg text-sm font-semibold hover:bg-orange-50 transition-colors">
               Add Expense
-            </a>
+            </Link>
+            {userLevel === 2 && (
+              <>
+                <Link to="/debts" className="px-4 py-2 bg-white border border-orange-300 text-orange-700 rounded-lg text-sm font-semibold hover:bg-orange-50 transition-colors">
+                  View Debts
+                </Link>
+                <Link to="/stock-requests" className="px-4 py-2 bg-white border border-orange-300 text-orange-700 rounded-lg text-sm font-semibold hover:bg-orange-50 transition-colors">
+                  Stock Requests
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -181,7 +194,7 @@ export default function Dashboard() {
           icon={FiActivity}
           value={formatCurrency(stats.netProfit || 0)}
           label="Net Profit (Month)"
-          color="green"
+          color={!statsLoading && (stats.netProfit || 0) < 0 ? 'red' : 'green'}
           loading={statsLoading}
         />
         <StatCard
@@ -230,15 +243,19 @@ export default function Dashboard() {
         {/* Top Products */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="font-bold text-gray-900 mb-4">Top 5 Products</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={(Array.isArray(topProducts) ? topProducts : topProducts?.products || []).slice(0, 5)}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-              <XAxis dataKey="product_name" tick={{ fontSize: 10, fill: '#9ca3af' }} />
-              <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} tickFormatter={v => `${v}`} />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="total_quantity" fill="#F97316" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {topProductsList.length === 0 ? (
+            <div className="h-48 flex items-center justify-center text-gray-400 text-sm">No sales data yet</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={topProductsList.slice(0, 5)}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis dataKey="product_name" tick={{ fontSize: 10, fill: '#9ca3af' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} tickFormatter={v => `${v}`} />
+                <Tooltip />
+                <Bar dataKey="total_quantity" fill="#F97316" radius={[4, 4, 0, 0]} name="Units Sold" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
@@ -248,22 +265,22 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <h3 className="font-bold text-gray-900">Recent Sales</h3>
-            <a href="/pos" className="text-xs text-orange-500 font-semibold hover:text-orange-600">View POS →</a>
+            <Link to="/pos" className="text-xs text-orange-500 font-semibold hover:text-orange-600">View POS →</Link>
           </div>
           <div className="divide-y divide-gray-100">
-            {(Array.isArray(recentSales) ? recentSales : []).slice(0, 5).map(sale => (
+            {recentSalesList.slice(0, 5).map(sale => (
               <div key={sale._id} className="px-5 py-3 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-gray-800">{sale.customer_name || 'Walk-in'}</p>
                   <p className="text-xs text-gray-500">{formatDate(sale.sale_date || sale.createdAt)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-orange-600">{formatCurrency(sale.cart_total)}</p>
+                  <p className="text-sm font-bold text-orange-600">{formatCurrency(sale.cart_total || sale.total_amount || 0)}</p>
                   <Badge status={sale.payment_status} size="xs" />
                 </div>
               </div>
             ))}
-            {(!Array.isArray(recentSales) || recentSales.length === 0) && (
+            {recentSalesList.length === 0 && (
               <p className="px-5 py-6 text-sm text-gray-400 text-center">No sales yet</p>
             )}
           </div>
@@ -273,14 +290,14 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <h3 className="font-bold text-gray-900">Low Stock Alerts</h3>
-            <a href="/products" className="text-xs text-orange-500 font-semibold hover:text-orange-600">View All →</a>
+            <Link to="/products" className="text-xs text-orange-500 font-semibold hover:text-orange-600">View All →</Link>
           </div>
           <div className="divide-y divide-gray-100">
             {(stats.lowStockProducts || []).slice(0, 5).map(p => (
               <div key={p._id} className="px-5 py-3 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-gray-800">{p.name}</p>
-                  <p className="text-xs text-gray-500">{p.category?.name}</p>
+                  <p className="text-xs text-gray-500">{p.category?.name || '—'}</p>
                 </div>
                 <div className="text-right">
                   <span className={`text-sm font-bold ${p.quantity === 0 ? 'text-red-500' : 'text-orange-500'}`}>
@@ -292,7 +309,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
-            {!stats.lowStockProducts?.length && (
+            {!(stats.lowStockProducts?.length) && (
               <p className="px-5 py-6 text-sm text-gray-400 text-center">All products are well-stocked</p>
             )}
           </div>

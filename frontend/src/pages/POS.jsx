@@ -317,6 +317,7 @@ export default function POS() {
   const searchRef = useRef(null)
 
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [cart, setCart] = useState([])
   const [discountType, setDiscountType] = useState('fixed') // 'fixed' or 'percent'
   const [discountValue, setDiscountValue] = useState('')
@@ -331,18 +332,24 @@ export default function POS() {
   // Auto-focus search
   useEffect(() => { searchRef.current?.focus() }, [])
 
+  // Debounce search to avoid firing on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300)
+    return () => clearTimeout(t)
+  }, [searchQuery])
+
   const { data: productsData, isLoading: productsLoading } = useQuery({
-    queryKey: ['pos-products', searchQuery],
+    queryKey: ['pos-products', debouncedSearch],
     queryFn: () => {
-      if (searchQuery.trim()) {
-        return searchProducts(searchQuery).then(r => r.data)
+      if (debouncedSearch.trim()) {
+        return searchProducts(debouncedSearch).then(r => r.data)
       }
       return getProducts({ limit: 50, sort: 'name' }).then(r => r.data)
     },
     staleTime: 10000,
   })
 
-  const products = productsData?.products || productsData || []
+  const products = Array.isArray(productsData) ? productsData : (productsData?.products || [])
 
   // Cart calculations
   const subtotal = cart.reduce((sum, item) => sum + (item.selling_price || 0) * item.qty, 0)

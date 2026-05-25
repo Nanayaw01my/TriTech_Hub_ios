@@ -5,7 +5,7 @@ export const getProduct = (id) => api.get(`/products/${id}`)
 export const createProduct = (data) => api.post('/products', data)
 export const updateProduct = (id, data) => api.put(`/products/${id}`, data)
 export const deleteProduct = (id) => api.delete(`/products/${id}`)
-export const searchProducts = (query) => api.get('/products/search', { params: { q: query } })
+export const searchProducts = (query) => api.post('/products/search', { query })
 export const getProductByBarcode = (barcode) => api.get(`/products/barcode/${barcode}`)
 export const getLowStockProducts = () => api.get('/products/low-stock')
 
