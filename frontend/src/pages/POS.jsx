@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { FiSearch, FiPlus, FiMinus, FiTrash2, FiPrinter, FiDownload, FiX, FiCheck, FiAlertTriangle, FiShoppingCart } from 'react-icons/fi'
-import { getProducts, searchProducts } from '../api/products'
+import { getProducts } from '../api/products'
 import { createSale, createShortPayment } from '../api/pos'
 import useAuthStore from '../store/authStore'
 import { formatCurrency, formatDate } from '../utils/helpers'
@@ -348,30 +348,30 @@ export default function POS() {
 
   const { data: productsData, isLoading: productsLoading } = useQuery({
     queryKey: ['pos-products', debouncedSearch],
-    queryFn: () => {
-      if (debouncedSearch.trim()) {
-        return searchProducts(debouncedSearch).then(r => r.data)
-      }
-      return getProducts({ limit: 50, sort: 'name' }).then(r => r.data)
-    },
-    // Seed the query with localStorage data so it shows immediately on offline refresh
+    // Always use GET /products — pass 'search' param when the user is typing
+    queryFn: () => getProducts({
+      limit: 50,
+      ...(debouncedSearch.trim() ? { search: debouncedSearch } : {}),
+    }).then(r => r.data),
+    // Seed with localStorage so products appear immediately on offline page-refresh
     initialData: () => (!debouncedSearch.trim() ? getCachedProducts() || undefined : undefined),
     initialDataUpdatedAt: () => parseInt(localStorage.getItem('ittek_products_cache_time') || '0'),
     staleTime: 30000,
-    enabled: isOnline,  // Don't fire API calls when offline — use stale / initial data
+    enabled: isOnline,        // Don't fire while offline — keep whatever data is already loaded
     retry: false,
     refetchOnWindowFocus: false,
   })
 
-  // When online and no search: keep the products cache fresh for offline use
   const rawProducts = Array.isArray(productsData) ? productsData : (productsData?.products || [])
+
+  // Refresh the offline product cache whenever a full (non-search) list arrives from the server
   useEffect(() => {
     if (isOnline && !debouncedSearch && rawProducts.length > 0) {
       saveProductsCache(rawProducts)
     }
   }, [rawProducts, isOnline, debouncedSearch])
 
-  // When offline, filter the localStorage cache client-side instead of querying the API
+  // Offline: always derive products from the localStorage cache (filter client-side for search)
   const offlineCache = !isOnline ? (getCachedProducts() || []) : null
   const products = offlineCache !== null
     ? (debouncedSearch.trim()
