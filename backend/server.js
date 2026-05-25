@@ -57,6 +57,8 @@ if (process.env.NODE_ENV !== 'test') {
 
 const allowedOrigins = [
   process.env.FRONTEND_URL,
+  'https://dandorsolar.online',
+  'https://www.dandorsolar.online',
   'https://ittek-solution-1.onrender.com',
   'http://localhost:3000',
   'http://localhost:5173',
