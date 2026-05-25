@@ -222,13 +222,13 @@ export default function Products() {
         </span>
       ),
     },
-    { header: 'Cost Price', key: 'costPrice', render: v => formatCurrency(v) },
-    { header: 'Selling Price', key: 'sellingPrice', render: v => formatCurrency(v) },
+    { header: 'Cost Price', key: 'cost_price', render: v => formatCurrency(v) },
+    { header: 'Selling Price', key: 'selling_price', render: v => formatCurrency(v) },
     {
       header: 'Margin',
-      key: 'costPrice',
+      key: 'cost_price',
       render: (cost, row) => {
-        const margin = cost > 0 ? (((row.sellingPrice - cost) / cost) * 100).toFixed(1) : 0
+        const margin = cost > 0 ? (((row.selling_price - cost) / cost) * 100).toFixed(1) : 0
         return (
           <span className={`text-sm font-bold ${margin >= 20 ? 'text-green-600' : margin >= 0 ? 'text-yellow-600' : 'text-red-600'}`}>
             {margin}%
@@ -323,10 +323,20 @@ export default function Products() {
           suppliers={suppliers}
           loading={createMutation.isPending || updateMutation.isPending}
           onSubmit={(formData) => {
+            const payload = {
+              name: formData.name,
+              barcode: formData.barcode || undefined,
+              category_id: formData.category || undefined,
+              supplier_id: formData.supplier || undefined,
+              cost_price: parseFloat(formData.costPrice),
+              selling_price: parseFloat(formData.sellingPrice),
+              quantity: parseInt(formData.quantity) || 0,
+              low_stock_level: parseInt(formData.lowStockLevel) || 5,
+            }
             if (editProduct) {
-              updateMutation.mutate({ id: editProduct._id, data: formData })
+              updateMutation.mutate({ id: editProduct._id, data: payload })
             } else {
-              createMutation.mutate(formData)
+              createMutation.mutate(payload)
             }
           }}
         />
