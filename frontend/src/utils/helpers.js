@@ -44,26 +44,18 @@ export const formatNumber = (num) => {
 
 export const getRoleBadgeColor = (role) => {
   const colors = {
-    super_admin: 'bg-purple-100 text-purple-800',
-    ceo: 'bg-blue-100 text-blue-800',
-    manager: 'bg-green-100 text-green-800',
-    sales: 'bg-orange-100 text-orange-700',
+    'Super Admin': 'bg-purple-100 text-purple-800',
+    'CEO': 'bg-blue-100 text-blue-800',
+    'Manager': 'bg-green-100 text-green-800',
+    'Sales': 'bg-orange-100 text-orange-700',
   }
   return colors[role] || 'bg-gray-100 text-gray-700'
 }
 
-export const getRoleLabel = (role) => {
-  const labels = {
-    super_admin: 'Super Admin',
-    ceo: 'CEO',
-    manager: 'Manager',
-    sales: 'Sales',
-  }
-  return labels[role] || role
-}
+export const getRoleLabel = (role) => role || '—'
 
 export const getRoleLevel = (role) => {
-  const levels = { sales: 1, manager: 2, ceo: 3, super_admin: 4 }
+  const levels = { 'Sales': 1, 'Manager': 2, 'CEO': 3, 'Super Admin': 4 }
   return levels[role] || 0
 }
 
