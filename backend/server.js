@@ -119,6 +119,20 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/audit-logs', require('./routes/auditLogs'));
 
+// ─── SERVE REACT FRONTEND IN PRODUCTION ──────────────────────────────────────
+
+if (process.env.NODE_ENV === 'production') {
+  const frontendBuild = path.join(__dirname, '..', 'frontend', 'dist');
+  if (fs.existsSync(frontendBuild)) {
+    app.use(express.static(frontendBuild));
+    app.get('*', (req, res) => {
+      if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+        res.sendFile(path.join(frontendBuild, 'index.html'));
+      }
+    });
+  }
+}
+
 // ─── GLOBAL ERROR HANDLER ─────────────────────────────────────────────────────
 
 // eslint-disable-next-line no-unused-vars

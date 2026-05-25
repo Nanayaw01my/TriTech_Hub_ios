@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: tritech-hub
+    name: ittek-solution
     env: node
     region: oregon
     plan: free
@@ -17,14 +17,8 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: JWT_EXPIRE
-        value: 7d
-      - key: PAYSTACK_SECRET_KEY
-        sync: false
-      - key: PAYSTACK_PUBLIC_KEY
-        sync: false
-      - key: PAYSTACK_WEBHOOK_SECRET
-        sync: false
-      - key: SIMPLEMDM_API_KEY
+        value: 24h
+      - key: FRONTEND_URL
         sync: false
       - key: EMAIL_HOST
         value: smtp.gmail.com
@@ -40,3 +34,7 @@ services:
         value: ./uploads
       - key: MAX_FILE_SIZE
         value: 5242880
+      - key: LARGE_SALE_THRESHOLD
+        value: 5000
+      - key: EXPENSE_THRESHOLD
+        value: 1000

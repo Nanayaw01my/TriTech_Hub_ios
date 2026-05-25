@@ -36,7 +36,7 @@ const useAuthStore = create(
       canAccess: (minLevel) => {
         const { user } = get()
         if (!user) return false
-        const levels = { sales: 1, manager: 2, ceo: 3, super_admin: 4 }
+        const levels = { 'Sales': 1, 'Manager': 2, 'CEO': 3, 'Super Admin': 4 }
         return (levels[user.role] || 0) >= minLevel
       },
     }),

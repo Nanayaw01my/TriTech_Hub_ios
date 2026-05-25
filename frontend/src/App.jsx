@@ -26,7 +26,7 @@ import Settings from './pages/Settings'
 import Notifications from './pages/Notifications'
 import Search from './pages/Search'
 
-const ROLE_LEVELS = { sales: 1, manager: 2, ceo: 3, super_admin: 4 }
+const ROLE_LEVELS = { 'Sales': 1, 'Manager': 2, 'CEO': 3, 'Super Admin': 4 }
 
 function ProtectedRoute({ children, minLevel = 1, allowedRoles = null }) {
   const { user, token } = useAuthStore()
