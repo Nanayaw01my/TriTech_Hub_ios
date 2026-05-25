@@ -18,9 +18,21 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Response interceptor - handle 401
+// Response interceptor - unwrap { success, data, message } envelope + handle 401
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Backend always returns { success: true, data: ..., message: '...' }
+    // Unwrap so callers get the actual data directly via response.data
+    if (
+      response.data &&
+      typeof response.data === 'object' &&
+      'success' in response.data &&
+      'data' in response.data
+    ) {
+      response.data = response.data.data
+    }
+    return response
+  },
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('ittek_token')
