@@ -1,8 +1,8 @@
 {
-  "name": "tritech-hub-ios",
+  "name": "ittek-solution",
   "version": "1.0.0",
   "scripts": {
-    "build": "cd frontend && npm install && npm run build && cd ../backend && npm install",
-    "start": "cd backend && node server.js"
+    "build": "npm --prefix frontend install && npm --prefix frontend run build && npm --prefix backend install",
+    "start": "node backend/server.js"
   }
 }
