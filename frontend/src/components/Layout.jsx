@@ -11,6 +11,7 @@ import {
 } from 'react-icons/fi'
 import { logout as apiLogout } from '../api/auth'
 import toast from 'react-hot-toast'
+import OfflineBanner from './OfflineBanner'
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: FiHome, minLevel: 1 },
@@ -207,6 +208,9 @@ export default function Layout() {
             </div>
           </div>
         </header>
+
+        {/* Offline banner */}
+        <OfflineBanner />
 
         {/* Page content */}
         <main className="flex-1 overflow-auto">

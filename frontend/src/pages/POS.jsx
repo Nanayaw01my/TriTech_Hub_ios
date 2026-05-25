@@ -6,6 +6,8 @@ import { getProducts, searchProducts } from '../api/products'
 import { createSale, createShortPayment } from '../api/pos'
 import useAuthStore from '../store/authStore'
 import { formatCurrency, formatDate } from '../utils/helpers'
+import useOnlineStatus from '../hooks/useOnlineStatus'
+import { queueSale, saveProductsCache, getCachedProducts } from '../utils/offlineQueue'
 import Modal from '../components/Modal'
 import { format, addDays } from 'date-fns'
 
@@ -93,6 +95,11 @@ function ReceiptModal({ isOpen, onClose, saleData }) {
             <p className="font-bold">COMPANY LIMITED</p>
             <p className="text-xs text-gray-500">Accra, Ghana</p>
             <p className="text-xs text-gray-500">Tel: +233 XXX XXX XXX</p>
+            {saleData.offline && (
+              <p className="text-xs font-bold text-amber-600 mt-1 border border-amber-300 rounded px-2 py-0.5 inline-block">
+                OFFLINE — Pending Sync
+              </p>
+            )}
           </div>
 
           <div className="text-xs space-y-1 border-b border-dashed border-gray-300 pb-3 mb-3">
@@ -315,6 +322,7 @@ export default function POS() {
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
   const searchRef = useRef(null)
+  const isOnline = useOnlineStatus()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -339,8 +347,18 @@ export default function POS() {
   }, [searchQuery])
 
   const { data: productsData, isLoading: productsLoading } = useQuery({
-    queryKey: ['pos-products', debouncedSearch],
+    queryKey: ['pos-products', debouncedSearch, isOnline],
     queryFn: () => {
+      if (!isOnline) {
+        const cached = getCachedProducts() || []
+        if (debouncedSearch.trim()) {
+          const q = debouncedSearch.toLowerCase()
+          return cached.filter(p =>
+            p.name?.toLowerCase().includes(q) || p.barcode?.includes(q)
+          )
+        }
+        return cached
+      }
       if (debouncedSearch.trim()) {
         return searchProducts(debouncedSearch).then(r => r.data)
       }
@@ -350,6 +368,13 @@ export default function POS() {
   })
 
   const products = Array.isArray(productsData) ? productsData : (productsData?.products || [])
+
+  // Cache products locally whenever a full list loads while online
+  useEffect(() => {
+    if (isOnline && !debouncedSearch && products.length > 0) {
+      saveProductsCache(products)
+    }
+  }, [products, isOnline, debouncedSearch])
 
   // Cart calculations
   const subtotal = cart.reduce((sum, item) => sum + (item.selling_price || 0) * item.qty, 0)
@@ -444,21 +469,56 @@ export default function POS() {
     },
   })
 
+  const buildOfflineReceipt = (extras = {}) => ({
+    invoiceNo: `OFFLINE-${Date.now()}`,
+    items: cart.map(i => ({ name: i.name, quantity: i.qty, unitPrice: i.selling_price, total: i.selling_price * i.qty })),
+    subtotal,
+    discount: discountAmount,
+    grandTotal,
+    amountPaid: extras.amountPaid ?? paidAmount,
+    change: extras.change ?? change,
+    paymentMethod,
+    cashier: { username: user?.username },
+    createdAt: new Date().toISOString(),
+    offline: true,
+    ...extras,
+  })
+
   const handleCompleteSale = () => {
     if (cart.length === 0) { toast.error('Cart is empty'); return }
     if (paidAmount < grandTotal) {
       toast.error('Amount paid is less than total. Use Short Payment instead.')
       return
     }
-    saleMutation.mutate(buildSalePayload())
+    const payload = buildSalePayload()
+    if (!isOnline) {
+      queueSale('sale', payload)
+      setLastSale(buildOfflineReceipt())
+      setShowReceipt(true)
+      clearCart()
+      toast.success('Offline sale queued — will sync when connected')
+      return
+    }
+    saleMutation.mutate(payload)
   }
 
   const handleShortPaymentConfirm = ({ amountPaid: ap, customerName: cn, customerPhone: cp }) => {
-    shortPayMutation.mutate(buildSalePayload({
+    const payload = buildSalePayload({
       amount_paid: parseFloat(ap),
       customer_name: cn,
       customer_phone: cp || undefined,
-    }))
+    })
+    if (!isOnline) {
+      queueSale('short_payment', payload)
+      const paid = parseFloat(ap)
+      setLastSale(buildOfflineReceipt({ amountPaid: paid, change: 0, balanceDue: grandTotal - paid }))
+      setShowShortModal(false)
+      setShowReceipt(true)
+      clearCart()
+      toast.success('Offline short payment queued — will sync when connected')
+      return
+    }
+    shortPayMutation.mutate(payload)
   }
 
   // Barcode search: if searchQuery has no space and is 8+ chars, treat as barcode
@@ -481,6 +541,12 @@ export default function POS() {
       <div className="flex-1 flex flex-col lg:max-w-[60%] min-h-0 bg-white border-r border-gray-200">
         {/* Search */}
         <div className="p-3 border-b border-gray-200 bg-white flex-shrink-0">
+          {!isOnline && (
+            <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+              <FiAlertTriangle size={13} />
+              Offline — showing cached products. Sales will sync when reconnected.
+            </div>
+          )}
           <div className="relative">
             <FiSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
