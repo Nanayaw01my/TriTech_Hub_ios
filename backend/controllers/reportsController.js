@@ -2,7 +2,134 @@ const Sale = require('../models/Sale');
 const Expense = require('../models/Expense');
 const Product = require('../models/Product');
 const Debt = require('../models/Debt');
+const User = require('../models/User');
+const StockRequest = require('../models/StockRequest');
 const { generateReport } = require('../utils/pdfGenerator');
+
+/**
+ * GET /api/reports/dashboard-stats
+ * Accessible to all authenticated roles.
+ */
+const getDashboardStats = async (req, res) => {
+  try {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const isLimitedRole = ['Sales', 'Manager'].includes(req.user.role);
+    const userId = req.user._id;
+
+    if (isLimitedRole) {
+      const [myTodaySalesAgg, myTodayExpensesAgg, outstandingDebtsCount, pendingStockCount] = await Promise.all([
+        Sale.aggregate([
+          { $match: { user_id: userId, sale_date: { $gte: startOfToday } } },
+          { $group: { _id: null, total: { $sum: '$total_amount' } } },
+        ]),
+        Expense.aggregate([
+          { $match: { user_id: userId, expense_date: { $gte: startOfToday } } },
+          { $group: { _id: null, total: { $sum: '$amount' } } },
+        ]),
+        Debt.countDocuments({ status: { $in: ['active', 'overdue'] } }),
+        StockRequest.countDocuments({ status: 'pending' }),
+      ]);
+      return res.status(200).json({
+        success: true,
+        data: {
+          myTodaySales: myTodaySalesAgg[0]?.total || 0,
+          myTodayExpenses: myTodayExpensesAgg[0]?.total || 0,
+          outstandingDebts: outstandingDebtsCount,
+          pendingStockRequests: pendingStockCount,
+        },
+      });
+    }
+
+    // CEO / Super Admin — full stats
+    const [
+      todaySalesAgg, monthlySalesAgg, monthlyCOGSAgg,
+      totalProducts, lowStockProducts,
+      todayExpensesAgg, monthlyExpensesAgg,
+      outstandingDebts, activeUsers,
+    ] = await Promise.all([
+      Sale.aggregate([{ $match: { sale_date: { $gte: startOfToday } } }, { $group: { _id: null, total: { $sum: '$total_amount' } } }]),
+      Sale.aggregate([{ $match: { sale_date: { $gte: startOfMonth } } }, { $group: { _id: null, total: { $sum: '$total_amount' } } }]),
+      Sale.aggregate([
+        { $match: { sale_date: { $gte: startOfMonth } } },
+        { $group: { _id: null, total: { $sum: { $reduce: { input: '$items', initialValue: 0, in: { $add: ['$$value', { $multiply: ['$$this.cost_price', '$$this.quantity'] }] } } } } } },
+      ]),
+      Product.countDocuments({ is_active: true }),
+      Product.find({ is_active: true, $expr: { $lte: ['$quantity', '$low_stock_level'] } })
+        .populate('category_id', 'name').sort({ quantity: 1 }).limit(10),
+      Expense.aggregate([{ $match: { expense_date: { $gte: startOfToday } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      Expense.aggregate([{ $match: { expense_date: { $gte: startOfMonth } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      Debt.find({ status: { $in: ['active', 'overdue'] } }, 'amount_owed amount_paid'),
+      User.countDocuments({ is_active: true }),
+    ]);
+
+    const todaySales = todaySalesAgg[0]?.total || 0;
+    const monthlySales = monthlySalesAgg[0]?.total || 0;
+    const monthlyCOGS = monthlyCOGSAgg[0]?.total || 0;
+    const todayExpenses = todayExpensesAgg[0]?.total || 0;
+    const monthlyExpenses = monthlyExpensesAgg[0]?.total || 0;
+    const netProfit = monthlySales - monthlyCOGS - monthlyExpenses;
+    const outstandingDebtAmount = outstandingDebts.reduce((sum, d) => sum + Math.max(0, (d.amount_owed || 0) - (d.amount_paid || 0)), 0);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        todaySales,
+        monthlySales,
+        totalProducts,
+        lowStockCount: lowStockProducts.length,
+        todayExpenses,
+        netProfit,
+        outstandingDebtAmount,
+        activeUsers,
+        lowStockProducts: lowStockProducts.map(p => ({
+          _id: p._id,
+          name: p.name,
+          quantity: p.quantity,
+          low_stock_level: p.low_stock_level,
+          category: p.category_id,
+        })),
+      },
+    });
+  } catch (err) {
+    console.error('Dashboard stats error:', err.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * GET /api/reports/sales-trend?days=7
+ * Accessible to all authenticated roles.
+ */
+const getSalesTrend = async (req, res) => {
+  try {
+    const days = Math.min(parseInt(req.query.days) || 7, 30);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - (days - 1));
+    startDate.setHours(0, 0, 0, 0);
+
+    const trend = await Sale.aggregate([
+      { $match: { sale_date: { $gte: startDate } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$sale_date' } }, total: { $sum: '$total_amount' }, count: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const result = [];
+    for (let i = 0; i < days; i++) {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const found = trend.find(t => t._id === dateStr);
+      result.push({ date: dateStr.slice(5), total: found?.total || 0, count: found?.count || 0 });
+    }
+
+    return res.status(200).json({ success: true, data: { trend: result } });
+  } catch (err) {
+    console.error('Sales trend error:', err.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
 
 const getDateFilter = (startDate, endDate) => {
   const filter = {};
@@ -284,6 +411,7 @@ const exportData = async (req, res) => {
 };
 
 module.exports = {
+  getDashboardStats, getSalesTrend,
   getDailySales, getSalesByUser, getTopProducts, getProfitLoss,
   getDebtors, getStockValuation, getExpenseBreakdown, exportData,
 };

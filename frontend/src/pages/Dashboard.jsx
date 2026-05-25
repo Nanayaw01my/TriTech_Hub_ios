@@ -217,12 +217,12 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="font-bold text-gray-900 mb-4">Top 5 Products</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={topProducts?.products?.slice(0, 5) || []}>
+            <BarChart data={(Array.isArray(topProducts) ? topProducts : topProducts?.products || []).slice(0, 5)}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#9ca3af' }} />
+              <XAxis dataKey="product_name" tick={{ fontSize: 10, fill: '#9ca3af' }} />
               <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} tickFormatter={v => `${v}`} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="totalQuantity" fill="#F97316" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="total_quantity" fill="#F97316" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -237,20 +237,20 @@ export default function Dashboard() {
             <a href="/pos" className="text-xs text-orange-500 font-semibold hover:text-orange-600">View POS →</a>
           </div>
           <div className="divide-y divide-gray-100">
-            {(recentSales?.sales || []).slice(0, 5).map(sale => (
+            {(Array.isArray(recentSales) ? recentSales : []).slice(0, 5).map(sale => (
               <div key={sale._id} className="px-5 py-3 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-gray-800">{sale.customer?.name || 'Walk-in'}</p>
-                  <p className="text-xs text-gray-500">{formatDate(sale.createdAt)}</p>
+                  <p className="text-sm font-semibold text-gray-800">{sale.customer_name || 'Walk-in'}</p>
+                  <p className="text-xs text-gray-500">{formatDate(sale.sale_date || sale.createdAt)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-orange-600">{formatCurrency(sale.grandTotal)}</p>
-                  <Badge status={sale.paymentStatus} size="xs" />
+                  <p className="text-sm font-bold text-orange-600">{formatCurrency(sale.cart_total)}</p>
+                  <Badge status={sale.payment_status} size="xs" />
                 </div>
               </div>
             ))}
-            {!recentSales?.sales?.length && (
-              <p className="px-5 py-6 text-sm text-gray-400 text-center">No sales today yet</p>
+            {(!Array.isArray(recentSales) || recentSales.length === 0) && (
+              <p className="px-5 py-6 text-sm text-gray-400 text-center">No sales yet</p>
             )}
           </div>
         </div>

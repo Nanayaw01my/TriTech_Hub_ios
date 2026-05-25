@@ -3,9 +3,14 @@ const router = express.Router();
 const { authenticate } = require('../middleware/auth');
 const { requireLevel } = require('../middleware/rbac');
 const {
+  getDashboardStats, getSalesTrend,
   getDailySales, getSalesByUser, getTopProducts, getProfitLoss,
   getDebtors, getStockValuation, getExpenseBreakdown, exportData,
 } = require('../controllers/reportsController');
+
+// All authenticated users can access dashboard stats
+router.get('/dashboard-stats', authenticate, getDashboardStats);
+router.get('/sales-trend', authenticate, getSalesTrend);
 
 // Super Admin (4) and CEO (3) only
 const adminOnly = [authenticate, requireLevel(3)];
