@@ -394,22 +394,15 @@ export default function POS() {
   }
 
   const buildSalePayload = (extras = {}) => ({
-    items: cart.map(i => ({
-      product: i._id,
+    cart: cart.map(i => ({
+      product_id: i._id,
       quantity: i.qty,
-      unitPrice: i.selling_price,
-      total: i.selling_price * i.qty,
     })),
-    subtotal,
-    discount: discountAmount,
-    grandTotal,
-    paymentMethod,
-    amountPaid: paidAmount || grandTotal,
-    change,
-    customer: (customerName || extras.customerName) ? {
-      name: customerName || extras.customerName,
-      phone: customerPhone || extras.customerPhone,
-    } : undefined,
+    discount: parseFloat(discountValue) || 0,
+    discount_type: discountType === 'percent' ? 'percentage' : 'fixed',
+    payment_method: paymentMethod.toLowerCase().replace(' ', '_'),
+    customer_name: customerName || extras.customer_name || undefined,
+    customer_phone: customerPhone || extras.customer_phone || undefined,
     ...extras,
   })
 
@@ -453,17 +446,12 @@ export default function POS() {
     saleMutation.mutate(buildSalePayload())
   }
 
-  const handleShortPaymentConfirm = ({ amountPaid: ap, customerName: cn, customerPhone: cp, dueDate, balance }) => {
-    const payload = buildSalePayload({
-      amountPaid: ap,
-      balanceDue: balance,
-      customerName: cn,
-      customerPhone: cp,
-      dueDate,
-      paymentStatus: 'partial',
-      customer: { name: cn, phone: cp },
-    })
-    shortPayMutation.mutate(payload)
+  const handleShortPaymentConfirm = ({ amountPaid: ap, customerName: cn, customerPhone: cp }) => {
+    shortPayMutation.mutate(buildSalePayload({
+      amount_paid: parseFloat(ap),
+      customer_name: cn,
+      customer_phone: cp || undefined,
+    }))
   }
 
   // Barcode search: if searchQuery has no space and is 8+ chars, treat as barcode
