@@ -3,11 +3,11 @@ const mongoose = require('mongoose');
 const connectDB = async () => {
   const uri = process.env.MONGODB_URI;
 
-  // Log URI shape (hide password) so we can confirm format in Render logs
   if (!uri) {
     console.error('MONGODB_URI env var is not set!');
     return null;
   }
+
   try {
     const redacted = uri.replace(/:([^@]+)@/, ':****@');
     console.log(`Connecting to MongoDB: ${redacted}`);
@@ -21,6 +21,8 @@ const connectDB = async () => {
       const conn = await mongoose.connect(uri, {
         serverSelectionTimeoutMS: 10000,
         connectTimeoutMS: 10000,
+        socketTimeoutMS: 45000,
+        family: 4,
       });
 
       console.log(`MongoDB Connected: ${conn.connection.host}`);

@@ -4,11 +4,14 @@ const jwt = require('jsonwebtoken');
 
 const UserSchema = new mongoose.Schema(
   {
-    name: {
+    username: {
       type: String,
-      required: [true, 'Name is required'],
+      required: [true, 'Username is required'],
+      unique: true,
       trim: true,
-      maxlength: [100, 'Name cannot exceed 100 characters'],
+      lowercase: true,
+      minlength: [3, 'Username must be at least 3 characters'],
+      maxlength: [50, 'Username cannot exceed 50 characters'],
     },
     email: {
       type: String,
@@ -21,39 +24,31 @@ const UserSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, 'Password is required'],
-      minlength: [4, 'Password must be at least 4 characters'],
+      minlength: [6, 'Password must be at least 6 characters'],
       select: false,
-    },
-    phone: {
-      type: String,
-      trim: true,
     },
     role: {
       type: String,
-      enum: ['admin', 'staff', 'customer'],
-      default: 'customer',
-    },
-    staff_id: {
-      type: String,
-      unique: true,
-      sparse: true,
-      trim: true,
-      match: [/^Tri\d+$/, 'Staff ID must follow format Tri001'],
-    },
-    account_number: {
-      type: String,
-      unique: true,
-      sparse: true,
-      trim: true,
-      match: [/^TRI\d{4}\d{5}$/, 'Account number must follow format TRI202400001'],
+      enum: ['Super Admin', 'CEO', 'Manager', 'Sales'],
+      required: [true, 'Role is required'],
     },
     is_active: {
       type: Boolean,
       default: true,
     },
+    created_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    last_login: {
+      type: Date,
+    },
+    last_ip: {
+      type: String,
+    },
   },
   {
-    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+    timestamps: true,
   }
 );
 
@@ -61,30 +56,29 @@ const UserSchema = new mongoose.Schema(
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    this.password = await bcrypt.hash(this.password, 12);
     next();
   } catch (err) {
     next(err);
   }
 });
 
-// Compare password method
+// Compare password
 UserSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Generate JWT token
-UserSchema.methods.generateAuthToken = function () {
+// Generate JWT
+UserSchema.methods.generateJWT = function () {
   return jwt.sign(
     {
       id: this._id,
+      username: this.username,
       email: this.email,
       role: this.role,
-      name: this.name,
     },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE || '7d' }
+    { expiresIn: process.env.JWT_EXPIRE || '24h' }
   );
 };
 
