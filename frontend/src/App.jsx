@@ -26,6 +26,7 @@ import Settings from './pages/Settings'
 import Notifications from './pages/Notifications'
 import Search from './pages/Search'
 import Refunds from './pages/Refunds'
+import SalesHistory from './pages/SalesHistory'
 
 const ROLE_LEVELS = { 'Sales': 1, 'Manager': 2, 'CEO': 3, 'Super Admin': 4 }
 
@@ -170,6 +171,14 @@ export default function App() {
           element={
             <ProtectedRoute minLevel={3}>
               <Users />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="sales-history"
+          element={
+            <ProtectedRoute minLevel={3}>
+              <SalesHistory />
             </ProtectedRoute>
           }
         />
