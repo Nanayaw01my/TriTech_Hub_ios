@@ -224,6 +224,11 @@ const ensureSuperAdmin = async () => {
       await Settings.create({
         company_name: 'DAN & DOR SOLAR COMPANY LIMITED',
         currency_symbol: 'GH₵',
+        logo_url: 'https://scontent.facc6-1.fna.fbcdn.net/v/t39.30808-6/707433689_878908205248703_884185614336842023_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=833d8c&_nc_eui2=AeFyt1HcPt1R704P4NnOWyRTVPWfzO5VOaRU9Z_M7lU5pBHyLj7sHlqT_1FF_m7deTCdYP_FufRNrCkdW0CTsAoh&_nc_ohc=7dBS36QAdfsQ7kNvwFu9j-1&_nc_oc=AdqjCtPP-ztTxvaX_V4r1H0nWBJkQls-BcAY6x80lAaMNd0tZd-Iwicr4AnCtIHKk1E&_nc_zt=23&_nc_ht=scontent.facc6-1.fna&_nc_gid=7TdPVFdjoPaMmMawmSoTAg&_nc_ss=7b2a8&oh=00_Af5OkTLX9drHXsXFsnfCiVik6RgDxXvLN2ufA5IP83pxMQ&oe=6A1B3F34',
+      });
+    } else if (!settingsExists.logo_url) {
+      await Settings.updateOne({}, {
+        logo_url: 'https://scontent.facc6-1.fna.fbcdn.net/v/t39.30808-6/707433689_878908205248703_884185614336842023_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=833d8c&_nc_eui2=AeFyt1HcPt1R704P4NnOWyRTVPWfzO5VOaRU9Z_M7lU5pBHyLj7sHlqT_1FF_m7deTCdYP_FufRNrCkdW0CTsAoh&_nc_ohc=7dBS36QAdfsQ7kNvwFu9j-1&_nc_oc=AdqjCtPP-ztTxvaX_V4r1H0nWBJkQls-BcAY6x80lAaMNd0tZd-Iwicr4AnCtIHKk1E&_nc_zt=23&_nc_ht=scontent.facc6-1.fna&_nc_gid=7TdPVFdjoPaMmMawmSoTAg&_nc_ss=7b2a8&oh=00_Af5OkTLX9drHXsXFsnfCiVik6RgDxXvLN2ufA5IP83pxMQ&oe=6A1B3F34',
       });
     }
   } catch (error) {
