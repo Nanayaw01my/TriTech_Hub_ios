@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { FiPlus, FiEdit2, FiToggleLeft, FiToggleRight, FiKey, FiUser, FiX } from 'react-icons/fi'
-import { getUsers, createUser, updateUser, toggleUserStatus, generateTempPassword } from '../api/users'
+import { getUsers, createUser, updateUser, toggleUserStatus, resetUserPassword } from '../api/users'
 import { formatDate, getRoleLabel, getRoleLevel } from '../utils/helpers'
 import useAuthStore from '../store/authStore'
 
@@ -159,9 +159,13 @@ export default function Users() {
   })
 
   const resetPwMutation = useMutation({
-    mutationFn: (id) => generateTempPassword(id),
-    onSuccess: (res) => {
-      setTempPassword(res.data?.temporaryPassword || res.data?.password)
+    mutationFn: (id) => {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
+      const temp = Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+      return resetUserPassword(id, temp).then(() => temp)
+    },
+    onSuccess: (temp) => {
+      setTempPassword(temp)
       toast.success('Password reset! Save the temporary password.')
       queryClient.invalidateQueries(['users'])
     },
@@ -175,8 +179,8 @@ export default function Users() {
     ? users.filter(u => ['Manager', 'Sales'].includes(u.role))
     : users
 
-  const activeCount = visibleUsers.filter(u => u.isActive).length
-  const inactiveCount = visibleUsers.filter(u => !u.isActive).length
+  const activeCount = visibleUsers.filter(u => u.is_active).length
+  const inactiveCount = visibleUsers.filter(u => !u.is_active).length
   const managerCount = visibleUsers.filter(u => u.role === 'Manager').length
   const salesCount = visibleUsers.filter(u => u.role === 'Sales').length
 
@@ -282,8 +286,8 @@ export default function Users() {
                   </td>
                   {/* Status */}
                   <td className="px-4 py-3">
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${row.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {row.isActive ? 'Active' : 'Inactive'}
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${row.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {row.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   {/* Last Login */}
@@ -310,10 +314,10 @@ export default function Users() {
                         <button
                           onClick={() => toggleMutation.mutate(row._id)}
                           disabled={toggleMutation.isPending}
-                          className={`p-1.5 rounded-lg transition-colors ${row.isActive ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-50'}`}
-                          title={row.isActive ? 'Disable user' : 'Enable user'}
+                          className={`p-1.5 rounded-lg transition-colors ${row.is_active ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-50'}`}
+                          title={row.is_active ? 'Disable user' : 'Enable user'}
                         >
-                          {row.isActive ? <FiToggleRight size={17} /> : <FiToggleLeft size={17} />}
+                          {row.is_active ? <FiToggleRight size={17} /> : <FiToggleLeft size={17} />}
                         </button>
                         {/* Reset password */}
                         <button
