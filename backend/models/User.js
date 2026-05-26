@@ -46,6 +46,9 @@ const UserSchema = new mongoose.Schema(
     last_ip: {
       type: String,
     },
+    avatar_url: {
+      type: String,
+    },
   },
   {
     timestamps: true,

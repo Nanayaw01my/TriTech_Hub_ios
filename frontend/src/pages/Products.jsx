@@ -10,8 +10,10 @@ import Modal from '../components/Modal'
 import Table from '../components/Table'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Badge from '../components/Badge'
+import ImageUpload from '../components/ImageUpload'
 
 function ProductForm({ product, categories = [], suppliers = [], onSubmit, loading }) {
+  const [imageUrl, setImageUrl] = useState(product?.image_url || null)
   const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: product || {}
   })
@@ -20,7 +22,13 @@ function ProductForm({ product, categories = [], suppliers = [], onSubmit, loadi
   const margin = costPrice > 0 ? (((sellingPrice - costPrice) / costPrice) * 100).toFixed(1) : 0
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-4">
+    <form onSubmit={handleSubmit(data => onSubmit({ ...data, image_url: imageUrl || undefined }))} className="p-5 space-y-4">
+      <ImageUpload
+        value={imageUrl}
+        onChange={setImageUrl}
+        folder="products"
+        label="Product Image (optional)"
+      />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
           <label className="block text-sm font-semibold text-gray-700 mb-1">Product Name *</label>
@@ -206,9 +214,18 @@ export default function Products() {
       header: 'Product',
       key: 'name',
       render: (v, row) => (
-        <div>
-          <p className="font-semibold text-gray-800">{v}</p>
-          <p className="text-xs text-gray-400 font-mono">{row.barcode || '—'}</p>
+        <div className="flex items-center gap-3">
+          {row.image_url ? (
+            <img src={row.image_url} alt={v} className="w-9 h-9 rounded-lg object-cover flex-shrink-0 border border-gray-100" />
+          ) : (
+            <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
+              <FiPackage size={16} className="text-orange-400" />
+            </div>
+          )}
+          <div>
+            <p className="font-semibold text-gray-800">{v}</p>
+            <p className="text-xs text-gray-400 font-mono">{row.barcode || '—'}</p>
+          </div>
         </div>
       ),
     },
@@ -332,6 +349,7 @@ export default function Products() {
               selling_price: parseFloat(formData.sellingPrice),
               quantity: parseInt(formData.quantity) || 0,
               low_stock_level: parseInt(formData.lowStockLevel) || 5,
+              image_url: formData.image_url || undefined,
             }
             if (editProduct) {
               updateMutation.mutate({ id: editProduct._id, data: payload })

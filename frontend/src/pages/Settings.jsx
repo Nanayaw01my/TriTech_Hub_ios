@@ -7,13 +7,22 @@ import { getSettings, updateSettings, testEmail } from '../api/settings'
 import useAuthStore from '../store/authStore'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
+import ImageUpload from '../components/ImageUpload'
 
 const TABS = ['Company', 'Notifications', 'Email Config']
 
 function CompanyTab({ settings, onSave, loading }) {
+  const [logoUrl, setLogoUrl] = useState(settings?.logo_url || null)
   const { register, handleSubmit } = useForm({ defaultValues: settings })
   return (
-    <form onSubmit={handleSubmit(onSave)} className="space-y-4 max-w-lg">
+    <form onSubmit={handleSubmit(data => onSave({ ...data, logo_url: logoUrl }))} className="space-y-4 max-w-lg">
+      <ImageUpload
+        value={logoUrl}
+        onChange={setLogoUrl}
+        folder="logo"
+        label="Company Logo"
+        size="lg"
+      />
       {[
         { name: 'companyName', label: 'Company Name', placeholder: 'DAN & DOR SOLAR COMPANY LIMITED' },
         { name: 'companyAddress', label: 'Address', placeholder: 'Accra, Ghana' },

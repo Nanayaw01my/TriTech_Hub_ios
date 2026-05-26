@@ -153,6 +153,7 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/audit-logs', require('./routes/auditLogs'));
 app.use('/api/sync', require('./routes/sync'));
 app.use('/api/refunds', require('./routes/refunds'));
+app.use('/api/upload', require('./routes/upload'));
 
 // ─── STEP 9: REACT ROUTER CATCH-ALL ──────────────────────────────────────────
 

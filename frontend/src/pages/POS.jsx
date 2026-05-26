@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { FiSearch, FiPlus, FiMinus, FiTrash2, FiPrinter, FiDownload, FiX, FiCheck, FiAlertTriangle, FiShoppingCart } from 'react-icons/fi'
 import { getProducts } from '../api/products'
 import { createSale, createShortPayment } from '../api/pos'
+import { getSettings } from '../api/settings'
 import useAuthStore from '../store/authStore'
 import { formatCurrency, formatDate } from '../utils/helpers'
 import useOnlineStatus from '../hooks/useOnlineStatus'
@@ -25,6 +26,11 @@ function ProductCard({ product, onAdd }) {
           : 'bg-white border-gray-200 hover:border-orange-400 hover:shadow-md hover:shadow-orange-100 cursor-pointer active:scale-95'
         }`}
     >
+      {product.image_url && (
+        <div className="w-full h-24 rounded-lg overflow-hidden mb-2 bg-gray-100">
+          <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+        </div>
+      )}
       <div className="flex items-start justify-between mb-1">
         <p className="text-sm font-semibold text-gray-800 leading-tight line-clamp-2 group-hover:text-orange-700">{product.name}</p>
         {outOfStock && (
@@ -76,7 +82,7 @@ function CartItem({ item, onUpdateQty, onRemove }) {
   )
 }
 
-function ReceiptModal({ isOpen, onClose, saleData }) {
+function ReceiptModal({ isOpen, onClose, saleData, logoUrl, companyName, companyAddress, companyPhone }) {
   const receiptRef = useRef(null)
 
   const handlePrint = () => {
@@ -91,10 +97,13 @@ function ReceiptModal({ isOpen, onClose, saleData }) {
         <div ref={receiptRef} className="receipt-print-area bg-white border border-gray-200 rounded-xl p-4 font-mono text-sm">
           {/* Header */}
           <div className="text-center border-b border-dashed border-gray-300 pb-3 mb-3">
-            <p className="font-black text-base">DAN & DOR SOLAR</p>
+            {logoUrl && (
+              <img src={logoUrl} alt="Company Logo" className="h-14 mx-auto mb-2 object-contain" />
+            )}
+            <p className="font-black text-base">{companyName || 'DAN & DOR SOLAR'}</p>
             <p className="font-bold">COMPANY LIMITED</p>
-            <p className="text-xs text-gray-500">Accra, Ghana</p>
-            <p className="text-xs text-gray-500">Tel: +233 XXX XXX XXX</p>
+            <p className="text-xs text-gray-500">{companyAddress || 'Accra, Ghana'}</p>
+            <p className="text-xs text-gray-500">{companyPhone ? `Tel: ${companyPhone}` : 'Tel: +233 XXX XXX XXX'}</p>
             {saleData.offline && (
               <p className="text-xs font-bold text-amber-600 mt-1 border border-amber-300 rounded px-2 py-0.5 inline-block">
                 OFFLINE — Pending Sync
@@ -345,6 +354,13 @@ export default function POS() {
     const t = setTimeout(() => setDebouncedSearch(searchQuery), 300)
     return () => clearTimeout(t)
   }, [searchQuery])
+
+  const { data: settingsData } = useQuery({
+    queryKey: ['settings'],
+    queryFn: () => getSettings().then(r => r.data),
+    staleTime: 5 * 60 * 1000,
+  })
+  const settings = settingsData?.settings || settingsData || {}
 
   const { data: productsData, isLoading: productsLoading } = useQuery({
     queryKey: ['pos-products', debouncedSearch],
@@ -764,6 +780,10 @@ export default function POS() {
         isOpen={showReceipt}
         onClose={() => setShowReceipt(false)}
         saleData={lastSale}
+        logoUrl={settings.logo_url}
+        companyName={settings.company_name}
+        companyAddress={settings.company_address}
+        companyPhone={settings.company_phone}
       />
     </div>
   )

@@ -53,12 +53,14 @@ const createUser = async (req, res) => {
       return res.status(409).json({ success: false, message: 'Username or email already exists.' });
     }
 
+    const { avatar_url } = req.body;
     const user = await User.create({
       username,
       ...(email ? { email } : {}),
       password,
       role,
       created_by: req.user._id,
+      ...(avatar_url ? { avatar_url } : {}),
     });
 
     return res.status(201).json({
@@ -106,7 +108,7 @@ const updateUser = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
-    const { username, email, role } = req.body;
+    const { username, email, role, avatar_url } = req.body;
 
     if (role && !canManage(req.user.role, role)) {
       return res.status(403).json({ success: false, message: 'Cannot assign that role.' });
@@ -115,6 +117,7 @@ const updateUser = async (req, res) => {
     if (username) user.username = username;
     if (email) user.email = email;
     if (role) user.role = role;
+    if (avatar_url !== undefined) user.avatar_url = avatar_url;
 
     await user.save();
     return res.status(200).json({ success: true, message: 'User updated.', data: user });

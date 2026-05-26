@@ -6,6 +6,7 @@ import { FiPlus, FiEdit2, FiToggleLeft, FiToggleRight, FiKey, FiUser, FiX } from
 import { getUsers, createUser, updateUser, toggleUserStatus, resetUserPassword } from '../api/users'
 import { formatDate, getRoleLabel, getRoleLevel } from '../utils/helpers'
 import useAuthStore from '../store/authStore'
+import ImageUpload from '../components/ImageUpload'
 
 const ROLES_FOR_LEVEL = {
   3: ['Manager', 'Sales'],
@@ -53,6 +54,7 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }) {
 function UserForm({ user: editUser, myRole, onSubmit, loading }) {
   const myLevel = getRoleLevel(myRole)
   const availableRoles = ROLES_FOR_LEVEL[myLevel] || []
+  const [avatarUrl, setAvatarUrl] = useState(editUser?.avatar_url || null)
   const { register, handleSubmit, formState: { errors } } = useForm({
     defaultValues: editUser
       ? { username: editUser.username, email: editUser.email, role: editUser.role }
@@ -60,7 +62,13 @@ function UserForm({ user: editUser, myRole, onSubmit, loading }) {
   })
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-4">
+    <form onSubmit={handleSubmit(data => onSubmit({ ...data, avatar_url: avatarUrl }))} className="p-5 space-y-4">
+      <ImageUpload
+        value={avatarUrl}
+        onChange={setAvatarUrl}
+        folder="avatars"
+        label="Profile Picture (optional)"
+      />
       <div>
         <label className="block text-sm font-semibold text-gray-700 mb-1">Username *</label>
         <input
@@ -270,10 +278,14 @@ export default function Users() {
                   {/* User */}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                        <span className="text-orange-600 font-bold text-xs">
-                          {(row.username || '?').charAt(0).toUpperCase()}
-                        </span>
+                      <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {row.avatar_url ? (
+                          <img src={row.avatar_url} alt={row.username} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-orange-600 font-bold text-xs">
+                            {(row.username || '?').charAt(0).toUpperCase()}
+                          </span>
+                        )}
                       </div>
                       <div>
                         <p className="font-semibold text-gray-800 text-sm">{row.username}</p>
@@ -372,10 +384,17 @@ export default function Users() {
           myRole={me?.role}
           loading={createMutation.isPending || updateMutation.isPending}
           onSubmit={(formData) => {
+            const payload = {
+              username: formData.username,
+              email: formData.email || undefined,
+              role: formData.role,
+              avatar_url: formData.avatar_url,
+              ...(!editUser && { password: formData.password }),
+            }
             if (editUser) {
-              updateMutation.mutate({ id: editUser._id, data: formData })
+              updateMutation.mutate({ id: editUser._id, data: payload })
             } else {
-              createMutation.mutate(formData)
+              createMutation.mutate(payload)
             }
           }}
         />

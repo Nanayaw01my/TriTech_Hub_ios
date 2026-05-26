@@ -29,7 +29,7 @@ const updateSettings = async (req, res) => {
     const {
       company_name, company_address, company_phone, company_email,
       tax_rate, low_stock_alert, receipt_header, receipt_footer,
-      currency_symbol, notification_settings,
+      currency_symbol, notification_settings, logo_url,
     } = req.body;
 
     let settings = await Settings.findOne();
@@ -49,6 +49,7 @@ const updateSettings = async (req, res) => {
     if (notification_settings !== undefined) {
       settings.notification_settings = { ...settings.notification_settings, ...notification_settings };
     }
+    if (logo_url !== undefined) settings.logo_url = logo_url;
 
     settings.updated_at = new Date();
     settings.updated_by = req.user._id;
