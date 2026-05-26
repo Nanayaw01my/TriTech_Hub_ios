@@ -71,13 +71,16 @@ function UserForm({ user: editUser, myRole, onSubmit, loading }) {
         {errors.username && <p className="mt-1 text-xs text-red-500">{errors.username.message}</p>}
       </div>
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1">Email <span className="text-gray-400 font-normal">(optional)</span></label>
         <input
           type="email"
-          {...register('email')}
+          {...register('email', {
+            validate: v => !v || /^\S+@\S+\.\S+$/.test(v) || 'Enter a valid email address',
+          })}
           className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
           placeholder="user@example.com"
         />
+        {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
       </div>
       <div>
         <label className="block text-sm font-semibold text-gray-700 mb-1">Role *</label>
@@ -185,7 +188,7 @@ export default function Users() {
   const salesCount = visibleUsers.filter(u => u.role === 'Sales').length
 
   const canActOn = (row) => {
-    if (row._id === me?._id) return false
+    if (row._id === me?.id || row._id === me?._id) return false
     return getRoleLevel(row.role) < myLevel
   }
 
@@ -292,7 +295,7 @@ export default function Users() {
                   </td>
                   {/* Last Login */}
                   <td className="px-4 py-3 text-xs text-gray-500">
-                    {row.lastLogin ? formatDate(row.lastLogin) : 'Never'}
+                    {row.last_login ? formatDate(row.last_login) : 'Never'}
                   </td>
                   {/* Actions */}
                   <td className="px-4 py-3">

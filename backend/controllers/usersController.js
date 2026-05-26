@@ -46,14 +46,16 @@ const createUser = async (req, res) => {
       return res.status(403).json({ success: false, message: 'You cannot create a user with that role.' });
     }
 
-    const existing = await User.findOne({ $or: [{ username: username.toLowerCase() }, { email: email.toLowerCase() }] });
+    const orClauses = [{ username: username.toLowerCase() }];
+    if (email) orClauses.push({ email: email.toLowerCase() });
+    const existing = await User.findOne({ $or: orClauses });
     if (existing) {
       return res.status(409).json({ success: false, message: 'Username or email already exists.' });
     }
 
     const user = await User.create({
       username,
-      email,
+      ...(email ? { email } : {}),
       password,
       role,
       created_by: req.user._id,

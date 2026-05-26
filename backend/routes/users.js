@@ -18,7 +18,7 @@ router.post(
   canAccess,
   [
     body('username').notEmpty().withMessage('Username is required.').isLength({ min: 3 }),
-    body('email').isEmail().withMessage('Valid email required.').normalizeEmail(),
+    body('email').optional({ checkFalsy: true }).isEmail().withMessage('Valid email required.').normalizeEmail(),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters.'),
     body('role').isIn(['Super Admin', 'CEO', 'Manager', 'Sales']).withMessage('Invalid role.'),
   ],
