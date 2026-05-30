@@ -344,12 +344,14 @@ function ViewAgreementModal({ agreement, isOpen, onClose }) {
             <p className="text-xs text-gray-500 mb-1">Customer</p>
             <p className="font-bold">{agreement.customer_name}</p>
             <p className="text-gray-600 text-xs">{agreement.customer_phone}</p>
+            {agreement.customer_address && <p className="text-gray-500 text-xs">{agreement.customer_address}</p>}
             {agreement.document_type && <p className="text-gray-500 text-xs mt-1">{agreement.document_type}: {agreement.id_number}</p>}
           </div>
           <div className="bg-gray-50 rounded-xl p-3">
             <p className="text-xs text-gray-500 mb-1">Guarantor</p>
             <p className="font-bold">{agreement.guarantor_name}</p>
             <p className="text-gray-600 text-xs">{agreement.guarantor_phone}</p>
+            {agreement.guarantor_address && <p className="text-gray-500 text-xs">{agreement.guarantor_address}</p>}
             {agreement.guarantor_ghana_card && <p className="text-gray-500 text-xs mt-1">Ghana Card: {agreement.guarantor_ghana_card}</p>}
           </div>
         </div>
