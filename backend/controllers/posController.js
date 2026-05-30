@@ -334,6 +334,9 @@ const generateSaleReceipt = async (req, res) => {
     const pdfBuffer = await generateReceipt(sale.toObject(), {
       logoUrl: settings?.logo_url,
       cashierName: sale.user_id?.username,
+      companyName: settings?.company_name,
+      companyAddress: settings?.company_address,
+      companyPhone: settings?.company_phone,
     });
 
     res.setHeader('Content-Type', 'application/pdf');

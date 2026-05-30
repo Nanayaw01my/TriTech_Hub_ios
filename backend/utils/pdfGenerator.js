@@ -54,7 +54,7 @@ const generateReceipt = async (saleData, options = {}) => {
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
-        size: [226, 700],
+        size: [226, 800],
         margins: { top: 10, bottom: 10, left: 10, right: 10 },
       });
 
@@ -63,22 +63,39 @@ const generateReceipt = async (saleData, options = {}) => {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      const { invoice_no, customer_name, customer_phone, items, subtotal, discount, discount_type, total_amount, payment_method, payment_status, sale_date, user_id } = saleData;
-      const cashierName = options.cashierName || (user_id?.username) || 'Staff';
+      const {
+        invoice_no, customer_name, customer_phone, items,
+        subtotal, discount, discount_type, cart_total, total_amount,
+        debt_amount, payment_method, payment_status, sale_date, user_id,
+      } = saleData;
+
+      const cashierName = options.cashierName || user_id?.username || 'Staff';
+      const companyName = options.companyName || 'DAN & DOR SOLAR COMPANY LIMITED';
+      const companyAddress = options.companyAddress || 'Accra, Ghana';
+      const companyPhone = options.companyPhone || '';
+      const grandTotal = cart_total || total_amount || 0;
+      const discountAmount = Math.max(0, (subtotal || 0) - grandTotal);
+
+      const W = 206; // page width minus margins (226 - 10 - 10)
 
       // Header
       if (logoBuf) {
-        try { doc.image(logoBuf, 63, doc.y, { width: 100, align: 'center' }); doc.moveDown(0.3); } catch {}
+        try {
+          doc.image(logoBuf, (226 - 80) / 2, doc.y, { width: 80 });
+          doc.moveDown(0.4);
+        } catch {}
       }
-      doc.fontSize(10).font('Helvetica-Bold').text('DAN & DOR SOLAR COMPANY LIMITED', { align: 'center' });
-      doc.fontSize(7).font('Helvetica').text('Solar Energy Solutions', { align: 'center' });
+      doc.fontSize(9).font('Helvetica-Bold').text(companyName, 10, doc.y, { width: W, align: 'center' });
+      if (companyAddress) doc.fontSize(7).font('Helvetica').text(companyAddress, 10, doc.y, { width: W, align: 'center' });
+      if (companyPhone) doc.fontSize(7).text(`Tel: ${companyPhone}`, 10, doc.y, { width: W, align: 'center' });
       doc.moveDown(0.3);
       doc.fontSize(7).text('--------------------------------', { align: 'center' });
       doc.fontSize(8).font('Helvetica-Bold').text('SALES RECEIPT', { align: 'center' });
       doc.fontSize(7).font('Helvetica').text('--------------------------------', { align: 'center' });
 
       // Invoice info
-      doc.fontSize(7).text(`Invoice: ${invoice_no}`);
+      doc.fontSize(7);
+      doc.text(`Invoice: ${invoice_no}`);
       doc.text(`Date: ${new Date(sale_date || Date.now()).toLocaleString('en-GH')}`);
       doc.text(`Cashier: ${cashierName}`);
       if (customer_name) doc.text(`Customer: ${customer_name}`);
@@ -86,14 +103,14 @@ const generateReceipt = async (saleData, options = {}) => {
 
       doc.fontSize(7).text('--------------------------------', { align: 'center' });
 
-      // Items
+      // Items header
       doc.fontSize(7).font('Helvetica-Bold');
-      doc.text('Item                     Qty  Price    Total');
+      doc.text('Item                  Qty   Price    Total');
       doc.font('Helvetica');
       doc.fontSize(7).text('--------------------------------', { align: 'center' });
 
       (items || []).forEach((item) => {
-        const name = (item.product_name || '').substring(0, 20).padEnd(20);
+        const name = (item.product_name || '').substring(0, 18).padEnd(18);
         const qty = String(item.quantity).padStart(4);
         const price = `GHC${Number(item.unit_price).toFixed(2)}`.padStart(8);
         const total = `GHC${Number(item.total).toFixed(2)}`.padStart(8);
@@ -104,15 +121,19 @@ const generateReceipt = async (saleData, options = {}) => {
 
       // Totals
       doc.fontSize(7);
-      doc.text(`Subtotal:                  GHC${Number(subtotal || 0).toFixed(2)}`);
-      if (discount && discount > 0) {
-        const discStr = discount_type === 'percentage' ? `${discount}%` : `GHC${Number(discount).toFixed(2)}`;
-        doc.text(`Discount (${discStr}):`);
+      doc.text(`Subtotal:              GHC${Number(subtotal || 0).toFixed(2)}`);
+      if (discountAmount > 0) {
+        const discStr = discount_type === 'percentage' ? `${discount}%` : `GHC${discountAmount.toFixed(2)}`;
+        doc.text(`Discount (${discStr}):  -GHC${discountAmount.toFixed(2)}`);
       }
       doc.fontSize(8).font('Helvetica-Bold');
-      doc.text(`TOTAL:                     GHC${Number(total_amount || 0).toFixed(2)}`);
+      doc.text(`TOTAL:                 GHC${Number(grandTotal).toFixed(2)}`);
       doc.fontSize(7).font('Helvetica');
-      doc.text(`Payment: ${(payment_method || '').toUpperCase()}`);
+      if (debt_amount > 0) {
+        doc.text(`Paid:                  GHC${Number(total_amount || 0).toFixed(2)}`);
+        doc.font('Helvetica-Bold').text(`BALANCE DUE:           GHC${Number(debt_amount).toFixed(2)}`).font('Helvetica');
+      }
+      doc.text(`Payment: ${(payment_method || '').replace(/_/g, ' ').toUpperCase()}`);
       doc.text(`Status: ${(payment_status || '').toUpperCase()}`);
 
       doc.fontSize(7).text('--------------------------------', { align: 'center' });

@@ -85,11 +85,21 @@ function CartItem({ item, onUpdateQty, onRemove }) {
 function ReceiptModal({ isOpen, onClose, saleData, logoUrl, companyName, companyAddress, companyPhone }) {
   const receiptRef = useRef(null)
 
-  const handlePrint = () => {
-    window.print()
-  }
-
   if (!saleData) return null
+
+  const cur = 'GH₵'
+  // Support both snake_case (online API) and camelCase (offline)
+  const invoiceNo = saleData.invoice_no || saleData.invoiceNo || saleData._id?.slice(-8).toUpperCase()
+  const saleDate = saleData.sale_date || saleData.createdAt
+  const cashierName = saleData.user_id?.username || saleData.cashier?.username || saleData.soldBy?.username || 'Staff'
+  const items = saleData.items || []
+  const subtotal = parseFloat(saleData.subtotal || 0)
+  const cartTotal = parseFloat(saleData.cart_total || saleData.grandTotal || saleData.total_amount || 0)
+  const discountAmount = Math.max(0, subtotal - cartTotal)
+  const amountPaid = parseFloat(saleData.total_amount || saleData.amountPaid || cartTotal)
+  const change = parseFloat(saleData.change || 0)
+  const balanceDue = parseFloat(saleData.debt_amount || saleData.balanceDue || 0)
+  const paymentMethod = (saleData.payment_method || saleData.paymentMethod || '').replace(/_/g, ' ').toUpperCase()
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Sale Receipt" size="md">
@@ -100,10 +110,9 @@ function ReceiptModal({ isOpen, onClose, saleData, logoUrl, companyName, company
             {logoUrl && (
               <img src={logoUrl} alt="Company Logo" className="h-14 mx-auto mb-2 object-contain" />
             )}
-            <p className="font-black text-base">{companyName || 'DAN & DOR SOLAR'}</p>
-            <p className="font-bold">COMPANY LIMITED</p>
+            <p className="font-black text-base">{companyName || 'DAN & DOR SOLAR COMPANY LIMITED'}</p>
             <p className="text-xs text-gray-500">{companyAddress || 'Accra, Ghana'}</p>
-            <p className="text-xs text-gray-500">{companyPhone ? `Tel: ${companyPhone}` : 'Tel: +233 XXX XXX XXX'}</p>
+            <p className="text-xs text-gray-500">{companyPhone ? `Tel: ${companyPhone}` : ''}</p>
             {saleData.offline && (
               <p className="text-xs font-bold text-amber-600 mt-1 border border-amber-300 rounded px-2 py-0.5 inline-block">
                 OFFLINE — Pending Sync
@@ -111,18 +120,19 @@ function ReceiptModal({ isOpen, onClose, saleData, logoUrl, companyName, company
             )}
           </div>
 
+          {/* Invoice info */}
           <div className="text-xs space-y-1 border-b border-dashed border-gray-300 pb-3 mb-3">
             <div className="flex justify-between">
               <span>Invoice #:</span>
-              <span className="font-bold">{saleData.invoiceNo || saleData._id?.slice(-8).toUpperCase()}</span>
+              <span className="font-bold">{invoiceNo}</span>
             </div>
             <div className="flex justify-between">
               <span>Date:</span>
-              <span>{format(new Date(saleData.createdAt || new Date()), 'dd/MM/yyyy HH:mm')}</span>
+              <span>{format(new Date(saleDate || new Date()), 'dd/MM/yyyy HH:mm')}</span>
             </div>
             <div className="flex justify-between">
               <span>Cashier:</span>
-              <span>{saleData.cashier?.username || saleData.soldBy?.username || 'Staff'}</span>
+              <span>{cashierName}</span>
             </div>
             {(saleData.customer_name || saleData.customer?.name) && (
               <div className="flex justify-between">
@@ -143,17 +153,17 @@ function ReceiptModal({ isOpen, onClose, saleData, logoUrl, companyName, company
             <div className="flex justify-between text-xs font-bold mb-2">
               <span className="flex-1">Item</span>
               <span className="w-8 text-center">Qty</span>
-              <span className="w-16 text-right">Price</span>
+              <span className="w-20 text-right">Price</span>
               <span className="w-20 text-right">Total</span>
             </div>
-            {saleData.items?.map((item, i) => (
+            {items.map((item, i) => (
               <div key={i} className="text-xs mb-1">
-                <p className="font-medium">{item.product?.name || item.name}</p>
+                <p className="font-medium">{item.product_name || item.product?.name || item.name}</p>
                 <div className="flex justify-between text-gray-600">
                   <span className="flex-1"></span>
                   <span className="w-8 text-center">{item.quantity}</span>
-                  <span className="w-16 text-right">₵{parseFloat(item.unitPrice || item.selling_price).toFixed(2)}</span>
-                  <span className="w-20 text-right font-bold">₵{parseFloat(item.total || (item.quantity * item.unitPrice)).toFixed(2)}</span>
+                  <span className="w-20 text-right">{cur}{parseFloat(item.unit_price || item.unitPrice || 0).toFixed(2)}</span>
+                  <span className="w-20 text-right font-bold">{cur}{parseFloat(item.total || (item.quantity * (item.unit_price || item.unitPrice || 0))).toFixed(2)}</span>
                 </div>
               </div>
             ))}
@@ -163,17 +173,17 @@ function ReceiptModal({ isOpen, onClose, saleData, logoUrl, companyName, company
           <div className="text-xs space-y-1 border-b border-dashed border-gray-300 pb-3 mb-3">
             <div className="flex justify-between">
               <span>Subtotal:</span>
-              <span>₵{parseFloat(saleData.subtotal || 0).toFixed(2)}</span>
+              <span>{cur}{subtotal.toFixed(2)}</span>
             </div>
-            {saleData.discount > 0 && (
+            {discountAmount > 0 && (
               <div className="flex justify-between text-red-600">
                 <span>Discount:</span>
-                <span>-₵{parseFloat(saleData.discount).toFixed(2)}</span>
+                <span>-{cur}{discountAmount.toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between font-black text-base">
               <span>TOTAL:</span>
-              <span>₵{parseFloat(saleData.grandTotal).toFixed(2)}</span>
+              <span>{cur}{cartTotal.toFixed(2)}</span>
             </div>
           </div>
 
@@ -181,22 +191,22 @@ function ReceiptModal({ isOpen, onClose, saleData, logoUrl, companyName, company
           <div className="text-xs space-y-1 border-b border-dashed border-gray-300 pb-3 mb-3">
             <div className="flex justify-between">
               <span>Method:</span>
-              <span className="font-bold">{saleData.paymentMethod}</span>
+              <span className="font-bold">{paymentMethod}</span>
             </div>
             <div className="flex justify-between">
               <span>Amount Paid:</span>
-              <span className="font-bold">₵{parseFloat(saleData.amountPaid || saleData.grandTotal).toFixed(2)}</span>
+              <span className="font-bold">{cur}{amountPaid.toFixed(2)}</span>
             </div>
-            {saleData.change > 0 && (
+            {change > 0 && (
               <div className="flex justify-between">
                 <span>Change:</span>
-                <span className="font-bold">₵{parseFloat(saleData.change).toFixed(2)}</span>
+                <span className="font-bold">{cur}{change.toFixed(2)}</span>
               </div>
             )}
-            {saleData.balanceDue > 0 && (
+            {balanceDue > 0 && (
               <div className="flex justify-between text-red-600 font-bold">
                 <span>BALANCE DUE:</span>
-                <span>₵{parseFloat(saleData.balanceDue).toFixed(2)}</span>
+                <span>{cur}{balanceDue.toFixed(2)}</span>
               </div>
             )}
           </div>
@@ -209,7 +219,7 @@ function ReceiptModal({ isOpen, onClose, saleData, logoUrl, companyName, company
 
         <div className="flex gap-3 mt-4 no-print">
           <button
-            onClick={handlePrint}
+            onClick={() => window.print()}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold text-sm transition-colors"
           >
             <FiPrinter size={16} /> Print
@@ -366,7 +376,7 @@ export default function POS() {
     queryFn: () => getSettings().then(r => r.data),
     staleTime: 5 * 60 * 1000,
   })
-  const settings = settingsData?.settings || settingsData || {}
+  const settings = settingsData?.data || settingsData?.settings || {}
 
   const { data: productsData, isLoading: productsLoading } = useQuery({
     queryKey: ['pos-products', debouncedSearch],
@@ -469,7 +479,7 @@ export default function POS() {
   const saleMutation = useMutation({
     mutationFn: (data) => createSale(data),
     onSuccess: (res) => {
-      setLastSale(res.data?.sale || res.data)
+      setLastSale(res.data?.data || res.data?.sale || res.data)
       setShowReceipt(true)
       clearCart()
       queryClient.invalidateQueries(['pos-products'])
@@ -484,7 +494,7 @@ export default function POS() {
   const shortPayMutation = useMutation({
     mutationFn: (data) => createShortPayment(data),
     onSuccess: (res) => {
-      setLastSale(res.data?.sale || res.data)
+      setLastSale(res.data?.data?.sale || res.data?.data || res.data?.sale || res.data)
       setShowShortModal(false)
       setShowReceipt(true)
       clearCart()
