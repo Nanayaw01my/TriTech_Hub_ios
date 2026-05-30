@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { FiPlus, FiEye, FiDownload, FiDollarSign } from 'react-icons/fi'
+import { FiPlus, FiEye, FiDownload, FiFileText } from 'react-icons/fi'
 import {
   getCreditAgreements, createCreditAgreement, recordCreditPayment, generateCreditPDF
 } from '../api/creditAgreements'
@@ -11,159 +11,277 @@ import PageHeader from '../components/PageHeader'
 import Modal from '../components/Modal'
 import Table from '../components/Table'
 import Badge from '../components/Badge'
+import ImageUpload from '../components/ImageUpload'
 import { format, addDays } from 'date-fns'
 import { saveAs } from 'file-saver'
 
+const DOC_TYPES = ['Ghana Card', 'Passport', "Driver's License", "Voter's ID", 'Other']
+const PLAN_OPTIONS = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+]
+const PLAN_DAYS = { daily: 1, weekly: 7, monthly: 30 }
+const PLAN_LABEL = { daily: 'Day', weekly: 'Week', monthly: 'Month' }
+
 function AgreementForm({ onSubmit, loading }) {
+  const [customerPhotoUrl, setCustomerPhotoUrl] = useState(null)
+  const [guarantorPhotoUrl, setGuarantorPhotoUrl] = useState(null)
+
   const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: {
       startDate: format(new Date(), 'yyyy-MM-dd'),
-      interestRate: 0,
+      paymentPlan: 'weekly',
+      downPayment: '',
+      totalAmount: '',
     }
   })
+
   const totalAmount = parseFloat(watch('totalAmount') || 0)
   const downPayment = parseFloat(watch('downPayment') || 0)
   const startDate = watch('startDate')
-  const interestRate = parseFloat(watch('interestRate') || 0)
+  const paymentPlan = watch('paymentPlan') || 'weekly'
+  const customerName = watch('customerName') || ''
+  const guarantorName = watch('guarantorName') || ''
 
-  const remaining = totalAmount - downPayment
-  const withInterest = remaining * (1 + interestRate / 100)
-  const weeklyInstallment = withInterest / 3
-  const endDate = startDate ? format(addDays(new Date(startDate), 21), 'yyyy-MM-dd') : '—'
+  const balance = Math.max(0, totalAmount - downPayment)
+  const installment = balance > 0 ? balance / 3 : 0
+  const days = PLAN_DAYS[paymentPlan] || 7
+  const dueDates = startDate
+    ? [1, 2, 3].map(n => format(addDays(new Date(startDate), n * days), 'dd/MM/yyyy'))
+    : ['—', '—', '—']
 
-  const handleSubmitTransform = (d) => {
+  const handleFormSubmit = (d) => {
     onSubmit({
       customer_name: d.customerName,
       customer_phone: d.customerPhone,
-      customer_address: d.customerAddress,
-      guarantor_name: d.guarantorName,
-      guarantor_phone: d.guarantorPhone,
-      guarantor_address: d.guarantorAddress,
-      product_description: d.productDescription,
+      customer_address: d.customerLocation,
+      document_type: d.documentType,
+      id_number: d.idNumber,
+      product_type: d.productType,
+      product_description: d.productType,
+      serial_number: d.serialNumber,
+      down_payment: parseFloat(d.downPayment) || 0,
+      payment_plan: d.paymentPlan,
       total_amount: parseFloat(d.totalAmount),
-      down_payment: parseFloat(d.downPayment),
-      interest_rate: parseFloat(d.interestRate || 0),
       start_date: d.startDate,
+      guarantor_name: d.guarantorName,
+      guarantor_ghana_card: d.guarantorGhanaCard,
+      guarantor_address: d.guarantorLocation,
+      guarantor_phone: d.guarantorPhone,
+      customer_passport_url: customerPhotoUrl,
+      guarantor_passport_url: guarantorPhotoUrl,
     })
   }
 
+  const inp = 'w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500'
+  const lbl = 'block text-xs font-semibold text-gray-600 mb-1'
+  const err = (e) => e && <p className="mt-1 text-xs text-red-500">{e.message}</p>
+
   return (
-    <form onSubmit={handleSubmit(handleSubmitTransform)} className="p-5 space-y-5">
-      {/* Customer Info */}
-      <div>
-        <h4 className="text-sm font-bold text-gray-700 mb-3 border-b pb-2">Customer Information</h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Full Name *</label>
-            <input {...register('customerName', { required: 'Required' })}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="Customer full name" />
-            {errors.customerName && <p className="mt-1 text-xs text-red-500">{errors.customerName.message}</p>}
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="p-5 space-y-6">
+
+      {/* Passport photos + company info preview */}
+      <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0">
+            <ImageUpload
+              value={customerPhotoUrl}
+              onChange={setCustomerPhotoUrl}
+              folder="passports"
+              label="Customer Photo"
+              size="lg"
+            />
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Phone *</label>
-            <input {...register('customerPhone', { required: 'Required' })}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="+233 XXX XXX XXX" />
+          <div className="flex-1 text-center py-2">
+            <p className="text-xs font-black text-gray-800 uppercase tracking-wide">DAN & DOR SOLAR</p>
+            <p className="text-xs font-bold text-gray-700">COMPANY LIMITED</p>
+            <p className="text-xs text-gray-500 mt-1">Accra, Ghana</p>
+            <p className="text-xs text-orange-600 font-bold mt-1 uppercase tracking-wider">Credit Sale Agreement</p>
           </div>
-          <div className="sm:col-span-2">
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Address</label>
-            <input {...register('customerAddress')}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="Customer address" />
+          <div className="flex-shrink-0">
+            <ImageUpload
+              value={guarantorPhotoUrl}
+              onChange={setGuarantorPhotoUrl}
+              folder="passports"
+              label="Guarantor Photo"
+              size="lg"
+            />
           </div>
         </div>
       </div>
 
-      {/* Guarantor */}
+      {/* Customer Details */}
       <div>
-        <h4 className="text-sm font-bold text-gray-700 mb-3 border-b pb-2">Guarantor Information</h4>
+        <h4 className="text-xs font-black text-orange-700 uppercase tracking-wider mb-3 pb-2 border-b-2 border-orange-200">
+          Customer Details
+        </h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Guarantor Name *</label>
-            <input {...register('guarantorName', { required: 'Required' })}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="Guarantor full name" />
+            <label className={lbl}>Customer Name *</label>
+            <input {...register('customerName', { required: 'Required' })} className={inp} placeholder="Full name" />
+            {err(errors.customerName)}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Guarantor Phone *</label>
-            <input {...register('guarantorPhone', { required: 'Required' })}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="+233 XXX XXX XXX" />
+            <label className={lbl}>Document Type *</label>
+            <select {...register('documentType', { required: 'Required' })} className={inp + ' bg-white'}>
+              <option value="">Select...</option>
+              {DOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+            {err(errors.documentType)}
           </div>
-          <div className="sm:col-span-2">
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Guarantor Address</label>
-            <input {...register('guarantorAddress')}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="Guarantor address" />
+          <div>
+            <label className={lbl}>ID Number *</label>
+            <input {...register('idNumber', { required: 'Required' })} className={inp} placeholder="e.g. GHA-123456789-0" />
+            {err(errors.idNumber)}
+          </div>
+          <div>
+            <label className={lbl}>Date *</label>
+            <input type="date" {...register('startDate', { required: 'Required' })} className={inp} />
+            {err(errors.startDate)}
+          </div>
+          <div>
+            <label className={lbl}>Location *</label>
+            <input {...register('customerLocation', { required: 'Required' })} className={inp} placeholder="Customer's address / area" />
+            {err(errors.customerLocation)}
+          </div>
+          <div>
+            <label className={lbl}>Phone / Tel *</label>
+            <input {...register('customerPhone', { required: 'Required' })} className={inp} placeholder="+233 XXX XXX XXX" />
+            {err(errors.customerPhone)}
           </div>
         </div>
       </div>
 
-      {/* Product & Financials */}
+      {/* Product & Payment Terms */}
       <div>
-        <h4 className="text-sm font-bold text-gray-700 mb-3 border-b pb-2">Product & Financials</h4>
+        <h4 className="text-xs font-black text-orange-700 uppercase tracking-wider mb-3 pb-2 border-b-2 border-orange-200">
+          Product and Payment Terms
+        </h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className={lbl}>Product Type *</label>
+            <input {...register('productType', { required: 'Required' })} className={inp} placeholder="e.g. 200W Solar Panel" />
+            {err(errors.productType)}
+          </div>
+          <div>
+            <label className={lbl}>Serial Number</label>
+            <input {...register('serialNumber')} className={inp} placeholder="Product serial no." />
+          </div>
+          <div>
+            <label className={lbl}>Down Payment (GH₵) *</label>
+            <input type="number" step="0.01" min="0" {...register('downPayment', { required: 'Required' })} className={inp} placeholder="0.00" />
+            {err(errors.downPayment)}
+          </div>
+          <div>
+            <label className={lbl}>Payment Plan *</label>
+            <select {...register('paymentPlan', { required: 'Required' })} className={inp + ' bg-white'}>
+              {PLAN_OPTIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+            </select>
+          </div>
           <div className="sm:col-span-2">
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Product Description *</label>
-            <textarea {...register('productDescription', { required: 'Required' })} rows={2}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
-              placeholder="Describe the product(s)" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Total Amount (GH₵) *</label>
-            <input type="number" step="0.01" min="0.01" {...register('totalAmount', { required: 'Required' })}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="0.00" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Down Payment (GH₵) *</label>
-            <input type="number" step="0.01" min="0" {...register('downPayment', { required: 'Required' })}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="0.00" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Interest Rate (%)</label>
-            <input type="number" step="0.1" min="0" max="100" {...register('interestRate')}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="0" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Start Date *</label>
-            <input type="date" {...register('startDate', { required: 'Required' })}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" />
+            <label className={lbl}>Loan Total Amount (GH₵) *</label>
+            <input type="number" step="0.01" min="0.01" {...register('totalAmount', { required: 'Required', min: { value: 0.01, message: 'Must be > 0' } })} className={inp} placeholder="0.00" />
+            {err(errors.totalAmount)}
           </div>
         </div>
 
-        {/* Summary */}
+        {/* Balance & payment schedule */}
         {totalAmount > 0 && (
-          <div className="mt-4 bg-orange-50 border border-orange-200 rounded-xl p-4 grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <p className="text-orange-700 text-xs">Remaining Balance</p>
-              <p className="font-black text-orange-800">{formatCurrency(remaining)}</p>
+          <div className="mt-4 space-y-3">
+            <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-orange-600 font-semibold">Balance (Total − Down Payment)</p>
+                <p className="text-xl font-black text-orange-700">{formatCurrency(balance)}</p>
+              </div>
+              <div className="text-right text-xs text-gray-500">
+                <p>Each instalment</p>
+                <p className="text-base font-black text-orange-600">{formatCurrency(installment)}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-orange-700 text-xs">With Interest</p>
-              <p className="font-black text-orange-800">{formatCurrency(withInterest)}</p>
-            </div>
-            <div>
-              <p className="text-orange-700 text-xs">Weekly Installment (3 weeks)</p>
-              <p className="font-black text-orange-800">{formatCurrency(weeklyInstallment)}</p>
-            </div>
-            <div>
-              <p className="text-orange-700 text-xs">End Date</p>
-              <p className="font-black text-orange-800">{endDate}</p>
+
+            <div className="overflow-hidden rounded-xl border border-gray-200">
+              <table className="w-full text-sm">
+                <thead className="bg-orange-500">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-bold text-white">Period</th>
+                    <th className="px-3 py-2 text-left text-xs font-bold text-white">Due Date</th>
+                    <th className="px-3 py-2 text-right text-xs font-bold text-white">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[1, 2, 3].map(n => (
+                    <tr key={n} className={n % 2 === 0 ? 'bg-orange-50' : 'bg-white'}>
+                      <td className="px-3 py-2 text-gray-700">{PLAN_LABEL[paymentPlan] || 'Week'} {n}</td>
+                      <td className="px-3 py-2 text-gray-600">{dueDates[n - 1]}</td>
+                      <td className="px-3 py-2 text-right font-bold text-orange-700">{formatCurrency(installment)}</td>
+                    </tr>
+                  ))}
+                  <tr className="border-t-2 border-orange-300 bg-orange-100">
+                    <td colSpan={2} className="px-3 py-2 text-xs font-black text-orange-800 text-right">TOTAL BALANCE</td>
+                    <td className="px-3 py-2 text-right font-black text-orange-800">{formatCurrency(balance)}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         )}
       </div>
 
-      <div className="flex gap-3">
-        <button type="submit" disabled={loading}
-          className="flex-1 py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold rounded-xl text-sm">
-          {loading ? 'Creating...' : 'Create Agreement'}
-        </button>
+      {/* Guarantor Details */}
+      <div>
+        <h4 className="text-xs font-black text-orange-700 uppercase tracking-wider mb-3 pb-2 border-b-2 border-orange-200">
+          Guarantor Details
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className={lbl}>Guarantor Name *</label>
+            <input {...register('guarantorName', { required: 'Required' })} className={inp} placeholder="Full name" />
+            {err(errors.guarantorName)}
+          </div>
+          <div>
+            <label className={lbl}>Ghana Card Number *</label>
+            <input {...register('guarantorGhanaCard', { required: 'Required' })} className={inp} placeholder="GHA-XXXXXXXXX-X" />
+            {err(errors.guarantorGhanaCard)}
+          </div>
+          <div>
+            <label className={lbl}>Location *</label>
+            <input {...register('guarantorLocation', { required: 'Required' })} className={inp} placeholder="Guarantor's address / area" />
+            {err(errors.guarantorLocation)}
+          </div>
+          <div>
+            <label className={lbl}>Phone Number *</label>
+            <input {...register('guarantorPhone', { required: 'Required' })} className={inp} placeholder="+233 XXX XXX XXX" />
+            {err(errors.guarantorPhone)}
+          </div>
+        </div>
       </div>
+
+      {/* Agreement preview */}
+      {customerName && (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+          <p className="text-xs font-bold text-gray-700 uppercase tracking-wide">Agreement Preview</p>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            I <span className="font-semibold text-orange-700">({customerName})</span> have agreed to the terms and
+            conditions of DAN AND DOR SOLAR COMPANY LIMITED. I understand and agree that I am entering into a legally
+            binding contract, and I will be bound by its terms. The company can repossess the devices if I fail to pay
+            on time. I agree that one third (1/3) of the down payment shall be refunded if I am unable to continue.
+          </p>
+          {guarantorName && (
+            <p className="text-xs text-gray-600 leading-relaxed border-t border-gray-200 pt-3">
+              I <span className="font-semibold text-orange-700">({guarantorName})</span> have agreed to witness for{' '}
+              <span className="font-semibold text-orange-700">({customerName})</span> in case he/she does not pay on
+              time, and I stand to pay his/her debt.
+            </p>
+          )}
+          <p className="text-xs text-gray-500 italic">Four signatories on the PDF: CEO · Manager · Customer · Guarantor</p>
+        </div>
+      )}
+
+      <button type="submit" disabled={loading}
+        className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold rounded-xl text-sm">
+        {loading ? 'Creating...' : 'Create Agreement & Generate PDF'}
+      </button>
     </form>
   )
 }
@@ -196,83 +314,88 @@ function ViewAgreementModal({ agreement, isOpen, onClose }) {
   if (!agreement) return null
 
   const payments = agreement.payments || []
-  const amountPaidViaPayments = payments.reduce((s, p) => s + (p.amount || 0), 0)
-  const remaining = Math.max(0, (agreement.total_amount || 0) - (agreement.down_payment || 0) - amountPaidViaPayments)
+  const amountPaid = payments.reduce((s, p) => s + (p.amount || 0), 0)
+  const remaining = Math.max(0, (agreement.total_amount || 0) - (agreement.down_payment || 0) - amountPaid)
+  const balance = Math.max(0, (agreement.total_amount || 0) - (agreement.down_payment || 0))
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Credit Agreement Details" size="lg">
       <div className="p-5 space-y-5">
-        {/* Header info */}
+        {/* Photos */}
+        {(agreement.customer_passport_url || agreement.guarantor_passport_url) && (
+          <div className="flex gap-4">
+            {agreement.customer_passport_url && (
+              <div className="text-center">
+                <img src={agreement.customer_passport_url} alt="Customer" className="w-16 h-20 object-cover rounded-lg border" />
+                <p className="text-xs text-gray-500 mt-1">Customer</p>
+              </div>
+            )}
+            {agreement.guarantor_passport_url && (
+              <div className="text-center">
+                <img src={agreement.guarantor_passport_url} alt="Guarantor" className="w-16 h-20 object-cover rounded-lg border" />
+                <p className="text-xs text-gray-500 mt-1">Guarantor</p>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="bg-gray-50 rounded-xl p-3">
             <p className="text-xs text-gray-500 mb-1">Customer</p>
             <p className="font-bold">{agreement.customer_name}</p>
-            <p className="text-gray-600">{agreement.customer_phone}</p>
+            <p className="text-gray-600 text-xs">{agreement.customer_phone}</p>
+            {agreement.document_type && <p className="text-gray-500 text-xs mt-1">{agreement.document_type}: {agreement.id_number}</p>}
           </div>
           <div className="bg-gray-50 rounded-xl p-3">
             <p className="text-xs text-gray-500 mb-1">Guarantor</p>
             <p className="font-bold">{agreement.guarantor_name}</p>
-            <p className="text-gray-600">{agreement.guarantor_phone}</p>
+            <p className="text-gray-600 text-xs">{agreement.guarantor_phone}</p>
+            {agreement.guarantor_ghana_card && <p className="text-gray-500 text-xs mt-1">Ghana Card: {agreement.guarantor_ghana_card}</p>}
           </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-          <div className="bg-blue-50 rounded-xl p-3 text-center">
-            <p className="text-xs text-blue-600">Total Amount</p>
-            <p className="font-black text-blue-800">{formatCurrency(agreement.total_amount || 0)}</p>
-          </div>
-          <div className="bg-green-50 rounded-xl p-3 text-center">
-            <p className="text-xs text-green-600">Down Payment</p>
-            <p className="font-black text-green-800">{formatCurrency(agreement.down_payment || 0)}</p>
-          </div>
-          <div className="bg-orange-50 rounded-xl p-3 text-center">
-            <p className="text-xs text-orange-600">Payments Made</p>
-            <p className="font-black text-orange-800">{formatCurrency(amountPaidViaPayments)}</p>
-          </div>
-          <div className="bg-red-50 rounded-xl p-3 text-center">
-            <p className="text-xs text-red-600">Remaining</p>
-            <p className="font-black text-red-800">{formatCurrency(remaining)}</p>
-          </div>
+          {[
+            { label: 'Total Amount', value: formatCurrency(agreement.total_amount || 0), color: 'blue' },
+            { label: 'Down Payment', value: formatCurrency(agreement.down_payment || 0), color: 'green' },
+            { label: 'Balance', value: formatCurrency(balance), color: 'orange' },
+            { label: 'Remaining', value: formatCurrency(remaining), color: 'red' },
+          ].map(s => (
+            <div key={s.label} className={`bg-${s.color}-50 rounded-xl p-3 text-center`}>
+              <p className={`text-xs text-${s.color}-600`}>{s.label}</p>
+              <p className={`font-black text-${s.color}-800`}>{s.value}</p>
+            </div>
+          ))}
         </div>
 
-        <div className="text-sm text-gray-700">
-          <p><strong>Product:</strong> {agreement.product_description}</p>
-          <p className="mt-1"><strong>Status:</strong> <Badge status={agreement.status} /></p>
-          <p className="mt-1"><strong>End Date:</strong> {formatDate(agreement.end_date)}</p>
+        <div className="text-sm text-gray-700 space-y-1">
+          {agreement.product_type && <p><strong>Product:</strong> {agreement.product_type} {agreement.serial_number ? `(SN: ${agreement.serial_number})` : ''}</p>}
+          <p><strong>Payment Plan:</strong> {agreement.payment_plan || 'weekly'}</p>
+          <p><strong>Status:</strong> <Badge status={agreement.status} /></p>
+          <p><strong>End Date:</strong> {formatDate(agreement.end_date)}</p>
         </div>
 
-        {/* Make payment */}
-        {agreement.status !== 'paid' && remaining > 0 && (
+        {agreement.status !== 'completed' && remaining > 0 && (
           <div className="border border-orange-200 rounded-xl p-4">
             <p className="text-sm font-bold text-gray-700 mb-3">Record Payment</p>
             <div className="flex gap-2">
-              <input
-                type="number"
-                value={payAmount}
-                onChange={e => setPayAmount(e.target.value)}
-                placeholder="Amount (GH₵)"
-                min="0.01"
-                max={remaining}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-              <button
-                onClick={() => {
-                  if (!payAmount || parseFloat(payAmount) <= 0) { toast.error('Enter amount'); return }
-                  payMutation.mutate({ id: agreement._id, data: { amount: parseFloat(payAmount) } })
-                }}
-                disabled={payMutation.isPending}
-                className="px-4 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm hover:bg-orange-600 disabled:opacity-60"
-              >
+              <input type="number" value={payAmount} onChange={e => setPayAmount(e.target.value)}
+                placeholder="Amount (GH₵)" min="0.01" max={remaining}
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" />
+              <button onClick={() => {
+                if (!payAmount || parseFloat(payAmount) <= 0) { toast.error('Enter amount'); return }
+                payMutation.mutate({ id: agreement._id, data: { amount: parseFloat(payAmount) } })
+              }} disabled={payMutation.isPending}
+                className="px-4 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm hover:bg-orange-600 disabled:opacity-60">
                 {payMutation.isPending ? '...' : 'Pay'}
               </button>
             </div>
           </div>
         )}
 
-        {/* Payment History */}
         {payments.length > 0 && (
           <div>
-            <p className="text-sm font-bold text-gray-700 mb-2">Payment History ({payments.length})</p>
+            <p className="text-sm font-bold text-gray-700 mb-2">Payment History</p>
             <div className="space-y-2">
               {payments.map((p, i) => (
                 <div key={i} className="flex justify-between items-center text-sm bg-gray-50 rounded-xl px-3 py-2">
@@ -284,10 +407,8 @@ function ViewAgreementModal({ agreement, isOpen, onClose }) {
           </div>
         )}
 
-        <button
-          onClick={handlePDF}
-          className="w-full flex items-center justify-center gap-2 py-3 border-2 border-orange-500 text-orange-600 rounded-xl font-bold text-sm hover:bg-orange-50 transition-colors"
-        >
+        <button onClick={handlePDF}
+          className="w-full flex items-center justify-center gap-2 py-3 border-2 border-orange-500 text-orange-600 rounded-xl font-bold text-sm hover:bg-orange-50 transition-colors">
           <FiDownload size={16} /> Download Agreement PDF
         </button>
       </div>
@@ -324,12 +445,18 @@ export default function CreditAgreements() {
       header: 'Customer',
       key: 'customer_name',
       render: (v, row) => (
-        <div>
-          <p className="font-semibold">{v}</p>
-          <p className="text-xs text-gray-500">{row.customer_phone}</p>
+        <div className="flex items-center gap-2">
+          {row.customer_passport_url && (
+            <img src={row.customer_passport_url} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0 border" />
+          )}
+          <div>
+            <p className="font-semibold">{v}</p>
+            <p className="text-xs text-gray-500">{row.customer_phone}</p>
+          </div>
         </div>
       ),
     },
+    { header: 'Product', key: 'product_type', render: v => v || '—' },
     { header: 'Total', key: 'total_amount', render: v => formatCurrency(v || 0) },
     { header: 'Down Payment', key: 'down_payment', render: v => formatCurrency(v || 0) },
     {
@@ -344,16 +471,14 @@ export default function CreditAgreements() {
         )
       },
     },
-    { header: 'End Date', key: 'end_date', render: v => formatDate(v) },
+    { header: 'Plan', key: 'payment_plan', render: v => <span className="capitalize text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">{v || 'weekly'}</span> },
     { header: 'Status', key: 'status', render: v => <Badge status={v} /> },
     {
       header: 'Actions',
       key: '_id',
       render: (id, row) => (
-        <button
-          onClick={e => { e.stopPropagation(); setViewAgreement(row) }}
-          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"
-        >
+        <button onClick={e => { e.stopPropagation(); setViewAgreement(row) }}
+          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg">
           <FiEye size={14} />
         </button>
       ),
@@ -366,23 +491,17 @@ export default function CreditAgreements() {
         title="Credit Agreements"
         subtitle="Manage installment credit agreements"
         action={
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold text-sm"
-          >
+          <button onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold text-sm">
             <FiPlus size={16} /> New Agreement
           </button>
         }
       />
 
       <div className="mb-4">
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Search by customer name..."
-          className="w-full max-w-sm px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-        />
+          className="w-full max-w-sm px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" />
       </div>
 
       <Table
@@ -395,11 +514,8 @@ export default function CreditAgreements() {
         onRowClick={setViewAgreement}
       />
 
-      <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="Create Credit Agreement" size="2xl">
-        <AgreementForm
-          loading={createMutation.isPending}
-          onSubmit={d => createMutation.mutate(d)}
-        />
+      <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="New Credit Agreement" size="2xl">
+        <AgreementForm loading={createMutation.isPending} onSubmit={d => createMutation.mutate(d)} />
       </Modal>
 
       <ViewAgreementModal

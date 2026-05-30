@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
-const multer = require('multer');
-const path = require('path');
 const { authenticate } = require('../middleware/auth');
 const { requireLevel } = require('../middleware/rbac');
 const { auditLog } = require('../middleware/auditLogger');
@@ -10,29 +8,6 @@ const {
   getCreditAgreements, createCreditAgreement, getCreditAgreement,
   updateCreditAgreement, recordPayment, generatePDF,
 } = require('../controllers/creditAgreementsController');
-
-// Multer setup for customer photo
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, process.env.UPLOAD_PATH || './uploads');
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `customer-${Date.now()}${ext}`);
-  },
-});
-const upload = multer({
-  storage,
-  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5242880 },
-  fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|gif|webp/;
-    if (allowed.test(path.extname(file.originalname).toLowerCase()) && allowed.test(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed.'));
-    }
-  },
-});
 
 // Manager (2) and above
 const managerPlus = [authenticate, requireLevel(2)];
@@ -43,7 +18,6 @@ router.get('/', getCreditAgreements);
 
 router.post(
   '/',
-  upload.single('customer_photo'),
   [
     body('customer_name').notEmpty().withMessage('Customer name is required.'),
     body('customer_phone').notEmpty().withMessage('Customer phone is required.'),

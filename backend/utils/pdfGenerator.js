@@ -1,4 +1,20 @@
 const PDFDocument = require('pdfkit');
+const https = require('https');
+const http = require('http');
+
+const fetchBuf = (url) =>
+  new Promise((resolve) => {
+    if (!url || typeof url !== 'string') return resolve(null);
+    const mod = url.startsWith('https') ? https : http;
+    const req = mod.get(url, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', () => resolve(null));
+    });
+    req.on('error', () => resolve(null));
+    req.setTimeout(6000, () => { req.destroy(); resolve(null); });
+  });
 
 /**
  * Generate a thermal receipt PDF for a sale.
@@ -79,91 +95,250 @@ const generateReceipt = (saleData) => {
 /**
  * Generate a credit agreement PDF (A4).
  * @param {Object} agreementData - CreditAgreement document
+ * @param {Object} options - { logoUrl }
  * @returns {Promise<Buffer>}
  */
-const generateCreditAgreement = (agreementData) => {
+const generateCreditAgreement = async (agreementData, options = {}) => {
+  const [customerPhotoBuf, guarantorPhotoBuf, logoBuf] = await Promise.all([
+    fetchBuf(agreementData.customer_passport_url),
+    fetchBuf(agreementData.guarantor_passport_url),
+    fetchBuf(options.logoUrl || null),
+  ]);
+
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ size: 'A4', margins: { top: 50, bottom: 50, left: 60, right: 60 } });
+      const doc = new PDFDocument({ size: 'A4', margins: { top: 40, bottom: 40, left: 50, right: 50 }, autoFirstPage: true });
       const chunks = [];
-      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('data', (c) => chunks.push(c));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
+      const ML = 50;
+      const W = 495;
+      const ORANGE = '#e86b00';
+      const LGRAY = '#777777';
+
       const {
-        customer_name, customer_phone, customer_address,
-        guarantor_name, guarantor_phone, guarantor_address,
-        product_description, total_amount, down_payment, remaining,
-        weekly_installment, interest_rate, start_date, end_date, status,
+        customer_name = '', customer_phone = '', customer_address = '',
+        document_type = '', id_number = '',
+        product_type = '', serial_number = '',
+        total_amount = 0, down_payment = 0, payment_plan = 'weekly',
+        guarantor_name = '', guarantor_phone = '', guarantor_address = '', guarantor_ghana_card = '',
+        start_date,
       } = agreementData;
 
-      // Header
-      doc.fontSize(16).font('Helvetica-Bold').text('DAN & DOR SOLAR COMPANY LIMITED', { align: 'center' });
-      doc.fontSize(10).font('Helvetica').text('Credit Sale Agreement', { align: 'center' });
-      doc.moveDown(0.5);
-      doc.moveTo(60, doc.y).lineTo(535, doc.y).stroke();
-      doc.moveDown(0.5);
+      const balance = Math.max(0, total_amount - down_payment);
+      const installment = balance > 0 ? balance / 3 : 0;
+      const planDays = { daily: 1, weekly: 7, monthly: 30 };
+      const planLabel = { daily: 'Day', weekly: 'Week', monthly: 'Month' };
+      const days = planDays[payment_plan] || 7;
+      const start = new Date(start_date || new Date());
+      const dueDates = [1, 2, 3].map((n) => {
+        const d = new Date(start);
+        d.setDate(d.getDate() + n * days);
+        return d.toLocaleDateString('en-GH');
+      });
 
-      doc.fontSize(14).font('Helvetica-Bold').text('CREDIT AGREEMENT', { align: 'center' });
-      doc.moveDown(1);
+      // ── Helpers ──────────────────────────────────────────────────────────────
 
-      // Agreement details
-      const row = (label, value) => {
-        doc.fontSize(10).font('Helvetica-Bold').text(`${label}: `, { continued: true });
-        doc.font('Helvetica').text(String(value || 'N/A'));
+      const resetColors = () => {
+        doc.fillColor('#000000').strokeColor('#000000').lineWidth(1);
       };
 
-      doc.fontSize(11).font('Helvetica-Bold').text('Customer Information:');
-      doc.moveDown(0.3);
-      row('Full Name', customer_name);
-      row('Phone', customer_phone);
-      row('Address', customer_address);
-      doc.moveDown(0.5);
+      const sectionTitle = (text, y) => {
+        doc.fontSize(9).font('Helvetica-Bold').fillColor(ORANGE).text(text, ML, y, { width: W });
+        const lineY = y + 13;
+        doc.moveTo(ML, lineY).lineTo(ML + W, lineY).lineWidth(0.8).strokeColor(ORANGE).stroke();
+        resetColors();
+        return lineY + 6;
+      };
 
-      doc.fontSize(11).font('Helvetica-Bold').text('Guarantor Information:');
-      doc.moveDown(0.3);
-      row('Full Name', guarantor_name);
-      row('Phone', guarantor_phone);
-      row('Address', guarantor_address);
-      doc.moveDown(0.5);
+      const drawField = (label, value, x, y, width) => {
+        doc.fontSize(6.5).font('Helvetica-Bold').fillColor(LGRAY).text(label, x, y, { width, lineBreak: false });
+        doc.fontSize(8.5).font('Helvetica').fillColor('#111111').text(String(value || '—'), x, y + 9, { width, lineBreak: false });
+        doc.moveTo(x, y + 21).lineTo(x + width, y + 21).lineWidth(0.3).strokeColor('#cccccc').stroke();
+        resetColors();
+      };
 
-      doc.fontSize(11).font('Helvetica-Bold').text('Product & Payment Details:');
-      doc.moveDown(0.3);
-      row('Product/Description', product_description);
-      row('Total Amount', `GH₵${Number(total_amount || 0).toFixed(2)}`);
-      row('Down Payment', `GH₵${Number(down_payment || 0).toFixed(2)}`);
-      row('Remaining Balance', `GH₵${Number(remaining || 0).toFixed(2)}`);
-      row('Interest Rate', `${interest_rate || 0}%`);
-      row('Weekly Installment', `GH₵${Number(weekly_installment || 0).toFixed(2)}`);
-      row('Start Date', start_date ? new Date(start_date).toLocaleDateString('en-GH') : 'N/A');
-      row('End Date (21 days)', end_date ? new Date(end_date).toLocaleDateString('en-GH') : 'N/A');
-      row('Status', (status || 'active').toUpperCase());
-      doc.moveDown(1);
+      const drawPhotoBox = (x, y, buf, topLabel) => {
+        const PW = 65; const PH = 80;
+        doc.rect(x, y, PW, PH).lineWidth(0.8).strokeColor('#aaaaaa').stroke();
+        if (buf) {
+          try { doc.image(buf, x + 2, y + 2, { width: PW - 4, height: PH - 4, cover: [PW - 4, PH - 4] }); } catch {}
+        } else {
+          doc.moveTo(x + 2, y + 2).lineTo(x + PW - 2, y + PH - 2).lineWidth(0.4).strokeColor('#dddddd').stroke();
+          doc.moveTo(x + PW - 2, y + 2).lineTo(x + 2, y + PH - 2).lineWidth(0.4).strokeColor('#dddddd').stroke();
+          doc.fontSize(6.5).fillColor('#aaaaaa').text('PASSPORT\nPHOTO', x, y + PH / 2 - 8, { width: PW, align: 'center' });
+        }
+        doc.fontSize(6).fillColor(LGRAY).text(topLabel, x, y + PH + 3, { width: PW, align: 'center' });
+        resetColors();
+      };
 
-      // Terms
-      doc.fontSize(11).font('Helvetica-Bold').text('Terms & Conditions:');
-      doc.moveDown(0.3);
-      doc.fontSize(9).font('Helvetica').text(
-        '1. The customer agrees to pay the weekly installment of GH₵' + Number(weekly_installment || 0).toFixed(2) + ' every week for 3 weeks.\n' +
-        '2. Failure to make payment on time may result in repossession of the product.\n' +
-        '3. The guarantor is jointly liable for all outstanding payments.\n' +
-        '4. Any disputes shall be settled under Ghanaian law.'
-      );
-      doc.moveDown(2);
+      // ── Watermark ─────────────────────────────────────────────────────────────
+      if (logoBuf) {
+        try {
+          doc.save();
+          doc.opacity(0.06);
+          doc.image(logoBuf, ML + (W - 220) / 2, 280, { width: 220 });
+          doc.restore();
+        } catch {}
+      }
 
-      // Signatures
-      const sigY = doc.y;
-      doc.fontSize(10).font('Helvetica').text('Customer Signature:', 60, sigY);
-      doc.moveTo(60, sigY + 30).lineTo(230, sigY + 30).stroke();
-      doc.text('Date: ___________', 60, sigY + 35);
+      // ── Header: passport photos + company info ─────────────────────────────
+      const H_Y = 42;
+      const PHOTO_W = 65;
+      const PHOTO_H = 80;
 
-      doc.text('Guarantor Signature:', 300, sigY);
-      doc.moveTo(300, sigY + 30).lineTo(470, sigY + 30).stroke();
-      doc.text('Date: ___________', 300, sigY + 35);
+      drawPhotoBox(ML, H_Y, customerPhotoBuf, 'CUSTOMER');
+      drawPhotoBox(ML + W - PHOTO_W, H_Y, guarantorPhotoBuf, 'GUARANTOR');
 
-      doc.moveDown(3);
-      doc.text('Company Representative Signature:');
-      doc.moveTo(60, doc.y + 5).lineTo(230, doc.y + 5).stroke();
+      const cX = ML + PHOTO_W + 5;
+      const cW = W - PHOTO_W * 2 - 10;
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#111111')
+        .text('DAN & DOR SOLAR COMPANY LIMITED', cX, H_Y + 8, { width: cW, align: 'center' });
+      doc.fontSize(8).font('Helvetica').fillColor(LGRAY)
+        .text('Accra, Ghana  |  Tel: +233 XXX XXX XXX', cX, H_Y + 28, { width: cW, align: 'center' });
+      doc.fontSize(9.5).font('Helvetica-Bold').fillColor(ORANGE)
+        .text('CREDIT SALE AGREEMENT', cX, H_Y + 46, { width: cW, align: 'center' });
+      resetColors();
+
+      let y = H_Y + PHOTO_H + 18;
+
+      // ── Separator ─────────────────────────────────────────────────────────────
+      doc.moveTo(ML, y).lineTo(ML + W, y).lineWidth(1.2).strokeColor(ORANGE).stroke();
+      resetColors();
+      y += 10;
+
+      // ── Customer Details ──────────────────────────────────────────────────────
+      y = sectionTitle('CUSTOMER DETAILS', y);
+      const c3 = (W - 10) / 3;
+      drawField('Customer Name', customer_name, ML, y, c3 - 4);
+      drawField('Document Type', document_type, ML + c3, y, c3 - 4);
+      drawField('ID Number', id_number, ML + c3 * 2, y, c3 - 4);
+      y += 32;
+      drawField('Date', start ? start.toLocaleDateString('en-GH') : '—', ML, y, c3 - 4);
+      drawField('Location', customer_address, ML + c3, y, c3 - 4);
+      drawField('Phone / Tel', customer_phone, ML + c3 * 2, y, c3 - 4);
+      y += 36;
+
+      // ── Product & Payment Terms ────────────────────────────────────────────────
+      y = sectionTitle('PRODUCT AND PAYMENT TERMS', y);
+      drawField('Product Type', product_type, ML, y, c3 - 4);
+      drawField('Serial Number', serial_number || '—', ML + c3, y, c3 - 4);
+      drawField('Down Payment (GH₵)', `GH₵${Number(down_payment).toFixed(2)}`, ML + c3 * 2, y, c3 - 4);
+      y += 32;
+
+      const c2 = (W - 6) / 2;
+      drawField('Payment Plan', `${planLabel[payment_plan] || 'Week'}ly`, ML, y, c2 - 3);
+      drawField('Loan Total Amount (GH₵)', `GH₵${Number(total_amount).toFixed(2)}`, ML + c2 + 6, y, c2 - 3);
+      y += 32;
+
+      // Balance display
+      doc.fontSize(7).font('Helvetica-Bold').fillColor(LGRAY).text('Balance (Loan Total − Down Payment)', ML, y);
+      doc.fontSize(12).font('Helvetica-Bold').fillColor(ORANGE)
+        .text(`GH₵${balance.toFixed(2)}`, ML, y + 9);
+      resetColors();
+      y += 32;
+
+      // Payment schedule table
+      doc.fontSize(8).font('Helvetica-Bold').fillColor('#111').text('Payment Schedule (3 equal instalments):', ML, y);
+      y += 14;
+
+      const TH = 18;
+      const tCols = [W * 0.22, W * 0.44, W * 0.34];
+      const tX = ML;
+
+      // Table header
+      doc.fillColor(ORANGE).rect(tX, y, W, TH).fill();
+      ['Period', 'Due Date', `Amount (GH₵)`].forEach((h, i) => {
+        const cx = tX + tCols.slice(0, i).reduce((a, b) => a + b, 0);
+        doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#fff')
+          .text(h, cx + 3, y + 5, { width: tCols[i] - 6, align: 'center', lineBreak: false });
+      });
+      y += TH;
+
+      [1, 2, 3].forEach((n, ri) => {
+        doc.fillColor(ri % 2 === 0 ? '#fff9f5' : '#ffffff').rect(tX, y, W, TH).fill();
+        doc.strokeColor('#e5e7eb').lineWidth(0.4).rect(tX, y, W, TH).stroke();
+        resetColors();
+        const row = [`${planLabel[payment_plan] || 'Week'} ${n}`, dueDates[n - 1], `GH₵${installment.toFixed(2)}`];
+        row.forEach((cell, ci) => {
+          const cx = tX + tCols.slice(0, ci).reduce((a, b) => a + b, 0);
+          doc.fontSize(8).font('Helvetica').fillColor('#111')
+            .text(cell, cx + 3, y + 5, { width: tCols[ci] - 6, align: 'center', lineBreak: false });
+        });
+        y += TH;
+      });
+
+      // Total row
+      doc.fillColor('#fff3e0').rect(tX, y, W, TH).fill();
+      doc.strokeColor(ORANGE).lineWidth(0.8).rect(tX, y, W, TH).stroke();
+      doc.fontSize(7.5).font('Helvetica-Bold').fillColor(ORANGE)
+        .text('TOTAL BALANCE', tX + 3, y + 5, { width: tCols[0] + tCols[1] - 6, align: 'right', lineBreak: false });
+      doc.text(`GH₵${balance.toFixed(2)}`, tX + tCols[0] + tCols[1] + 3, y + 5, { width: tCols[2] - 6, align: 'center', lineBreak: false });
+      resetColors();
+      y += TH + 10;
+
+      // ── Guarantor Details ─────────────────────────────────────────────────────
+      y = sectionTitle('GUARANTOR DETAILS', y);
+      const c4 = (W - 12) / 4;
+      drawField('Guarantor Name', guarantor_name, ML, y, c4 - 3);
+      drawField('Ghana Card No.', guarantor_ghana_card || '—', ML + c4 + 4, y, c4 - 3);
+      drawField('Location', guarantor_address, ML + (c4 + 4) * 2, y, c4 - 3);
+      drawField('Phone Number', guarantor_phone, ML + (c4 + 4) * 3, y, c4 - 3);
+      y += 36;
+
+      // ── Agreement Text ────────────────────────────────────────────────────────
+      y = sectionTitle('CUSTOMER AGREEMENT', y);
+      const custText =
+        `I (${customer_name}) have agreed to the terms and conditions of DAN AND DOR SOLAR COMPANY LIMITED. ` +
+        `I understand and agree that I am entering into a legally binding contract with DAN AND DOR SOLAR COMPANY LIMITED, ` +
+        `and that I will be bound by the terms and conditions of the contract.\n\n` +
+        `I have agreed that the company can repossess the devices when I (${customer_name}) fail(s) to pay on time, ` +
+        `by the way the company wants me to pay.\n\n` +
+        `I agree that one third (1/3) of the down payment should be paid back to me when I am not able to pay on time.`;
+      doc.fontSize(8).font('Helvetica').fillColor('#222222').text(custText, ML, y, { width: W, lineGap: 1.5 });
+      y = doc.y + 10;
+
+      // ── Guarantor Section ─────────────────────────────────────────────────────
+      y = sectionTitle('GUARANTOR SECTION', y);
+      const guarText =
+        `I (${guarantor_name}) have agreed to witness for (${customer_name}) in case he/she does not pay on time. ` +
+        `And I stand to pay his/her debt.`;
+      doc.fontSize(8).font('Helvetica').fillColor('#222222').text(guarText, ML, y, { width: W, lineGap: 1.5 });
+      y = doc.y + 14;
+
+      // ── Signatories ───────────────────────────────────────────────────────────
+      if (y > 680) { doc.addPage(); y = 50; }
+
+      y = sectionTitle('SIGNATORIES', y);
+
+      const sigLabels = ['CEO', 'MANAGER', 'CUSTOMER', 'GUARANTOR'];
+      const sigSubNames = ['', '', customer_name, guarantor_name];
+      const sigW = (W - 12) / 4;
+
+      sigLabels.forEach((label, i) => {
+        const sx = ML + i * (sigW + 4);
+        // Box
+        doc.rect(sx, y, sigW, 48).lineWidth(0.5).strokeColor('#cccccc').stroke();
+        // 'Signature' hint
+        doc.fontSize(6).fillColor('#bbbbbb').text('Signature', sx + 2, y + 4, { width: sigW - 4, align: 'center', lineBreak: false });
+        // Line at bottom of box
+        doc.moveTo(sx + 6, y + 40).lineTo(sx + sigW - 6, y + 40).lineWidth(0.5).strokeColor('#999999').stroke();
+        resetColors();
+        // Role label
+        doc.fontSize(8).font('Helvetica-Bold').fillColor('#111').text(label, sx, y + 52, { width: sigW, align: 'center', lineBreak: false });
+        // Person name (if known)
+        if (sigSubNames[i]) {
+          doc.fontSize(6.5).font('Helvetica').fillColor(LGRAY).text(sigSubNames[i], sx, y + 63, { width: sigW, align: 'center', lineBreak: false });
+        }
+        resetColors();
+      });
+
+      y += 78;
+      doc.fontSize(7.5).font('Helvetica').fillColor(LGRAY)
+        .text('Date: ___________________________', ML + W / 2 - 60, y);
+      resetColors();
 
       doc.end();
     } catch (err) {
