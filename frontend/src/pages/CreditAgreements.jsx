@@ -11,7 +11,6 @@ import PageHeader from '../components/PageHeader'
 import Modal from '../components/Modal'
 import Table from '../components/Table'
 import Badge from '../components/Badge'
-import ImageUpload from '../components/ImageUpload'
 import { format, addDays } from 'date-fns'
 import { saveAs } from 'file-saver'
 
@@ -24,10 +23,21 @@ const PLAN_OPTIONS = [
 const PLAN_DAYS = { daily: 1, weekly: 7, monthly: 30 }
 const PLAN_LABEL = { daily: 'Day', weekly: 'Week', monthly: 'Month' }
 
-function AgreementForm({ onSubmit, loading }) {
-  const [customerPhotoUrl, setCustomerPhotoUrl] = useState(null)
-  const [guarantorPhotoUrl, setGuarantorPhotoUrl] = useState(null)
+function PassportPlaceholder({ label }) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className="w-16 h-20 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-1 opacity-20">
+          <svg width="100%" height="100%"><line x1="0" y1="0" x2="100%" y2="100%" stroke="#999" strokeWidth="1"/><line x1="100%" y1="0" x2="0" y2="100%" stroke="#999" strokeWidth="1"/></svg>
+        </div>
+        <p className="text-xs text-gray-400 font-medium text-center leading-tight z-10">PASSPORT<br/>PHOTO</p>
+      </div>
+      <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">{label}</p>
+    </div>
+  )
+}
 
+function AgreementForm({ onSubmit, loading }) {
   const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: {
       startDate: format(new Date(), 'yyyy-MM-dd'),
@@ -69,8 +79,6 @@ function AgreementForm({ onSubmit, loading }) {
       guarantor_ghana_card: d.guarantorGhanaCard,
       guarantor_address: d.guarantorLocation,
       guarantor_phone: d.guarantorPhone,
-      customer_passport_url: customerPhotoUrl,
-      guarantor_passport_url: guarantorPhotoUrl,
     })
   }
 
@@ -81,33 +89,17 @@ function AgreementForm({ onSubmit, loading }) {
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="p-5 space-y-6">
 
-      {/* Passport photos + company info preview */}
+      {/* Header preview */}
       <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
-        <div className="flex items-start gap-4">
-          <div className="flex-shrink-0">
-            <ImageUpload
-              value={customerPhotoUrl}
-              onChange={setCustomerPhotoUrl}
-              folder="passports"
-              label="Customer Photo"
-              size="lg"
-            />
-          </div>
+        <div className="flex items-center gap-4">
+          <PassportPlaceholder label="Customer" />
           <div className="flex-1 text-center py-2">
             <p className="text-xs font-black text-gray-800 uppercase tracking-wide">DAN & DOR SOLAR</p>
             <p className="text-xs font-bold text-gray-700">COMPANY LIMITED</p>
             <p className="text-xs text-gray-500 mt-1">Accra, Ghana</p>
             <p className="text-xs text-orange-600 font-bold mt-1 uppercase tracking-wider">Credit Sale Agreement</p>
           </div>
-          <div className="flex-shrink-0">
-            <ImageUpload
-              value={guarantorPhotoUrl}
-              onChange={setGuarantorPhotoUrl}
-              folder="passports"
-              label="Guarantor Photo"
-              size="lg"
-            />
-          </div>
+          <PassportPlaceholder label="Guarantor" />
         </div>
       </div>
 
@@ -335,18 +327,12 @@ function ViewAgreementModal({ agreement, isOpen, onClose }) {
     <Modal isOpen={isOpen} onClose={onClose} title="Credit Agreement Details" size="lg">
       <div className="p-5 space-y-6">
 
-        {/* Passport photos header */}
-        {(agreement.customer_passport_url || agreement.guarantor_passport_url) && (
-          <div className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-2xl p-3">
-            {agreement.customer_passport_url
-              ? <div className="text-center"><img src={agreement.customer_passport_url} alt="Customer" className="w-14 h-18 object-cover rounded-lg border mx-auto" /><p className="text-xs text-gray-500 mt-1">Customer</p></div>
-              : <div className="w-14" />}
-            <p className="text-xs font-black text-orange-700 uppercase tracking-wide text-center flex-1">Credit Sale Agreement</p>
-            {agreement.guarantor_passport_url
-              ? <div className="text-center"><img src={agreement.guarantor_passport_url} alt="Guarantor" className="w-14 h-18 object-cover rounded-lg border mx-auto" /><p className="text-xs text-gray-500 mt-1">Guarantor</p></div>
-              : <div className="w-14" />}
-          </div>
-        )}
+        {/* Header */}
+        <div className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-2xl p-3">
+          <PassportPlaceholder label="Customer" />
+          <p className="text-xs font-black text-orange-700 uppercase tracking-wide text-center flex-1">Credit Sale Agreement</p>
+          <PassportPlaceholder label="Guarantor" />
+        </div>
 
         {/* Status badge */}
         <div className="flex items-center gap-3">
@@ -476,14 +462,9 @@ export default function CreditAgreements() {
       header: 'Customer',
       key: 'customer_name',
       render: (v, row) => (
-        <div className="flex items-center gap-2">
-          {row.customer_passport_url && (
-            <img src={row.customer_passport_url} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0 border" />
-          )}
-          <div>
-            <p className="font-semibold">{v}</p>
-            <p className="text-xs text-gray-500">{row.customer_phone}</p>
-          </div>
+        <div>
+          <p className="font-semibold">{v}</p>
+          <p className="text-xs text-gray-500">{row.customer_phone}</p>
         </div>
       ),
     },
