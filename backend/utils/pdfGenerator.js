@@ -2,18 +2,29 @@ const PDFDocument = require('pdfkit');
 const https = require('https');
 const http = require('http');
 
-// Fetch a remote URL as a Buffer, following up to 5 redirects, rejecting non-image responses
+// Fetch a remote URL as a Buffer, following up to 5 redirects
+// Sends browser-like headers so CDNs (e.g. Facebook) serve the image
 const fetchBuf = (url, hops = 5) =>
   new Promise((resolve) => {
     if (!url || typeof url !== 'string') return resolve(null);
     const mod = url.startsWith('https') ? https : http;
-    const req = mod.get(url, (res) => {
+    const reqOpts = {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36',
+        'Accept': 'image/webp,image/apng,image/jpeg,image/png,image/*,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.facebook.com/',
+      },
+    };
+    const req = mod.get(url, reqOpts, (res) => {
       if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && hops > 0) {
         res.resume();
         return resolve(fetchBuf(res.headers.location, hops - 1));
       }
+      // Accept image/* or application/octet-stream — magic bytes confirm real images
       const ct = res.headers['content-type'] || '';
-      if (!ct.startsWith('image/')) { res.resume(); return resolve(null); }
+      const couldBeImage = ct.startsWith('image/') || ct === 'application/octet-stream' || ct.includes('jpeg') || ct.includes('png');
+      if (!couldBeImage) { res.resume(); return resolve(null); }
       const chunks = [];
       res.on('data', (c) => chunks.push(c));
       res.on('end', () => {
@@ -30,7 +41,7 @@ const fetchBuf = (url, hops = 5) =>
       res.on('error', () => resolve(null));
     });
     req.on('error', () => resolve(null));
-    req.setTimeout(8000, () => { req.destroy(); resolve(null); });
+    req.setTimeout(10000, () => { req.destroy(); resolve(null); });
   });
 
 /**
