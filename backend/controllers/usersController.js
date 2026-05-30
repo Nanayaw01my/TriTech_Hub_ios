@@ -41,22 +41,25 @@ const createUser = async (req, res) => {
     }
 
     const { username, email, password, role } = req.body;
+    const normalUsername = username.trim().toLowerCase();
+    const normalEmail = email ? email.trim().toLowerCase() : null;
 
     if (!canManage(req.user.role, role)) {
       return res.status(403).json({ success: false, message: 'You cannot create a user with that role.' });
     }
 
-    const orClauses = [{ username: username.toLowerCase() }];
-    if (email) orClauses.push({ email: email.toLowerCase() });
+    const orClauses = [{ username: normalUsername }];
+    if (normalEmail) orClauses.push({ email: normalEmail });
     const existing = await User.findOne({ $or: orClauses });
     if (existing) {
-      return res.status(409).json({ success: false, message: 'Username or email already exists.' });
+      const field = existing.username === normalUsername ? 'Username' : 'Email';
+      return res.status(409).json({ success: false, message: `${field} is already taken.` });
     }
 
     const { avatar_url } = req.body;
     const user = await User.create({
-      username,
-      ...(email ? { email } : {}),
+      username: normalUsername,
+      ...(normalEmail ? { email: normalEmail } : {}),
       password,
       role,
       created_by: req.user._id,
