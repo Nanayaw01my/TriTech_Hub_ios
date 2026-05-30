@@ -124,10 +124,16 @@ function ReceiptModal({ isOpen, onClose, saleData, logoUrl, companyName, company
               <span>Cashier:</span>
               <span>{saleData.cashier?.username || saleData.soldBy?.username || 'Staff'}</span>
             </div>
-            {saleData.customer?.name && (
+            {(saleData.customer_name || saleData.customer?.name) && (
               <div className="flex justify-between">
                 <span>Customer:</span>
-                <span>{saleData.customer.name}</span>
+                <span>{saleData.customer_name || saleData.customer?.name}</span>
+              </div>
+            )}
+            {(saleData.customer_phone || saleData.customer?.phone) && (
+              <div className="flex justify-between">
+                <span>Tel:</span>
+                <span>{saleData.customer_phone || saleData.customer?.phone}</span>
               </div>
             )}
           </div>

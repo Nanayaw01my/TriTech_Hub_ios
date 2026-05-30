@@ -330,7 +330,11 @@ const generateSaleReceipt = async (req, res) => {
     const sale = await Sale.findById(req.params.id).populate('user_id', 'username');
     if (!sale) return res.status(404).json({ success: false, message: 'Sale not found.' });
 
-    const pdfBuffer = await generateReceipt(sale.toObject());
+    const settings = await Settings.findOne().lean();
+    const pdfBuffer = await generateReceipt(sale.toObject(), {
+      logoUrl: settings?.logo_url,
+      cashierName: sale.user_id?.username,
+    });
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="receipt-${sale.invoice_no}.pdf"`);

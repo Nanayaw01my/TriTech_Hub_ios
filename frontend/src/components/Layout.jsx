@@ -14,17 +14,16 @@ import toast from 'react-hot-toast'
 import OfflineBanner from './OfflineBanner'
 
 const NAV_ITEMS = [
+  // All logged-in users
   { to: '/dashboard', label: 'Dashboard', icon: FiHome, minLevel: 1 },
-  { to: '/pos', label: 'Point of Sale', icon: FiShoppingCart, minLevel: 1 },
   { to: '/expenses', label: 'Expenses', icon: FiDollarSign, minLevel: 1 },
-  { to: '/refunds', label: 'Refunds', icon: FiRotateCcw, minLevel: 1 },
   { to: '/notifications', label: 'Notifications', icon: FiBell, minLevel: 1 },
-  { to: '/search', label: 'Search', icon: FiSearch, minLevel: 1 },
-  // Manager+
-  { to: '/debts', label: 'Debts', icon: FiAlertCircle, minLevel: 2 },
-  { to: '/stock-requests', label: 'Stock Requests', icon: FiInbox, minLevel: 2 },
-  { to: '/credit-agreements', label: 'Credit Agreements', icon: FiCreditCard, minLevel: 2 },
-  // CEO+
+  // CEO+ only
+  { to: '/pos', label: 'Point of Sale', icon: FiShoppingCart, minLevel: 3 },
+  { to: '/refunds', label: 'Refunds', icon: FiRotateCcw, minLevel: 3 },
+  { to: '/debts', label: 'Debts', icon: FiAlertCircle, minLevel: 3 },
+  { to: '/stock-requests', label: 'Stock Requests', icon: FiInbox, minLevel: 3 },
+  { to: '/credit-agreements', label: 'Credit Agreements', icon: FiCreditCard, minLevel: 3 },
   { to: '/products', label: 'Products', icon: FiPackage, minLevel: 3 },
   { to: '/categories', label: 'Categories', icon: FiTag, minLevel: 3 },
   { to: '/suppliers', label: 'Suppliers', icon: FiTruck, minLevel: 3 },
@@ -33,6 +32,7 @@ const NAV_ITEMS = [
   { to: '/financial', label: 'Financial', icon: FiTrendingUp, minLevel: 3 },
   { to: '/reports', label: 'Reports', icon: FiBarChart2, minLevel: 3 },
   { to: '/sales-history', label: 'Sales History', icon: FiList, minLevel: 3 },
+  { to: '/search', label: 'Search', icon: FiSearch, minLevel: 3 },
   { to: '/users', label: 'User Management', icon: FiUser, minLevel: 3 },
   { to: '/audit-logs', label: 'Audit Logs', icon: FiFileText, minLevel: 3 },
   { to: '/backup', label: 'Backup & Restore', icon: FiDatabase, minLevel: 3 },

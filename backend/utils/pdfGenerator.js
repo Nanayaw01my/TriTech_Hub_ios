@@ -49,11 +49,12 @@ const fetchBuf = (url, hops = 5) =>
  * @param {Object} saleData - Sale document with items populated
  * @returns {Promise<Buffer>}
  */
-const generateReceipt = (saleData) => {
+const generateReceipt = async (saleData, options = {}) => {
+  const logoBuf = await fetchBuf(options.logoUrl || null);
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
-        size: [226, 600], // 80mm thermal paper width approx
+        size: [226, 700],
         margins: { top: 10, bottom: 10, left: 10, right: 10 },
       });
 
@@ -62,9 +63,13 @@ const generateReceipt = (saleData) => {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      const { invoice_no, customer_name, customer_phone, items, subtotal, discount, discount_type, total_amount, payment_method, payment_status, sale_date } = saleData;
+      const { invoice_no, customer_name, customer_phone, items, subtotal, discount, discount_type, total_amount, payment_method, payment_status, sale_date, user_id } = saleData;
+      const cashierName = options.cashierName || (user_id?.username) || 'Staff';
 
       // Header
+      if (logoBuf) {
+        try { doc.image(logoBuf, 63, doc.y, { width: 100, align: 'center' }); doc.moveDown(0.3); } catch {}
+      }
       doc.fontSize(10).font('Helvetica-Bold').text('DAN & DOR SOLAR COMPANY LIMITED', { align: 'center' });
       doc.fontSize(7).font('Helvetica').text('Solar Energy Solutions', { align: 'center' });
       doc.moveDown(0.3);
@@ -75,6 +80,7 @@ const generateReceipt = (saleData) => {
       // Invoice info
       doc.fontSize(7).text(`Invoice: ${invoice_no}`);
       doc.text(`Date: ${new Date(sale_date || Date.now()).toLocaleString('en-GH')}`);
+      doc.text(`Cashier: ${cashierName}`);
       if (customer_name) doc.text(`Customer: ${customer_name}`);
       if (customer_phone) doc.text(`Phone: ${customer_phone}`);
 
@@ -203,14 +209,28 @@ const generateCreditAgreement = async (agreementData, options = {}) => {
       };
 
       // ── Watermark ─────────────────────────────────────────────────────────────
+      doc.save();
       if (logoBuf) {
         try {
-          doc.save();
           doc.opacity(0.55);
           doc.image(logoBuf, ML + (W - 320) / 2, 240, { width: 320 });
-          doc.restore();
-        } catch {}
+        } catch {
+          // image failed — fall through to text watermark
+          doc.opacity(0.12);
+          doc.rotate(-40, { origin: [ML + W / 2, 420] });
+          doc.fontSize(52).font('Helvetica-Bold').fillColor('#e86b00')
+            .text('DAN & DOR\nSOLAR', ML - 20, 360, { width: W + 40, align: 'center', lineGap: 4 });
+          doc.rotate(40, { origin: [ML + W / 2, 420] });
+        }
+      } else {
+        // No image — always draw text watermark
+        doc.opacity(0.12);
+        doc.rotate(-40, { origin: [ML + W / 2, 420] });
+        doc.fontSize(52).font('Helvetica-Bold').fillColor('#e86b00')
+          .text('DAN & DOR\nSOLAR', ML - 20, 360, { width: W + 40, align: 'center', lineGap: 4 });
+        doc.rotate(40, { origin: [ML + W / 2, 420] });
       }
+      doc.restore();
 
       // ── Header: passport photos + company info ─────────────────────────────
       const H_Y = 42;

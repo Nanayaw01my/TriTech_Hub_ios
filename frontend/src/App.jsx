@@ -77,37 +77,16 @@ export default function App() {
         }
       >
         <Route path="dashboard" element={<Dashboard />} />
-        <Route path="pos" element={<POS />} />
         <Route path="expenses" element={<Expenses />} />
-        <Route path="refunds" element={<Refunds />} />
         <Route path="notifications" element={<Notifications />} />
-        <Route path="search" element={<Search />} />
+        <Route path="pos" element={<ProtectedRoute minLevel={3}><POS /></ProtectedRoute>} />
+        <Route path="refunds" element={<ProtectedRoute minLevel={3}><Refunds /></ProtectedRoute>} />
+        <Route path="search" element={<ProtectedRoute minLevel={3}><Search /></ProtectedRoute>} />
 
-        {/* Manager+ */}
-        <Route
-          path="debts"
-          element={
-            <ProtectedRoute minLevel={2}>
-              <Debts />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="stock-requests"
-          element={
-            <ProtectedRoute minLevel={2}>
-              <StockRequests />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="credit-agreements"
-          element={
-            <ProtectedRoute minLevel={2}>
-              <CreditAgreements />
-            </ProtectedRoute>
-          }
-        />
+        {/* CEO+ */}
+        <Route path="debts" element={<ProtectedRoute minLevel={3}><Debts /></ProtectedRoute>} />
+        <Route path="stock-requests" element={<ProtectedRoute minLevel={3}><StockRequests /></ProtectedRoute>} />
+        <Route path="credit-agreements" element={<ProtectedRoute minLevel={3}><CreditAgreements /></ProtectedRoute>} />
 
         {/* CEO+ */}
         <Route
