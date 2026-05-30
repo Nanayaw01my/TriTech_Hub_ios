@@ -1,12 +1,6 @@
 const PDFDocument = require('pdfkit');
 const https = require('https');
 const http = require('http');
-const fs = require('fs');
-
-// DejaVu Sans supports the Ghana Cedi symbol (₵ U+20B5); Helvetica does not
-const DEJAVU_R = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
-const DEJAVU_B = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
-const HAS_DEJAVU = fs.existsSync(DEJAVU_R) && fs.existsSync(DEJAVU_B);
 
 // Fetch a remote URL as a Buffer, following up to 5 redirects, rejecting non-image responses
 const fetchBuf = (url, hops = 5) =>
@@ -14,12 +8,10 @@ const fetchBuf = (url, hops = 5) =>
     if (!url || typeof url !== 'string') return resolve(null);
     const mod = url.startsWith('https') ? https : http;
     const req = mod.get(url, (res) => {
-      // Follow HTTP redirects
       if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && hops > 0) {
         res.resume();
         return resolve(fetchBuf(res.headers.location, hops - 1));
       }
-      // Only accept image content-types
       const ct = res.headers['content-type'] || '';
       if (!ct.startsWith('image/')) { res.resume(); return resolve(null); }
       const chunks = [];
@@ -27,7 +19,6 @@ const fetchBuf = (url, hops = 5) =>
       res.on('end', () => {
         const buf = Buffer.concat(chunks);
         if (buf.length < 4) return resolve(null);
-        // Validate image magic bytes (PNG, JPEG, GIF, WebP, BMP)
         const isImg =
           (buf[0] === 0x89 && buf[1] === 0x50) ||
           (buf[0] === 0xFF && buf[1] === 0xD8) ||
@@ -87,8 +78,8 @@ const generateReceipt = (saleData) => {
       (items || []).forEach((item) => {
         const name = (item.product_name || '').substring(0, 20).padEnd(20);
         const qty = String(item.quantity).padStart(4);
-        const price = `GH₵${Number(item.unit_price).toFixed(2)}`.padStart(8);
-        const total = `GH₵${Number(item.total).toFixed(2)}`.padStart(8);
+        const price = `GHC${Number(item.unit_price).toFixed(2)}`.padStart(8);
+        const total = `GHC${Number(item.total).toFixed(2)}`.padStart(8);
         doc.text(`${name} ${qty} ${price} ${total}`);
       });
 
@@ -96,13 +87,13 @@ const generateReceipt = (saleData) => {
 
       // Totals
       doc.fontSize(7);
-      doc.text(`Subtotal:                  GH₵${Number(subtotal || 0).toFixed(2)}`);
+      doc.text(`Subtotal:                  GHC${Number(subtotal || 0).toFixed(2)}`);
       if (discount && discount > 0) {
-        const discStr = discount_type === 'percentage' ? `${discount}%` : `GH₵${Number(discount).toFixed(2)}`;
+        const discStr = discount_type === 'percentage' ? `${discount}%` : `GHC${Number(discount).toFixed(2)}`;
         doc.text(`Discount (${discStr}):`);
       }
       doc.fontSize(8).font('Helvetica-Bold');
-      doc.text(`TOTAL:                     GH₵${Number(total_amount || 0).toFixed(2)}`);
+      doc.text(`TOTAL:                     GHC${Number(total_amount || 0).toFixed(2)}`);
       doc.fontSize(7).font('Helvetica');
       doc.text(`Payment: ${(payment_method || '').toUpperCase()}`);
       doc.text(`Status: ${(payment_status || '').toUpperCase()}`);
@@ -139,15 +130,6 @@ const generateCreditAgreement = async (agreementData, options = {}) => {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      // ── Font setup (DejaVu supports Ghana Cedi ₵; fallback to Helvetica+GHC) ──
-      const F  = HAS_DEJAVU ? 'DejaVu'      : 'Helvetica';
-      const FB = HAS_DEJAVU ? 'DejaVu-Bold' : 'Helvetica-Bold';
-      const C  = HAS_DEJAVU ? 'GH₵' : 'GHC';
-      if (HAS_DEJAVU) {
-        doc.registerFont('DejaVu',      DEJAVU_R);
-        doc.registerFont('DejaVu-Bold', DEJAVU_B);
-      }
-
       const ML = 50;
       const W = 495;
       const ORANGE = '#e86b00';
@@ -181,7 +163,7 @@ const generateCreditAgreement = async (agreementData, options = {}) => {
       };
 
       const sectionTitle = (text, y) => {
-        doc.fontSize(9).font(FB).fillColor(ORANGE).text(text, ML, y, { width: W });
+        doc.fontSize(9).font('Helvetica-Bold').fillColor(ORANGE).text(text, ML, y, { width: W });
         const lineY = y + 13;
         doc.moveTo(ML, lineY).lineTo(ML + W, lineY).lineWidth(0.8).strokeColor(ORANGE).stroke();
         resetColors();
@@ -189,8 +171,8 @@ const generateCreditAgreement = async (agreementData, options = {}) => {
       };
 
       const drawField = (label, value, x, y, width) => {
-        doc.fontSize(6.5).font(FB).fillColor(LGRAY).text(label, x, y, { width, lineBreak: false });
-        doc.fontSize(8.5).font(F).fillColor('#111111').text(String(value || '—'), x, y + 9, { width, lineBreak: false });
+        doc.fontSize(6.5).font('Helvetica-Bold').fillColor(LGRAY).text(label, x, y, { width, lineBreak: false });
+        doc.fontSize(8.5).font('Helvetica').fillColor('#111111').text(String(value || '—'), x, y + 9, { width, lineBreak: false });
         doc.moveTo(x, y + 21).lineTo(x + width, y + 21).lineWidth(0.3).strokeColor('#cccccc').stroke();
         resetColors();
       };
@@ -229,11 +211,11 @@ const generateCreditAgreement = async (agreementData, options = {}) => {
 
       const cX = ML + PHOTO_W + 5;
       const cW = W - PHOTO_W * 2 - 10;
-      doc.fontSize(12).font(FB).fillColor('#111111')
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#111111')
         .text('DAN & DOR SOLAR COMPANY LIMITED', cX, H_Y + 8, { width: cW, align: 'center' });
-      doc.fontSize(8).font(F).fillColor(LGRAY)
+      doc.fontSize(8).font('Helvetica').fillColor(LGRAY)
         .text('Accra, Ghana  |  Tel: +233 XXX XXX XXX', cX, H_Y + 28, { width: cW, align: 'center' });
-      doc.fontSize(9.5).font(FB).fillColor(ORANGE)
+      doc.fontSize(9.5).font('Helvetica-Bold').fillColor(ORANGE)
         .text('CREDIT SALE AGREEMENT', cX, H_Y + 46, { width: cW, align: 'center' });
       resetColors();
 
@@ -260,23 +242,23 @@ const generateCreditAgreement = async (agreementData, options = {}) => {
       y = sectionTitle('PRODUCT AND PAYMENT TERMS', y);
       drawField('Product Type', product_type, ML, y, c3 - 4);
       drawField('Serial Number', serial_number || '—', ML + c3, y, c3 - 4);
-      drawField(`Down Payment (${C})`, `${C}${Number(down_payment).toFixed(2)}`, ML + c3 * 2, y, c3 - 4);
+      drawField('Down Payment (GHC)', 'GHC ' + Number(down_payment).toFixed(2), ML + c3 * 2, y, c3 - 4);
       y += 32;
 
       const c2 = (W - 6) / 2;
-      drawField('Payment Plan', `${planLabel[payment_plan] || 'Week'}ly`, ML, y, c2 - 3);
-      drawField(`Loan Total Amount (${C})`, `${C}${Number(total_amount).toFixed(2)}`, ML + c2 + 6, y, c2 - 3);
+      drawField('Payment Plan', (planLabel[payment_plan] || 'Week') + 'ly', ML, y, c2 - 3);
+      drawField('Loan Total Amount (GHC)', 'GHC ' + Number(total_amount).toFixed(2), ML + c2 + 6, y, c2 - 3);
       y += 32;
 
       // Balance display
-      doc.fontSize(7).font(FB).fillColor(LGRAY).text(`Balance (Loan Total − Down Payment)`, ML, y);
-      doc.fontSize(12).font(FB).fillColor(ORANGE)
-        .text(`${C}${balance.toFixed(2)}`, ML, y + 9);
+      doc.fontSize(7).font('Helvetica-Bold').fillColor(LGRAY).text('Balance (Loan Total - Down Payment)', ML, y);
+      doc.fontSize(12).font('Helvetica-Bold').fillColor(ORANGE)
+        .text('GHC ' + balance.toFixed(2), ML, y + 9);
       resetColors();
       y += 32;
 
       // Payment schedule table
-      doc.fontSize(8).font(FB).fillColor('#111').text('Payment Schedule (3 equal instalments):', ML, y);
+      doc.fontSize(8).font('Helvetica-Bold').fillColor('#111').text('Payment Schedule (3 equal instalments):', ML, y);
       y += 14;
 
       const TH = 18;
@@ -285,9 +267,9 @@ const generateCreditAgreement = async (agreementData, options = {}) => {
 
       // Table header
       doc.fillColor(ORANGE).rect(tX, y, W, TH).fill();
-      [`Period`, `Due Date`, `Amount (${C})`].forEach((h, i) => {
+      ['Period', 'Due Date', 'Amount (GHC)'].forEach((h, i) => {
         const cx = tX + tCols.slice(0, i).reduce((a, b) => a + b, 0);
-        doc.fontSize(7.5).font(FB).fillColor('#fff')
+        doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#fff')
           .text(h, cx + 3, y + 5, { width: tCols[i] - 6, align: 'center', lineBreak: false });
       });
       y += TH;
@@ -296,10 +278,14 @@ const generateCreditAgreement = async (agreementData, options = {}) => {
         doc.fillColor(ri % 2 === 0 ? '#fff9f5' : '#ffffff').rect(tX, y, W, TH).fill();
         doc.strokeColor('#e5e7eb').lineWidth(0.4).rect(tX, y, W, TH).stroke();
         resetColors();
-        const row = [`${planLabel[payment_plan] || 'Week'} ${n}`, dueDates[n - 1], `${C}${installment.toFixed(2)}`];
+        const row = [
+          (planLabel[payment_plan] || 'Week') + ' ' + n,
+          dueDates[n - 1],
+          'GHC ' + installment.toFixed(2),
+        ];
         row.forEach((cell, ci) => {
           const cx = tX + tCols.slice(0, ci).reduce((a, b) => a + b, 0);
-          doc.fontSize(8).font(F).fillColor('#111')
+          doc.fontSize(8).font('Helvetica').fillColor('#111')
             .text(cell, cx + 3, y + 5, { width: tCols[ci] - 6, align: 'center', lineBreak: false });
         });
         y += TH;
@@ -308,9 +294,9 @@ const generateCreditAgreement = async (agreementData, options = {}) => {
       // Total row
       doc.fillColor('#fff3e0').rect(tX, y, W, TH).fill();
       doc.strokeColor(ORANGE).lineWidth(0.8).rect(tX, y, W, TH).stroke();
-      doc.fontSize(7.5).font(FB).fillColor(ORANGE)
+      doc.fontSize(7.5).font('Helvetica-Bold').fillColor(ORANGE)
         .text('TOTAL BALANCE', tX + 3, y + 5, { width: tCols[0] + tCols[1] - 6, align: 'right', lineBreak: false });
-      doc.text(`${C}${balance.toFixed(2)}`, tX + tCols[0] + tCols[1] + 3, y + 5, { width: tCols[2] - 6, align: 'center', lineBreak: false });
+      doc.text('GHC ' + balance.toFixed(2), tX + tCols[0] + tCols[1] + 3, y + 5, { width: tCols[2] - 6, align: 'center', lineBreak: false });
       resetColors();
       y += TH + 10;
 
@@ -326,21 +312,21 @@ const generateCreditAgreement = async (agreementData, options = {}) => {
       // ── Agreement Text ────────────────────────────────────────────────────────
       y = sectionTitle('CUSTOMER AGREEMENT', y);
       const custText =
-        `I (${customer_name}) have agreed to the terms and conditions of DAN AND DOR SOLAR COMPANY LIMITED. ` +
-        `I understand and agree that I am entering into a legally binding contract with DAN AND DOR SOLAR COMPANY LIMITED, ` +
-        `and that I will be bound by the terms and conditions of the contract.\n\n` +
-        `I have agreed that the company can repossess the devices when I (${customer_name}) fail(s) to pay on time, ` +
-        `by the way the company wants me to pay.\n\n` +
-        `I agree that one third (1/3) of the down payment should be paid back to me when I am not able to pay on time.`;
-      doc.fontSize(8).font(F).fillColor('#222222').text(custText, ML, y, { width: W, lineGap: 1.5 });
+        'I (' + customer_name + ') have agreed to the terms and conditions of DAN AND DOR SOLAR COMPANY LIMITED. ' +
+        'I understand and agree that I am entering into a legally binding contract with DAN AND DOR SOLAR COMPANY LIMITED, ' +
+        'and that I will be bound by the terms and conditions of the contract.\n\n' +
+        'I have agreed that the company can repossess the devices when I (' + customer_name + ') fail(s) to pay on time, ' +
+        'by the way the company wants me to pay.\n\n' +
+        'I agree that one third (1/3) of the down payment should be paid back to me when I am not able to pay on time.';
+      doc.fontSize(8).font('Helvetica').fillColor('#222222').text(custText, ML, y, { width: W, lineGap: 1.5 });
       y = doc.y + 10;
 
       // ── Guarantor Section ─────────────────────────────────────────────────────
       y = sectionTitle('GUARANTOR SECTION', y);
       const guarText =
-        `I (${guarantor_name}) have agreed to witness for (${customer_name}) in case he/she does not pay on time. ` +
-        `And I stand to pay his/her debt.`;
-      doc.fontSize(8).font(F).fillColor('#222222').text(guarText, ML, y, { width: W, lineGap: 1.5 });
+        'I (' + guarantor_name + ') have agreed to witness for (' + customer_name + ') in case he/she does not pay on time. ' +
+        'And I stand to pay his/her debt.';
+      doc.fontSize(8).font('Helvetica').fillColor('#222222').text(guarText, ML, y, { width: W, lineGap: 1.5 });
       y = doc.y + 14;
 
       // ── Signatories ───────────────────────────────────────────────────────────
@@ -358,15 +344,15 @@ const generateCreditAgreement = async (agreementData, options = {}) => {
         doc.fontSize(6).fillColor('#bbbbbb').text('Signature', sx + 2, y + 4, { width: sigW - 4, align: 'center', lineBreak: false });
         doc.moveTo(sx + 6, y + 40).lineTo(sx + sigW - 6, y + 40).lineWidth(0.5).strokeColor('#999999').stroke();
         resetColors();
-        doc.fontSize(8).font(FB).fillColor('#111').text(label, sx, y + 52, { width: sigW, align: 'center', lineBreak: false });
+        doc.fontSize(8).font('Helvetica-Bold').fillColor('#111').text(label, sx, y + 52, { width: sigW, align: 'center', lineBreak: false });
         if (sigSubNames[i]) {
-          doc.fontSize(6.5).font(F).fillColor(LGRAY).text(sigSubNames[i], sx, y + 63, { width: sigW, align: 'center', lineBreak: false });
+          doc.fontSize(6.5).font('Helvetica').fillColor(LGRAY).text(sigSubNames[i], sx, y + 63, { width: sigW, align: 'center', lineBreak: false });
         }
         resetColors();
       });
 
       y += 78;
-      doc.fontSize(7.5).font(F).fillColor(LGRAY)
+      doc.fontSize(7.5).font('Helvetica').fillColor(LGRAY)
         .text('Date: ___________________________', ML + W / 2 - 60, y);
       resetColors();
 
@@ -399,7 +385,7 @@ const generateReport = (reportData, title = 'Report') => {
       doc.moveTo(60, doc.y).lineTo(535, doc.y).stroke();
       doc.moveDown(0.5);
       doc.fontSize(14).font('Helvetica-Bold').text(title, { align: 'center' });
-      doc.fontSize(9).font('Helvetica').text(`Generated: ${new Date().toLocaleString('en-GH')}`, { align: 'center' });
+      doc.fontSize(9).font('Helvetica').text('Generated: ' + new Date().toLocaleString('en-GH'), { align: 'center' });
       doc.moveDown(1);
 
       // Summary section
@@ -407,7 +393,7 @@ const generateReport = (reportData, title = 'Report') => {
         doc.fontSize(11).font('Helvetica-Bold').text('Summary:');
         doc.moveDown(0.3);
         Object.entries(reportData.summary).forEach(([key, value]) => {
-          doc.fontSize(9).font('Helvetica-Bold').text(`${key}: `, { continued: true });
+          doc.fontSize(9).font('Helvetica-Bold').text(key + ': ', { continued: true });
           doc.font('Helvetica').text(String(value));
         });
         doc.moveDown(0.5);

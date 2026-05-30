@@ -13,16 +13,36 @@ const TABS = ['Company', 'Notifications', 'Email Config']
 
 function CompanyTab({ settings, onSave, loading }) {
   const [logoUrl, setLogoUrl] = useState(settings?.logo_url || null)
+  const [logoInput, setLogoInput] = useState(settings?.logo_url || '')
   const { register, handleSubmit } = useForm({ defaultValues: settings })
+
+  const handleLogoChange = (url) => {
+    setLogoUrl(url || null)
+    setLogoInput(url || '')
+  }
+
   return (
     <form onSubmit={handleSubmit(data => onSave({ ...data, logo_url: logoUrl }))} className="space-y-4 max-w-lg">
-      <ImageUpload
-        value={logoUrl}
-        onChange={setLogoUrl}
-        folder="logo"
-        label="Company Logo"
-        size="lg"
-      />
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-2">Company Logo</label>
+        <ImageUpload
+          value={logoUrl}
+          onChange={handleLogoChange}
+          folder="logo"
+          size="lg"
+        />
+        <div className="mt-2">
+          <label className="block text-xs text-gray-500 mb-1">Or paste a direct image URL</label>
+          <input
+            type="url"
+            value={logoInput}
+            onChange={e => { setLogoInput(e.target.value); setLogoUrl(e.target.value || null) }}
+            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-600"
+            placeholder="https://example.com/logo.png"
+          />
+          <p className="text-xs text-gray-400 mt-1">This URL is used as the watermark on credit agreement PDFs</p>
+        </div>
+      </div>
       {[
         { name: 'companyName', label: 'Company Name', placeholder: 'DAN & DOR SOLAR COMPANY LIMITED' },
         { name: 'companyAddress', label: 'Address', placeholder: 'Accra, Ghana' },
