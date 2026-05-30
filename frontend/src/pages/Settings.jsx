@@ -2,8 +2,9 @@ import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { FiSettings, FiBell, FiMail, FiSave } from 'react-icons/fi'
+import { FiSettings, FiBell, FiMail, FiSave, FiTrash2, FiAlertTriangle, FiX } from 'react-icons/fi'
 import { getSettings, updateSettings, testEmail } from '../api/settings'
+import api from '../api/axios'
 import useAuthStore from '../store/authStore'
 import PageHeader from '../components/PageHeader'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -203,6 +204,9 @@ export default function Settings() {
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState(0)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
+  const [clearing, setClearing] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ['settings'],
@@ -218,8 +222,24 @@ export default function Settings() {
     onError: err => toast.error(err.response?.data?.message || 'Failed to save settings'),
   })
 
-  const isSuperAdmin = user?.role === 'super_admin'
+  const isSuperAdmin = user?.role === 'Super Admin'
   const tabs = isSuperAdmin ? TABS : TABS.slice(0, 2)
+
+  const handleClearData = async () => {
+    if (confirmText !== 'CLEAR') return
+    setClearing(true)
+    try {
+      await api.delete('/settings/clear-data')
+      toast.success('All business data cleared successfully!')
+      queryClient.invalidateQueries()
+      setShowClearConfirm(false)
+      setConfirmText('')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to clear data')
+    } finally {
+      setClearing(false)
+    }
+  }
 
   if (isLoading) return (
     <div className="p-6 flex justify-center">
@@ -227,7 +247,7 @@ export default function Settings() {
     </div>
   )
 
-  const settings = data?.settings || data || {}
+  const settings = data || {}
 
   const tabComponents = [
     <CompanyTab key="company" settings={settings} onSave={d => updateMutation.mutate(d)} loading={updateMutation.isPending} />,
@@ -236,11 +256,11 @@ export default function Settings() {
   ]
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
       <PageHeader title="Settings" subtitle="Configure system preferences" />
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
         {tabs.map((tab, i) => {
           const icons = [FiSettings, FiBell, FiMail]
           const Icon = icons[i]
@@ -260,6 +280,87 @@ export default function Settings() {
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         {tabComponents[activeTab]}
       </div>
+
+      {/* Danger Zone — Super Admin only */}
+      {isSuperAdmin && (
+        <div className="bg-white rounded-xl border-2 border-red-200 overflow-hidden">
+          <div className="bg-red-50 px-6 py-4 border-b border-red-200 flex items-center gap-3">
+            <FiAlertTriangle size={18} className="text-red-500" />
+            <h3 className="font-bold text-red-700">Danger Zone</h3>
+          </div>
+          <div className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <p className="font-semibold text-gray-900 text-sm">Clear All Business Data</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Permanently deletes all sales, debts, products, expenses, credit agreements and other records.
+                Your account and settings are kept.
+              </p>
+            </div>
+            <button
+              onClick={() => { setShowClearConfirm(true); setConfirmText('') }}
+              className="flex items-center gap-2 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl text-sm whitespace-nowrap transition-colors flex-shrink-0"
+            >
+              <FiTrash2 size={15} /> Clear All Data
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Data Confirmation Modal */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setShowClearConfirm(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-red-500 rounded-t-2xl">
+              <h3 className="text-white font-bold text-lg flex items-center gap-2">
+                <FiAlertTriangle size={18} /> Confirm Clear Data
+              </h3>
+              <button onClick={() => setShowClearConfirm(false)} className="text-white hover:text-red-200 p-1">
+                <FiX size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 space-y-1">
+                <p className="font-bold">This will permanently delete:</p>
+                <p>• All sales records &amp; receipts</p>
+                <p>• All products, categories &amp; suppliers</p>
+                <p>• All debts &amp; credit agreements</p>
+                <p>• All expenses, purchases &amp; worker payments</p>
+                <p>• All notifications &amp; audit logs</p>
+                <p className="font-bold mt-2">Your account and settings will NOT be deleted.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Type <span className="font-black text-red-600">CLEAR</span> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={confirmText}
+                  onChange={e => setConfirmText(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+                  placeholder="Type CLEAR here"
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowClearConfirm(false)}
+                  className="flex-1 py-2.5 border border-gray-200 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleClearData}
+                  disabled={confirmText !== 'CLEAR' || clearing}
+                  className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-colors"
+                >
+                  {clearing ? 'Clearing...' : 'Clear All Data'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -5,7 +5,7 @@ const path = require('path');
 const { authenticate } = require('../middleware/auth');
 const { requireLevel, requireRoles } = require('../middleware/rbac');
 const { auditLog } = require('../middleware/auditLogger');
-const { getSettings, updateSettings, updateEmailConfig, uploadLogo } = require('../controllers/settingsController');
+const { getSettings, updateSettings, updateEmailConfig, uploadLogo, clearAllData } = require('../controllers/settingsController');
 
 // Logo upload multer
 const storage = multer.diskStorage({
@@ -34,5 +34,6 @@ router.get('/', adminOnly, getSettings);
 router.put('/', adminOnly, auditLog('UPDATE_SETTINGS'), updateSettings);
 router.put('/email', authenticate, requireRoles('Super Admin'), auditLog('UPDATE_EMAIL_CONFIG'), updateEmailConfig);
 router.post('/logo', adminOnly, upload.single('logo'), auditLog('UPLOAD_LOGO'), uploadLogo);
+router.delete('/clear-data', authenticate, requireRoles('Super Admin'), auditLog('CLEAR_ALL_DATA'), clearAllData);
 
 module.exports = router;

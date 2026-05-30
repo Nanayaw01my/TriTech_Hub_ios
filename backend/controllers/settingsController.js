@@ -2,6 +2,15 @@ const Settings = require('../models/Settings');
 const multer = require('multer');
 const path = require('path');
 
+const CLEARABLE_MODELS = [
+  '../models/Sale', '../models/Debt', '../models/Product', '../models/Category',
+  '../models/Supplier', '../models/Purchase', '../models/Expense', '../models/WorkerPayment',
+  '../models/StockRequest', '../models/CreditAgreement', '../models/Notification',
+  '../models/AuditLog', '../models/Refund', '../models/Customer', '../models/Payment',
+  '../models/InstallmentPlan', '../models/Device', '../models/EmailQueue',
+  '../models/PasswordReset',
+];
+
 /**
  * GET /api/settings
  */
@@ -118,4 +127,28 @@ const uploadLogo = async (req, res) => {
   }
 };
 
-module.exports = { getSettings, updateSettings, updateEmailConfig, uploadLogo };
+/**
+ * DELETE /api/settings/clear-data (Super Admin only)
+ * Drops all business data but preserves Users and Settings.
+ */
+const clearAllData = async (req, res) => {
+  try {
+    const results = {};
+    for (const modelPath of CLEARABLE_MODELS) {
+      try {
+        const Model = require(modelPath);
+        const { deletedCount } = await Model.deleteMany({});
+        results[Model.modelName] = deletedCount;
+      } catch {
+        // model may not exist in this env — skip
+      }
+    }
+    console.log('Data cleared by', req.user.username, results);
+    return res.status(200).json({ success: true, message: 'All business data cleared.', data: results });
+  } catch (err) {
+    console.error('Clear data error:', err.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+module.exports = { getSettings, updateSettings, updateEmailConfig, uploadLogo, clearAllData };
