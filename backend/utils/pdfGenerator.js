@@ -71,8 +71,8 @@ const generateReceipt = async (saleData, options = {}) => {
 
       const cashierName = options.cashierName || user_id?.username || 'Staff';
       const companyName = options.companyName || 'DAN & DOR SOLAR COMPANY LIMITED';
-      const companyAddress = options.companyAddress || 'Accra, Ghana';
-      const companyPhone = options.companyPhone || '';
+      const companyAddress = options.companyAddress || 'Bogoso, Western Region';
+      const companyPhone = options.companyPhone || '+233 598565277';
       const grandTotal = cart_total || total_amount || 0;
       const discountAmount = Math.max(0, (subtotal || 0) - grandTotal);
 
@@ -266,7 +266,7 @@ const generateCreditAgreement = async (agreementData, options = {}) => {
       doc.fontSize(12).font('Helvetica-Bold').fillColor('#111111')
         .text('DAN & DOR SOLAR COMPANY LIMITED', cX, H_Y + 8, { width: cW, align: 'center' });
       doc.fontSize(8).font('Helvetica').fillColor(LGRAY)
-        .text('Accra, Ghana  |  Tel: +233 XXX XXX XXX', cX, H_Y + 28, { width: cW, align: 'center' });
+        .text('Bogoso, Western Region  |  Tel: +233 598565277', cX, H_Y + 28, { width: cW, align: 'center' });
       doc.fontSize(9.5).font('Helvetica-Bold').fillColor(ORANGE)
         .text('CREDIT SALE AGREEMENT', cX, H_Y + 46, { width: cW, align: 'center' });
       resetColors();
