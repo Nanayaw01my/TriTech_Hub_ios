@@ -24,6 +24,8 @@ const {
   resetCustomerPassword,
   getSettings,
   updateSettings,
+  getStaffSales,
+  updateStaffCommissionRate,
 } = require('../controllers/adminController');
 
 // Apply authentication and admin authorization to all routes
@@ -81,6 +83,12 @@ router.delete(
   '/staff/:id',
   [param('id').isMongoId().withMessage('Invalid staff ID.')],
   deleteStaff
+);
+router.get('/staff-sales', getStaffSales);
+router.patch(
+  '/staff/:id/commission',
+  [param('id').isMongoId().withMessage('Invalid staff ID.')],
+  updateStaffCommissionRate
 );
 
 // ─── DEVICES ──────────────────────────────────────────────────────────────────

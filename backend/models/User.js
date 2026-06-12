@@ -51,6 +51,11 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    commission_per_sale: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },

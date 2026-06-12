@@ -1001,6 +1001,72 @@ const updateSettings = async (req, res) => {
   }
 };
 
+const getStaffSales = async (req, res) => {
+  try {
+    const { period = 'month' } = req.query;
+    const now = new Date();
+    let periodStart;
+    if (period === 'week') {
+      periodStart = new Date(now);
+      periodStart.setDate(now.getDate() - now.getDay());
+      periodStart.setHours(0, 0, 0, 0);
+    } else if (period === 'all') {
+      periodStart = new Date(0);
+    } else {
+      periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    const staffUsers = await User.find({ role: 'staff', is_active: true })
+      .select('name email staff_id phone commission_per_sale');
+
+    const salesData = await Promise.all(
+      staffUsers.map(async (s) => {
+        const [totalSales, periodSales] = await Promise.all([
+          Customer.countDocuments({ created_by: s._id }),
+          Customer.countDocuments({ created_by: s._id, createdAt: { $gte: periodStart } }),
+        ]);
+        const rate = s.commission_per_sale || 0;
+        return {
+          _id: s._id,
+          name: s.name,
+          email: s.email,
+          staff_id: s.staff_id,
+          phone: s.phone,
+          commission_per_sale: rate,
+          total_sales: totalSales,
+          period_sales: periodSales,
+          commission_owed: periodSales * rate,
+        };
+      })
+    );
+
+    return res.status(200).json({ success: true, data: { salesData, period } });
+  } catch (error) {
+    console.error('Admin getStaffSales error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+const updateStaffCommissionRate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const rate = Number(req.body.commission_per_sale);
+    if (isNaN(rate) || rate < 0) {
+      return res.status(400).json({ success: false, message: 'Valid commission rate required.' });
+    }
+    const user = await User.findOneAndUpdate(
+      { _id: id, role: 'staff' },
+      { commission_per_sale: rate },
+      { new: true }
+    ).select('name email staff_id commission_per_sale');
+    if (!user) return res.status(404).json({ success: false, message: 'Staff not found.' });
+    return res.status(200).json({ success: true, data: { user }, message: 'Commission rate updated.' });
+  } catch (error) {
+    console.error('Admin updateStaffCommissionRate error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 module.exports = {
   getDashboard,
   getCustomers,
@@ -1011,6 +1077,8 @@ module.exports = {
   addStaff,
   updateStaff,
   deleteStaff,
+  getStaffSales,
+  updateStaffCommissionRate,
   getDevices,
   addDevice,
   updateDevice,
