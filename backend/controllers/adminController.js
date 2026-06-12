@@ -1096,6 +1096,44 @@ const updateStaffCommissionRate = async (req, res) => {
   }
 };
 
+// ─── CLEAR ALL DATA ──────────────────────────────────────────────────────────
+
+const clearAllData = async (req, res) => {
+  try {
+    const PasswordReset = require('../models/PasswordReset');
+
+    const [customers, devices, plans, payments, logs, resets] = await Promise.all([
+      Customer.deleteMany({}),
+      Device.deleteMany({}),
+      InstallmentPlan.deleteMany({}),
+      Payment.deleteMany({}),
+      AuditLog.deleteMany({}),
+      PasswordReset.deleteMany({}),
+    ]);
+
+    // Delete customer user accounts (role: 'customer') but keep admin and staff
+    await User.deleteMany({ role: 'customer' });
+
+    return res.status(200).json({
+      success: true,
+      message: 'All data cleared successfully. Admin and staff accounts preserved.',
+      data: {
+        deleted: {
+          customers: customers.deletedCount,
+          devices: devices.deletedCount,
+          installmentPlans: plans.deletedCount,
+          payments: payments.deletedCount,
+          auditLogs: logs.deletedCount,
+          passwordResets: resets.deletedCount,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Admin clearAllData error:', error);
+    return res.status(500).json({ success: false, message: 'Server error while clearing data.' });
+  }
+};
+
 module.exports = {
   getDashboard,
   getCustomers,
@@ -1120,4 +1158,5 @@ module.exports = {
   resetCustomerPassword,
   getSettings,
   updateSettings,
+  clearAllData,
 };

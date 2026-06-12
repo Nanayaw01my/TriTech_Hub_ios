@@ -23,6 +23,10 @@ export default function AdminSettings() {
   const [pwLoading, setPwLoading] = useState(false)
   const [pwErrors, setPwErrors] = useState({})
 
+  const [showClearModal, setShowClearModal] = useState(false)
+  const [clearConfirmText, setClearConfirmText] = useState('')
+  const [clearLoading, setClearLoading] = useState(false)
+
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -75,6 +79,22 @@ export default function AdminSettings() {
       toast.error(err?.response?.data?.error || 'Failed to change password')
     } finally {
       setPwLoading(false)
+    }
+  }
+
+  const handleClearAllData = async () => {
+    if (clearConfirmText !== 'DELETE ALL DATA') return
+    setClearLoading(true)
+    try {
+      const res = await api.delete('/admin/clear-all-data')
+      const d = res.data?.data
+      toast.success(`All data cleared! Removed: ${d?.deleted?.customers ?? 0} customers, ${d?.deleted?.devices ?? 0} devices, ${d?.deleted?.payments ?? 0} payments.`)
+      setShowClearModal(false)
+      setClearConfirmText('')
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to clear data')
+    } finally {
+      setClearLoading(false)
     }
   }
 
@@ -188,7 +208,7 @@ export default function AdminSettings() {
       </div>
 
       {/* Change Password */}
-      <div className="bg-white rounded-2xl shadow-card p-5">
+      <div className="bg-white rounded-2xl shadow-card p-5 mb-4">
         <h2 className="text-base font-bold text-gray-800 mb-4">Change Admin Password</h2>
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
@@ -254,6 +274,68 @@ export default function AdminSettings() {
           </button>
         </form>
       </div>
+      {/* Danger Zone */}
+      <div className="bg-white rounded-2xl shadow-card p-5 border-2 border-red-100">
+        <h2 className="text-base font-bold text-red-700 mb-1">Danger Zone</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Permanently delete all customers, devices, transactions, and plans. Admin and staff accounts are kept.
+        </p>
+        <button
+          onClick={() => { setShowClearModal(true); setClearConfirmText('') }}
+          className="px-5 py-2.5 bg-red-600 text-white font-bold rounded-2xl text-sm
+                     hover:bg-red-700 active:scale-95 transition-all"
+        >
+          Clear All Data
+        </button>
+      </div>
+
+      {/* Confirmation Modal */}
+      {showClearModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-3xl shadow-xl w-full max-w-sm p-6">
+            <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-black text-gray-900 text-center mb-1">Clear All Data?</h3>
+            <p className="text-sm text-gray-500 text-center mb-5">
+              This will permanently delete <strong>all customers, devices, transactions, installment plans, and audit logs</strong>.
+              Admin and staff accounts will be kept. This cannot be undone.
+            </p>
+            <p className="text-xs font-semibold text-gray-700 mb-2">
+              Type <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-red-600">DELETE ALL DATA</span> to confirm:
+            </p>
+            <input
+              type="text"
+              value={clearConfirmText}
+              onChange={(e) => setClearConfirmText(e.target.value)}
+              placeholder="DELETE ALL DATA"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm
+                         focus:outline-none focus:border-red-500 mb-4 font-mono"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowClearModal(false); setClearConfirmText('') }}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-2xl text-sm hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClearAllData}
+                disabled={clearConfirmText !== 'DELETE ALL DATA' || clearLoading}
+                className="flex-1 py-3 bg-red-600 text-white font-bold rounded-2xl text-sm
+                           hover:bg-red-700 disabled:opacity-40 flex items-center justify-center gap-2
+                           active:scale-95 transition-all"
+              >
+                {clearLoading && <LoadingSpinner size="sm" color="white" />}
+                {clearLoading ? 'Clearing...' : 'Yes, Clear All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
