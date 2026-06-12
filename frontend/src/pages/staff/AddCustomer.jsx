@@ -37,6 +37,14 @@ const IPHONE_MODELS = [
 
 const STEPS = ['Personal Info', 'Photos', 'Address & Income', 'Device & Plan']
 
+const DURATION_OPTIONS = {
+  daily:   [30, 60, 90, 120, 180],
+  weekly:  [4, 8, 13, 26, 52],
+  monthly: [3, 6, 12, 18, 24],
+}
+
+const DEFAULT_DURATION = { daily: 90, weekly: 13, monthly: 12 }
+
 const initForm = {
   // Step 1
   full_name: '', email: '', phone: '', ghana_card_id: '', password: '', confirm_password: '',
@@ -47,7 +55,7 @@ const initForm = {
   region: '', district: '', location: '', landmark: '', gps_address: '',
   guarantor_name: '', guarantor_phone: '', guarantor_ghana_card_id: '', guarantor_relationship: '',
   // Step 4
-  device_model: '', device_price: '', down_payment: '', payment_frequency: 'monthly',
+  device_model: '', device_price: '', down_payment: '', payment_frequency: 'monthly', duration: 12,
 }
 
 export default function StaffAddCustomer() {
@@ -66,33 +74,28 @@ export default function StaffAddCustomer() {
     const down = Number(form.down_payment) || 0
     const remaining = Math.max(0, price - down)
     const freq = form.payment_frequency
+    const numPayments = Number(form.duration) || DEFAULT_DURATION[freq] || 12
 
     let installmentAmount = 0
-    let numPayments = 0
     let firstDueDate = null
     let finalDate = null
 
     if (price > 0 && remaining > 0) {
+      installmentAmount = remaining / numPayments
       if (freq === 'daily') {
-        numPayments = 90
-        installmentAmount = remaining / numPayments
         firstDueDate = addDays(new Date(), 1)
         finalDate = addDays(new Date(), numPayments)
       } else if (freq === 'weekly') {
-        numPayments = 13
-        installmentAmount = remaining / numPayments
         firstDueDate = addWeeks(new Date(), 1)
         finalDate = addWeeks(new Date(), numPayments)
       } else {
-        numPayments = 12
-        installmentAmount = remaining / numPayments
         firstDueDate = addMonths(new Date(), 1)
         finalDate = addMonths(new Date(), numPayments)
       }
     }
 
     return { price, down, remaining, installmentAmount, numPayments, firstDueDate, finalDate }
-  }, [form.device_price, form.down_payment, form.payment_frequency])
+  }, [form.device_price, form.down_payment, form.payment_frequency, form.duration])
 
   const validateStep = (s) => {
     const e = {}
@@ -165,6 +168,7 @@ export default function StaffAddCustomer() {
         device_price: Number(form.device_price),
         down_payment: Number(form.down_payment),
         payment_frequency: form.payment_frequency,
+        duration: Number(form.duration),
       }
       const res = await api.post('/staff/customers', payload)
       toast.success('Customer registered successfully!')
@@ -568,7 +572,10 @@ export default function StaffAddCustomer() {
                 <button
                   key={freq}
                   type="button"
-                  onClick={() => set('payment_frequency', freq)}
+                  onClick={() => {
+                    set('payment_frequency', freq)
+                    set('duration', DEFAULT_DURATION[freq])
+                  }}
                   className={`py-3 px-2 rounded-2xl border-2 text-sm font-semibold capitalize transition-all
                     ${form.payment_frequency === freq
                       ? 'border-green-600 bg-green-50 text-green-700'
@@ -578,6 +585,29 @@ export default function StaffAddCustomer() {
                   {freq}
                 </button>
               ))}
+            </div>
+          </FormField>
+
+          <FormField label="Plan Duration">
+            <div className="flex flex-wrap gap-2">
+              {DURATION_OPTIONS[form.payment_frequency].map(d => {
+                const unit = form.payment_frequency === 'daily' ? 'days'
+                  : form.payment_frequency === 'weekly' ? 'wks' : 'mths'
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => set('duration', d)}
+                    className={`px-4 py-2.5 rounded-2xl border-2 text-sm font-semibold transition-all
+                      ${form.duration === d
+                        ? 'border-green-600 bg-green-50 text-green-700'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                  >
+                    {d} {unit}
+                  </button>
+                )
+              })}
             </div>
           </FormField>
 

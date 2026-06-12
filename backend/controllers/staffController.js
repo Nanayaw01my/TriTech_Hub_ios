@@ -199,6 +199,7 @@ const addCustomer = async (req, res) => {
       // accept payment_frequency (frontend) or frequency
       payment_frequency,
       frequency: frequencyField,
+      duration,
     } = req.body;
 
     const frequency = payment_frequency || frequencyField || 'monthly';
@@ -301,9 +302,9 @@ const addCustomer = async (req, res) => {
       });
     }
 
-    // Determine total payments by frequency
-    const frequencyPaymentsMap = { daily: 90, weekly: 13, monthly: 12 };
-    const totalPayments = frequencyPaymentsMap[frequency] || 6;
+    // Use staff-selected duration; fall back to sensible defaults
+    const frequencyDefaults = { daily: 90, weekly: 13, monthly: 12 };
+    const totalPayments = (Number(duration) > 0) ? Number(duration) : (frequencyDefaults[frequency] || 12);
 
     // Calculate installment amount (round to 2 decimal places)
     const installmentAmount = Math.ceil((remainingBalance / totalPayments) * 100) / 100;
