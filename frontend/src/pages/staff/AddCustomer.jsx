@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import CameraCapture from '../../components/CameraCapture'
@@ -25,15 +25,6 @@ const GHANA_REGIONS = {
   "Western": ["Sekondi-Takoradi Metropolitan","Tarkwa-Nsuaem","Shama","Ahanta West","Ellembelle","Nzema East","Effia-Kwesimintsim","Mpohor","Prestea-Huni Valley","Wassa Amenfi Central","Wassa Amenfi East","Wassa Amenfi West","Wassa East"],
 }
 
-const IPHONE_MODELS = [
-  { model: "iPhone 14", price: 8500 },
-  { model: "iPhone 14 Pro", price: 11000 },
-  { model: "iPhone 14 Pro Max", price: 12500 },
-  { model: "iPhone 15", price: 10500 },
-  { model: "iPhone 15 Pro", price: 14000 },
-  { model: "iPhone 15 Pro Max", price: 16000 },
-  { model: "iPhone 16", price: 18000 },
-]
 
 const STEPS = ['Personal Info', 'Photos', 'Address & Income', 'Device & Plan']
 
@@ -55,7 +46,7 @@ const initForm = {
   region: '', district: '', location: '', landmark: '', gps_address: '',
   guarantor_name: '', guarantor_phone: '', guarantor_ghana_card_id: '', guarantor_relationship: '',
   // Step 4
-  device_model: '', device_price: '', down_payment: '', payment_frequency: 'monthly', duration: 12,
+  device_id: '', device_model: '', device_price: '', down_payment: '', payment_frequency: 'monthly', duration: 12,
 }
 
 export default function StaffAddCustomer() {
@@ -64,6 +55,19 @@ export default function StaffAddCustomer() {
   const [form, setForm] = useState(initForm)
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
+  const [availableDevices, setAvailableDevices] = useState([])
+  const [devicesLoading, setDevicesLoading] = useState(false)
+
+  useEffect(() => {
+    setDevicesLoading(true)
+    api.get('/staff/devices')
+      .then(res => {
+        const d = res.data?.data?.devices || res.data?.devices || []
+        setAvailableDevices(d)
+      })
+      .catch(() => toast.error('Could not load available devices'))
+      .finally(() => setDevicesLoading(false))
+  }, [])
 
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }))
   const districts = form.region ? (GHANA_REGIONS[form.region] || []) : []
@@ -164,6 +168,7 @@ export default function StaffAddCustomer() {
         guarantor_phone: form.guarantor_phone,
         guarantor_ghana_card_id: form.guarantor_ghana_card_id,
         guarantor_relationship: form.guarantor_relationship,
+        device_id: form.device_id || undefined,
         device_model: form.device_model,
         device_price: Number(form.device_price),
         down_payment: Number(form.down_payment),
@@ -175,7 +180,8 @@ export default function StaffAddCustomer() {
       const customerId = res.data?.data?.customer?._id || res.data?.customer?._id || res.data?.data?.customer?.id
       navigate(`/staff/customers/${customerId}`)
     } catch (err) {
-      const msg = err?.response?.data?.error || 'Registration failed. Please try again.'
+      const d = err?.response?.data
+      const msg = d?.error || d?.message || d?.errors?.[0]?.msg || 'Registration failed. Please check all fields and try again.'
       toast.error(msg)
     } finally {
       setSubmitting(false)
@@ -523,22 +529,33 @@ export default function StaffAddCustomer() {
           <h2 className="text-base font-bold text-gray-800">Device & Payment Plan</h2>
 
           <FormField label="iPhone Model" required error={errors.device_model}>
-            <select
-              value={form.device_model}
-              onChange={(e) => {
-                const m = IPHONE_MODELS.find(i => i.model === e.target.value)
-                set('device_model', e.target.value)
-                set('device_price', m ? String(m.price) : '')
-              }}
-              className={selectClass(errors.device_model)}
-            >
-              <option value="">Select iPhone Model</option>
-              {IPHONE_MODELS.map(m => (
-                <option key={m.model} value={m.model}>
-                  {m.model} — GHS {m.price.toLocaleString()}
-                </option>
-              ))}
-            </select>
+            {devicesLoading ? (
+              <div className="flex items-center gap-2 px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm text-gray-400">
+                <LoadingSpinner size="sm" /> Loading available devices...
+              </div>
+            ) : availableDevices.length === 0 ? (
+              <div className="px-4 py-3 border-2 border-orange-200 bg-orange-50 rounded-2xl text-sm text-orange-700 font-medium">
+                No available devices in stock. Ask admin to add devices first.
+              </div>
+            ) : (
+              <select
+                value={form.device_model}
+                onChange={(e) => {
+                  const d = availableDevices.find(i => i._id === e.target.value)
+                  set('device_model', d ? d.model : '')
+                  set('device_price', d ? String(d.price) : '')
+                  set('device_id', d ? d._id : '')
+                }}
+                className={selectClass(errors.device_model)}
+              >
+                <option value="">Select iPhone Model</option>
+                {availableDevices.map(d => (
+                  <option key={d._id} value={d._id}>
+                    {d.model}{d.storage ? ` ${d.storage}` : ''}{d.color ? ` (${d.color})` : ''} — GHS {Number(d.price).toLocaleString()}
+                  </option>
+                ))}
+              </select>
+            )}
           </FormField>
 
           {form.device_model && (

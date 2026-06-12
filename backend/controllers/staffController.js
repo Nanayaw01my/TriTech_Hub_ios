@@ -193,7 +193,8 @@ const addCustomer = async (req, res) => {
       guarantor_phone,
       guarantor_ghana_card_id,
       guarantor_relationship,
-      // device fields (frontend sends model+price, not device_id)
+      // device fields
+      device_id: device_id_param,
       device_model,
       device_price,
       down_payment,
@@ -213,15 +214,18 @@ const addCustomer = async (req, res) => {
       });
     }
 
-    // --- 2. Find an available device or create one for this model ---
-    let device = await Device.findOne({ model: device_model, sold_status: 'available' });
-    if (!device) {
-      // Auto-create a device record so the registration can proceed
-      device = await Device.create({
-        model: device_model,
-        price: Number(device_price) || 0,
-        sold_status: 'available',
-      });
+    // --- 2. Find the specific device or match by model ---
+    let device = null;
+    if (device_id_param) {
+      device = await Device.findOne({ _id: device_id_param, sold_status: 'available' });
+      if (!device) {
+        return res.status(400).json({ success: false, message: 'Selected device is no longer available. Please choose another.' });
+      }
+    } else {
+      device = await Device.findOne({ model: device_model, sold_status: 'available' });
+      if (!device) {
+        device = await Device.create({ model: device_model, price: Number(device_price) || 0, sold_status: 'available' });
+      }
     }
 
     // --- 3. Check email uniqueness ---
@@ -581,4 +585,17 @@ module.exports = {
   getCustomerDetail,
   getCustomerPayments,
   makePaymentForCustomer,
+  getAvailableDevices,
+};
+
+const getAvailableDevices = async (req, res) => {
+  try {
+    const devices = await Device.find({ sold_status: 'available' })
+      .select('model color storage price serial_number udid')
+      .sort({ model: 1 });
+    return res.status(200).json({ success: true, data: { devices } });
+  } catch (error) {
+    console.error('Staff getAvailableDevices error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
 };
