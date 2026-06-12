@@ -47,7 +47,7 @@ export default function CustomerDashboard() {
   const paidAmount = (plan?.down_payment || 0) + ((plan?.payments_made || 0) * (plan?.installment_amount || 0))
 
   return (
-    <div className="pb-24 min-h-screen bg-gray-50">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gray-50">
       {/* Hero Header */}
       <div className={`px-5 pt-6 pb-10 ${isLocked ? 'bg-red-700' : isOverdue ? 'bg-orange-700' : 'bg-green-800'}`}>
         <p className="text-white text-opacity-75 text-sm">Welcome back,</p>

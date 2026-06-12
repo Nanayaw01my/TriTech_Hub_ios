@@ -65,7 +65,7 @@ export default function AdminTransactions() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 pb-24 pt-4">
+    <div className="max-w-6xl mx-auto px-4 lg:px-0 pb-24 lg:pb-6 pt-4">
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Transactions</h1>

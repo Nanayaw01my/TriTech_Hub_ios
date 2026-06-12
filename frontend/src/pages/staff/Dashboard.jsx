@@ -78,7 +78,7 @@ export default function StaffDashboard() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pb-24 pt-4">
+    <div className="max-w-3xl mx-auto px-4 lg:px-0 pb-24 lg:pb-6 pt-4">
       {/* Header */}
       <div className="mb-5">
         <p className="text-sm text-gray-500">Staff Portal</p>

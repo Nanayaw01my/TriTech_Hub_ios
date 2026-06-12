@@ -3,117 +3,141 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ConfirmModal from './ConfirmModal'
 
+// ─── Icons ────────────────────────────────────────────────────────────────────
+const Icon = {
+  home: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />,
+  customers: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />,
+  staff: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />,
+  devices: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />,
+  payments: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />,
+  reports: <><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></>,
+  audit: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />,
+  settings: <><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></>,
+  addCustomer: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />,
+  profile: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />,
+  logout: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />,
+  menu: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />,
+  close: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />,
+}
+
+const NavIcon = ({ path, className = 'w-5 h-5' }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">{path}</svg>
+)
+
+// ─── Nav definitions ──────────────────────────────────────────────────────────
 const ADMIN_NAV = [
-  {
-    to: '/admin/dashboard',
-    label: 'Home',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-    ),
-  },
-  {
-    to: '/admin/customers',
-    label: 'Customers',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-  },
-  {
-    to: '/admin/transactions',
-    label: 'Payments',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-      </svg>
-    ),
-  },
-  {
-    to: '/admin/settings',
-    label: 'Settings',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-  },
+  { to: '/admin/dashboard', label: 'Dashboard', icon: Icon.home },
+  { to: '/admin/customers', label: 'Customers', icon: Icon.customers },
+  { to: '/admin/staff', label: 'Staff', icon: Icon.staff },
+  { to: '/admin/devices', label: 'Devices', icon: Icon.devices },
+  { to: '/admin/transactions', label: 'Transactions', icon: Icon.payments },
+  { to: '/admin/reports', label: 'Reports', icon: Icon.reports },
+  { to: '/admin/audit-logs', label: 'Audit Logs', icon: Icon.audit },
+  { to: '/admin/settings', label: 'Settings', icon: Icon.settings },
 ]
 
 const STAFF_NAV = [
-  {
-    to: '/staff/dashboard',
-    label: 'Home',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-    ),
-  },
-  {
-    to: '/staff/customers',
-    label: 'Customers',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-  },
-  {
-    to: '/staff/customers/add',
-    label: 'Add',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-      </svg>
-    ),
-  },
+  { to: '/staff/dashboard', label: 'Dashboard', icon: Icon.home },
+  { to: '/staff/customers', label: 'My Customers', icon: Icon.customers },
+  { to: '/staff/customers/add', label: 'Add Customer', icon: Icon.addCustomer },
 ]
 
 const CUSTOMER_NAV = [
-  {
-    to: '/customer/dashboard',
-    label: 'Home',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-    ),
-  },
-  {
-    to: '/customer/payments',
-    label: 'Payments',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-      </svg>
-    ),
-  },
-  {
-    to: '/customer/profile',
-    label: 'Profile',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-      </svg>
-    ),
-  },
+  { to: '/customer/dashboard', label: 'Dashboard', icon: Icon.home },
+  { to: '/customer/payments', label: 'Payments', icon: Icon.payments },
+  { to: '/customer/profile', label: 'My Profile', icon: Icon.profile },
 ]
 
-const ADMIN_SIDEBAR = [
-  { to: '/admin/dashboard', label: 'Dashboard', icon: '🏠' },
-  { to: '/admin/customers', label: 'Customers', icon: '👥' },
-  { to: '/admin/staff', label: 'Staff', icon: '👤' },
-  { to: '/admin/devices', label: 'Devices', icon: '📱' },
-  { to: '/admin/transactions', label: 'Transactions', icon: '💳' },
-  { to: '/admin/reports', label: 'Reports', icon: '📊' },
-  { to: '/admin/audit-logs', label: 'Audit Logs', icon: '📋' },
-  { to: '/admin/settings', label: 'Settings', icon: '⚙️' },
+// Bottom nav items (mobile only — fewer items)
+const ADMIN_BOTTOM = [
+  { to: '/admin/dashboard', label: 'Home', icon: Icon.home },
+  { to: '/admin/customers', label: 'Customers', icon: Icon.customers },
+  { to: '/admin/transactions', label: 'Payments', icon: Icon.payments },
+  { to: '/admin/settings', label: 'Settings', icon: Icon.settings },
 ]
 
+// ─── Sidebar link component ───────────────────────────────────────────────────
+function SideNavLink({ item, role, onClick }) {
+  const location = useLocation()
+  const dashboardPath = `/${role}/dashboard`
+  const isActive =
+    location.pathname === item.to ||
+    (item.to !== dashboardPath &&
+      item.to !== `/${role}/customers/add` &&
+      location.pathname.startsWith(item.to))
+
+  return (
+    <NavLink
+      to={item.to}
+      onClick={onClick}
+      className={`group flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm font-medium transition-all duration-150
+        ${isActive
+          ? 'bg-white/15 text-white'
+          : 'text-green-100/70 hover:bg-white/10 hover:text-white'
+        }`}
+    >
+      <NavIcon path={item.icon} className="w-5 h-5 flex-shrink-0" />
+      <span>{item.label}</span>
+      {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60" />}
+    </NavLink>
+  )
+}
+
+// ─── Sidebar component ────────────────────────────────────────────────────────
+function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
+  const roleLabel = role === 'admin' ? 'Admin Portal' : role === 'staff' ? 'Staff Portal' : 'My Account'
+
+  return (
+    <div className="flex flex-col h-full bg-gradient-to-b from-green-900 to-green-950">
+      {/* Brand */}
+      <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
+        <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+          <span className="text-green-800 font-black text-sm">TH</span>
+        </div>
+        <div>
+          <p className="text-white font-bold text-sm leading-tight">Tritech Hub iOS</p>
+          <p className="text-green-300 text-xs">{roleLabel}</p>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 py-4 overflow-y-auto space-y-0.5">
+        {navItems.map(item => (
+          <SideNavLink key={item.to} item={item} role={role} onClick={onLinkClick} />
+        ))}
+      </nav>
+
+      {/* User + Logout */}
+      <div className="border-t border-white/10 p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+            <span className="text-white font-bold text-sm">
+              {(user?.full_name || user?.name || 'U').charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-sm font-semibold truncate">
+              {user?.full_name || user?.name || 'User'}
+            </p>
+            <p className="text-green-300 text-xs truncate">
+              {user?.staff_id || user?.account_number || user?.email || ''}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={onLogout}
+          className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium
+                     text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-all"
+        >
+          <NavIcon path={Icon.logout} className="w-4 h-4" />
+          Sign Out
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main Layout ──────────────────────────────────────────────────────────────
 export default function Layout({ role }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -123,6 +147,7 @@ export default function Layout({ role }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const navItems = role === 'admin' ? ADMIN_NAV : role === 'staff' ? STAFF_NAV : CUSTOMER_NAV
+  const bottomItems = role === 'admin' ? ADMIN_BOTTOM : navItems
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -130,137 +155,100 @@ export default function Layout({ role }) {
     navigate('/login')
   }
 
-  const getRoleLabel = () => {
-    if (role === 'admin') return 'Admin Portal'
-    if (role === 'staff') return 'Staff Portal'
-    return 'My Account'
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Top Nav Bar */}
-      <header className="bg-green-800 text-white sticky top-0 z-40 shadow-lg">
-        <div className="flex items-center justify-between px-4 h-14">
-          {/* Hamburger for admin desktop sidebar */}
-          {role === 'admin' && (
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-green-700 transition-colors mr-2"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          )}
+    <div className="min-h-screen bg-gray-50 flex">
 
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-green-800 font-black text-xs">TH</span>
-            </div>
-            <div>
-              <p className="font-bold text-sm leading-tight">Tritech Hub iOS</p>
-              <p className="text-green-200 text-xs leading-tight">{getRoleLabel()}</p>
-            </div>
-          </div>
+      {/* ── Desktop Sidebar (all roles) ── */}
+      <aside className="hidden lg:flex lg:flex-col lg:w-60 lg:flex-shrink-0 fixed inset-y-0 left-0 z-30">
+        <Sidebar
+          role={role}
+          navItems={navItems}
+          user={user}
+          onLinkClick={() => {}}
+          onLogout={() => setLogoutModal(true)}
+        />
+      </aside>
 
-          <div className="flex items-center gap-2">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-semibold leading-tight">
-                {user?.full_name || user?.name || 'User'}
-              </p>
-              {user?.staff_id && (
-                <p className="text-green-200 text-xs">{user.staff_id}</p>
-              )}
-              {user?.account_number && (
-                <p className="text-green-200 text-xs">{user.account_number}</p>
-              )}
-            </div>
-
-            <button
-              onClick={() => setLogoutModal(true)}
-              className="p-2 rounded-lg hover:bg-green-700 transition-colors ml-1"
-              title="Logout"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </button>
+      {/* ── Mobile Sidebar Drawer ── */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <div className="relative w-64 flex-shrink-0">
+            <Sidebar
+              role={role}
+              navItems={navItems}
+              user={user}
+              onLinkClick={() => setSidebarOpen(false)}
+              onLogout={() => { setSidebarOpen(false); setLogoutModal(true) }}
+            />
           </div>
         </div>
-      </header>
+      )}
 
-      <div className="flex flex-1">
-        {/* Admin Sidebar - Desktop */}
-        {role === 'admin' && (
-          <>
-            {/* Mobile overlay */}
-            {sidebarOpen && (
-              <div
-                className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-                onClick={() => setSidebarOpen(false)}
-              />
-            )}
+      {/* ── Content Area ── */}
+      <div className="flex-1 flex flex-col min-w-0 lg:ml-60">
 
-            <aside className={`
-              fixed lg:static top-14 left-0 h-[calc(100vh-56px)] lg:h-auto
-              w-64 bg-white shadow-lg z-30
-              transition-transform duration-300
-              ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-              flex flex-col
-            `}>
-              <nav className="flex-1 py-4 overflow-y-auto">
-                {ADMIN_SIDEBAR.map((item) => {
-                  const isActive = location.pathname === item.to ||
-                    (item.to !== '/admin/dashboard' && location.pathname.startsWith(item.to))
-                  return (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      onClick={() => setSidebarOpen(false)}
-                      className={`flex items-center gap-3 px-5 py-3.5 text-sm font-medium transition-colors
-                        ${isActive
-                          ? 'bg-green-50 text-green-800 border-r-4 border-green-800'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                        }`}
-                    >
-                      <span className="text-lg">{item.icon}</span>
-                      {item.label}
-                    </NavLink>
-                  )
-                })}
-              </nav>
-
-              <div className="p-4 border-t border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center">
-                    <span className="text-green-800 font-bold text-sm">
-                      {(user?.full_name || user?.name || 'A').charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">
-                      {user?.full_name || user?.name}
-                    </p>
-                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                  </div>
-                </div>
+        {/* Mobile top bar */}
+        <header className="lg:hidden bg-green-900 text-white sticky top-0 z-40 shadow-md">
+          <div className="flex items-center justify-between px-4 h-14">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 rounded-xl hover:bg-white/10 transition-colors"
+            >
+              <NavIcon path={Icon.menu} className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center">
+                <span className="text-green-800 font-black text-xs">TH</span>
               </div>
-            </aside>
-          </>
-        )}
+              <p className="font-bold text-sm">Tritech Hub iOS</p>
+            </div>
+            <button
+              onClick={() => setLogoutModal(true)}
+              className="p-2 rounded-xl hover:bg-white/10 transition-colors"
+              title="Sign out"
+            >
+              <NavIcon path={Icon.logout} className="w-5 h-5" />
+            </button>
+          </div>
+        </header>
 
-        {/* Main Content */}
-        <main className="flex-1 min-w-0 overflow-x-hidden pb-20 lg:pb-6">
+        {/* Desktop page header bar */}
+        <div className="hidden lg:flex items-center justify-between px-8 py-4 bg-white border-b border-gray-100 shadow-sm">
+          <div>
+            <PageTitle location={location} role={role} />
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-sm font-semibold text-gray-900">
+                {user?.full_name || user?.name || 'User'}
+              </p>
+              <p className="text-xs text-gray-400 capitalize">{role}</p>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center">
+              <span className="text-green-800 font-bold text-sm">
+                {(user?.full_name || user?.name || 'U').charAt(0).toUpperCase()}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <main className="flex-1 overflow-x-hidden">
           <Outlet />
         </main>
       </div>
 
-      {/* Bottom Navigation - Mobile */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 bottom-nav lg:hidden">
+      {/* ── Mobile Bottom Nav ── */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 lg:hidden">
         <div className="flex items-stretch h-16">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.to ||
-              (item.to !== `/${role}/dashboard` && location.pathname.startsWith(item.to) && item.to !== `/${role}/customers/add`)
+          {bottomItems.map((item) => {
+            const dashboardPath = `/${role}/dashboard`
+            const isActive =
+              location.pathname === item.to ||
+              (item.to !== dashboardPath &&
+                item.to !== `/${role}/customers/add` &&
+                location.pathname.startsWith(item.to))
             return (
               <NavLink
                 key={item.to}
@@ -268,10 +256,10 @@ export default function Layout({ role }) {
                 className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 transition-colors
                   ${isActive ? 'text-green-800' : 'text-gray-400 hover:text-gray-600'}`}
               >
-                <div className={`p-1 rounded-xl transition-colors ${isActive ? 'bg-green-50' : ''}`}>
-                  {item.icon}
+                <div className={`p-1 rounded-xl ${isActive ? 'bg-green-50' : ''}`}>
+                  <NavIcon path={item.icon} className="w-5 h-5" />
                 </div>
-                <span className="text-[10px] font-semibold">{item.label}</span>
+                <span className="text-[10px] font-semibold">{item.label.split(' ')[0]}</span>
               </NavLink>
             )
           })}
@@ -291,4 +279,26 @@ export default function Layout({ role }) {
       />
     </div>
   )
+}
+
+// ─── Desktop page title helper ────────────────────────────────────────────────
+function PageTitle({ location, role }) {
+  const allNav = [
+    ...ADMIN_NAV,
+    ...STAFF_NAV,
+    ...CUSTOMER_NAV,
+    { to: '/admin/customers/', label: 'Customer Detail' },
+    { to: '/staff/customers/', label: 'Customer Detail' },
+    { to: '/staff/customers/add', label: 'Register Customer' },
+  ]
+  const match = allNav
+    .filter(n => location.pathname.startsWith(n.to) && n.to !== `/${role}/dashboard`)
+    .sort((a, b) => b.to.length - a.to.length)[0]
+  const exact = allNav.find(n => n.to === location.pathname)
+  const item = exact || match
+
+  if (!item) {
+    return <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+  }
+  return <h1 className="text-xl font-bold text-gray-900">{item.label}</h1>
 }

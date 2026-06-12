@@ -120,7 +120,7 @@ export default function AdminStaff() {
   const totalSales = salesData.reduce((s, d) => s + (d.period_sales || 0), 0)
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pb-24 pt-4">
+    <div className="max-w-4xl mx-auto px-4 lg:px-0 pb-24 lg:pb-6 pt-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>

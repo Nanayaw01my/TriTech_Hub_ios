@@ -108,7 +108,7 @@ export default function AdminCustomerDetail() {
   const guarPhoto = photoUrl(photos.guarantor_photo)
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pb-24 pt-4">
+    <div className="max-w-3xl mx-auto px-4 lg:px-0 pb-24 lg:pb-6 pt-4">
       {/* Back button */}
       <button
         onClick={() => navigate(-1)}
