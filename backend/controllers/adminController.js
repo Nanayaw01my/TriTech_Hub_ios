@@ -305,7 +305,7 @@ const getStaff = async (req, res) => {
     const limit = Math.min(100, parseInt(req.query.limit) || 20);
     const skip = (page - 1) * limit;
 
-    const filter = { role: 'staff' };
+    const filter = { role: 'staff', is_active: true };
     if (req.query.search) {
       const r = new RegExp(req.query.search, 'i');
       filter.$or = [{ name: r }, { email: r }, { staff_id: r }];
@@ -1044,7 +1044,8 @@ const getStaffSales = async (req, res) => {
     }
 
     const staffUsers = await User.find({ role: 'staff', is_active: true })
-      .select('name email staff_id phone branch commission_per_sale');
+      .select('name email staff_id phone branch commission_per_sale')
+      .sort({ created_at: -1 });
 
     const salesData = await Promise.all(
       staffUsers.map(async (s) => {

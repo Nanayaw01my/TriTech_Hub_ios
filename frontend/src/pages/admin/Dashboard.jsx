@@ -145,56 +145,64 @@ export default function AdminDashboard() {
         </p>
       </div>
 
-      {/* Summary Cards - 2 per row mobile, 3 per row tablet+ */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         {summaryCards.map((card) => (
           <div key={card.label} className={`${card.bg} rounded-2xl p-4 border border-opacity-50`}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                {card.icon}
-              </div>
+            <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-sm mb-2">
+              {card.icon}
             </div>
             <p className={`text-2xl font-black ${card.text}`}>{card.value.toLocaleString()}</p>
-            <p className="text-xs font-semibold text-gray-600 mt-0.5">{card.label}</p>
+            <p className="text-xs font-semibold text-gray-600 mt-0.5 leading-tight">{card.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Navigation Cards - 2 per row */}
-      <h2 className="text-base font-bold text-gray-700 mb-3">Quick Navigation</h2>
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        {NAV_CARDS.map((card) => (
-          <button
-            key={card.label}
-            onClick={() => navigate(card.to)}
-            className={`${card.color} border-2 rounded-2xl p-4 text-left
-                       active:scale-95 transition-all duration-150 hover:shadow-md`}
-          >
-            <div className="text-3xl mb-2">{card.icon}</div>
-            <p className="text-sm font-black text-gray-800 tracking-wide">{card.label}</p>
-          </button>
-        ))}
-      </div>
+      {/* Desktop 2-column, Mobile 1-column */}
+      <div className="lg:grid lg:grid-cols-2 lg:gap-6 space-y-5 lg:space-y-0">
 
-      {/* Revenue Chart */}
-      {revenueData.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-card p-4 mb-5">
-          <h3 className="text-base font-bold text-gray-800 mb-4">Monthly Revenue (GHS)</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={revenueData} margin={{ top: 0, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="_id" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip
-                formatter={(value) => [`GHS ${Number(value).toLocaleString()}`, 'Revenue']}
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
-              />
-              <Bar dataKey="total_revenue" fill="#2E7D32" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        {/* Left column */}
+        <div className="space-y-5">
+          {/* Quick Navigation */}
+          <div className="bg-white rounded-2xl shadow-card p-4">
+            <h2 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">Quick Navigation</h2>
+            <div className="grid grid-cols-3 gap-2">
+              {NAV_CARDS.map((card) => (
+                <button
+                  key={card.label}
+                  onClick={() => navigate(card.to)}
+                  className={`${card.color} border-2 rounded-2xl p-3 text-center
+                             active:scale-95 transition-all duration-150 hover:shadow-md`}
+                >
+                  <div className="text-2xl mb-1">{card.icon}</div>
+                  <p className="text-[10px] font-black text-gray-700 tracking-wide leading-tight">{card.label}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Revenue Chart */}
+          {revenueData.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-card p-4">
+              <h3 className="text-sm font-bold text-gray-800 mb-4 uppercase tracking-wide">Monthly Revenue (GHS)</h3>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={revenueData} margin={{ top: 0, right: 10, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="_id" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip
+                    formatter={(value) => [`GHS ${Number(value).toLocaleString()}`, 'Revenue']}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                  />
+                  <Bar dataKey="total_revenue" fill="#2E7D32" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
-      )}
 
+        {/* Right column */}
+        <div>
       {/* Recent Transactions */}
       <div className="bg-white rounded-2xl shadow-card p-4">
         <div className="flex items-center justify-between mb-4">
@@ -244,6 +252,8 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+        </div>{/* end right column */}
+      </div>{/* end 2-col grid */}
     </div>
   )
 }
