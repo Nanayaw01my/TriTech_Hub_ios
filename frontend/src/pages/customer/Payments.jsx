@@ -58,7 +58,7 @@ export default function CustomerPayments() {
   const paidAmount = (plan?.down_payment || 0) + ((plan?.payments_made || 0) * (plan?.installment_amount || 0))
 
   return (
-    <div className="max-w-3xl mx-auto px-4 lg:px-0 pb-24 lg:pb-6 pt-4">
+    <div className="max-w-3xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
       <h1 className="text-2xl font-black text-gray-900 mb-4">Payments</h1>
 
       {/* Make Payment CTA */}

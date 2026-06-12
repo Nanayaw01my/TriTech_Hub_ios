@@ -65,7 +65,7 @@ export default function CustomerProfile() {
   const cardBackUrl = customer?.ghana_card_back_url || (customer?.photos?.ghana_card_back ? `/uploads/${customer.photos.ghana_card_back}` : null)
 
   return (
-    <div className="max-w-3xl mx-auto px-4 lg:px-0 pb-24 lg:pb-6 pt-4">
+    <div className="max-w-3xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
       <h1 className="text-2xl font-black text-gray-900 mb-4">My Profile</h1>
 
       {/* Profile Card */}

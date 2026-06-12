@@ -37,7 +37,7 @@ export default function StaffCustomers() {
   }, [fetchCustomers])
 
   return (
-    <div className="max-w-3xl mx-auto px-4 lg:px-0 pb-24 lg:pb-6 pt-4">
+    <div className="max-w-3xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-black text-gray-900">My Customers</h1>

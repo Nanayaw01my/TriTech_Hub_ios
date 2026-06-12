@@ -232,7 +232,9 @@ export default function Layout({ role }) {
 
         {/* Main content */}
         <main className="flex-1 overflow-x-hidden">
-          <Outlet />
+          <div className="lg:px-8 lg:py-2">
+            <Outlet />
+          </div>
         </main>
       </div>
 

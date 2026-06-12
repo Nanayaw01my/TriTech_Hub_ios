@@ -53,7 +53,7 @@ export default function AdminCustomers() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 lg:px-0 pb-24 lg:pb-6 pt-4">
+    <div className="max-w-6xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
       <div className="mb-4">
         <h1 className="text-2xl font-black text-gray-900">Customers</h1>
         <p className="text-sm text-gray-500 mt-0.5">{total} total customers</p>

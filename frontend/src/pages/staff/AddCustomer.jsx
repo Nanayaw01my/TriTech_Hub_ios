@@ -189,7 +189,7 @@ export default function StaffAddCustomer() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 lg:px-0 pb-28 lg:pb-6 pt-4">
+    <div className="max-w-3xl mx-auto px-4 pb-28 lg:pb-6 pt-4">
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <button

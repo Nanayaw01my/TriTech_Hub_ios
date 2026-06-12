@@ -87,7 +87,7 @@ export default function AdminSettings() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 lg:px-0 pb-24 lg:pb-6 pt-4">
+    <div className="max-w-3xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
       <div className="mb-5">
         <h1 className="text-2xl font-black text-gray-900">Settings</h1>
         <p className="text-sm text-gray-500 mt-0.5">Configure app settings</p>

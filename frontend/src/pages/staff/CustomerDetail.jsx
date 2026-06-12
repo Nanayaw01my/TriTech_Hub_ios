@@ -60,7 +60,7 @@ export default function StaffCustomerDetail() {
   const device = customer.device
 
   return (
-    <div className="max-w-3xl mx-auto px-4 lg:px-0 pb-24 lg:pb-6 pt-4">
+    <div className="max-w-3xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-1.5 text-green-700 font-semibold text-sm mb-4 hover:text-green-900"
