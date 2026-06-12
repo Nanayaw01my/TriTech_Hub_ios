@@ -331,4 +331,136 @@ module.exports = {
   sendPasswordResetEmail,
   sendPaymentConfirmationEmail,
   sendLockNotificationEmail,
+  sendAdminPaymentReminderEmail,
+  sendAdminOverdueAlertEmail,
 };
+
+/**
+ * Email admin 2 days before a customer's payment is due.
+ */
+async function sendAdminPaymentReminderEmail(adminEmail, customers) {
+  const transporter = createTransporter();
+  const businessName = process.env.BUSINESS_NAME || 'Tritech Hub iOS';
+
+  const rows = customers.map(c => `
+    <tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #eee;font-weight:600">${c.customerName}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #eee">${c.phone || '—'}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #eee">${c.deviceModel}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #eee;font-weight:700;color:#166534">GHS ${Number(c.amount).toLocaleString()}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #eee;color:#d97706;font-weight:600">${c.dueDate}</td>
+    </tr>
+  `).join('');
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM || `${businessName} <${process.env.EMAIL_USER}>`,
+    to: adminEmail,
+    subject: `⏰ ${customers.length} Payment(s) Due in 2 Days — ${businessName}`,
+    html: `
+      <!DOCTYPE html><html><head><meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+      <body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0">
+        <div style="max-width:620px;margin:40px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.1)">
+          <div style="background:#166534;padding:28px 30px;text-align:center">
+            <h1 style="color:#fff;margin:0;font-size:22px">${businessName}</h1>
+            <p style="color:#bbf7d0;margin:6px 0 0;font-size:15px">⏰ Payment Due Reminder</p>
+          </div>
+          <div style="padding:28px 30px">
+            <p style="color:#374151;font-size:15px;margin:0 0 16px">
+              The following customer(s) have a payment due in <strong>2 days</strong>.
+              Please follow up with them now to ensure timely payment.
+            </p>
+            <table style="width:100%;border-collapse:collapse;font-size:14px">
+              <thead>
+                <tr style="background:#f0fdf4">
+                  <th style="padding:10px 12px;text-align:left;color:#166534;border-bottom:2px solid #dcfce7">Customer</th>
+                  <th style="padding:10px 12px;text-align:left;color:#166534;border-bottom:2px solid #dcfce7">Phone</th>
+                  <th style="padding:10px 12px;text-align:left;color:#166534;border-bottom:2px solid #dcfce7">Device</th>
+                  <th style="padding:10px 12px;text-align:left;color:#166534;border-bottom:2px solid #dcfce7">Amount</th>
+                  <th style="padding:10px 12px;text-align:left;color:#166534;border-bottom:2px solid #dcfce7">Due Date</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+            <p style="color:#6b7280;font-size:13px;margin:20px 0 0">
+              Log in to your dashboard to view full customer details.
+            </p>
+          </div>
+          <div style="background:#f9fafb;padding:16px 30px;text-align:center;font-size:12px;color:#9ca3af;border-top:1px solid #eee">
+            &copy; ${new Date().getFullYear()} ${businessName} · Automated reminder
+          </div>
+        </div>
+      </body></html>
+    `,
+  });
+}
+
+/**
+ * Email admin when a customer's payment is overdue (48+ hours).
+ */
+async function sendAdminOverdueAlertEmail(adminEmail, customers) {
+  const transporter = createTransporter();
+  const businessName = process.env.BUSINESS_NAME || 'Tritech Hub iOS';
+
+  const rows = customers.map(c => `
+    <tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #eee;font-weight:600">${c.customerName}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #eee">${c.phone || '—'}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #eee">${c.deviceModel}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #eee;font-weight:700;color:#991b1b">GHS ${Number(c.amount).toLocaleString()}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #eee;color:#dc2626;font-weight:600">${c.hoursOverdue}h overdue</td>
+    </tr>
+  `).join('');
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM || `${businessName} <${process.env.EMAIL_USER}>`,
+    to: adminEmail,
+    subject: `🔴 ${customers.length} Overdue Payment(s) — Action Required — ${businessName}`,
+    html: `
+      <!DOCTYPE html><html><head><meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+      <body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0">
+        <div style="max-width:620px;margin:40px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.1)">
+          <div style="background:#dc2626;padding:28px 30px;text-align:center">
+            <h1 style="color:#fff;margin:0;font-size:22px">${businessName}</h1>
+            <p style="color:#fecaca;margin:6px 0 0;font-size:15px">🔴 Overdue Payment Alert</p>
+          </div>
+          <div style="padding:28px 30px">
+            <p style="color:#374151;font-size:15px;margin:0 0 8px">
+              The following customer(s) have <strong>not paid</strong> and are overdue by 48+ hours.
+            </p>
+            <p style="color:#374151;font-size:15px;margin:0 0 20px">
+              <strong>Please lock their iPhone on iCloud now</strong> — go to
+              <a href="https://icloud.com/find" style="color:#dc2626">icloud.com/find</a>,
+              find their device and enable Lost Mode.
+            </p>
+            <table style="width:100%;border-collapse:collapse;font-size:14px">
+              <thead>
+                <tr style="background:#fef2f2">
+                  <th style="padding:10px 12px;text-align:left;color:#991b1b;border-bottom:2px solid #fecaca">Customer</th>
+                  <th style="padding:10px 12px;text-align:left;color:#991b1b;border-bottom:2px solid #fecaca">Phone</th>
+                  <th style="padding:10px 12px;text-align:left;color:#991b1b;border-bottom:2px solid #fecaca">Device</th>
+                  <th style="padding:10px 12px;text-align:left;color:#991b1b;border-bottom:2px solid #fecaca">Amount</th>
+                  <th style="padding:10px 12px;text-align:left;color:#991b1b;border-bottom:2px solid #fecaca">Status</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:14px;margin:20px 0 0">
+              <strong style="color:#991b1b">Steps to lock on iCloud:</strong>
+              <ol style="color:#7f1d1d;margin:8px 0 0;padding-left:18px;line-height:1.8">
+                <li>Go to <a href="https://icloud.com/find" style="color:#dc2626">icloud.com/find</a></li>
+                <li>Sign in with your business Apple ID</li>
+                <li>Click on the customer's device name</li>
+                <li>Click <strong>Lost Mode</strong> → enter your phone number → Activate</li>
+              </ol>
+            </div>
+          </div>
+          <div style="background:#f9fafb;padding:16px 30px;text-align:center;font-size:12px;color:#9ca3af;border-top:1px solid #eee">
+            &copy; ${new Date().getFullYear()} ${businessName} · Automated alert
+          </div>
+        </div>
+      </body></html>
+    `,
+  });
+}

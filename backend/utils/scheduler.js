@@ -5,7 +5,7 @@ const Customer = require('../models/Customer');
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
 const { lockDevice } = require('./simpleMDM');
-const { sendLockNotificationEmail } = require('./email');
+const { sendLockNotificationEmail, sendAdminPaymentReminderEmail, sendAdminOverdueAlertEmail } = require('./email');
 
 /**
  * Check for overdue installment plans and lock devices.
@@ -39,6 +39,8 @@ const checkOverduePayments = async () => {
     }
 
     console.log(`[Scheduler] Found ${overduePlans.length} overdue plan(s). Processing...`);
+
+    const overdueAdminList = [];
 
     for (const plan of overduePlans) {
       try {
@@ -120,8 +122,16 @@ const checkOverduePayments = async () => {
           console.error(
             `[Scheduler] Failed to send lock notification email: ${emailError.message}`
           );
-          // Don't fail the whole process if email fails
         }
+
+        // Collect for admin overdue alert
+        overdueAdminList.push({
+          customerName: customer.full_name,
+          phone: customer.phone || '',
+          deviceModel: device.model,
+          amount: plan.installment_amount,
+          hoursOverdue: Math.round((Date.now() - new Date(plan.next_due_date)) / (1000 * 60 * 60)),
+        });
 
         console.log(
           `[Scheduler] Successfully processed overdue plan ${plan._id}: device locked, plan defaulted.`
@@ -132,6 +142,16 @@ const checkOverduePayments = async () => {
       }
     }
 
+    // Email admin with all overdue customers in one digest
+    if (overdueAdminList.length > 0 && process.env.ADMIN_EMAIL) {
+      try {
+        await sendAdminOverdueAlertEmail(process.env.ADMIN_EMAIL, overdueAdminList);
+        console.log(`[Scheduler] Admin overdue alert sent to ${process.env.ADMIN_EMAIL} for ${overdueAdminList.length} customer(s).`);
+      } catch (adminEmailError) {
+        console.error(`[Scheduler] Failed to send admin overdue alert: ${adminEmailError.message}`);
+      }
+    }
+
     console.log('[Scheduler] checkOverduePayments job completed.');
   } catch (error) {
     console.error('[Scheduler] Fatal error in checkOverduePayments:', error.message);
@@ -139,8 +159,52 @@ const checkOverduePayments = async () => {
 };
 
 /**
+ * Check for payments due within the next 48 hours and email the admin a reminder.
+ */
+const checkUpcomingPayments = async () => {
+  console.log('[Scheduler] Running checkUpcomingPayments job...');
+
+  try {
+    const now = new Date();
+    const in48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+
+    const upcomingPlans = await InstallmentPlan.find({
+      status: 'active',
+      next_due_date: { $gte: now, $lte: in48Hours },
+    })
+      .populate({ path: 'device_id', select: 'model' })
+      .populate({ path: 'customer_id', select: 'full_name phone' });
+
+    if (upcomingPlans.length === 0) {
+      console.log('[Scheduler] No upcoming payments in the next 48 hours.');
+      return;
+    }
+
+    const reminderList = upcomingPlans
+      .filter((p) => p.device_id && p.customer_id)
+      .map((p) => ({
+        customerName: p.customer_id.full_name,
+        phone: p.customer_id.phone || '',
+        deviceModel: p.device_id.model,
+        amount: p.installment_amount,
+        dueDate: new Date(p.next_due_date).toLocaleDateString('en-GH', {
+          weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+        }),
+      }));
+
+    if (reminderList.length > 0 && process.env.ADMIN_EMAIL) {
+      await sendAdminPaymentReminderEmail(process.env.ADMIN_EMAIL, reminderList);
+      console.log(`[Scheduler] Admin payment reminder sent for ${reminderList.length} upcoming payment(s).`);
+    }
+  } catch (error) {
+    console.error('[Scheduler] Fatal error in checkUpcomingPayments:', error.message);
+  }
+};
+
+/**
  * Start all cron jobs.
  * - Every hour: check for overdue installment plans and lock devices.
+ * - Daily at 8 AM: email admin about payments due in the next 48 hours.
  */
 const startScheduler = () => {
   console.log('[Scheduler] Initializing scheduled jobs...');
@@ -152,10 +216,17 @@ const startScheduler = () => {
 
   console.log('[Scheduler] Overdue payment checker scheduled: every hour.');
 
+  // Run daily at 8:00 AM to remind admin about upcoming payments
+  cron.schedule('0 8 * * *', async () => {
+    await checkUpcomingPayments();
+  });
+
+  console.log('[Scheduler] Upcoming payment reminder scheduled: daily at 08:00.');
+
   // Run an initial check at startup (delayed by 10 seconds to allow DB connection)
   setTimeout(async () => {
     await checkOverduePayments();
   }, 10000);
 };
 
-module.exports = { startScheduler, checkOverduePayments };
+module.exports = { startScheduler, checkOverduePayments, checkUpcomingPayments };
