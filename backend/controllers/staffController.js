@@ -579,15 +579,6 @@ const makePaymentForCustomer = async (req, res) => {
   }
 };
 
-module.exports = {
-  getMyCustomers,
-  addCustomer,
-  getCustomerDetail,
-  getCustomerPayments,
-  makePaymentForCustomer,
-  getAvailableDevices,
-};
-
 const getAvailableDevices = async (req, res) => {
   try {
     const devices = await Device.find({ sold_status: 'available' })
@@ -598,4 +589,13 @@ const getAvailableDevices = async (req, res) => {
     console.error('Staff getAvailableDevices error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
+};
+
+module.exports = {
+  getMyCustomers,
+  addCustomer,
+  getCustomerDetail,
+  getCustomerPayments,
+  makePaymentForCustomer,
+  getAvailableDevices,
 };
