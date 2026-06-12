@@ -333,7 +333,87 @@ module.exports = {
   sendLockNotificationEmail,
   sendAdminPaymentReminderEmail,
   sendAdminOverdueAlertEmail,
+  sendAdminSaleNotificationEmail,
 };
+
+/**
+ * Email admin immediately when a staff member registers a new customer/sale.
+ * @param {string} adminEmail
+ * @param {{ staffName, staffId, branch, customerName, customerPhone, deviceModel,
+ *           downPayment, totalPrice, installmentAmount, frequency, totalPayments }} sale
+ */
+async function sendAdminSaleNotificationEmail(adminEmail, sale) {
+  const transporter = createTransporter();
+  const businessName = process.env.BUSINESS_NAME || 'Tritech Hub iOS';
+  const freqLabel = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' }[sale.frequency] || sale.frequency;
+  const now = new Date().toLocaleString('en-GH', {
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM || `${businessName} <${process.env.EMAIL_USER}>`,
+    to: adminEmail,
+    subject: `✅ New Sale — ${sale.deviceModel} sold by ${sale.staffName}${sale.branch ? ' @ ' + sale.branch : ''}`,
+    html: `
+      <!DOCTYPE html><html><head><meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+      <body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0">
+        <div style="max-width:580px;margin:40px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.1)">
+          <div style="background:linear-gradient(135deg,#166534,#15803d);padding:28px 30px">
+            <h1 style="color:#fff;margin:0;font-size:20px">${businessName}</h1>
+            <p style="color:#bbf7d0;margin:6px 0 0;font-size:15px">✅ New iPhone Sale Recorded</p>
+          </div>
+          <div style="padding:28px 30px">
+            <p style="color:#374151;font-size:15px;margin:0 0 20px">A new sale was just registered on <strong>${now}</strong>.</p>
+
+            <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px">
+              <tr style="background:#f0fdf4">
+                <td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7;width:40%">Staff</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #dcfce7;font-weight:600">${sale.staffName}${sale.staffId ? ' <span style="color:#6b7280;font-weight:400;font-family:monospace">(${sale.staffId})</span>' : ''}</td>
+              </tr>
+              ${sale.branch ? `<tr>
+                <td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7">Branch</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #dcfce7">${sale.branch}</td>
+              </tr>` : ''}
+              <tr>
+                <td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7">Customer</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #dcfce7">${sale.customerName}</td>
+              </tr>
+              <tr style="background:#f0fdf4">
+                <td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7">Phone</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #dcfce7">${sale.customerPhone || '—'}</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7">Device</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #dcfce7;font-weight:700">${sale.deviceModel}</td>
+              </tr>
+              <tr style="background:#f0fdf4">
+                <td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7">Device Price</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #dcfce7">GHS ${Number(sale.totalPrice).toLocaleString()}</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7">Down Payment</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #dcfce7;font-weight:700;color:#166534">GHS ${Number(sale.downPayment).toLocaleString()}</td>
+              </tr>
+              <tr style="background:#f0fdf4">
+                <td style="padding:10px 14px;color:#166534;font-weight:700">Installment Plan</td>
+                <td style="padding:10px 14px">GHS ${Number(sale.installmentAmount).toLocaleString()} × ${sale.totalPayments} payments (${freqLabel})</td>
+              </tr>
+            </table>
+
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 16px;font-size:13px;color:#166534">
+              Log in to <strong>${businessName}</strong> to view the full customer record and installment plan.
+            </div>
+          </div>
+          <div style="background:#f9fafb;padding:14px 30px;text-align:center;font-size:12px;color:#9ca3af;border-top:1px solid #eee">
+            &copy; ${new Date().getFullYear()} ${businessName} · Sale alert
+          </div>
+        </div>
+      </body></html>
+    `,
+  });
+}
 
 /**
  * Email admin 2 days before a customer's payment is due.

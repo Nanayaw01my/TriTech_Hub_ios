@@ -326,7 +326,7 @@ const addStaff = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Validation failed', errors: errors.array() });
     }
 
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, branch } = req.body;
 
     // Check if email already exists
     const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
@@ -341,6 +341,7 @@ const addStaff = async (req, res) => {
       email: email.toLowerCase().trim(),
       password,
       phone: phone?.trim(),
+      branch: branch?.trim() || null,
       role: 'staff',
       staff_id: staffId,
     });
@@ -1017,7 +1018,7 @@ const getStaffSales = async (req, res) => {
     }
 
     const staffUsers = await User.find({ role: 'staff', is_active: true })
-      .select('name email staff_id phone commission_per_sale');
+      .select('name email staff_id phone branch commission_per_sale');
 
     const salesData = await Promise.all(
       staffUsers.map(async (s) => {
@@ -1032,6 +1033,7 @@ const getStaffSales = async (req, res) => {
           email: s.email,
           staff_id: s.staff_id,
           phone: s.phone,
+          branch: s.branch || null,
           commission_per_sale: rate,
           total_sales: totalSales,
           period_sales: periodSales,

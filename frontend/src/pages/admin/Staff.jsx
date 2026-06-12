@@ -18,7 +18,7 @@ export default function AdminStaff() {
   const [addLoading, setAddLoading] = useState(false)
   const [deleteModal, setDeleteModal] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '' })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', branch: '', password: '' })
   const [errors, setErrors] = useState({})
 
   // Commission tab state
@@ -76,7 +76,7 @@ export default function AdminStaff() {
       await api.post('/admin/staff', form)
       toast.success('Staff member added successfully!')
       setShowAddModal(false)
-      setForm({ name: '', email: '', phone: '', password: '' })
+      setForm({ name: '', email: '', phone: '', branch: '', password: '' })
       setErrors({})
       fetchStaff()
     } catch (err) {
@@ -179,9 +179,12 @@ export default function AdminStaff() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 text-sm">{s.full_name || s.name}</p>
                     <p className="text-xs text-gray-500 truncate">{s.email}</p>
-                    <div className="flex items-center gap-3 mt-0.5">
+                    <div className="flex items-center gap-2 flex-wrap mt-0.5">
                       {s.staff_id && (
                         <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-0.5 rounded-lg">{s.staff_id}</span>
+                      )}
+                      {s.branch && (
+                        <span className="text-xs bg-blue-50 text-blue-600 font-medium px-2 py-0.5 rounded-lg">{s.branch}</span>
                       )}
                       {s.customers_count !== undefined && (
                         <span className="text-xs text-gray-400">{s.customers_count} customers</span>
@@ -267,9 +270,14 @@ export default function AdminStaff() {
                         </div>
                         <div className="min-w-0">
                           <p className="font-semibold text-gray-900 text-sm">{s.name}</p>
-                          {s.staff_id && (
-                            <span className="text-xs font-mono bg-gray-100 text-gray-500 px-2 py-0.5 rounded-lg">{s.staff_id}</span>
-                          )}
+                          <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                            {s.staff_id && (
+                              <span className="text-xs font-mono bg-gray-100 text-gray-500 px-2 py-0.5 rounded-lg">{s.staff_id}</span>
+                            )}
+                            {s.branch && (
+                              <span className="text-xs bg-blue-50 text-blue-600 font-medium px-2 py-0.5 rounded-lg">{s.branch}</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <button
@@ -329,6 +337,7 @@ export default function AdminStaff() {
                 { key: 'name', label: 'Full Name', type: 'text', placeholder: 'Enter full name' },
                 { key: 'email', label: 'Email Address', type: 'email', placeholder: 'staff@example.com' },
                 { key: 'phone', label: 'Phone Number', type: 'tel', placeholder: '0244000000' },
+              { key: 'branch', label: 'Branch / Location', type: 'text', placeholder: 'e.g. Bogoso, Tarkwa, Accra' },
               ].map(({ key, label, type, placeholder }) => (
                 <div key={key}>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>

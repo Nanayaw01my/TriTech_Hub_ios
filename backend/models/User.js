@@ -51,6 +51,11 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    branch: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     commission_per_sale: {
       type: Number,
       default: 0,

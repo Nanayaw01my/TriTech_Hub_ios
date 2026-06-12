@@ -9,6 +9,7 @@ const Payment = require('../models/Payment');
 const AuditLog = require('../models/AuditLog');
 const { generateAccountNumber } = require('../utils/accountGenerator');
 const { initializePayment } = require('../utils/paystack');
+const { sendAdminSaleNotificationEmail } = require('../utils/email');
 const { v4: uuidv4 } = require('uuid');
 
 // Save a base64-encoded image to disk, return the file path (or null).
@@ -360,7 +361,30 @@ const addCustomer = async (req, res) => {
       ip_address: req.ip,
     });
 
-    // --- 12. Return full data ---
+    // --- 12. Notify admin of new sale (fire-and-forget) ---
+    if (process.env.ADMIN_EMAIL) {
+      const staffUser = await User.findById(req.user._id).select('name staff_id branch');
+      User.findOne({ role: 'admin' }).select('email').then(adminUser => {
+        const adminEmail = process.env.ADMIN_EMAIL || adminUser?.email;
+        if (adminEmail) {
+          sendAdminSaleNotificationEmail(adminEmail, {
+            staffName: staffUser?.name || req.user.name,
+            staffId: staffUser?.staff_id,
+            branch: staffUser?.branch || null,
+            customerName: newCustomer.full_name,
+            customerPhone: newCustomer.phone,
+            deviceModel: device.model,
+            downPayment: downPaymentAmount,
+            totalPrice,
+            installmentAmount,
+            frequency,
+            totalPayments,
+          }).catch(err => console.error('[Sale notify] Email failed:', err.message));
+        }
+      }).catch(() => {});
+    }
+
+    // --- 13. Return full data ---
     const populatedCustomer = await Customer.findById(newCustomer._id)
       .populate({ path: 'user_id', select: '-password' })
       .lean();
