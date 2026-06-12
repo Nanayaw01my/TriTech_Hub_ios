@@ -499,9 +499,9 @@ const addDevice = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Validation failed', errors: errors.array() });
     }
 
-    const { model, price, serial_number, udid, imei } = req.body;
+    const { model, color, storage, price, serial_number, udid, imei } = req.body;
 
-    const device = await Device.create({ model, price, serial_number, udid, imei });
+    const device = await Device.create({ model, color, storage, price, serial_number, udid, imei });
 
     await AuditLog.create({
       user_id: req.user._id,
@@ -530,7 +530,7 @@ const addDevice = async (req, res) => {
  */
 const updateDevice = async (req, res) => {
   try {
-    const allowedFields = ['model', 'price', 'serial_number', 'udid', 'imei'];
+    const allowedFields = ['model', 'color', 'storage', 'price', 'serial_number', 'udid', 'imei'];
     const updates = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) updates[field] = req.body[field];

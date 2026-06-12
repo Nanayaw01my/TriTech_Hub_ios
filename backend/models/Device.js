@@ -7,6 +7,16 @@ const DeviceSchema = new mongoose.Schema(
       required: [true, 'Device model is required'],
       trim: true,
     },
+    color: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    storage: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     price: {
       type: Number,
       required: [true, 'Device price is required'],
