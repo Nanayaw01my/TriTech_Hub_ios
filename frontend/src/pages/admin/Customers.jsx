@@ -28,8 +28,9 @@ export default function AdminCustomers() {
       const res = await api.get(`/admin/customers?${params}`)
       const d = res.data?.data || res.data
       setCustomers(Array.isArray(d.customers) ? d.customers : [])
-      setTotalPages(d.totalPages || Math.ceil((d.total || 0) / PER_PAGE))
-      setTotal(d.total || 0)
+      const t = d.pagination?.total ?? d.total ?? 0
+      setTotal(t)
+      setTotalPages(d.pagination?.pages || Math.ceil(t / PER_PAGE) || 1)
     } catch (err) {
       console.error(err)
     } finally {

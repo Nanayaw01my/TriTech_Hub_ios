@@ -133,11 +133,37 @@ const getCustomers = async (req, res) => {
       Customer.countDocuments(filter),
     ]);
 
+    // Attach installment plan data (device, status, next due) to each customer
+    const customerIds = customers.map(c => c._id);
+    const plans = await InstallmentPlan.find({ customer_id: { $in: customerIds } })
+      .populate({ path: 'device_id', select: 'model lock_status' })
+      .lean();
+
+    const planByCustomer = {};
+    plans.forEach(p => {
+      const cid = p.customer_id?.toString();
+      if (cid && (!planByCustomer[cid] || p.status === 'active')) {
+        planByCustomer[cid] = p;
+      }
+    });
+
+    const enriched = customers.map(c => {
+      const plan = planByCustomer[c._id?.toString()];
+      return {
+        ...c,
+        device_model: plan?.device_id?.model || null,
+        plan_status: plan?.status || null,
+        next_due_date: plan?.next_due_date || null,
+        lock_status: plan?.device_id?.lock_status || null,
+      };
+    });
+
     return res.status(200).json({
       success: true,
       message: 'Customers retrieved.',
       data: {
-        customers,
+        customers: enriched,
+        total,
         pagination: {
           page,
           limit,

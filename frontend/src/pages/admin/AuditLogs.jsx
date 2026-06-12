@@ -99,11 +99,21 @@ export default function AdminAuditLogs() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800">
-                      {log.user_name || log.user?.full_name || 'System'}
-                      {log.user_role && (
-                        <span className="text-xs text-gray-400 font-normal ml-1.5">({log.user_role})</span>
+                      {log.user_id?.name || log.user_name || 'System'}
+                      {(log.user_id?.role || log.user_role) && (
+                        <span className="text-xs text-gray-400 font-normal ml-1.5 capitalize">
+                          ({log.user_id?.role || log.user_role})
+                        </span>
                       )}
                     </p>
+                    {log.target_user_id && (
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        → {log.target_user_id?.name || log.target_user_id?.account_number || ''}
+                        {log.target_user_id?.staff_id && (
+                          <span className="font-mono ml-1 text-gray-400">{log.target_user_id.staff_id}</span>
+                        )}
+                      </p>
+                    )}
                     {log.description && (
                       <p className="text-xs text-gray-600 mt-0.5">{log.description}</p>
                     )}

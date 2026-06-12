@@ -213,11 +213,8 @@ export default function Layout({ role }) {
           </div>
         </header>
 
-        {/* Desktop page header bar */}
-        <div className="hidden lg:flex items-center justify-between px-8 py-4 bg-white border-b border-gray-100 shadow-sm">
-          <div>
-            <PageTitle location={location} role={role} />
-          </div>
+        {/* Desktop top bar — user info only (page titles live inside each page) */}
+        <div className="hidden lg:flex items-center justify-end px-8 py-3 bg-white border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="text-right">
               <p className="text-sm font-semibold text-gray-900">
@@ -279,26 +276,4 @@ export default function Layout({ role }) {
       />
     </div>
   )
-}
-
-// ─── Desktop page title helper ────────────────────────────────────────────────
-function PageTitle({ location, role }) {
-  const allNav = [
-    ...ADMIN_NAV,
-    ...STAFF_NAV,
-    ...CUSTOMER_NAV,
-    { to: '/admin/customers/', label: 'Customer Detail' },
-    { to: '/staff/customers/', label: 'Customer Detail' },
-    { to: '/staff/customers/add', label: 'Register Customer' },
-  ]
-  const match = allNav
-    .filter(n => location.pathname.startsWith(n.to) && n.to !== `/${role}/dashboard`)
-    .sort((a, b) => b.to.length - a.to.length)[0]
-  const exact = allNav.find(n => n.to === location.pathname)
-  const item = exact || match
-
-  if (!item) {
-    return <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
-  }
-  return <h1 className="text-xl font-bold text-gray-900">{item.label}</h1>
 }
