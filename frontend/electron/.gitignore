@@ -6,3 +6,6 @@ node_modules
 build
 dist
 logs
+
+# Build output — too large for git
+release/

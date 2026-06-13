@@ -1,14 +1,14 @@
 {
-  "name": "TriTech Hub",
+  "name": "tritech-hub",
   "version": "1.0.0",
-  "description": "An Amazing Capacitor App",
+  "description": "TriTech Hub – iPhone Installment Management",
   "author": {
-    "name": "",
-    "email": ""
+    "name": "TriTech Hub",
+    "email": "admin@tritechhub.online"
   },
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/nanayaw01my/tritech_hub_ios"
   },
   "license": "MIT",
   "main": "build/src/index.js",

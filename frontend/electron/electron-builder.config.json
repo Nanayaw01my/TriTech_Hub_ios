@@ -1,7 +1,9 @@
 {
-  "appId": "com.yourdoamnin.yourapp",
+  "appId": "com.tritechhub.app",
+  "productName": "TriTech Hub",
   "directories": {
-    "buildResources": "resources"
+    "buildResources": "resources",
+    "output": "release"
   },
   "files": [
     "assets/**/*",
@@ -9,20 +11,27 @@
     "capacitor.config.*",
     "app/**/*"
   ],
-  "publish": {
-    "provider": "github"
-  },
+  "publish": null,
   "nsis": {
     "allowElevation": true,
     "oneClick": false,
-    "allowToChangeInstallationDirectory": true
+    "allowToChangeInstallationDirectory": true,
+    "installerIcon": "assets/appIcon.ico",
+    "shortcutName": "TriTech Hub"
   },
   "win": {
-    "target": "nsis",
-    "icon": "assets/appIcon.ico"
+    "target": "zip",
+    "icon": "assets/appIcon.ico",
+    "sign": false
   },
   "mac": {
-    "category": "your.app.category.type",
-    "target": "dmg"
+    "category": "public.app-category.business",
+    "target": "dmg",
+    "icon": "assets/appIcon.png"
+  },
+  "linux": {
+    "target": "AppImage",
+    "icon": "assets/appIcon.png",
+    "category": "Office"
   }
 }
