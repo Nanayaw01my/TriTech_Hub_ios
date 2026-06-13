@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TriTech Hub</string>
+    <string name="title_activity_main">TriTech Hub</string>
+    <string name="package_name">com.tritechhub.app</string>
+    <string name="custom_url_scheme">com.tritechhub.app</string>
+</resources>

@@ -36,6 +36,11 @@ const corsOptions = {
       'http://localhost:3000',
       'http://localhost:5173',
       'http://localhost:8081',
+      // Capacitor mobile (iOS / Android WebView)
+      'capacitor://localhost',
+      'ionic://localhost',
+      // Capacitor Electron desktop
+      'http://localhost',
     ].filter(Boolean);
 
     // Allow any *.onrender.com subdomain (Render deployments)
