@@ -82,7 +82,6 @@ export default function AdminDevices() {
     const e = {}
     if (!form.model) e.model = 'Select a model'
     if (!form.serial_number.trim()) e.serial_number = 'Serial number required'
-    if (!form.udid.trim()) e.udid = 'UDID/IMEI required'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -107,17 +106,22 @@ export default function AdminDevices() {
 
   const handleLockToggle = async () => {
     setLockLoading(true)
+    const isLocking = lockModal.lock_status !== 'locked'
     try {
       const deviceId = lockModal._id || lockModal.id
-      const endpoint = lockModal.lock_status === 'locked'
-        ? `/admin/devices/${deviceId}/unlock`
-        : `/admin/devices/${deviceId}/lock`
+      const endpoint = isLocking
+        ? `/admin/devices/${deviceId}/lock`
+        : `/admin/devices/${deviceId}/unlock`
       await api.post(endpoint)
-      toast.success(`Device ${lockModal.lock_status === 'locked' ? 'unlocked' : 'locked'}!`)
+      if (isLocking) {
+        toast.success('Device marked as locked. Go to icloud.com to restrict iCloud access.', { duration: 5000 })
+      } else {
+        toast.success('Device marked as unlocked. Go to icloud.com to restore iCloud access.', { duration: 5000 })
+      }
       setLockModal(null)
       fetchDevices()
     } catch (err) {
-      toast.error(err?.response?.data?.error || 'Action failed')
+      toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Action failed')
     } finally {
       setLockLoading(false)
     }
@@ -342,16 +346,14 @@ export default function AdminDevices() {
 
                 {/* UDID */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">UDID / IMEI *</label>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">UDID / IMEI <span className="normal-case font-normal text-gray-400">(optional)</span></label>
                   <input
                     type="text"
                     value={form.udid}
                     onChange={(e) => setForm(f => ({ ...f, udid: e.target.value }))}
                     placeholder="Device UDID or IMEI"
-                    className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-green-600 font-mono bg-gray-50
-                      ${errors.udid ? 'border-red-400' : 'border-gray-100'}`}
+                    className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-green-600 font-mono bg-gray-50"
                   />
-                  {errors.udid && <p className="text-xs text-red-500 mt-1">{errors.udid}</p>}
                 </div>
 
                 <div className="flex gap-3 pt-1">
@@ -384,8 +386,12 @@ export default function AdminDevices() {
         onClose={() => setLockModal(null)}
         onConfirm={handleLockToggle}
         title={lockModal?.lock_status === 'locked' ? 'Unlock Device' : 'Lock Device'}
-        message={`${lockModal?.lock_status === 'locked' ? 'Unlock' : 'Lock'} ${lockModal?.model}${lockModal?.color ? ` (${lockModal.color})` : ''}? SN: ${lockModal?.serial_number}`}
-        confirmText={lockModal?.lock_status === 'locked' ? 'Unlock' : 'Lock'}
+        message={
+          lockModal?.lock_status === 'locked'
+            ? `Mark ${lockModal?.model}${lockModal?.color ? ` (${lockModal.color})` : ''} as unlocked in the system. You will also need to restore iCloud access on icloud.com manually.`
+            : `Mark ${lockModal?.model}${lockModal?.color ? ` (${lockModal.color})` : ''} as locked in the system. You will also need to remove iCloud access on icloud.com manually to restrict the device.`
+        }
+        confirmText={lockModal?.lock_status === 'locked' ? 'Mark Unlocked' : 'Mark Locked'}
         confirmVariant={lockModal?.lock_status === 'locked' ? 'primary' : 'danger'}
         loading={lockLoading}
       />

@@ -4,7 +4,6 @@ const Device = require('../models/Device');
 const Customer = require('../models/Customer');
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
-const { lockDevice } = require('./simpleMDM');
 const { sendLockNotificationEmail, sendAdminPaymentReminderEmail, sendAdminOverdueAlertEmail } = require('./email');
 
 /**
@@ -54,52 +53,28 @@ const checkOverduePayments = async () => {
 
         // Skip if device is already locked
         if (device.lock_status === 'locked') {
-          console.log(`[Scheduler] Device ${device.udid || device._id} already locked. Skipping.`);
-          continue;
-        }
-
-        // Only lock if device has a UDID (required for MDM)
-        if (!device.udid) {
-          console.warn(
-            `[Scheduler] Device ${device._id} has no UDID. Cannot lock via MDM. Marking plan as defaulted.`
-          );
-          await InstallmentPlan.findByIdAndUpdate(plan._id, { status: 'defaulted' });
+          console.log(`[Scheduler] Device ${device._id} already marked as locked. Skipping.`);
           continue;
         }
 
         console.log(
-          `[Scheduler] Locking device ${device.udid} for overdue plan ${plan._id} (customer: ${customer.full_name})`
+          `[Scheduler] Marking device ${device._id} as locked for overdue plan ${plan._id} (customer: ${customer.full_name})`
         );
 
-        // Attempt to lock the device via SimpleMDM
-        let lockSuccess = false;
-        try {
-          await lockDevice(device.udid);
-          lockSuccess = true;
-        } catch (mdmError) {
-          console.error(
-            `[Scheduler] SimpleMDM lock failed for device ${device.udid}: ${mdmError.message}`
-          );
-          // Continue with local status update even if MDM call fails
-        }
-
-        // Update local device lock status regardless of MDM result
+        // Mark device as locked in DB and plan as defaulted
         await Device.findByIdAndUpdate(device._id, { lock_status: 'locked' });
-
-        // Mark plan as defaulted
         await InstallmentPlan.findByIdAndUpdate(plan._id, { status: 'defaulted' });
 
-        // Create audit log entry
+        // Audit log
         await AuditLog.create({
-          action: 'device_lock',
-          device_udid: device.udid,
+          action: 'lock_device',
+          device_udid: device.udid || null,
           target_user_id: customer.user_id,
           details: {
-            reason: 'Automated lock: payment overdue by more than 48 hours',
+            reason: 'Automated: payment overdue by more than 48 hours — lock on iCloud manually',
             installment_plan_id: plan._id,
             next_due_date: plan.next_due_date,
             hours_overdue: Math.round((Date.now() - new Date(plan.next_due_date)) / (1000 * 60 * 60)),
-            mdm_lock_success: lockSuccess,
             device_model: device.model,
             customer_name: customer.full_name,
           },

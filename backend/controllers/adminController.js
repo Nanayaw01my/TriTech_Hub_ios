@@ -7,7 +7,6 @@ const InstallmentPlan = require('../models/InstallmentPlan');
 const Payment = require('../models/Payment');
 const AuditLog = require('../models/AuditLog');
 const { generateStaffId } = require('../utils/accountGenerator');
-const { lockDevice: mdmLock, unlockDevice: mdmUnlock } = require('../utils/simpleMDM');
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
 
@@ -639,47 +638,29 @@ const deleteDevice = async (req, res) => {
 const lockDeviceHandler = async (req, res) => {
   try {
     const device = await Device.findById(req.params.id);
-    if (!device) {
-      return res.status(404).json({ success: false, message: 'Device not found.' });
-    }
-
-    if (!device.udid) {
-      return res.status(400).json({ success: false, message: 'Device has no UDID. Cannot lock via MDM.' });
-    }
-
+    if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
     if (device.lock_status === 'locked') {
-      return res.status(400).json({ success: false, message: 'Device is already locked.' });
+      return res.status(400).json({ success: false, message: 'Device is already marked as locked.' });
     }
 
-    // Call SimpleMDM
-    let mdmResult = null;
-    try {
-      mdmResult = await mdmLock(device.udid);
-    } catch (mdmError) {
-      console.error('MDM lock error:', mdmError.message);
-      // Continue with local update even if MDM fails
-    }
-
-    // Update local status
     device.lock_status = 'locked';
     await device.save();
 
     await AuditLog.create({
       user_id: req.user._id,
-      action: 'device_lock',
-      device_udid: device.udid,
+      action: 'lock_device',
+      device_udid: device.udid || null,
       details: {
         device_id: device._id,
         model: device.model,
         reason: req.body.reason || 'Manual lock by admin',
-        mdm_result: mdmResult,
       },
       ip_address: req.ip,
     });
 
     return res.status(200).json({
       success: true,
-      message: 'Device locked successfully.',
+      message: 'Device marked as locked. Remember to remove iCloud access on icloud.com.',
       data: { device },
     });
   } catch (error) {
@@ -694,24 +675,9 @@ const lockDeviceHandler = async (req, res) => {
 const unlockDeviceHandler = async (req, res) => {
   try {
     const device = await Device.findById(req.params.id);
-    if (!device) {
-      return res.status(404).json({ success: false, message: 'Device not found.' });
-    }
-
-    if (!device.udid) {
-      return res.status(400).json({ success: false, message: 'Device has no UDID. Cannot unlock via MDM.' });
-    }
-
+    if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
     if (device.lock_status === 'unlocked') {
-      return res.status(400).json({ success: false, message: 'Device is already unlocked.' });
-    }
-
-    // Call SimpleMDM
-    let mdmResult = null;
-    try {
-      mdmResult = await mdmUnlock(device.udid);
-    } catch (mdmError) {
-      console.error('MDM unlock error:', mdmError.message);
+      return res.status(400).json({ success: false, message: 'Device is already marked as unlocked.' });
     }
 
     device.lock_status = 'unlocked';
@@ -719,20 +685,19 @@ const unlockDeviceHandler = async (req, res) => {
 
     await AuditLog.create({
       user_id: req.user._id,
-      action: 'device_unlock',
-      device_udid: device.udid,
+      action: 'unlock_device',
+      device_udid: device.udid || null,
       details: {
         device_id: device._id,
         model: device.model,
         reason: req.body.reason || 'Manual unlock by admin',
-        mdm_result: mdmResult,
       },
       ip_address: req.ip,
     });
 
     return res.status(200).json({
       success: true,
-      message: 'Device unlocked successfully.',
+      message: 'Device marked as unlocked. Remember to restore iCloud access on icloud.com.',
       data: { device },
     });
   } catch (error) {
