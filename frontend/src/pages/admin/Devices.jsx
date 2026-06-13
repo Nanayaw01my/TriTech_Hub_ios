@@ -6,24 +6,48 @@ import ConfirmModal from '../../components/ConfirmModal'
 import toast from 'react-hot-toast'
 
 const IPHONE_MODELS = [
+  // iPhone SE
+  { model: 'iPhone SE (1st Gen)', price: 1200 },
+  { model: 'iPhone SE (2nd Gen)', price: 1800 },
+  { model: 'iPhone SE (3rd Gen)', price: 2500 },
+  // iPhone X series
+  { model: 'iPhone X', price: 1500 },
+  { model: 'iPhone XR', price: 2000 },
+  { model: 'iPhone XS', price: 2200 },
+  { model: 'iPhone XS Max', price: 2500 },
+  // iPhone 11 series
+  { model: 'iPhone 11', price: 2800 },
+  { model: 'iPhone 11 Pro', price: 3500 },
+  { model: 'iPhone 11 Pro Max', price: 4000 },
+  // iPhone 12 series
+  { model: 'iPhone 12 Mini', price: 3000 },
   { model: 'iPhone 12', price: 3500 },
   { model: 'iPhone 12 Pro', price: 4500 },
   { model: 'iPhone 12 Pro Max', price: 5000 },
+  // iPhone 13 series
+  { model: 'iPhone 13 Mini', price: 4500 },
   { model: 'iPhone 13', price: 5500 },
   { model: 'iPhone 13 Pro', price: 7000 },
   { model: 'iPhone 13 Pro Max', price: 7500 },
+  // iPhone 14 series
   { model: 'iPhone 14', price: 8500 },
+  { model: 'iPhone 14 Plus', price: 9500 },
   { model: 'iPhone 14 Pro', price: 11000 },
   { model: 'iPhone 14 Pro Max', price: 12500 },
+  // iPhone 15 series
   { model: 'iPhone 15', price: 10500 },
+  { model: 'iPhone 15 Plus', price: 11500 },
   { model: 'iPhone 15 Pro', price: 14000 },
   { model: 'iPhone 15 Pro Max', price: 16000 },
+  // iPhone 16 series
+  { model: 'iPhone 16e', price: 15000 },
   { model: 'iPhone 16', price: 18000 },
+  { model: 'iPhone 16 Plus', price: 19500 },
   { model: 'iPhone 16 Pro', price: 20000 },
   { model: 'iPhone 16 Pro Max', price: 22000 },
 ]
 
-const STORAGE_OPTIONS = ['64GB', '128GB', '256GB', '512GB', '1TB']
+const STORAGE_OPTIONS = ['32GB', '64GB', '128GB', '256GB', '512GB', '1TB']
 
 const IPHONE_COLORS = [
   'Black', 'White', 'Blue', 'Green', 'Yellow', 'Pink', 'Purple', 'Red',
