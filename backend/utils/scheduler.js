@@ -67,7 +67,7 @@ const checkOverduePayments = async () => {
 
         // Audit log
         await AuditLog.create({
-          action: 'lock_device',
+          action: 'device_lock',
           device_udid: device.udid || null,
           target_user_id: customer.user_id,
           details: {

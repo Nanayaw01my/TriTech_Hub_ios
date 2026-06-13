@@ -648,7 +648,7 @@ const lockDeviceHandler = async (req, res) => {
 
     await AuditLog.create({
       user_id: req.user._id,
-      action: 'lock_device',
+      action: 'device_lock',
       device_udid: device.udid || null,
       details: {
         device_id: device._id,
@@ -685,7 +685,7 @@ const unlockDeviceHandler = async (req, res) => {
 
     await AuditLog.create({
       user_id: req.user._id,
-      action: 'unlock_device',
+      action: 'device_unlock',
       device_udid: device.udid || null,
       details: {
         device_id: device._id,
