@@ -10,6 +10,7 @@ const AuditLog = require('../models/AuditLog');
 const { generateAccountNumber } = require('../utils/accountGenerator');
 const { initializePayment } = require('../utils/paystack');
 const { sendAdminSaleNotificationEmail } = require('../utils/email');
+const { sendAdminSaleSMS, sendCustomerWelcomeSMS } = require('../utils/sms');
 const { v4: uuidv4 } = require('uuid');
 
 // Save a base64-encoded image to disk, return the file path (or null).
@@ -387,30 +388,52 @@ const addCustomer = async (req, res) => {
       try {
         const [staffUser, adminUser] = await Promise.all([
           User.findById(req.user._id).select('name staff_id branch'),
-          User.findOne({ role: 'admin' }).select('email'),
+          User.findOne({ role: 'admin' }).select('email phone'),
         ]);
+
+        const salePayload = {
+          staffName: staffUser?.name || req.user.name,
+          staffId: staffUser?.staff_id,
+          branch: staffUser?.branch || null,
+          customerName: newCustomer.full_name,
+          customerPhone: newCustomer.phone,
+          deviceModel: device.model,
+          downPayment: downPaymentAmount,
+          totalPrice,
+          installmentAmount,
+          frequency,
+          totalPayments,
+        };
+
+        // Email notification
         const adminEmail = process.env.ADMIN_EMAIL || adminUser?.email;
-        console.log('[Sale notify] Sending to:', adminEmail, '| EMAIL_USER set:', !!process.env.EMAIL_USER);
         if (adminEmail) {
-          await sendAdminSaleNotificationEmail(adminEmail, {
-            staffName: staffUser?.name || req.user.name,
-            staffId: staffUser?.staff_id,
-            branch: staffUser?.branch || null,
-            customerName: newCustomer.full_name,
-            customerPhone: newCustomer.phone,
-            deviceModel: device.model,
-            downPayment: downPaymentAmount,
-            totalPrice,
-            installmentAmount,
-            frequency,
-            totalPayments,
-          });
-          console.log('[Sale notify] Email sent successfully to:', adminEmail);
-        } else {
-          console.warn('[Sale notify] No admin email found — skipping.');
+          await sendAdminSaleNotificationEmail(adminEmail, salePayload).catch(e =>
+            console.error('[Sale notify] Email failed:', e.message)
+          );
+          console.log('[Sale notify] Email sent to:', adminEmail);
+        }
+
+        // SMS notification
+        const adminPhone = process.env.ADMIN_PHONE || adminUser?.phone;
+        if (adminPhone) {
+          await sendAdminSaleSMS(adminPhone, salePayload).catch(e =>
+            console.error('[Sale notify] SMS failed:', e.message)
+          );
+          console.log('[Sale notify] SMS sent to:', adminPhone);
+        }
+
+        // Welcome SMS to customer
+        if (newCustomer.phone) {
+          await sendCustomerWelcomeSMS(
+            newCustomer.phone,
+            newCustomer.full_name,
+            newUser.account_number,
+            process.env.FRONTEND_URL || 'tritechhub.online'
+          ).catch(e => console.error('[Sale notify] Welcome SMS failed:', e.message));
         }
       } catch (err) {
-        console.error('[Sale notify] Email failed:', err.message);
+        console.error('[Sale notify] Notification error:', err.message);
       }
     })();
 

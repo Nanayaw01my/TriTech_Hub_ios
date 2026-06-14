@@ -7,6 +7,7 @@ const InstallmentPlan = require('../models/InstallmentPlan');
 const Payment = require('../models/Payment');
 const AuditLog = require('../models/AuditLog');
 const { generateStaffId } = require('../utils/accountGenerator');
+const { sendPaymentReminderSMS, sendDeviceLockedSMS, sendDeviceUnlockedSMS } = require('../utils/sms');
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
 
@@ -1277,31 +1278,45 @@ const sendCustomerReminder = async (req, res) => {
       return res.status(404).json({ success: false, message: 'No active plan found for this customer.' });
     }
 
+    const reminderDetails = {
+      deviceModel: plan.device_id?.model || 'iPhone',
+      installmentAmount: plan.installment_amount,
+      remainingBalance: plan.remaining_balance,
+      nextDueDate: plan.next_due_date,
+      isOverdue: plan.status === 'defaulted' || new Date(plan.next_due_date) < new Date(),
+    };
+
     let emailSent = false;
+    let smsSent = false;
+
     try {
       const { sendPaymentReminderEmail } = require('../utils/email');
-      await sendPaymentReminderEmail(customer.email, customer.full_name, {
-        deviceModel: plan.device_id?.model || 'iPhone',
-        installmentAmount: plan.installment_amount,
-        remainingBalance: plan.remaining_balance,
-        nextDueDate: plan.next_due_date,
-        isOverdue: plan.status === 'defaulted' || new Date(plan.next_due_date) < new Date(),
-      });
+      await sendPaymentReminderEmail(customer.email, customer.full_name, reminderDetails);
       emailSent = true;
     } catch (emailErr) {
       console.error('sendCustomerReminder email error:', emailErr.message);
+    }
+
+    if (customer.phone) {
+      try {
+        await sendPaymentReminderSMS(customer.phone, customer.full_name, reminderDetails);
+        smsSent = true;
+      } catch (smsErr) {
+        console.error('sendCustomerReminder SMS error:', smsErr.message);
+      }
     }
 
     await AuditLog.create({
       user_id: req.user._id,
       action: 'payment_reminder_sent',
       target_user_id: customer.user_id,
-      details: { customer_id: customer._id, plan_id: plan._id, email_sent: emailSent },
+      details: { customer_id: customer._id, plan_id: plan._id, email_sent: emailSent, sms_sent: smsSent },
     });
 
-    const message = emailSent
-      ? 'Payment reminder sent to customer.'
-      : 'Reminder logged, but email could not be sent. Check your email settings on the server.';
+    const channels = [emailSent && 'email', smsSent && 'SMS'].filter(Boolean).join(' & ');
+    const message = channels
+      ? `Payment reminder sent via ${channels}.`
+      : 'Reminder logged, but notification could not be sent. Check server settings.';
     return res.status(200).json({ success: true, message });
   } catch (error) {
     console.error('sendCustomerReminder error:', error);
@@ -1417,6 +1432,12 @@ const lockCustomerDevice = async (req, res) => {
       details: { device_id: device._id, customer_id: customer._id, reason: req.body.reason || 'Manual lock by admin' },
     });
 
+    if (customer.phone) {
+      sendDeviceLockedSMS(customer.phone, customer.full_name, device.model).catch(e =>
+        console.error('[SMS] Lock notification failed:', e.message)
+      );
+    }
+
     return res.status(200).json({ success: true, message: 'Device locked successfully.' });
   } catch (error) {
     console.error('lockCustomerDevice error:', error);
@@ -1445,6 +1466,12 @@ const unlockCustomerDevice = async (req, res) => {
       target_user_id: customer.user_id,
       details: { device_id: device._id, customer_id: customer._id, reason: req.body.reason || 'Manual unlock by admin' },
     });
+
+    if (customer.phone) {
+      sendDeviceUnlockedSMS(customer.phone, customer.full_name, device.model).catch(e =>
+        console.error('[SMS] Unlock notification failed:', e.message)
+      );
+    }
 
     return res.status(200).json({ success: true, message: 'Device unlocked successfully.' });
   } catch (error) {
