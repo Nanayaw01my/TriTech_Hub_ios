@@ -66,31 +66,27 @@ export default function SplashScreen({ onDone }) {
       <div style={{ position: 'relative', marginBottom: '2rem', animation: 'sPop 0.9s cubic-bezier(0.34,1.56,0.64,1) forwards' }}>
         {/* Outer pulse ring */}
         <div style={{
-          position: 'absolute', top: '-12px', bottom: '-12px', left: '-14px', right: '-14px',
-          borderRadius: '30px',
+          position: 'absolute', inset: '-14px',
+          borderRadius: '40px',
           border: '1.5px solid rgba(76,175,80,0.35)',
           animation: 'sRing 2.4s ease-in-out infinite',
         }} />
         {/* Second ring */}
         <div style={{
-          position: 'absolute', top: '-22px', bottom: '-22px', left: '-24px', right: '-24px',
-          borderRadius: '38px',
+          position: 'absolute', inset: '-26px',
+          borderRadius: '50px',
           border: '1px solid rgba(76,175,80,0.12)',
           animation: 'sRing 2.4s 0.4s ease-in-out infinite',
         }} />
 
-        {/* Logo card — landscape to fit logo with text */}
+        {/* Logo card — square to match logo aspect ratio */}
         <div style={{
-          width: '210px', height: '116px',
-          background: 'linear-gradient(150deg, #182a1c 0%, #1e3323 50%, #172819 100%)',
-          borderRadius: '22px',
+          width: '130px', height: '130px',
+          borderRadius: '28px',
           border: '1px solid rgba(76,175,80,0.22)',
           overflow: 'hidden',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.06)',
           position: 'relative',
-          padding: '10px',
-          boxSizing: 'border-box',
+          boxShadow: '0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.06)',
         }}>
           {logoError ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
@@ -104,9 +100,9 @@ export default function SplashScreen({ onDone }) {
               onLoad={() => setLogoLoaded(true)}
               onError={() => setLogoError(true)}
               style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
+                position: 'absolute', inset: 0,
+                width: '100%', height: '100%',
+                objectFit: 'cover',
                 display: 'block',
                 opacity: logoLoaded ? 1 : 0,
                 transition: 'opacity 0.35s ease',
