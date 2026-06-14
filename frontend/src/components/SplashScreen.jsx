@@ -4,8 +4,8 @@ export default function SplashScreen({ onDone }) {
   const [fading, setFading] = useState(false)
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setFading(true), 2000)
-    const doneTimer = setTimeout(() => onDone(), 2600)
+    const fadeTimer = setTimeout(() => setFading(true), 14400)
+    const doneTimer = setTimeout(() => onDone(), 15000)
     return () => { clearTimeout(fadeTimer); clearTimeout(doneTimer) }
   }, [onDone])
 
