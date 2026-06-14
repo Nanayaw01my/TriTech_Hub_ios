@@ -67,44 +67,54 @@ export default function SplashScreen({ onDone }) {
         {/* Outer pulse ring */}
         <div style={{
           position: 'absolute', inset: '-14px',
-          borderRadius: '38px',
+          borderRadius: '40px',
           border: '1.5px solid rgba(76,175,80,0.35)',
           animation: 'sRing 2.4s ease-in-out infinite',
         }} />
         {/* Second ring */}
         <div style={{
           position: 'absolute', inset: '-26px',
-          borderRadius: '46px',
+          borderRadius: '50px',
           border: '1px solid rgba(76,175,80,0.12)',
           animation: 'sRing 2.4s 0.4s ease-in-out infinite',
         }} />
 
         {/* Logo card */}
         <div style={{
-          width: '118px', height: '118px',
+          width: '130px', height: '130px',
           background: 'linear-gradient(150deg, #182a1c 0%, #1e3323 50%, #172819 100%)',
-          borderRadius: '28px',
+          borderRadius: '30px',
           border: '1px solid rgba(76,175,80,0.22)',
+          overflow: 'hidden',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.06)',
           position: 'relative',
         }}>
-          {!logoError ? (
+          {logoError ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+              <span style={{ color: '#4CAF50', fontSize: '34px', fontWeight: '900', letterSpacing: '-1px', lineHeight: 1 }}>TH</span>
+              <span style={{ color: 'rgba(76,175,80,0.5)', fontSize: '9px', fontWeight: '700', letterSpacing: '2px' }}>iOS</span>
+            </div>
+          ) : (
             <img
               src="/logo.png"
               alt="TriTech Hub"
               onLoad={() => setLogoLoaded(true)}
               onError={() => setLogoError(true)}
               style={{
-                width: '70px', height: '70px', objectFit: 'contain',
+                width: '112px', height: '112px',
+                objectFit: 'contain',
                 opacity: logoLoaded ? 1 : 0,
-                transition: 'opacity 0.3s ease',
+                transition: 'opacity 0.35s ease',
               }}
             />
-          ) : null}
-          {(!logoLoaded || logoError) && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-              <span style={{ color: '#4CAF50', fontSize: '30px', fontWeight: '900', letterSpacing: '-1px', lineHeight: 1 }}>TH</span>
+          )}
+          {!logoLoaded && !logoError && (
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
+            }}>
+              <span style={{ color: '#4CAF50', fontSize: '34px', fontWeight: '900', letterSpacing: '-1px', lineHeight: 1 }}>TH</span>
               <span style={{ color: 'rgba(76,175,80,0.5)', fontSize: '9px', fontWeight: '700', letterSpacing: '2px' }}>iOS</span>
             </div>
           )}
