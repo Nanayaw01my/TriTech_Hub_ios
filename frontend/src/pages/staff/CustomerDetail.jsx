@@ -184,6 +184,7 @@ export default function StaffCustomerDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [customer, setCustomer] = useState(null)
+  const [plan, setPlan] = useState(null)
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
   const [showPayModal, setShowPayModal] = useState(false)
@@ -191,18 +192,11 @@ export default function StaffCustomerDetail() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const [custRes, payRes] = await Promise.allSettled([
-        api.get(`/staff/customers/${id}`),
-        api.get(`/staff/customers/${id}/payments`),
-      ])
-      if (custRes.status === 'fulfilled') {
-        const d = custRes.value.data?.data || custRes.value.data
-        setCustomer(d?.customer || d)
-      }
-      if (payRes.status === 'fulfilled') {
-        const d = payRes.value.data?.data || payRes.value.data
-        setPayments(Array.isArray(d?.payments) ? d.payments : Array.isArray(d) ? d : [])
-      }
+      const res = await api.get(`/staff/customers/${id}`)
+      const d = res.data?.data || res.data
+      setCustomer(d?.customer || d)
+      if (d?.plan) setPlan(d.plan)
+      if (Array.isArray(d?.payments)) setPayments(d.payments)
     } catch (err) {
       toast.error('Failed to load customer')
       navigate(-1)
@@ -221,8 +215,7 @@ export default function StaffCustomerDetail() {
 
   if (!customer) return null
 
-  const plan = customer.payment_plan || customer.plan
-  const device = customer.device
+  const device = plan?.device_id
   const canPay = plan?.status === 'active' && (plan?.remaining_balance || 0) > 0
 
   return (
