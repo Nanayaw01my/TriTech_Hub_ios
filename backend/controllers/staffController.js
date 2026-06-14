@@ -373,6 +373,7 @@ const addCustomer = async (req, res) => {
           User.findOne({ role: 'admin' }).select('email'),
         ]);
         const adminEmail = process.env.ADMIN_EMAIL || adminUser?.email;
+        console.log('[Sale notify] Sending to:', adminEmail, '| EMAIL_USER set:', !!process.env.EMAIL_USER);
         if (adminEmail) {
           await sendAdminSaleNotificationEmail(adminEmail, {
             staffName: staffUser?.name || req.user.name,
@@ -387,6 +388,9 @@ const addCustomer = async (req, res) => {
             frequency,
             totalPayments,
           });
+          console.log('[Sale notify] Email sent successfully to:', adminEmail);
+        } else {
+          console.warn('[Sale notify] No admin email found — skipping.');
         }
       } catch (err) {
         console.error('[Sale notify] Email failed:', err.message);
@@ -603,14 +607,13 @@ const getStaffStats = async (req, res) => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
+    const myCustomerIds = await Customer.distinct('_id', { created_by: staffId });
+
     const [myCustomers, paymentsToday, overdue] = await Promise.all([
       Customer.countDocuments({ created_by: staffId }),
       Payment.countDocuments({
-        created_at: { $gte: todayStart },
-        $or: [
-          { collected_by: staffId },
-          { customer_id: { $in: await Customer.distinct('_id', { created_by: staffId }) } },
-        ],
+        customer_id: { $in: myCustomerIds },
+        createdAt: { $gte: todayStart },
       }),
       InstallmentPlan.countDocuments({
         created_by: staffId,
