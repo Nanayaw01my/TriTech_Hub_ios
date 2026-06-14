@@ -7,7 +7,7 @@ export default function SplashScreen({ onDone }) {
   const [logoError, setLogoError] = useState(false)
 
   useEffect(() => {
-    const TOTAL = 9400
+    const TOTAL = 4400
     const startTime = Date.now()
 
     const interval = setInterval(() => {
@@ -15,8 +15,8 @@ export default function SplashScreen({ onDone }) {
       setProgress(pct)
     }, 50)
 
-    const fadeTimer = setTimeout(() => setPhase(1), 9400)
-    const doneTimer = setTimeout(() => onDone(), 10000)
+    const fadeTimer = setTimeout(() => setPhase(1), 4400)
+    const doneTimer = setTimeout(() => onDone(), 5000)
 
     return () => {
       clearInterval(interval)
