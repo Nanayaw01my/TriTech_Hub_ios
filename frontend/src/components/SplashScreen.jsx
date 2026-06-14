@@ -112,14 +112,21 @@ export default function SplashScreen({ onDone }) {
       </div>
 
       {/* App name */}
-      <div style={{ textAlign: 'center', animation: 'sSlideUp 0.65s 0.3s ease-out both' }}>
+      <div style={{
+        textAlign: 'center',
+        animation: 'sSlideUp 0.65s 0.3s ease-out both',
+        padding: '0 2rem',
+        width: '100%',
+        boxSizing: 'border-box',
+      }}>
         <h1 style={{
           margin: 0,
-          fontSize: 'clamp(2rem, 6vw, 2.75rem)',
+          fontSize: 'clamp(1.75rem, 7vw, 2.75rem)',
           fontWeight: '900',
-          letterSpacing: '-0.03em',
-          lineHeight: 1,
+          letterSpacing: '-0.02em',
+          lineHeight: 1.1,
           color: 'white',
+          whiteSpace: 'nowrap',
         }}>
           TriTech Hub{' '}
           <span style={{
@@ -132,9 +139,9 @@ export default function SplashScreen({ onDone }) {
         <p style={{
           marginTop: '0.5rem',
           color: 'rgba(255,255,255,0.38)',
-          fontSize: '0.75rem',
+          fontSize: '0.7rem',
           fontWeight: '600',
-          letterSpacing: '0.16em',
+          letterSpacing: '0.14em',
           textTransform: 'uppercase',
         }}>
           iPhone Installment Management
@@ -151,7 +158,7 @@ export default function SplashScreen({ onDone }) {
         animation: 'sSlideUp 0.65s 0.48s ease-out both',
       }}>
         <span style={{ color: '#66BB6A', fontSize: '11px', fontWeight: '700', letterSpacing: '0.06em' }}>
-          Powered by TriTech
+          Powered by Ittek Solutions
         </span>
       </div>
 
