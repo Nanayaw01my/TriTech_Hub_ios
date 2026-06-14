@@ -11,8 +11,8 @@ import { format } from 'date-fns'
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || ''
 
 // ─── Payment Modal ────────────────────────────────────────────────────────────
-function PaymentModal({ customer, plan, onClose, onSuccess }) {
-  const [amount, setAmount] = useState(String(plan?.installment_amount || ''))
+function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
+  const [amount, setAmount] = useState(String(defaultAmount ?? plan?.installment_amount ?? ''))
   const [processing, setProcessing] = useState(false)
   const [verifying, setVerifying] = useState(false)
 
@@ -178,6 +178,7 @@ export default function StaffCustomerDetail() {
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
   const [showPayModal, setShowPayModal] = useState(false)
+  const [defaultPayAmount, setDefaultPayAmount] = useState(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -207,6 +208,7 @@ export default function StaffCustomerDetail() {
 
   const device = plan?.device_id
   const canPay = plan?.status === 'active' && (plan?.remaining_balance || 0) > 0
+  const downPaymentDue = plan?.down_payment > 0 && payments.length === 0
 
   return (
     <div className="max-w-3xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
@@ -295,18 +297,34 @@ export default function StaffCustomerDetail() {
             </div>
           </div>
 
-          {/* Make Payment Button */}
+          {/* Down Payment Button — shown first if not yet collected */}
+          {downPaymentDue && (
+            <button
+              onClick={() => { setDefaultPayAmount(plan.down_payment); setShowPayModal(true) }}
+              className="w-full mt-4 py-4 bg-amber-600 text-white font-black text-base rounded-2xl
+                         flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-amber-700"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Collect Down Payment — GHS {Number(plan.down_payment).toLocaleString()}
+            </button>
+          )}
+
+          {/* Regular Installment Payment Button */}
           {canPay && (
             <button
-              onClick={() => setShowPayModal(true)}
-              className="w-full mt-4 py-4 bg-green-800 text-white font-black text-base rounded-2xl
-                         flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-green-900"
+              onClick={() => { setDefaultPayAmount(null); setShowPayModal(true) }}
+              className={`w-full py-4 bg-green-800 text-white font-black text-base rounded-2xl
+                         flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-green-900
+                         ${downPaymentDue ? 'mt-2' : 'mt-4'}`}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
-              Collect Payment (MoMo / Card)
+              Collect Installment (MoMo / Card)
             </button>
           )}
 
@@ -360,6 +378,7 @@ export default function StaffCustomerDetail() {
         <PaymentModal
           customer={customer}
           plan={plan}
+          defaultAmount={defaultPayAmount}
           onClose={() => setShowPayModal(false)}
           onSuccess={fetchData}
         />
