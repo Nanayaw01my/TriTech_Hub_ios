@@ -80,7 +80,7 @@ export default function AdminStaff() {
       setErrors({})
       fetchStaff()
     } catch (err) {
-      toast.error(err?.response?.data?.error || 'Failed to add staff member')
+      toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Failed to add staff member')
     } finally {
       setAddLoading(false)
     }
@@ -94,7 +94,7 @@ export default function AdminStaff() {
       setDeleteModal(null)
       fetchStaff()
     } catch (err) {
-      toast.error(err?.response?.data?.error || 'Failed to remove staff')
+      toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Failed to remove staff')
     } finally {
       setDeleteLoading(false)
     }

@@ -48,7 +48,7 @@ export default function AdminSettings() {
       await api.put('/admin/settings', settings)
       toast.success('Settings saved successfully!')
     } catch (err) {
-      toast.error(err?.response?.data?.error || 'Failed to save settings')
+      toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Failed to save settings')
     } finally {
       setSettingsSaving(false)
     }
@@ -76,7 +76,7 @@ export default function AdminSettings() {
       setPasswordForm({ current_password: '', new_password: '', confirm_password: '' })
       setPwErrors({})
     } catch (err) {
-      toast.error(err?.response?.data?.error || 'Failed to change password')
+      toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Failed to change password')
     } finally {
       setPwLoading(false)
     }

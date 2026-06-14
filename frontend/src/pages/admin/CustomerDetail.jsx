@@ -54,7 +54,7 @@ export default function AdminCustomerDetail() {
       setLockModal(false)
       fetchCustomer()
     } catch (err) {
-      toast.error(err?.response?.data?.error || 'Action failed')
+      toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Action failed')
     } finally {
       setLockLoading(false)
     }
@@ -67,7 +67,7 @@ export default function AdminCustomerDetail() {
       toast.success('Password reset email sent to customer!')
       setResetModal(false)
     } catch (err) {
-      toast.error(err?.response?.data?.error || 'Failed to reset password')
+      toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Failed to reset password')
     } finally {
       setResetLoading(false)
     }

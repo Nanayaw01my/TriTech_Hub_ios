@@ -122,7 +122,7 @@ export default function AdminDevices() {
       setErrors({})
       fetchDevices()
     } catch (err) {
-      toast.error(err?.response?.data?.error || 'Failed to add device')
+      toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Failed to add device')
     } finally {
       setAddLoading(false)
     }
