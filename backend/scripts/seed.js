@@ -9,14 +9,14 @@ async function seed() {
   const User = require('../models/User');
 
   // Delete existing seed users so we start fresh
-  await User.deleteMany({ email: { $in: ['admin@tritech.com', 'staff@tritech.com'] } });
+  await User.deleteMany({ email: { $in: ['admin@tritech.com', 'Lawrencesarpong2003@gmail.com', 'staff@tritech.com'] } });
 
   const salt = await bcrypt.genSalt(10);
 
   await User.create([
     {
       name: 'Tritech Admin',
-      email: 'admin@tritech.com',
+      email: 'Lawrencesarpong2003@gmail.com',
       password: await bcrypt.hash('admin123', salt),
       role: 'admin',
       is_active: true,
@@ -32,13 +32,13 @@ async function seed() {
   ]);
 
   // Verify they were saved correctly
-  const admin = await User.findOne({ email: 'admin@tritech.com' }).select('+password');
+  const admin = await User.findOne({ email: 'Lawrencesarpong2003@gmail.com' }).select('+password');
   const adminOk = await bcrypt.compare('admin123', admin.password);
 
   const staff = await User.findOne({ email: 'staff@tritech.com' }).select('+password');
   const staffOk = await bcrypt.compare('staff123', staff.password);
 
-  console.log(`admin@tritech.com  password check: ${adminOk ? 'PASS ✓' : 'FAIL ✗'}`);
+  console.log(`Lawrencesarpong2003@gmail.com  password check: ${adminOk ? 'PASS ✓' : 'FAIL ✗'}`);
   console.log(`staff@tritech.com  password check: ${staffOk ? 'PASS ✓' : 'FAIL ✗'}`);
 
   if (!adminOk || !staffOk) {
