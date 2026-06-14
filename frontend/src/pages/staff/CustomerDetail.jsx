@@ -5,20 +5,10 @@ import toast from 'react-hot-toast'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import StatusBadge from '../../components/StatusBadge'
 import ProgressBar from '../../components/ProgressBar'
+import PaystackPop from '@paystack/inline-js'
 import { format } from 'date-fns'
 
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || ''
-
-// ─── Load Paystack inline script once ────────────────────────────────────────
-function loadPaystack() {
-  return new Promise((resolve) => {
-    if (window.PaystackPop) return resolve(window.PaystackPop)
-    const s = document.createElement('script')
-    s.src = 'https://js.paystack.co/v1/inline.js'
-    s.onload = () => resolve(window.PaystackPop)
-    document.head.appendChild(s)
-  })
-}
 
 // ─── Payment Modal ────────────────────────────────────────────────────────────
 function PaymentModal({ customer, plan, onClose, onSuccess }) {
@@ -37,11 +27,11 @@ function PaymentModal({ customer, plan, onClose, onSuccess }) {
 
     setProcessing(true)
     try {
-      const PaystackPop = await loadPaystack()
-      PaystackPop.setup({
+      const paystack = new PaystackPop()
+      paystack.newTransaction({
         key: PAYSTACK_PUBLIC_KEY,
         email: customer.email,
-        amount: Math.round(amt * 100), // convert GHS → pesewas
+        amount: Math.round(amt * 100), // GHS → pesewas
         currency: 'GHS',
         channels: ['mobile_money', 'card'],
         label: customer.full_name,
@@ -50,11 +40,11 @@ function PaymentModal({ customer, plan, onClose, onSuccess }) {
           plan_id: plan._id || plan.id,
           is_staff_initiated: true,
         },
-        callback: async (response) => {
+        onSuccess: async (transaction) => {
           setProcessing(false)
           setVerifying(true)
           try {
-            const res = await api.get(`/payment/verify/${response.reference}`)
+            const res = await api.get(`/payment/verify/${transaction.reference}`)
             if (res.data.success) {
               toast.success('Payment recorded successfully!')
               onSuccess()
@@ -68,13 +58,13 @@ function PaymentModal({ customer, plan, onClose, onSuccess }) {
             setVerifying(false)
           }
         },
-        onClose: () => {
+        onCancel: () => {
           setProcessing(false)
         },
-      }).openIframe()
+      })
     } catch (err) {
       setProcessing(false)
-      toast.error('Failed to open payment window')
+      toast.error(err?.message || 'Failed to open payment window')
     }
   }
 
