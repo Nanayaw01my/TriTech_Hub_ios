@@ -1099,6 +1099,39 @@ const clearAllData = async (req, res) => {
   }
 };
 
+// ─── NOTIFICATIONS ───────────────────────────────────────────────────────────
+
+const getNotifications = async (req, res) => {
+  try {
+    const since = req.query.since ? new Date(req.query.since) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const logs = await AuditLog.find({
+      action: 'customer_registered',
+      createdAt: { $gte: since },
+    })
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .populate({ path: 'user_id', select: 'name' })
+      .lean();
+
+    const unreadCount = logs.length;
+
+    const items = logs.map(log => ({
+      id: log._id,
+      staffName: log.user_id?.name || 'Staff',
+      customerName: log.details?.customer_id ? null : null,
+      deviceModel: log.details?.device_model || '',
+      accountNumber: log.details?.account_number || '',
+      createdAt: log.createdAt,
+    }));
+
+    return res.status(200).json({ success: true, data: { unreadCount, items } });
+  } catch (error) {
+    console.error('getNotifications error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 module.exports = {
   getDashboard,
   getCustomers,
@@ -1124,4 +1157,5 @@ module.exports = {
   getSettings,
   updateSettings,
   clearAllData,
+  getNotifications,
 };

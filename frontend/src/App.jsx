@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import LoadingSpinner from './components/LoadingSpinner'
+import SplashScreen from './components/SplashScreen'
 
 // Public pages
 import Login from './pages/Login'
@@ -147,11 +148,21 @@ function AppRoutes() {
 }
 
 export default function App() {
+  const [splash, setSplash] = useState(() => !sessionStorage.getItem('splashShown'))
+
+  const handleSplashDone = () => {
+    sessionStorage.setItem('splashShown', '1')
+    setSplash(false)
+  }
+
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </BrowserRouter>
+    <>
+      {splash && <SplashScreen onDone={handleSplashDone} />}
+      <BrowserRouter>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </BrowserRouter>
+    </>
   )
 }

@@ -265,13 +265,40 @@ const verifyPaymentHandler = async (req, res) => {
     }
 
     // Verify with Paystack
-    const paystackResponse = await verifyPayment(reference);
+    let paystackResponse;
+    try {
+      paystackResponse = await verifyPayment(reference);
+    } catch (verifyErr) {
+      // Paystack API timed out or is unreachable — tell frontend to check back later
+      const isTimeout = verifyErr.code === 'ECONNABORTED' || verifyErr.code === 'ETIMEDOUT';
+      console.error(`verifyPayment network error (${verifyErr.code}): ${verifyErr.message}`);
+      return res.status(504).json({
+        success: false,
+        payment_pending: true,
+        message: isTimeout
+          ? 'Paystack verification timed out. Your payment has been sent and will be recorded automatically once confirmed.'
+          : 'Could not reach Paystack. Your payment will be recorded via webhook once confirmed.',
+      });
+    }
 
-    if (!paystackResponse.status || paystackResponse.data.status !== 'success') {
+    const paystackStatus = paystackResponse.data?.status;
+
+    // MoMo payments can return 'pending' while awaiting mobile approval —
+    // treat this as a soft success; the webhook will record it when confirmed.
+    if (paystackStatus === 'pending') {
+      return res.status(200).json({
+        success: true,
+        payment_pending: true,
+        message: 'Your Mobile Money approval is pending. The payment will be recorded automatically once you approve the prompt on your phone.',
+        data: { paystack_status: 'pending', reference },
+      });
+    }
+
+    if (!paystackResponse.status || paystackStatus !== 'success') {
       return res.status(400).json({
         success: false,
-        message: `Payment verification failed. Status: ${paystackResponse.data?.status || 'unknown'}.`,
-        data: { paystack_status: paystackResponse.data?.status },
+        message: `Payment verification failed. Status: ${paystackStatus || 'unknown'}.`,
+        data: { paystack_status: paystackStatus },
       });
     }
 

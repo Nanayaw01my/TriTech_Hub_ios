@@ -198,6 +198,7 @@ const addCustomer = async (req, res) => {
       device_model,
       device_price,
       down_payment,
+      down_payment_reference,
       // accept payment_frequency (frontend) or frequency
       payment_frequency,
       frequency: frequencyField,
@@ -347,7 +348,23 @@ const addCustomer = async (req, res) => {
       assigned_to: newCustomer._id,
     });
 
-    // --- 11. Create audit log ---
+    // --- 11. Record down payment if paid via Paystack ---
+    if (downPaymentAmount > 0 && down_payment_reference) {
+      await Payment.create({
+        installment_plan_id: plan._id,
+        customer_id: newCustomer._id,
+        amount: downPaymentAmount,
+        payment_date: new Date(),
+        payment_method: 'paystack',
+        paystack_reference: down_payment_reference,
+        paystack_status: 'success',
+        paid_by: newUser._id,
+        recorded_by: req.user._id,
+        notes: 'Down payment collected at registration',
+      });
+    }
+
+    // --- 12. Create audit log ---
     await AuditLog.create({
       user_id: req.user._id,
       action: 'customer_registered',
@@ -366,12 +383,16 @@ const addCustomer = async (req, res) => {
     });
 
     // --- 12. Notify admin of new sale (fire-and-forget) ---
-    if (process.env.ADMIN_EMAIL) {
-      const staffUser = await User.findById(req.user._id).select('name staff_id branch');
-      User.findOne({ role: 'admin' }).select('email').then(adminUser => {
+    ;(async () => {
+      try {
+        const [staffUser, adminUser] = await Promise.all([
+          User.findById(req.user._id).select('name staff_id branch'),
+          User.findOne({ role: 'admin' }).select('email'),
+        ]);
         const adminEmail = process.env.ADMIN_EMAIL || adminUser?.email;
+        console.log('[Sale notify] Sending to:', adminEmail, '| EMAIL_USER set:', !!process.env.EMAIL_USER);
         if (adminEmail) {
-          sendAdminSaleNotificationEmail(adminEmail, {
+          await sendAdminSaleNotificationEmail(adminEmail, {
             staffName: staffUser?.name || req.user.name,
             staffId: staffUser?.staff_id,
             branch: staffUser?.branch || null,
@@ -383,10 +404,15 @@ const addCustomer = async (req, res) => {
             installmentAmount,
             frequency,
             totalPayments,
-          }).catch(err => console.error('[Sale notify] Email failed:', err.message));
+          });
+          console.log('[Sale notify] Email sent successfully to:', adminEmail);
+        } else {
+          console.warn('[Sale notify] No admin email found — skipping.');
         }
-      }).catch(() => {});
-    }
+      } catch (err) {
+        console.error('[Sale notify] Email failed:', err.message);
+      }
+    })();
 
     // --- 13. Return full data ---
     const populatedCustomer = await Customer.findById(newCustomer._id)
@@ -591,6 +617,42 @@ const getAvailableDevices = async (req, res) => {
   }
 };
 
+// ─── STATS ───────────────────────────────────────────────────────────────────
+const getStaffStats = async (req, res) => {
+  try {
+    const staffId = req.user._id;
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const myCustomerIds = await Customer.distinct('_id', { created_by: staffId });
+
+    const [myCustomers, paymentsToday, overdue] = await Promise.all([
+      Customer.countDocuments({ created_by: staffId }),
+      Payment.countDocuments({
+        customer_id: { $in: myCustomerIds },
+        createdAt: { $gte: todayStart },
+      }),
+      InstallmentPlan.countDocuments({
+        created_by: staffId,
+        status: 'active',
+        next_due_date: { $lt: new Date() },
+      }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        my_customers: myCustomers,
+        payments_today: paymentsToday,
+        overdue,
+      },
+    });
+  } catch (error) {
+    console.error('getStaffStats error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 module.exports = {
   getMyCustomers,
   addCustomer,
@@ -598,4 +660,5 @@ module.exports = {
   getCustomerPayments,
   makePaymentForCustomer,
   getAvailableDevices,
+  getStaffStats,
 };

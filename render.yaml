@@ -22,6 +22,8 @@ services:
         sync: false
       - key: PAYSTACK_PUBLIC_KEY
         sync: false
+      - key: VITE_PAYSTACK_PUBLIC_KEY
+        sync: false
       - key: PAYSTACK_WEBHOOK_SECRET
         sync: false
       - key: SIMPLEMDM_API_KEY
@@ -36,6 +38,8 @@ services:
         sync: false
       - key: EMAIL_FROM
         sync: false
+      - key: ADMIN_EMAIL
+        value: Lawrencesarpong2003@gmail.com
       - key: UPLOAD_PATH
         value: ./uploads
       - key: MAX_FILE_SIZE
