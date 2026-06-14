@@ -408,10 +408,12 @@ const addCustomer = async (req, res) => {
         // Email notification
         const adminEmail = process.env.ADMIN_EMAIL || adminUser?.email;
         if (adminEmail) {
-          await sendAdminSaleNotificationEmail(adminEmail, salePayload).catch(e =>
-            console.error('[Sale notify] Email failed:', e.message)
-          );
-          console.log('[Sale notify] Email sent to:', adminEmail);
+          try {
+            await sendAdminSaleNotificationEmail(adminEmail, salePayload);
+            console.log('[Sale notify] Email sent to:', adminEmail);
+          } catch (e) {
+            console.error('[Sale notify] Email failed:', e?.message || e);
+          }
         }
 
         // SMS notification
