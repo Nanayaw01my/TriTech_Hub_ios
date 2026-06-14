@@ -30,7 +30,7 @@ const sendPasswordResetEmail = async (email, name, resetUrl) => {
   const mailOptions = {
     from: process.env.EMAIL_FROM || `Tritech Hub iOS <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: 'Password Reset Request - Tritech Hub iOS',
+    subject: 'Your Tritech Hub iOS password reset link',
     html: `
       <!DOCTYPE html>
       <html>
@@ -70,7 +70,7 @@ const sendPasswordResetEmail = async (email, name, resetUrl) => {
           </div>
           <div class="footer">
             <p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p>
-            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>Contact support if you need help.</p>
           </div>
         </div>
       </body>
@@ -142,7 +142,7 @@ const sendPaymentConfirmationEmail = async (email, name, amount, planDetails) =>
   const mailOptions = {
     from: process.env.EMAIL_FROM || `Tritech Hub iOS <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: `Payment Confirmed: ${formattedAmount} - Tritech Hub iOS`,
+    subject: `Receipt: ${formattedAmount} received for your ${deviceModel}`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -217,7 +217,7 @@ const sendPaymentConfirmationEmail = async (email, name, amount, planDetails) =>
           </div>
           <div class="footer">
             <p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p>
-            <p>This is an automated payment confirmation. Please keep this for your records.</p>
+            <p>Keep this email as your payment receipt.</p>
           </div>
         </div>
       </body>
@@ -258,7 +258,7 @@ const sendLockNotificationEmail = async (email, name, deviceModel) => {
   const mailOptions = {
     from: process.env.EMAIL_FROM || `Tritech Hub iOS <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: `Important: Your ${deviceModel} Has Been Locked - Tritech Hub iOS`,
+    subject: `Your ${deviceModel} has been locked — Tritech Hub iOS`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -301,7 +301,7 @@ const sendLockNotificationEmail = async (email, name, deviceModel) => {
           </div>
           <div class="footer">
             <p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p>
-            <p>This is an automated notification. Please contact support if you need assistance.</p>
+            <p>Contact our support team if you need help.</p>
           </div>
         </div>
       </body>
@@ -345,8 +345,8 @@ const sendPaymentReminderEmail = async (email, name, details) => {
 
   const headerColor = isOverdue ? '#dc2626' : '#166534';
   const subject = isOverdue
-    ? `⚠️ Overdue Payment Reminder — ${deviceModel} — Tritech Hub iOS`
-    : `📅 Payment Reminder — ${deviceModel} — Tritech Hub iOS`;
+    ? `Action Needed: Your ${deviceModel} installment is past due`
+    : `Your ${deviceModel} installment payment is coming up`;
 
   await transporter.sendMail({
     from: process.env.EMAIL_FROM || `Tritech Hub iOS <${process.env.EMAIL_USER}>`,
@@ -516,7 +516,7 @@ async function sendAdminPaymentReminderEmail(adminEmail, customers) {
   await transporter.sendMail({
     from: process.env.EMAIL_FROM || `${businessName} <${process.env.EMAIL_USER}>`,
     to: adminEmail,
-    subject: `⏰ ${customers.length} Payment(s) Due in 2 Days — ${businessName}`,
+    subject: `${customers.length} customer payment(s) due in 2 days — ${businessName}`,
     html: `
       <!DOCTYPE html><html><head><meta charset="UTF-8">
       <meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
@@ -576,7 +576,7 @@ async function sendAdminOverdueAlertEmail(adminEmail, customers) {
   await transporter.sendMail({
     from: process.env.EMAIL_FROM || `${businessName} <${process.env.EMAIL_USER}>`,
     to: adminEmail,
-    subject: `🔴 ${customers.length} Overdue Payment(s) — Action Required — ${businessName}`,
+    subject: `${customers.length} overdue payment(s) need attention — ${businessName}`,
     html: `
       <!DOCTYPE html><html><head><meta charset="UTF-8">
       <meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
