@@ -596,6 +596,43 @@ const getAvailableDevices = async (req, res) => {
   }
 };
 
+// ─── STATS ───────────────────────────────────────────────────────────────────
+const getStaffStats = async (req, res) => {
+  try {
+    const staffId = req.user._id;
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [myCustomers, paymentsToday, overdue] = await Promise.all([
+      Customer.countDocuments({ created_by: staffId }),
+      Payment.countDocuments({
+        created_at: { $gte: todayStart },
+        $or: [
+          { collected_by: staffId },
+          { customer_id: { $in: await Customer.distinct('_id', { created_by: staffId }) } },
+        ],
+      }),
+      InstallmentPlan.countDocuments({
+        created_by: staffId,
+        status: 'active',
+        next_due_date: { $lt: new Date() },
+      }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        my_customers: myCustomers,
+        payments_today: paymentsToday,
+        overdue,
+      },
+    });
+  } catch (error) {
+    console.error('getStaffStats error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 module.exports = {
   getMyCustomers,
   addCustomer,
@@ -603,4 +640,5 @@ module.exports = {
   getCustomerPayments,
   makePaymentForCustomer,
   getAvailableDevices,
+  getStaffStats,
 };

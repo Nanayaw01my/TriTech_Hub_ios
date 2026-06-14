@@ -10,6 +10,7 @@ const {
   getCustomerPayments,
   makePaymentForCustomer,
   getAvailableDevices,
+  getStaffStats,
 } = require('../controllers/staffController');
 
 // Apply authentication and staff/admin authorization to all routes
@@ -20,6 +21,12 @@ router.use(authenticate, authorize('staff', 'admin'));
  * List available (unsold) devices for customer registration dropdown.
  */
 router.get('/devices', getAvailableDevices);
+
+/**
+ * GET /api/staff/stats
+ * Dashboard stats for this staff member.
+ */
+router.get('/stats', getStaffStats);
 
 /**
  * GET /api/staff/customers
