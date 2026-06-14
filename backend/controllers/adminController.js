@@ -1277,23 +1277,32 @@ const sendCustomerReminder = async (req, res) => {
       return res.status(404).json({ success: false, message: 'No active plan found for this customer.' });
     }
 
-    const { sendPaymentReminderEmail } = require('../utils/email');
-    await sendPaymentReminderEmail(customer.email, customer.full_name, {
-      deviceModel: plan.device_id?.model || 'iPhone',
-      installmentAmount: plan.installment_amount,
-      remainingBalance: plan.remaining_balance,
-      nextDueDate: plan.next_due_date,
-      isOverdue: plan.status === 'defaulted' || new Date(plan.next_due_date) < new Date(),
-    });
+    let emailSent = false;
+    try {
+      const { sendPaymentReminderEmail } = require('../utils/email');
+      await sendPaymentReminderEmail(customer.email, customer.full_name, {
+        deviceModel: plan.device_id?.model || 'iPhone',
+        installmentAmount: plan.installment_amount,
+        remainingBalance: plan.remaining_balance,
+        nextDueDate: plan.next_due_date,
+        isOverdue: plan.status === 'defaulted' || new Date(plan.next_due_date) < new Date(),
+      });
+      emailSent = true;
+    } catch (emailErr) {
+      console.error('sendCustomerReminder email error:', emailErr.message);
+    }
 
     await AuditLog.create({
       user_id: req.user._id,
       action: 'payment_reminder_sent',
       target_user_id: customer.user_id,
-      details: { customer_id: customer._id, plan_id: plan._id },
+      details: { customer_id: customer._id, plan_id: plan._id, email_sent: emailSent },
     });
 
-    return res.status(200).json({ success: true, message: 'Payment reminder sent to customer.' });
+    const message = emailSent
+      ? 'Payment reminder sent to customer.'
+      : 'Reminder logged, but email could not be sent. Check your email settings on the server.';
+    return res.status(200).json({ success: true, message });
   } catch (error) {
     console.error('sendCustomerReminder error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
