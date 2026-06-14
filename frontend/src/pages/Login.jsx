@@ -17,7 +17,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    if (!identifier.trim()) { setError('Please enter your email, account number, or Staff ID'); return }
+    if (!identifier.trim()) { setError('Please enter your email'); return }
     if (!password) { setError('Please enter your password'); return }
     setLoading(true)
     try {
@@ -115,7 +115,7 @@ export default function Login() {
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider mb-2"
                 style={{ color: 'rgba(255,255,255,0.45)' }}>
-                Email / Account No. / Staff ID
+                Email
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }}>
@@ -127,7 +127,7 @@ export default function Login() {
                   type="text"
                   value={identifier}
                   onChange={(e) => { setIdentifier(e.target.value); setError('') }}
-                  placeholder="Enter your identifier"
+                  placeholder="Enter your email"
                   autoComplete="username"
                   autoCapitalize="none"
                   autoCorrect="off"
