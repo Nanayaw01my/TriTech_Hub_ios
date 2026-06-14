@@ -46,14 +46,31 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
           try {
             const res = await api.get(`/payment/verify/${transaction.reference}`)
             if (res.data.success) {
-              toast.success('Payment recorded successfully!')
+              if (res.data.payment_pending) {
+                toast.success('Payment sent! Approve the prompt on your phone — it will appear in payment history once confirmed.', { duration: 6000 })
+              } else {
+                toast.success('Payment recorded successfully!')
+              }
               onSuccess()
               onClose()
             } else {
               toast.error(res.data.message || 'Payment verification failed')
             }
           } catch (err) {
-            toast.error(err?.response?.data?.message || 'Could not verify payment')
+            const isTimeout = err.code === 'ECONNABORTED' || err.code === 'ERR_NETWORK'
+            const serverPending = err?.response?.data?.payment_pending
+            if (isTimeout || serverPending) {
+              // Payment was initiated — close the modal and refresh so the
+              // webhook-recorded payment shows up when it arrives.
+              toast.success(
+                'Payment sent! It will appear in payment history once your MoMo approval is received.',
+                { duration: 6000 }
+              )
+              onSuccess()
+              onClose()
+            } else {
+              toast.error(err?.response?.data?.message || 'Could not verify payment. Please check payment history.')
+            }
           } finally {
             setVerifying(false)
           }
@@ -74,8 +91,11 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
         {verifying ? (
           <div className="text-center py-8">
             <LoadingSpinner size="lg" />
-            <p className="mt-4 font-semibold text-gray-700">Verifying payment…</p>
-            <p className="text-sm text-gray-400 mt-1">Please wait</p>
+            <p className="mt-4 font-semibold text-gray-700">Recording payment…</p>
+            <p className="text-sm text-gray-400 mt-1">MoMo confirmations can take up to 30 seconds</p>
+            <p className="text-xs text-gray-400 mt-3 max-w-xs mx-auto">
+              Do not close or refresh this page
+            </p>
           </div>
         ) : (
           <>
@@ -190,7 +210,7 @@ export default function StaffCustomerDetail() {
       if (Array.isArray(d?.payments)) setPayments(d.payments)
     } catch (err) {
       toast.error('Failed to load customer')
-      navigate(-1)
+      navigate('/staff/customers')
     } finally {
       setLoading(false)
     }

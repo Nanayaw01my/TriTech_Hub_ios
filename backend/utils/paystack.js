@@ -45,7 +45,7 @@ const initializePayment = async ({ email, amount, reference, callback_url, metad
 const verifyPayment = async (reference) => {
   const response = await axios.get(
     `${PAYSTACK_BASE_URL}/transaction/verify/${encodeURIComponent(reference)}`,
-    { headers: getHeaders() }
+    { headers: getHeaders(), timeout: 20000 }
   );
 
   return response.data;
