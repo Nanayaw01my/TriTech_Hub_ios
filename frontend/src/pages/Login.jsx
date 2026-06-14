@@ -53,8 +53,8 @@ export default function Login() {
         <div
           className="mx-auto mb-5 overflow-hidden"
           style={{
-            width: '96px', height: '96px',
-            borderRadius: '24px',
+            width: '180px', height: '101px',
+            borderRadius: '16px',
             border: '1px solid rgba(76,175,80,0.25)',
             boxShadow: '0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)',
           }}
