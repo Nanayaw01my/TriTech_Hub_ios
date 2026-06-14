@@ -115,21 +115,23 @@ export default function SplashScreen({ onDone }) {
       <div style={{
         textAlign: 'center',
         animation: 'sSlideUp 0.65s 0.3s ease-out both',
-        padding: '0 2rem',
+        padding: '0 1.5rem',
         width: '100%',
         boxSizing: 'border-box',
       }}>
         <h1 style={{
           margin: 0,
-          fontSize: 'clamp(1.75rem, 7vw, 2.75rem)',
           fontWeight: '900',
           letterSpacing: '-0.02em',
           lineHeight: 1.1,
           color: 'white',
-          whiteSpace: 'nowrap',
         }}>
-          TriTech Hub{' '}
+          <span style={{ display: 'block', fontSize: 'clamp(1.6rem, 7vw, 2.5rem)' }}>
+            TriTech Hub
+          </span>
           <span style={{
+            display: 'block',
+            fontSize: 'clamp(2rem, 9vw, 3.25rem)',
             background: 'linear-gradient(135deg, #4CAF50 30%, #81C784 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
