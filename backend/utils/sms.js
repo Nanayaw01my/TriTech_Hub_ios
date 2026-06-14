@@ -33,10 +33,11 @@ const sendSMS = async (to, message) => {
         sms: message,
       },
     });
-    console.log(`[SMS] Sent to ${phone}:`, res.data);
+    console.log(`[SMS] Sent to ${phone}:`, JSON.stringify(res.data));
     return res.data;
   } catch (err) {
-    console.error('[SMS] Failed to send:', err.message);
+    const detail = err.response?.data ? JSON.stringify(err.response.data) : err.message;
+    console.error(`[SMS] Failed to ${phone} — status ${err.response?.status}:`, detail);
   }
 };
 
