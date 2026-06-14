@@ -79,9 +79,9 @@ export default function SplashScreen({ onDone }) {
           animation: 'sRing 2.4s 0.4s ease-in-out infinite',
         }} />
 
-        {/* Logo card — landscape 16:9 to match logo aspect ratio */}
+        {/* Logo card — landscape 2.15:1 to match logo aspect ratio */}
         <div style={{
-          width: '220px', height: '123px',
+          width: '230px', height: '107px',
           borderRadius: '18px',
           border: '1px solid rgba(76,175,80,0.22)',
           overflow: 'hidden',
