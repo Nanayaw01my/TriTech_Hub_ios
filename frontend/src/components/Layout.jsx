@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ConfirmModal from './ConfirmModal'
+import api from '../api/axios'
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icon = {
@@ -55,6 +56,126 @@ const ADMIN_BOTTOM = [
   { to: '/admin/transactions', label: 'Payments', icon: Icon.payments },
   { to: '/admin/settings', label: 'Settings', icon: Icon.settings },
 ]
+
+// ─── Notification Bell ────────────────────────────────────────────────────────
+function NotificationBell() {
+  const [count, setCount] = useState(0)
+  const [items, setItems] = useState([])
+  const [open, setOpen] = useState(false)
+  const [lastSeen, setLastSeen] = useState(() => localStorage.getItem('notif_last_seen') || null)
+  const ref = useRef(null)
+
+  const fetchNotifs = useCallback(async () => {
+    try {
+      const since = lastSeen || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      const res = await api.get(`/admin/notifications?since=${since}`)
+      if (res.data.success) {
+        setCount(res.data.data.unreadCount)
+        setItems(res.data.data.items)
+      }
+    } catch {}
+  }, [lastSeen])
+
+  useEffect(() => {
+    fetchNotifs()
+    const id = setInterval(fetchNotifs, 30000)
+    return () => clearInterval(id)
+  }, [fetchNotifs])
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const handleOpen = () => {
+    setOpen(o => !o)
+  }
+
+  const markRead = () => {
+    const now = new Date().toISOString()
+    localStorage.setItem('notif_last_seen', now)
+    setLastSeen(now)
+    setCount(0)
+    setOpen(false)
+  }
+
+  const timeAgo = (date) => {
+    const diff = (Date.now() - new Date(date)) / 1000
+    if (diff < 60) return 'just now'
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+    return `${Math.floor(diff / 86400)}d ago`
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={handleOpen}
+        className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors"
+        title="Notifications"
+      >
+        <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+        {count > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+            {count > 9 ? '9+' : count}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <p className="font-bold text-gray-900 text-sm">New Registrations</p>
+            {count > 0 && (
+              <button onClick={markRead} className="text-xs text-green-700 font-semibold hover:underline">
+                Mark all read
+              </button>
+            )}
+          </div>
+          <div className="max-h-72 overflow-y-auto">
+            {items.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-8">No new registrations</p>
+            ) : (
+              items.map((n, i) => (
+                <div key={n.id || i} className="px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-4 h-4 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900">
+                        <span className="font-semibold">{n.staffName}</span> registered a new customer
+                        {n.deviceModel && <span className="text-gray-500"> · {n.deviceModel}</span>}
+                      </p>
+                      {n.accountNumber && (
+                        <p className="text-xs text-gray-400 font-mono mt-0.5">{n.accountNumber}</p>
+                      )}
+                      <p className="text-xs text-gray-400 mt-0.5">{timeAgo(n.createdAt)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          {items.length > 0 && (
+            <div className="px-4 py-2.5 bg-gray-50 text-center">
+              <NavLink to="/admin/audit-logs" onClick={() => { markRead(); setOpen(false) }}
+                className="text-xs text-green-700 font-semibold hover:underline">
+                View all in Audit Logs →
+              </NavLink>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ─── Sidebar link component ───────────────────────────────────────────────────
 function SideNavLink({ item, role, onClick }) {
@@ -203,19 +324,23 @@ export default function Layout({ role }) {
               </div>
               <p className="font-bold text-sm">Tritech Hub iOS</p>
             </div>
-            <button
-              onClick={() => setLogoutModal(true)}
-              className="p-2 rounded-xl hover:bg-white/10 transition-colors"
-              title="Sign out"
-            >
-              <NavIcon path={Icon.logout} className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              {role === 'admin' && <NotificationBell />}
+              <button
+                onClick={() => setLogoutModal(true)}
+                className="p-2 rounded-xl hover:bg-white/10 transition-colors"
+                title="Sign out"
+              >
+                <NavIcon path={Icon.logout} className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </header>
 
         {/* Desktop top bar — user info only (page titles live inside each page) */}
         <div className="hidden lg:flex items-center justify-end px-8 py-3 bg-white border-b border-gray-100">
           <div className="flex items-center gap-3">
+            {role === 'admin' && <NotificationBell />}
             <div className="text-right">
               <p className="text-sm font-semibold text-gray-900">
                 {user?.full_name || user?.name || 'User'}

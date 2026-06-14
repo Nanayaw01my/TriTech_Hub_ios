@@ -27,6 +27,7 @@ const {
   getStaffSales,
   updateStaffCommissionRate,
   clearAllData,
+  getNotifications,
 } = require('../controllers/adminController');
 
 // Apply authentication and admin authorization to all routes
@@ -138,6 +139,9 @@ router.get('/audit-logs', getAuditLogs);
 // ─── SETTINGS ─────────────────────────────────────────────────────────────────
 router.get('/settings', getSettings);
 router.put('/settings', updateSettings);
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
+router.get('/notifications', getNotifications);
 
 // ─── DANGER ZONE ──────────────────────────────────────────────────────────────
 router.delete('/clear-all-data', clearAllData);

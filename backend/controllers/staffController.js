@@ -366,12 +366,15 @@ const addCustomer = async (req, res) => {
     });
 
     // --- 12. Notify admin of new sale (fire-and-forget) ---
-    if (process.env.ADMIN_EMAIL) {
-      const staffUser = await User.findById(req.user._id).select('name staff_id branch');
-      User.findOne({ role: 'admin' }).select('email').then(adminUser => {
+    ;(async () => {
+      try {
+        const [staffUser, adminUser] = await Promise.all([
+          User.findById(req.user._id).select('name staff_id branch'),
+          User.findOne({ role: 'admin' }).select('email'),
+        ]);
         const adminEmail = process.env.ADMIN_EMAIL || adminUser?.email;
         if (adminEmail) {
-          sendAdminSaleNotificationEmail(adminEmail, {
+          await sendAdminSaleNotificationEmail(adminEmail, {
             staffName: staffUser?.name || req.user.name,
             staffId: staffUser?.staff_id,
             branch: staffUser?.branch || null,
@@ -383,10 +386,12 @@ const addCustomer = async (req, res) => {
             installmentAmount,
             frequency,
             totalPayments,
-          }).catch(err => console.error('[Sale notify] Email failed:', err.message));
+          });
         }
-      }).catch(() => {});
-    }
+      } catch (err) {
+        console.error('[Sale notify] Email failed:', err.message);
+      }
+    })();
 
     // --- 13. Return full data ---
     const populatedCustomer = await Customer.findById(newCustomer._id)
