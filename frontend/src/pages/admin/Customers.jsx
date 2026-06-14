@@ -4,6 +4,7 @@ import api from '../../api/axios'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import StatusBadge from '../../components/StatusBadge'
 import { format } from 'date-fns'
+import toast from 'react-hot-toast'
 
 export default function AdminCustomers() {
   const navigate = useNavigate()
@@ -52,11 +53,38 @@ export default function AdminCustomers() {
     setPage(1)
   }
 
+  const handleExportCSV = async () => {
+    try {
+      const res = await api.get('/admin/customers/export', { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `customers_${new Date().toISOString().split('T')[0]}.csv`
+      a.click()
+      window.URL.revokeObjectURL(url)
+      toast.success('Customers exported!')
+    } catch {
+      toast.error('Failed to export customers')
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
-      <div className="mb-4">
-        <h1 className="text-2xl font-black text-gray-900">Customers</h1>
-        <p className="text-sm text-gray-500 mt-0.5">{total} total customers</p>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-2xl font-black text-gray-900">Customers</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{total} total customers</p>
+        </div>
+        <button
+          onClick={handleExportCSV}
+          className="flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-green-800 text-green-800 font-semibold text-sm rounded-2xl
+                     hover:bg-green-50 active:scale-95 transition-all"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Export CSV
+        </button>
       </div>
 
       {/* Filters */}

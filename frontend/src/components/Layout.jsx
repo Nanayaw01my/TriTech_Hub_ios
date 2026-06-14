@@ -29,6 +29,7 @@ const NavIcon = ({ path, className = 'w-5 h-5' }) => (
 const ADMIN_NAV = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: Icon.home },
   { to: '/admin/customers', label: 'Customers', icon: Icon.customers },
+  { to: '/admin/overdue-accounts', label: 'Overdue', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /> },
   { to: '/admin/staff', label: 'Staff', icon: Icon.staff },
   { to: '/admin/devices', label: 'Devices', icon: Icon.devices },
   { to: '/admin/transactions', label: 'Transactions', icon: Icon.payments },

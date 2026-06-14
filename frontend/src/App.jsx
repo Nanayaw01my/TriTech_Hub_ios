@@ -13,6 +13,7 @@ import ResetPassword from './pages/ResetPassword'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminCustomers from './pages/admin/Customers'
 import AdminCustomerDetail from './pages/admin/CustomerDetail'
+import AdminOverdueAccounts from './pages/admin/OverdueAccounts'
 import AdminStaff from './pages/admin/Staff'
 import AdminDevices from './pages/admin/Devices'
 import AdminTransactions from './pages/admin/Transactions'
@@ -102,6 +103,7 @@ function AppRoutes() {
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="customers" element={<AdminCustomers />} />
         <Route path="customers/:id" element={<AdminCustomerDetail />} />
+        <Route path="overdue-accounts" element={<AdminOverdueAccounts />} />
         <Route path="staff" element={<AdminStaff />} />
         <Route path="devices" element={<AdminDevices />} />
         <Route path="transactions" element={<AdminTransactions />} />

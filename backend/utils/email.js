@@ -327,10 +327,91 @@ If you believe this is an error, please contact our support team immediately.
   return info;
 };
 
+const sendPaymentReminderEmail = async (email, name, details) => {
+  const transporter = createTransporter();
+  const {
+    deviceModel = 'iPhone',
+    installmentAmount = 0,
+    remainingBalance = 0,
+    nextDueDate = null,
+    isOverdue = false,
+  } = details || {};
+
+  const formattedAmount = new Intl.NumberFormat('en-GH', { style: 'currency', currency: 'GHS' }).format(installmentAmount);
+  const formattedBalance = new Intl.NumberFormat('en-GH', { style: 'currency', currency: 'GHS' }).format(remainingBalance);
+  const formattedDue = nextDueDate
+    ? new Date(nextDueDate).toLocaleDateString('en-GH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    : 'N/A';
+
+  const headerColor = isOverdue ? '#dc2626' : '#166534';
+  const subject = isOverdue
+    ? `⚠️ Overdue Payment Reminder — ${deviceModel} — Tritech Hub iOS`
+    : `📅 Payment Reminder — ${deviceModel} — Tritech Hub iOS`;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM || `Tritech Hub iOS <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject,
+    html: `
+      <!DOCTYPE html><html><head><meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+      <body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0">
+        <div style="max-width:580px;margin:40px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.1)">
+          <div style="background:${headerColor};padding:28px 30px;text-align:center">
+            <h1 style="color:#fff;margin:0;font-size:22px">Tritech Hub iOS</h1>
+            <p style="color:#fff;opacity:.85;margin:6px 0 0;font-size:15px">
+              ${isOverdue ? '⚠️ Overdue Payment Reminder' : '📅 Payment Reminder'}
+            </p>
+          </div>
+          <div style="padding:28px 30px">
+            <h2 style="margin:0 0 12px;color:#111">Hello, ${name}!</h2>
+            <p style="color:#374151;line-height:1.6;margin:0 0 20px">
+              ${isOverdue
+                ? `Your installment payment for your <strong>${deviceModel}</strong> is <strong>overdue</strong>. Please make your payment as soon as possible to avoid your device being locked.`
+                : `This is a friendly reminder that your next installment payment for your <strong>${deviceModel}</strong> is due soon.`
+              }
+            </p>
+            <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px">
+              <tr style="background:#f0fdf4">
+                <td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7;width:45%">Device</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #dcfce7;font-weight:600">${deviceModel}</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #f3f4f6">Amount Due</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #f3f4f6;font-weight:700;color:${headerColor}">${formattedAmount}</td>
+              </tr>
+              <tr style="background:#f9fafb">
+                <td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #f3f4f6">Due Date</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #f3f4f6;color:${isOverdue ? '#dc2626' : '#374151'};font-weight:600">${formattedDue}</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 14px;color:#166534;font-weight:700">Remaining Balance</td>
+                <td style="padding:10px 14px;font-weight:600">${formattedBalance}</td>
+              </tr>
+            </table>
+            <div style="background:${isOverdue ? '#fef2f2' : '#f0fdf4'};border:1px solid ${isOverdue ? '#fecaca' : '#bbf7d0'};border-radius:8px;padding:14px;font-size:14px;color:${isOverdue ? '#991b1b' : '#166534'}">
+              <strong>${isOverdue ? 'Action Required:' : 'How to Pay:'}</strong>
+              ${isOverdue
+                ? ' Your payment is overdue. Please log in to the Tritech Hub iOS app and make your payment immediately to prevent your device from being locked.'
+                : ' Log in to the Tritech Hub iOS app and tap "Make Payment" to complete your installment.'
+              }
+            </div>
+          </div>
+          <div style="background:#f9fafb;padding:14px 30px;text-align:center;font-size:12px;color:#9ca3af;border-top:1px solid #eee">
+            &copy; ${new Date().getFullYear()} Tritech Hub iOS · Powered by Ittek Solutions
+          </div>
+        </div>
+      </body></html>
+    `,
+    text: `Hello, ${name}!\n\nThis is a payment reminder for your ${deviceModel}.\n\nAmount Due: ${formattedAmount}\nDue Date: ${formattedDue}\nRemaining Balance: ${formattedBalance}\n\nPlease log in to make your payment.\n\n© ${new Date().getFullYear()} Tritech Hub iOS`,
+  });
+};
+
 module.exports = {
   sendPasswordResetEmail,
   sendPaymentConfirmationEmail,
   sendLockNotificationEmail,
+  sendPaymentReminderEmail,
   sendAdminPaymentReminderEmail,
   sendAdminOverdueAlertEmail,
   sendAdminSaleNotificationEmail,
