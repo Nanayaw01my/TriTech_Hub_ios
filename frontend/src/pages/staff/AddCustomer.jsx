@@ -4,7 +4,10 @@ import api from '../../api/axios'
 import CameraCapture from '../../components/CameraCapture'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import toast from 'react-hot-toast'
+import PaystackPop from '@paystack/inline-js'
 import { addDays, addWeeks, addMonths, format } from 'date-fns'
+
+const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || ''
 
 const GHANA_REGIONS = {
   "Ahafo": ["Asunafo North","Asunafo South","Asutifi North","Asutifi South","Tano North","Tano South"],
@@ -141,50 +144,91 @@ export default function StaffAddCustomer() {
   }
   const prevStep = () => setStep(s => Math.max(1, s - 1))
 
-  const handleSubmit = async () => {
-    if (!validateStep(4)) return
+  const buildPayload = (paystackRef = null) => ({
+    full_name: form.full_name,
+    email: form.email,
+    phone: form.phone,
+    ghana_card_id: form.ghana_card_id,
+    password: form.password,
+    ghana_card_front: form.ghana_card_front,
+    ghana_card_back: form.ghana_card_back,
+    customer_photo: form.customer_photo,
+    guarantor_photo: form.guarantor_photo,
+    proof_of_income: form.proof_of_income,
+    occupation: form.occupation,
+    income_amount: form.income_amount,
+    income_source: form.income_source,
+    region: form.region,
+    district: form.district,
+    location: form.location,
+    landmark: form.landmark,
+    gps_address: form.gps_address,
+    guarantor_name: form.guarantor_name,
+    guarantor_phone: form.guarantor_phone,
+    guarantor_ghana_card_id: form.guarantor_ghana_card_id,
+    guarantor_relationship: form.guarantor_relationship,
+    device_id: form.device_id || undefined,
+    device_model: form.device_model,
+    device_price: Number(form.device_price),
+    down_payment: Number(form.down_payment),
+    payment_frequency: form.payment_frequency,
+    duration: Number(form.duration),
+    down_payment_reference: paystackRef || undefined,
+  })
+
+  const saveCustomer = async (paystackRef = null) => {
     setSubmitting(true)
     try {
-      const payload = {
-        full_name: form.full_name,
-        email: form.email,
-        phone: form.phone,
-        ghana_card_id: form.ghana_card_id,
-        password: form.password,
-        ghana_card_front: form.ghana_card_front,
-        ghana_card_back: form.ghana_card_back,
-        customer_photo: form.customer_photo,
-        guarantor_photo: form.guarantor_photo,
-        proof_of_income: form.proof_of_income,
-        occupation: form.occupation,
-        income_amount: form.income_amount,
-        income_source: form.income_source,
-        region: form.region,
-        district: form.district,
-        location: form.location,
-        landmark: form.landmark,
-        gps_address: form.gps_address,
-        guarantor_name: form.guarantor_name,
-        guarantor_phone: form.guarantor_phone,
-        guarantor_ghana_card_id: form.guarantor_ghana_card_id,
-        guarantor_relationship: form.guarantor_relationship,
-        device_id: form.device_id || undefined,
-        device_model: form.device_model,
-        device_price: Number(form.device_price),
-        down_payment: Number(form.down_payment),
-        payment_frequency: form.payment_frequency,
-        duration: Number(form.duration),
-      }
-      const res = await api.post('/staff/customers', payload)
+      const res = await api.post('/staff/customers', buildPayload(paystackRef))
       toast.success('Customer registered successfully!')
-      const customerId = res.data?.data?.customer?._id || res.data?.customer?._id || res.data?.data?.customer?.id
+      const customerId = res.data?.data?.customer?._id || res.data?.customer?._id
       navigate(`/staff/customers/${customerId}`)
     } catch (err) {
       const d = err?.response?.data
-      const msg = d?.error || d?.message || d?.errors?.[0]?.msg || 'Registration failed. Please check all fields and try again.'
-      toast.error(msg)
+      toast.error(d?.message || d?.errors?.[0]?.msg || 'Registration failed. Please check all fields and try again.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!validateStep(4)) return
+    const downAmt = Number(form.down_payment) || 0
+
+    // No down payment — save directly
+    if (downAmt === 0) {
+      saveCustomer()
+      return
+    }
+
+    // Down payment required — open Paystack first
+    if (!PAYSTACK_PUBLIC_KEY) {
+      toast.error('Payment system not configured. Contact admin.')
+      return
+    }
+
+    toast('Opening payment for down payment…', { icon: '💳' })
+
+    try {
+      const paystack = new PaystackPop()
+      paystack.newTransaction({
+        key: PAYSTACK_PUBLIC_KEY,
+        email: form.email,
+        amount: Math.round(downAmt * 100), // GHS → pesewas
+        currency: 'GHS',
+        channels: ['mobile_money', 'card'],
+        label: form.full_name,
+        metadata: { type: 'down_payment', device_model: form.device_model },
+        onSuccess: (transaction) => {
+          toast.success(`Down payment confirmed! Saving customer…`)
+          saveCustomer(transaction.reference)
+        },
+        onCancel: () => {
+          toast.error('Payment cancelled — customer not registered.')
+        },
+      })
+    } catch (err) {
+      toast.error('Could not open payment window. Try again.')
     }
   }
 

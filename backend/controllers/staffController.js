@@ -198,6 +198,7 @@ const addCustomer = async (req, res) => {
       device_model,
       device_price,
       down_payment,
+      down_payment_reference,
       // accept payment_frequency (frontend) or frequency
       payment_frequency,
       frequency: frequencyField,
@@ -347,7 +348,23 @@ const addCustomer = async (req, res) => {
       assigned_to: newCustomer._id,
     });
 
-    // --- 11. Create audit log ---
+    // --- 11. Record down payment if paid via Paystack ---
+    if (downPaymentAmount > 0 && down_payment_reference) {
+      await Payment.create({
+        installment_plan_id: plan._id,
+        customer_id: newCustomer._id,
+        amount: downPaymentAmount,
+        payment_date: new Date(),
+        payment_method: 'paystack',
+        paystack_reference: down_payment_reference,
+        paystack_status: 'success',
+        paid_by: newUser._id,
+        recorded_by: req.user._id,
+        notes: 'Down payment collected at registration',
+      });
+    }
+
+    // --- 12. Create audit log ---
     await AuditLog.create({
       user_id: req.user._id,
       action: 'customer_registered',
