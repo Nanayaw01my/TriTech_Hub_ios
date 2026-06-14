@@ -1,89 +1,195 @@
 import React, { useEffect, useState } from 'react'
 
 export default function SplashScreen({ onDone }) {
-  const [fading, setFading] = useState(false)
+  const [phase, setPhase] = useState(0) // 0 = visible, 1 = fading
+  const [progress, setProgress] = useState(0)
+  const [logoLoaded, setLogoLoaded] = useState(false)
+  const [logoError, setLogoError] = useState(false)
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setFading(true), 14400)
-    const doneTimer = setTimeout(() => onDone(), 15000)
-    return () => { clearTimeout(fadeTimer); clearTimeout(doneTimer) }
+    const TOTAL = 9400
+    const startTime = Date.now()
+
+    const interval = setInterval(() => {
+      const pct = Math.min(((Date.now() - startTime) / TOTAL) * 100, 100)
+      setProgress(pct)
+    }, 50)
+
+    const fadeTimer = setTimeout(() => setPhase(1), 9400)
+    const doneTimer = setTimeout(() => onDone(), 10000)
+
+    return () => {
+      clearInterval(interval)
+      clearTimeout(fadeTimer)
+      clearTimeout(doneTimer)
+    }
   }, [onDone])
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center"
       style={{
-        background: 'linear-gradient(145deg, #1b5e20 0%, #2e7d32 50%, #1a6b26 100%)',
-        opacity: fading ? 0 : 1,
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        background: '#0b1410',
+        opacity: phase === 1 ? 0 : 1,
         transition: 'opacity 0.6s ease-in-out',
-        pointerEvents: fading ? 'none' : 'all',
+        pointerEvents: phase === 1 ? 'none' : 'all',
       }}
     >
-      {/* Logo */}
-      <div
-        className="w-32 h-32 bg-white rounded-3xl flex items-center justify-center mb-8"
-        style={{
-          boxShadow: '0 24px 80px rgba(0,0,0,0.3)',
-          animation: 'splashPop 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards',
-        }}
-      >
-        <img
-          src="/logo.png"
-          alt="TriTech Hub"
-          className="w-20 h-20 object-contain"
-          onError={(e) => {
-            e.target.style.display = 'none'
-            e.target.nextSibling.style.display = 'flex'
-          }}
-        />
-        {/* Fallback monogram if no logo.png */}
-        <div
-          className="w-20 h-20 rounded-2xl bg-green-800 hidden items-center justify-center"
-        >
-          <span className="text-white text-3xl font-black">TH</span>
+      {/* Background glow blobs */}
+      <div style={{
+        position: 'absolute', top: '-15%', right: '-15%',
+        width: '55%', paddingBottom: '55%', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(46,125,50,0.18) 0%, transparent 65%)',
+        animation: 'sGlowA 5s ease-in-out infinite',
+      }} />
+      <div style={{
+        position: 'absolute', bottom: '-10%', left: '-15%',
+        width: '50%', paddingBottom: '50%', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(27,94,32,0.14) 0%, transparent 65%)',
+        animation: 'sGlowB 5s 2.5s ease-in-out infinite',
+      }} />
+      <div style={{
+        position: 'absolute', top: '40%', left: '40%',
+        width: '30%', paddingBottom: '30%', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(76,175,80,0.06) 0%, transparent 70%)',
+        animation: 'sGlowA 7s 1s ease-in-out infinite',
+      }} />
+
+      {/* Logo card with ring */}
+      <div style={{ position: 'relative', marginBottom: '2rem', animation: 'sPop 0.9s cubic-bezier(0.34,1.56,0.64,1) forwards' }}>
+        {/* Outer pulse ring */}
+        <div style={{
+          position: 'absolute', inset: '-14px',
+          borderRadius: '38px',
+          border: '1.5px solid rgba(76,175,80,0.35)',
+          animation: 'sRing 2.4s ease-in-out infinite',
+        }} />
+        {/* Second ring */}
+        <div style={{
+          position: 'absolute', inset: '-26px',
+          borderRadius: '46px',
+          border: '1px solid rgba(76,175,80,0.12)',
+          animation: 'sRing 2.4s 0.4s ease-in-out infinite',
+        }} />
+
+        {/* Logo card */}
+        <div style={{
+          width: '118px', height: '118px',
+          background: 'linear-gradient(150deg, #182a1c 0%, #1e3323 50%, #172819 100%)',
+          borderRadius: '28px',
+          border: '1px solid rgba(76,175,80,0.22)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.06)',
+          position: 'relative',
+        }}>
+          {!logoError ? (
+            <img
+              src="/logo.png"
+              alt="TriTech Hub"
+              onLoad={() => setLogoLoaded(true)}
+              onError={() => setLogoError(true)}
+              style={{
+                width: '70px', height: '70px', objectFit: 'contain',
+                opacity: logoLoaded ? 1 : 0,
+                transition: 'opacity 0.3s ease',
+              }}
+            />
+          ) : null}
+          {(!logoLoaded || logoError) && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+              <span style={{ color: '#4CAF50', fontSize: '30px', fontWeight: '900', letterSpacing: '-1px', lineHeight: 1 }}>TH</span>
+              <span style={{ color: 'rgba(76,175,80,0.5)', fontSize: '9px', fontWeight: '700', letterSpacing: '2px' }}>iOS</span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* App name */}
-      <h1
-        className="text-white text-4xl font-black tracking-tight mb-2"
-        style={{ animation: 'splashSlideUp 0.6s 0.25s ease-out both' }}
-      >
-        TriTech Hub
-      </h1>
-      <p
-        className="text-white/60 text-sm font-medium tracking-wide"
-        style={{ animation: 'splashSlideUp 0.6s 0.35s ease-out both' }}
-      >
-        iPhone Installment Management
-      </p>
+      <div style={{ textAlign: 'center', animation: 'sSlideUp 0.65s 0.3s ease-out both' }}>
+        <h1 style={{
+          margin: 0,
+          fontSize: 'clamp(2rem, 6vw, 2.75rem)',
+          fontWeight: '900',
+          letterSpacing: '-0.03em',
+          lineHeight: 1,
+          color: 'white',
+        }}>
+          TriTech Hub{' '}
+          <span style={{
+            background: 'linear-gradient(135deg, #4CAF50 30%, #81C784 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}>iOS</span>
+        </h1>
+        <p style={{
+          marginTop: '0.5rem',
+          color: 'rgba(255,255,255,0.38)',
+          fontSize: '0.75rem',
+          fontWeight: '600',
+          letterSpacing: '0.16em',
+          textTransform: 'uppercase',
+        }}>
+          iPhone Installment Management
+        </p>
+      </div>
 
-      {/* Loading dots */}
-      <div
-        className="flex gap-2.5 mt-14"
-        style={{ animation: 'splashSlideUp 0.6s 0.45s ease-out both' }}
-      >
-        {[0, 1, 2].map(i => (
-          <div
-            key={i}
-            className="w-2.5 h-2.5 rounded-full bg-white/50"
-            style={{ animation: `splashDot 1.3s ${i * 0.2}s ease-in-out infinite` }}
-          />
-        ))}
+      {/* Pill badge */}
+      <div style={{
+        marginTop: '1.75rem',
+        padding: '5px 14px',
+        background: 'rgba(76,175,80,0.1)',
+        border: '1px solid rgba(76,175,80,0.22)',
+        borderRadius: '100px',
+        animation: 'sSlideUp 0.65s 0.48s ease-out both',
+      }}>
+        <span style={{ color: '#66BB6A', fontSize: '11px', fontWeight: '700', letterSpacing: '0.06em' }}>
+          Powered by TriTech
+        </span>
+      </div>
+
+      {/* Bottom progress bar */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: '3px',
+        background: 'rgba(255,255,255,0.04)',
+      }}>
+        <div style={{
+          height: '100%',
+          width: `${progress}%`,
+          background: 'linear-gradient(90deg, #1B5E20, #2E7D32, #4CAF50)',
+          transition: 'width 0.05s linear',
+          boxShadow: '0 0 10px rgba(76,175,80,0.7)',
+        }} />
       </div>
 
       <style>{`
-        @keyframes splashPop {
-          0%   { transform: scale(0.4); opacity: 0; }
-          100% { transform: scale(1);   opacity: 1; }
+        @keyframes sPop {
+          0%   { transform: scale(0.45) rotate(-8deg); opacity: 0; }
+          60%  { transform: scale(1.05) rotate(1deg);  opacity: 1; }
+          100% { transform: scale(1) rotate(0deg);     opacity: 1; }
         }
-        @keyframes splashSlideUp {
-          0%   { transform: translateY(20px); opacity: 0; }
+        @keyframes sSlideUp {
+          0%   { transform: translateY(22px); opacity: 0; }
           100% { transform: translateY(0);    opacity: 1; }
         }
-        @keyframes splashDot {
-          0%, 80%, 100% { transform: scale(0.55); opacity: 0.3; }
-          40%            { transform: scale(1);    opacity: 1;   }
+        @keyframes sGlowA {
+          0%, 100% { transform: scale(1) translate(0,0);     opacity: 0.7; }
+          50%       { transform: scale(1.15) translate(2%,2%); opacity: 1; }
+        }
+        @keyframes sGlowB {
+          0%, 100% { transform: scale(1) translate(0,0);       opacity: 0.6; }
+          50%       { transform: scale(1.1) translate(-2%,-2%); opacity: 1; }
+        }
+        @keyframes sRing {
+          0%, 100% { transform: scale(1);    opacity: 0.5; }
+          50%       { transform: scale(1.06); opacity: 1; }
         }
       `}</style>
     </div>
