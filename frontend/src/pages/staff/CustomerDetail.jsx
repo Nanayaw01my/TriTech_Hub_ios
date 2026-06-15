@@ -5,7 +5,7 @@ import toast from 'react-hot-toast'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import StatusBadge from '../../components/StatusBadge'
 import ProgressBar from '../../components/ProgressBar'
-import PaystackPop from '@paystack/inline-js'
+// Paystack loaded via CDN in index.html
 import { format } from 'date-fns'
 
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || ''
@@ -27,11 +27,10 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
 
     setProcessing(true)
     try {
-      const paystack = new PaystackPop()
-      paystack.newTransaction({
+      const handler = window.PaystackPop.setup({
         key: PAYSTACK_PUBLIC_KEY,
         email: customer.email,
-        amount: Math.round(amt * 100), // GHS → pesewas
+        amount: Math.round(amt * 100),
         currency: 'GHS',
         channels: ['mobile_money', 'card'],
         label: customer.full_name,
@@ -40,7 +39,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
           plan_id: plan._id || plan.id,
           is_staff_initiated: true,
         },
-        onSuccess: async (transaction) => {
+        callback: async (transaction) => {
           setProcessing(false)
           setVerifying(true)
           try {
@@ -60,8 +59,6 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
             const isTimeout = err.code === 'ECONNABORTED' || err.code === 'ERR_NETWORK'
             const serverPending = err?.response?.data?.payment_pending
             if (isTimeout || serverPending) {
-              // Payment was initiated — close the modal and refresh so the
-              // webhook-recorded payment shows up when it arrives.
               toast.success(
                 'Payment sent! It will appear in payment history once your MoMo approval is received.',
                 { duration: 6000 }
@@ -75,10 +72,11 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
             setVerifying(false)
           }
         },
-        onCancel: () => {
+        onClose: () => {
           setProcessing(false)
         },
       })
+      handler.openIframe()
     } catch (err) {
       setProcessing(false)
       toast.error(err?.message || 'Failed to open payment window')

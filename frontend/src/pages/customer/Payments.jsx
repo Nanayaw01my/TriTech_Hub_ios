@@ -58,8 +58,32 @@ export default function CustomerPayments() {
   const paidAmount = (plan?.down_payment || 0) + ((plan?.payments_made || 0) * (plan?.installment_amount || 0))
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
-      <h1 className="text-2xl font-black text-gray-900 mb-4">Payments</h1>
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gray-50">
+
+      {/* Mobile Hero */}
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-green-900 via-green-800 to-green-900">
+        <p className="text-green-300 text-xs font-semibold uppercase tracking-widest">My Account</p>
+        <h1 className="text-white text-2xl font-black mt-1">Payments</h1>
+        {plan && (
+          <div className="grid grid-cols-2 gap-2 mt-3">
+            <div className="bg-white/10 rounded-2xl p-3">
+              <p className="text-green-300 text-[10px] font-semibold uppercase tracking-wide">Total Paid</p>
+              <p className="text-white text-base font-black mt-0.5">GHS {paidAmount.toLocaleString()}</p>
+            </div>
+            <div className="bg-white/10 rounded-2xl p-3">
+              <p className="text-green-300 text-[10px] font-semibold uppercase tracking-wide">Remaining</p>
+              <p className="text-white text-base font-black mt-0.5">GHS {Number(plan.remaining_balance || 0).toLocaleString()}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="max-w-3xl mx-auto px-4 -mt-5 lg:mt-0 lg:pt-4">
+
+      {/* Desktop header */}
+      <div className="hidden lg:block mb-4">
+        <h1 className="text-2xl font-black text-gray-900">Payments</h1>
+      </div>
 
       {/* Make Payment CTA */}
       {plan && plan.status !== 'completed' && (
@@ -89,9 +113,9 @@ export default function CustomerPayments() {
         </div>
       )}
 
-      {/* Plan Summary */}
+      {/* Plan Summary — desktop only (shown in mobile hero) */}
       {plan && (
-        <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="hidden lg:grid grid-cols-2 gap-3 mb-5">
           <div className="bg-white rounded-2xl shadow-card p-4 text-center">
             <p className="text-xs text-gray-500 mb-1">Total Paid</p>
             <p className="text-lg font-black text-green-700">
@@ -177,6 +201,7 @@ export default function CustomerPayments() {
           </div>
         )}
       </div>
+      </div>{/* end max-w-3xl */}
     </div>
   )
 }

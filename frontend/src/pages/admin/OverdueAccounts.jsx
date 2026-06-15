@@ -48,8 +48,29 @@ export default function OverdueAccounts() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
-      <div className="mb-5">
+    <div className="pb-24 lg:pb-6">
+
+      {/* Mobile Hero */}
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-red-900 via-red-800 to-orange-900">
+        <p className="text-red-300 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
+        <h1 className="text-white text-2xl font-black mt-1">Overdue</h1>
+        <div className="flex items-center gap-2 mt-1">
+          {accounts.length > 0 ? (
+            <span className="inline-block bg-white/20 text-white text-sm font-bold px-3 py-1 rounded-full">
+              {accounts.length} account{accounts.length !== 1 ? 's' : ''} overdue
+            </span>
+          ) : (
+            <span className="inline-block bg-white/10 text-red-200 text-sm font-semibold px-3 py-1 rounded-full">
+              All accounts current
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 -mt-5 lg:mt-0 lg:pt-4">
+
+      {/* Desktop Header */}
+      <div className="hidden lg:block mb-5">
         <h1 className="text-2xl font-black text-gray-900">Overdue Accounts</h1>
         <p className="text-sm text-gray-500 mt-0.5">
           {accounts.length} customer{accounts.length !== 1 ? 's' : ''} with overdue or defaulted payments
@@ -160,6 +181,7 @@ export default function OverdueAccounts() {
         confirmVariant={lockModal?.action === 'lock' ? 'danger' : 'primary'}
         loading={lockLoading}
       />
+      </div>{/* end max-w-5xl */}
     </div>
   )
 }

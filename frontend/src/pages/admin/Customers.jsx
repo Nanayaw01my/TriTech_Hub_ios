@@ -69,8 +69,32 @@ export default function AdminCustomers() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
-      <div className="flex items-center justify-between mb-4">
+    <div className="pb-24 lg:pb-6">
+
+      {/* Mobile Hero */}
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-green-900 via-green-800 to-green-900">
+        <p className="text-green-300 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
+        <div className="flex items-start justify-between mt-1">
+          <div>
+            <h1 className="text-white text-2xl font-black">Customers</h1>
+            <p className="text-green-300 text-sm mt-1">{total} registered</p>
+          </div>
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white/15 text-white text-xs font-semibold rounded-xl active:scale-95 transition-all"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Export
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 -mt-5 lg:mt-0 lg:pt-4">
+
+      {/* Desktop Header */}
+      <div className="hidden lg:flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Customers</h1>
           <p className="text-sm text-gray-500 mt-0.5">{total} total customers</p>
@@ -216,6 +240,7 @@ export default function AdminCustomers() {
           )}
         </>
       )}
+      </div>{/* end max-w-6xl */}
     </div>
   )
 }

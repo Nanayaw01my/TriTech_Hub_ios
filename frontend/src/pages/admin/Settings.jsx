@@ -107,8 +107,19 @@ export default function AdminSettings() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
-      <div className="mb-5">
+    <div className="pb-24 lg:pb-6">
+
+      {/* Mobile Hero */}
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-900 via-gray-800 to-green-900">
+        <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
+        <h1 className="text-white text-2xl font-black mt-1">Settings</h1>
+        <p className="text-gray-400 text-sm mt-1">Configure your app</p>
+      </div>
+
+      <div className="max-w-3xl mx-auto px-4 -mt-5 lg:mt-0 lg:pt-4">
+
+      {/* Desktop Header */}
+      <div className="hidden lg:block mb-5">
         <h1 className="text-2xl font-black text-gray-900">Settings</h1>
         <p className="text-sm text-gray-500 mt-0.5">Configure app settings</p>
       </div>
@@ -336,6 +347,7 @@ export default function AdminSettings() {
           </div>
         </div>
       )}
+      </div>{/* end max-w-3xl */}
     </div>
   )
 }

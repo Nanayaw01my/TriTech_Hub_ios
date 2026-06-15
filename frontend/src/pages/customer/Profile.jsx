@@ -65,13 +65,64 @@ export default function CustomerProfile() {
   const cardBackUrl = customer?.ghana_card_back_url || (customer?.photos?.ghana_card_back ? `/uploads/${customer.photos.ghana_card_back}` : null)
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
-      <h1 className="text-2xl font-black text-gray-900 mb-4">My Profile</h1>
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gray-50">
 
-      {/* Profile Card */}
+      {/* Mobile Profile Hero */}
+      <div className="lg:hidden bg-gradient-to-br from-green-900 via-green-800 to-green-900 px-5 pt-6 pb-16 text-center">
+        <div
+          className="w-24 h-24 rounded-full overflow-hidden border-4 border-white/30 mx-auto cursor-pointer"
+          onClick={() => photoUrl && setViewingPhoto(photoUrl)}
+        >
+          {photoUrl ? (
+            <img src={photoUrl} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-white/20 flex items-center justify-center">
+              <span className="text-white font-black text-4xl">
+                {(customer?.full_name || user?.full_name || user?.name || 'U').charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
+        </div>
+        <h1 className="text-white text-xl font-black mt-3">
+          {customer?.full_name || user?.full_name || user?.name}
+        </h1>
+        <p className="text-green-300 text-sm mt-0.5">{customer?.phone || user?.phone}</p>
+        {acct && (
+          <button
+            onClick={copyAccountNumber}
+            className={`mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all active:scale-95
+              ${copied ? 'bg-white text-green-800' : 'bg-white/15 text-white'}`}
+          >
+            {copied ? (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                Copied!
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                {acct}
+              </>
+            )}
+          </button>
+        )}
+      </div>
+
+      <div className="max-w-3xl mx-auto px-4 -mt-5 lg:mt-0 lg:pt-4">
+
+      {/* Desktop header */}
+      <div className="hidden lg:block mb-4">
+        <h1 className="text-2xl font-black text-gray-900">My Profile</h1>
+      </div>
+
+      {/* Profile Card — desktop only shows avatar/name; mobile hides this (shown in hero) */}
       <div className="bg-white rounded-2xl shadow-card p-5 mb-4">
-        {/* Avatar */}
-        <div className="flex flex-col items-center mb-4">
+        {/* Avatar section — desktop only */}
+        <div className="hidden lg:flex flex-col items-center mb-4">
           <div
             className="w-24 h-24 rounded-full overflow-hidden border-4 border-green-200 cursor-pointer"
             onClick={() => photoUrl && setViewingPhoto(photoUrl)}
@@ -277,6 +328,7 @@ export default function CustomerProfile() {
         confirmVariant="danger"
         loading={loggingOut}
       />
+      </div>{/* end max-w-3xl */}
     </div>
   )
 }

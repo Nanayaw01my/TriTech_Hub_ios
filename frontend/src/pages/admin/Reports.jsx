@@ -83,8 +83,24 @@ export default function AdminReports() {
   ]
 
   return (
-    <div className="max-w-5xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
-      <div className="mb-5">
+    <div className="pb-24 lg:pb-6">
+
+      {/* Mobile Hero */}
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-green-900 via-green-800 to-green-900">
+        <p className="text-green-300 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
+        <h1 className="text-white text-2xl font-black mt-1">Reports</h1>
+        {summary?.totalRevenue > 0 && (
+          <div className="mt-3 bg-white/10 rounded-2xl px-4 py-2.5 inline-block">
+            <p className="text-green-300 text-[10px] font-semibold uppercase tracking-wide">Total Revenue</p>
+            <p className="text-white text-xl font-black">GHS {Number(summary.totalRevenue).toLocaleString()}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 -mt-5 lg:mt-0 lg:pt-4">
+
+      {/* Desktop Header */}
+      <div className="hidden lg:block mb-5">
         <h1 className="text-2xl font-black text-gray-900">Reports</h1>
         <p className="text-sm text-gray-500 mt-0.5">Revenue and performance analytics</p>
       </div>
@@ -187,6 +203,7 @@ export default function AdminReports() {
 
         </>
       )}
+      </div>{/* end max-w-5xl */}
     </div>
   )
 }

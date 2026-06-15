@@ -152,8 +152,32 @@ export default function AdminDevices() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
-      <div className="flex items-center justify-between mb-5">
+    <div className="pb-24 lg:pb-6">
+
+      {/* Mobile Hero */}
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-green-900 via-green-800 to-green-900">
+        <p className="text-green-300 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
+        <div className="flex items-start justify-between mt-1">
+          <div>
+            <h1 className="text-white text-2xl font-black">Devices</h1>
+            <p className="text-green-300 text-sm mt-1">{devices.length} in catalog</p>
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white/15 text-white text-xs font-semibold rounded-xl active:scale-95 transition-all"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Device
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 -mt-5 lg:mt-0 lg:pt-4">
+
+      {/* Desktop Header */}
+      <div className="hidden lg:flex items-center justify-between mb-5">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Devices</h1>
           <p className="text-sm text-gray-500 mt-0.5">{devices.length} devices in inventory</p>
@@ -419,6 +443,7 @@ export default function AdminDevices() {
         confirmVariant={lockModal?.lock_status === 'locked' ? 'primary' : 'danger'}
         loading={lockLoading}
       />
+      </div>{/* end max-w-5xl */}
     </div>
   )
 }
