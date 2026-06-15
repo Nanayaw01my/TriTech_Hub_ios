@@ -51,8 +51,14 @@ const sendSMS = async (to, message) => {
 
 // keep messages under 160 chars
 const sendAdminSaleSMS = async (adminPhone, sale) => {
-  const branch = sale.branch ? `@${sale.branch} ` : '';
-  const msg = `Sale: ${sale.deviceModel} by ${sale.staffName} ${branch}| Customer: ${sale.customerName} ${sale.customerPhone || ''} | GHS ${Number(sale.totalPrice).toLocaleString()} -Tritech`;
+  const branch = sale.branch ? ` @${sale.branch}` : '';
+  const freq   = sale.frequency === 'monthly' ? 'mo' : sale.frequency === 'weekly' ? 'wk' : 'day';
+  const price  = Number(sale.totalPrice).toLocaleString();
+  const down   = Number(sale.downPayment).toLocaleString();
+  const inst   = Number(sale.installmentAmount).toLocaleString();
+  const n      = sale.totalPayments;
+
+  const msg = `NEW SALE: ${sale.deviceModel} | Staff: ${sale.staffName}${branch} | Cust: ${sale.customerName} ${sale.customerPhone || ''} | Price: GHS ${price} | Down: GHS ${down} | GHS ${inst}/${freq} x ${n} -Tritech`;
   await sendSMS(adminPhone, msg);
 };
 
