@@ -255,17 +255,8 @@ export default function AdminDevices() {
 
       {/* ── CATALOG TAB ── */}
       {tab === 'catalog' && (<>
-      {/* Filters */}
+      {/* Filter — lock status only (all catalog items are unassigned) */}
       <div className="flex gap-2 mb-4">
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="flex-1 px-3 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-white"
-        >
-          <option value="">All Devices</option>
-          <option value="available">Available</option>
-          <option value="sold">Sold</option>
-        </select>
         <select
           value={lockFilter}
           onChange={(e) => setLockFilter(e.target.value)}

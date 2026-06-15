@@ -481,8 +481,8 @@ const getDevices = async (req, res) => {
     const limit = Math.min(100, parseInt(req.query.limit) || 20);
     const skip = (page - 1) * limit;
 
-    const filter = {};
-    if (req.query.sold_status) filter.sold_status = req.query.sold_status;
+    // Catalog = devices not assigned to any customer
+    const filter = { assigned_to: null };
     if (req.query.lock_status) filter.lock_status = req.query.lock_status;
     if (req.query.search) {
       const r = new RegExp(req.query.search, 'i');

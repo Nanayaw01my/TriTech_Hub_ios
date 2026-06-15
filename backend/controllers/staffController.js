@@ -649,7 +649,7 @@ const makePaymentForCustomer = async (req, res) => {
 
 const getAvailableDevices = async (req, res) => {
   try {
-    const devices = await Device.find({ sold_status: 'available' })
+    const devices = await Device.find({ assigned_to: null })
       .select('model color storage price serial_number udid')
       .sort({ model: 1 });
     return res.status(200).json({ success: true, data: { devices } });
