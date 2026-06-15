@@ -5,7 +5,6 @@ import CameraCapture from '../../components/CameraCapture'
 import SignaturePad from '../../components/SignaturePad'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import toast from 'react-hot-toast'
-import PaystackPop from '@paystack/inline-js'
 import { addDays, addWeeks, addMonths, format } from 'date-fns'
 
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || ''
@@ -210,27 +209,35 @@ export default function StaffAddCustomer() {
       return
     }
 
-    toast('Opening payment for down payment…', { icon: '💳' })
+    if (!window.PaystackPop) {
+      toast.error('Payment system still loading. Wait a moment and try again.')
+      return
+    }
+
+    const loadingToast = toast.loading('Opening payment…')
 
     try {
-      const paystack = new PaystackPop()
-      paystack.newTransaction({
+      const handler = window.PaystackPop.setup({
         key: PAYSTACK_PUBLIC_KEY,
         email: form.email,
-        amount: Math.round(downAmt * 100), // GHS → pesewas
+        amount: Math.round(downAmt * 100),
         currency: 'GHS',
         channels: ['mobile_money', 'card'],
         label: form.full_name,
         metadata: { type: 'down_payment', device_model: form.device_model },
-        onSuccess: (transaction) => {
-          toast.success(`Down payment confirmed! Saving customer…`)
+        callback: (transaction) => {
+          toast.dismiss(loadingToast)
+          toast.success('Down payment confirmed! Saving customer…')
           saveCustomer(transaction.reference)
         },
-        onCancel: () => {
+        onClose: () => {
+          toast.dismiss(loadingToast)
           toast.error('Payment cancelled — customer not registered.')
         },
       })
+      handler.openIframe()
     } catch (err) {
+      toast.dismiss(loadingToast)
       toast.error('Could not open payment window. Try again.')
     }
   }
