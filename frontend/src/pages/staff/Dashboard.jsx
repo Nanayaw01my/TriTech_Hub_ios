@@ -81,19 +81,48 @@ export default function StaffDashboard() {
   }
 
   return (
-    <div className="px-4 pb-24 lg:pb-6 pt-4 lg:px-0">
+    <div className="pb-24 lg:pb-6 lg:px-0">
 
-      {/* Header */}
-      <div className="mb-6">
-        <p className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-1">Staff Portal</p>
-        <h1 className="text-2xl font-black text-gray-900 leading-tight">
-          Welcome back, {user?.full_name?.split(' ')[0] || 'Staff'}!
+      {/* ── Mobile Hero (hidden on desktop) ── */}
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-green-900 via-green-800 to-green-900">
+        <p className="text-green-300 text-xs font-semibold uppercase tracking-widest">Staff Portal</p>
+        <h1 className="text-white text-2xl font-black mt-1 leading-tight">
+          {user?.full_name?.split(' ')[0] || 'Staff'}
         </h1>
         {user?.staff_id && (
-          <p className="text-sm font-bold text-green-700 mt-0.5">ID: {user.staff_id}</p>
+          <span className="inline-block bg-white/15 text-green-200 text-xs font-semibold px-3 py-1 rounded-full mt-2">
+            ID: {user.staff_id}
+          </span>
         )}
-        <p className="text-xs text-gray-400 mt-0.5">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
+
+        {/* Hero stat pills */}
+        <div className="grid grid-cols-3 gap-2 mt-4">
+          <div className="bg-white/10 rounded-2xl p-3 text-center">
+            <p className="text-white text-xl font-black leading-none">{stats?.my_customers ?? 0}</p>
+            <p className="text-green-300 text-[10px] font-semibold mt-0.5">Customers</p>
+          </div>
+          <div className="bg-white/10 rounded-2xl p-3 text-center">
+            <p className="text-white text-xl font-black leading-none">{stats?.payments_today ?? 0}</p>
+            <p className="text-green-300 text-[10px] font-semibold mt-0.5">Paid Today</p>
+          </div>
+          <div className={`rounded-2xl p-3 text-center ${(stats?.overdue ?? 0) > 0 ? 'bg-red-500/40' : 'bg-white/10'}`}>
+            <p className="text-white text-xl font-black leading-none">{stats?.overdue ?? 0}</p>
+            <p className={`text-[10px] font-semibold mt-0.5 ${(stats?.overdue ?? 0) > 0 ? 'text-red-200' : 'text-green-300'}`}>Overdue</p>
+          </div>
+        </div>
       </div>
+
+      <div className="px-4 lg:px-0 -mt-5 lg:mt-0 lg:pt-4">
+
+        {/* ── Desktop Header (hidden on mobile) ── */}
+        <div className="hidden lg:block mb-6">
+          <p className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-1">Staff Portal</p>
+          <h1 className="text-2xl font-black text-gray-900 leading-tight">
+            Welcome back, {user?.full_name?.split(' ')[0] || 'Staff'}!
+          </h1>
+          {user?.staff_id && <p className="text-sm font-bold text-green-700 mt-0.5">ID: {user.staff_id}</p>}
+          <p className="text-xs text-gray-400 mt-0.5">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
+        </div>
 
       {/* Desktop two-column layout */}
       <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
@@ -101,28 +130,30 @@ export default function StaffDashboard() {
         {/* ── Left column: Stats + CTA ── */}
         <div className="lg:col-span-1 space-y-3 mb-5 lg:mb-0">
 
-          {/* Stat cards — horizontal layout on desktop */}
-          {summaryCards.map((card) => (
-            <div
-              key={card.label}
-              className={`${card.bg} border ${card.border} rounded-2xl p-4 flex items-center gap-4`}
-            >
-              <div className="w-10 h-10 rounded-xl bg-white/70 flex items-center justify-center flex-shrink-0 shadow-sm">
-                {card.icon}
+          {/* Stat cards — hidden on mobile (shown in hero), visible on desktop */}
+          <div className="hidden lg:block space-y-3">
+            {summaryCards.map((card) => (
+              <div
+                key={card.label}
+                className={`${card.bg} border ${card.border} rounded-2xl p-4 flex items-center gap-4`}
+              >
+                <div className="w-10 h-10 rounded-xl bg-white/70 flex items-center justify-center flex-shrink-0 shadow-sm">
+                  {card.icon}
+                </div>
+                <div>
+                  <p className="text-2xl font-black text-gray-900 leading-none">{card.value}</p>
+                  <p className="text-xs font-semibold text-gray-500 mt-0.5">{card.label}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-black text-gray-900 leading-none">{card.value}</p>
-                <p className="text-xs font-semibold text-gray-500 mt-0.5">{card.label}</p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
 
           {/* Register CTA */}
           <button
             onClick={() => navigate('/staff/customers/add')}
             className="w-full py-4 bg-green-800 text-white font-black text-base rounded-2xl
                        flex items-center justify-center gap-3 shadow-lg
-                       active:scale-95 transition-all duration-150 hover:bg-green-900 mt-2"
+                       active:scale-95 transition-all duration-150 hover:bg-green-900"
           >
             <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -188,6 +219,7 @@ export default function StaffDashboard() {
         </div>
 
       </div>
+      </div>{/* end px-4 wrapper */}
     </div>
   )
 }
