@@ -13,6 +13,7 @@ const {
   updateStaff,
   deleteStaff,
   getDevices,
+  getDeviceSales,
   addDevice,
   updateDevice,
   deleteDevice,
@@ -107,6 +108,7 @@ router.patch(
 
 // ─── DEVICES ──────────────────────────────────────────────────────────────────
 router.get('/devices', getDevices);
+router.get('/device-sales', getDeviceSales);
 router.post(
   '/devices',
   [

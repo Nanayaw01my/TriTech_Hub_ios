@@ -518,6 +518,79 @@ const getDevices = async (req, res) => {
 };
 
 /**
+ * GET /api/admin/device-sales
+ * Returns all installment plans with customer + device info for the Sales tab.
+ */
+const getDeviceSales = async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, parseInt(req.query.limit) || 25);
+    const skip = (page - 1) * limit;
+    const statusFilter = req.query.status;
+    const search = req.query.search;
+
+    const filter = {};
+    if (statusFilter) filter.status = statusFilter;
+
+    let plans = await InstallmentPlan.find(filter)
+      .populate({ path: 'customer_id', select: 'full_name phone email photos' })
+      .populate({ path: 'device_id', select: 'model color storage price serial_number' })
+      .populate({ path: 'created_by', select: 'name full_name staff_id' })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Apply search filter after populate (customer name / phone / device model)
+    if (search) {
+      const re = new RegExp(search, 'i');
+      plans = plans.filter(p =>
+        re.test(p.customer_id?.full_name) ||
+        re.test(p.customer_id?.phone) ||
+        re.test(p.device_id?.model)
+      );
+    }
+
+    const total = plans.length;
+    const paginated = plans.slice(skip, skip + limit);
+
+    const sales = paginated.map(p => {
+      const amountPaid = (p.down_payment || 0) + ((p.payments_made || 0) * (p.installment_amount || 0));
+      return {
+        _id: p._id,
+        customer_id: p.customer_id?._id,
+        customer_name: p.customer_id?.full_name || 'Unknown',
+        customer_phone: p.customer_id?.phone || '',
+        customer_photo: p.customer_id?.photos?.customer_photo || null,
+        device_model: p.device_id?.model || 'Unknown',
+        device_color: p.device_id?.color || '',
+        device_storage: p.device_id?.storage || '',
+        device_serial: p.device_id?.serial_number || '',
+        total_price: p.total_price || 0,
+        down_payment: p.down_payment || 0,
+        installment_amount: p.installment_amount || 0,
+        payments_made: p.payments_made || 0,
+        total_payments: p.total_payments || 0,
+        amount_paid: amountPaid,
+        remaining_balance: p.remaining_balance || 0,
+        frequency: p.frequency,
+        status: p.status,
+        next_due_date: p.next_due_date,
+        start_date: p.start_date || p.createdAt,
+        staff_name: p.created_by?.full_name || p.created_by?.name || 'Staff',
+        staff_id: p.created_by?.staff_id || '',
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: { sales, total, page, totalPages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    console.error('getDeviceSales error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
  * POST /api/admin/devices
  */
 const addDevice = async (req, res) => {
@@ -1515,6 +1588,7 @@ module.exports = {
   getStaffSales,
   updateStaffCommissionRate,
   getDevices,
+  getDeviceSales,
   addDevice,
   updateDevice,
   deleteDevice,

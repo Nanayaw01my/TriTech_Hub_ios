@@ -3,7 +3,9 @@ import api from '../../api/axios'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import StatusBadge from '../../components/StatusBadge'
 import ConfirmModal from '../../components/ConfirmModal'
+import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { format } from 'date-fns'
 
 const IPHONE_MODELS = [
   // iPhone SE
@@ -67,6 +69,10 @@ const COLOR_DOTS = {
 const initForm = { model: '', color: '', storage: '', price: '', serial_number: '', udid: '' }
 
 export default function AdminDevices() {
+  const navigate = useNavigate()
+  const [tab, setTab] = useState('catalog')
+
+  // Catalog tab state
   const [devices, setDevices] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -77,6 +83,15 @@ export default function AdminDevices() {
   const [lockLoading, setLockLoading] = useState(false)
   const [form, setForm] = useState(initForm)
   const [errors, setErrors] = useState({})
+
+  // Sales tab state
+  const [sales, setSales] = useState([])
+  const [salesLoading, setSalesLoading] = useState(false)
+  const [salesSearch, setSalesSearch] = useState('')
+  const [salesStatus, setSalesStatus] = useState('')
+  const [salesPage, setSalesPage] = useState(1)
+  const [salesTotalPages, setSalesTotalPages] = useState(1)
+  const [salesTotal, setSalesTotal] = useState(0)
 
   const fetchDevices = useCallback(async () => {
     setLoading(true)
@@ -95,7 +110,29 @@ export default function AdminDevices() {
     }
   }, [statusFilter, lockFilter])
 
+  const fetchSales = useCallback(async () => {
+    setSalesLoading(true)
+    try {
+      const params = new URLSearchParams({
+        page: salesPage,
+        limit: 25,
+        ...(salesSearch && { search: salesSearch }),
+        ...(salesStatus && { status: salesStatus }),
+      })
+      const res = await api.get(`/admin/device-sales?${params}`)
+      const d = res.data?.data || res.data
+      setSales(Array.isArray(d.sales) ? d.sales : [])
+      setSalesTotal(d.total || 0)
+      setSalesTotalPages(d.totalPages || 1)
+    } catch {
+      toast.error('Failed to load sales')
+    } finally {
+      setSalesLoading(false)
+    }
+  }, [salesPage, salesSearch, salesStatus])
+
   useEffect(() => { fetchDevices() }, [fetchDevices])
+  useEffect(() => { if (tab === 'sales') fetchSales() }, [tab, fetchSales])
 
   const handleModelChange = (model) => {
     const found = IPHONE_MODELS.find(m => m.model === model)
@@ -160,17 +197,21 @@ export default function AdminDevices() {
         <div className="flex items-start justify-between mt-1">
           <div>
             <h1 className="text-white text-2xl font-black">Devices</h1>
-            <p className="text-green-300 text-sm mt-1">{devices.length} in catalog</p>
+            <p className="text-green-300 text-sm mt-1">
+              {tab === 'catalog' ? `${devices.length} in catalog` : `${salesTotal} sales`}
+            </p>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white/15 text-white text-xs font-semibold rounded-xl active:scale-95 transition-all"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Device
-          </button>
+          {tab === 'catalog' && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-white/15 text-white text-xs font-semibold rounded-xl active:scale-95 transition-all"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add
+            </button>
+          )}
         </div>
       </div>
 
@@ -180,20 +221,40 @@ export default function AdminDevices() {
       <div className="hidden lg:flex items-center justify-between mb-5">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Devices</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{devices.length} devices in inventory</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {tab === 'catalog' ? `${devices.length} in catalog` : `${salesTotal} total sales`}
+          </p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-green-800 text-white font-semibold text-sm rounded-2xl
-                     hover:bg-green-900 active:scale-95 transition-all shadow-lg shadow-green-900/20"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Device
-        </button>
+        {tab === 'catalog' && (
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-green-800 text-white font-semibold text-sm rounded-2xl
+                       hover:bg-green-900 active:scale-95 transition-all shadow-lg shadow-green-900/20"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Device
+          </button>
+        )}
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl mb-5">
+        {[{ id: 'catalog', label: 'Catalog' }, { id: 'sales', label: 'Sales' }].map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all
+              ${tab === t.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── CATALOG TAB ── */}
+      {tab === 'catalog' && (<>
       {/* Filters */}
       <div className="flex gap-2 mb-4">
         <select
@@ -284,6 +345,155 @@ export default function AdminDevices() {
             )
           })}
         </div>
+      )}
+      </>)} {/* end catalog tab */}
+
+      {/* ── SALES TAB ── */}
+      {tab === 'sales' && (
+        <>
+          {/* Search + filter */}
+          <div className="flex gap-2 mb-4">
+            <div className="flex-1 relative">
+              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="search"
+                value={salesSearch}
+                onChange={(e) => { setSalesSearch(e.target.value); setSalesPage(1) }}
+                placeholder="Search by customer, device..."
+                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-white"
+              />
+            </div>
+            <select
+              value={salesStatus}
+              onChange={(e) => { setSalesStatus(e.target.value); setSalesPage(1) }}
+              className="px-3 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-white"
+            >
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+              <option value="defaulted">Defaulted</option>
+            </select>
+          </div>
+
+          {salesLoading ? (
+            <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
+          ) : sales.length === 0 ? (
+            <div className="bg-white rounded-2xl p-12 text-center shadow-card">
+              <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                <svg className="w-7 h-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <p className="text-gray-500 font-medium">No sales yet</p>
+              <p className="text-sm text-gray-400 mt-1">Sales appear here when staff register customers</p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3 mb-4">
+                {sales.map((s) => {
+                  const pct = s.total_price > 0 ? Math.round((s.amount_paid / s.total_price) * 100) : 0
+                  const isCompleted = s.status === 'completed'
+                  const isDefaulted = s.status === 'defaulted'
+
+                  return (
+                    <div
+                      key={s._id}
+                      onClick={() => s.customer_id && navigate(`/admin/customers/${s.customer_id}`)}
+                      className="bg-white rounded-2xl shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99]"
+                    >
+                      {/* Customer + Device row */}
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0 font-black text-green-800 text-lg">
+                          {s.customer_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-bold text-gray-900 text-sm">{s.customer_name}</p>
+                            <StatusBadge status={isCompleted ? 'completed' : isDefaulted ? 'overdue' : 'active'} size="sm" />
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">{s.customer_phone}</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs text-gray-400">{s.start_date ? format(new Date(s.start_date), 'dd MMM yyyy') : ''}</p>
+                          <p className="text-xs text-green-600 font-semibold mt-0.5">{s.staff_name}</p>
+                        </div>
+                      </div>
+
+                      {/* Device details */}
+                      <div className="bg-gray-50 rounded-xl px-3 py-2 mb-3 flex items-center gap-2 flex-wrap">
+                        <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-sm font-bold text-gray-800">{s.device_model}</span>
+                        {s.device_color && <span className="text-xs text-gray-500">{s.device_color}</span>}
+                        {s.device_storage && (
+                          <span className="text-xs bg-gray-200 text-gray-600 font-semibold px-2 py-0.5 rounded-lg">{s.device_storage}</span>
+                        )}
+                        {s.device_serial && (
+                          <span className="text-xs font-mono text-gray-400 ml-auto truncate">SN: {s.device_serial}</span>
+                        )}
+                      </div>
+
+                      {/* Payment stats */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="text-center">
+                          <p className="text-xs text-gray-400 mb-0.5">Total Price</p>
+                          <p className="text-sm font-black text-gray-900">GHS {Number(s.total_price).toLocaleString()}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-gray-400 mb-0.5">Paid</p>
+                          <p className="text-sm font-black text-green-700">GHS {Number(s.amount_paid).toLocaleString()}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-gray-400 mb-0.5">Balance</p>
+                          <p className={`text-sm font-black ${s.remaining_balance > 0 ? 'text-orange-600' : 'text-green-700'}`}>
+                            GHS {Number(s.remaining_balance).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] text-gray-400">{s.payments_made}/{s.total_payments} payments</span>
+                          <span className="text-[10px] font-bold text-green-700">{pct}%</span>
+                        </div>
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all ${isCompleted ? 'bg-green-500' : isDefaulted ? 'bg-red-400' : 'bg-green-600'}`}
+                            style={{ width: `${Math.min(100, pct)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {salesTotalPages > 1 && (
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setSalesPage(p => Math.max(1, p - 1))}
+                    disabled={salesPage === 1}
+                    className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm font-medium disabled:opacity-40 hover:bg-gray-50"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm text-gray-600 font-medium">Page {salesPage} of {salesTotalPages}</span>
+                  <button
+                    onClick={() => setSalesPage(p => Math.min(salesTotalPages, p + 1))}
+                    disabled={salesPage === salesTotalPages}
+                    className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm font-medium disabled:opacity-40 hover:bg-gray-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </>
       )}
 
       {/* Add Device Modal */}
