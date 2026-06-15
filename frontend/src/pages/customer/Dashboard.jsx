@@ -138,16 +138,16 @@ export default function CustomerDashboard() {
                 </div>
 
                 {/* Stats grid */}
-                <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="grid grid-cols-3 gap-1.5 mb-4">
                   <div className="bg-green-50 rounded-2xl p-3 text-center">
                     <p className="text-xs text-gray-500 mb-0.5">Paid</p>
-                    <p className="text-sm font-bold text-green-700">
+                    <p className="text-xs font-bold text-green-700">
                       GHS {paidAmount.toLocaleString()}
                     </p>
                   </div>
                   <div className="bg-orange-50 rounded-2xl p-3 text-center">
                     <p className="text-xs text-gray-500 mb-0.5">Remaining</p>
-                    <p className="text-sm font-bold text-orange-600">
+                    <p className="text-xs font-bold text-orange-600">
                       GHS {Number(plan.remaining_balance || 0).toLocaleString()}
                     </p>
                   </div>

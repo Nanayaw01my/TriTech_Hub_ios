@@ -166,7 +166,7 @@ export default function AdminDashboard() {
           {/* Quick Navigation */}
           <div className="bg-white rounded-2xl shadow-card p-4">
             <h2 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">Quick Navigation</h2>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {NAV_CARDS.map((card) => (
                 <button
                   key={card.label}

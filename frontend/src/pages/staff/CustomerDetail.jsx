@@ -296,16 +296,16 @@ export default function StaffCustomerDetail() {
             height="lg"
           />
 
-          <div className="grid grid-cols-3 gap-2 mt-4">
+          <div className="grid grid-cols-3 gap-1.5 mt-4">
             <div className="bg-green-50 rounded-xl p-2.5 text-center">
               <p className="text-xs text-gray-500 mb-0.5">Remaining</p>
-              <p className="text-sm font-bold text-green-800">
+              <p className="text-xs font-bold text-green-800">
                 GHS {Number(plan.remaining_balance || 0).toLocaleString()}
               </p>
             </div>
             <div className="bg-gray-50 rounded-xl p-2.5 text-center">
               <p className="text-xs text-gray-500 mb-0.5">Installment</p>
-              <p className="text-sm font-bold text-gray-800">
+              <p className="text-xs font-bold text-gray-800">
                 GHS {Number(plan.installment_amount || 0).toLocaleString()}
               </p>
             </div>

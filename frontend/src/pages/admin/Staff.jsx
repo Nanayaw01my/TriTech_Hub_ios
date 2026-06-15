@@ -292,17 +292,17 @@ export default function AdminStaff() {
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 mt-3">
-                      <div className="bg-gray-50 rounded-xl px-3 py-2 text-center">
+                    <div className="grid grid-cols-3 gap-1 mt-3">
+                      <div className="bg-gray-50 rounded-xl px-2 py-2 text-center">
                         <p className="text-xl font-black text-gray-900">{s.period_sales}</p>
                         <p className="text-[10px] text-gray-400 font-medium uppercase mt-0.5">Sales</p>
                       </div>
-                      <div className="bg-gray-50 rounded-xl px-3 py-2 text-center">
-                        <p className="text-sm font-bold text-gray-700">GHS {(s.commission_per_sale || 0).toLocaleString()}</p>
+                      <div className="bg-gray-50 rounded-xl px-2 py-2 text-center">
+                        <p className="text-xs font-bold text-gray-700">GHS {(s.commission_per_sale || 0).toLocaleString()}</p>
                         <p className="text-[10px] text-gray-400 font-medium uppercase mt-0.5">Per Sale</p>
                       </div>
-                      <div className="bg-green-50 rounded-xl px-3 py-2 text-center">
-                        <p className="text-sm font-black text-green-700">GHS {(s.commission_owed || 0).toLocaleString()}</p>
+                      <div className="bg-green-50 rounded-xl px-2 py-2 text-center">
+                        <p className="text-xs font-black text-green-700">GHS {(s.commission_owed || 0).toLocaleString()}</p>
                         <p className="text-[10px] text-green-500 font-medium uppercase mt-0.5">Owed</p>
                       </div>
                     </div>

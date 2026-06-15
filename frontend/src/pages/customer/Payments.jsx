@@ -162,7 +162,7 @@ export default function CustomerPayments() {
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-4 py-2 rounded-xl bg-gray-100 text-sm font-medium disabled:opacity-40 hover:bg-gray-200"
+              className="px-4 py-2.5 min-w-[40px] rounded-xl bg-gray-100 text-sm font-medium disabled:opacity-40 hover:bg-gray-200"
             >
               Previous
             </button>
@@ -170,7 +170,7 @@ export default function CustomerPayments() {
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-4 py-2 rounded-xl bg-gray-100 text-sm font-medium disabled:opacity-40 hover:bg-gray-200"
+              className="px-4 py-2.5 min-w-[40px] rounded-xl bg-gray-100 text-sm font-medium disabled:opacity-40 hover:bg-gray-200"
             >
               Next
             </button>

@@ -126,14 +126,14 @@ export default function OverdueAccounts() {
                     {isLocked ? (
                       <button
                         onClick={() => setLockModal({ customerId: acct.customer_id, customerName: acct.customer_name, action: 'unlock' })}
-                        className="px-3 py-1.5 bg-green-100 text-green-700 rounded-xl text-xs font-semibold hover:bg-green-200 transition-colors"
+                        className="px-4 py-2 bg-green-100 text-green-700 rounded-xl text-xs font-semibold hover:bg-green-200 transition-colors"
                       >
                         Unlock
                       </button>
                     ) : (
                       <button
                         onClick={() => setLockModal({ customerId: acct.customer_id, customerName: acct.customer_name, action: 'lock' })}
-                        className="px-3 py-1.5 bg-red-100 text-red-700 rounded-xl text-xs font-semibold hover:bg-red-200 transition-colors"
+                        className="px-4 py-2 bg-red-100 text-red-700 rounded-xl text-xs font-semibold hover:bg-red-200 transition-colors"
                       >
                         Lock Device
                       </button>
