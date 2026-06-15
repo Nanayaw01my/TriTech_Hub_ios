@@ -52,11 +52,37 @@ const CUSTOMER_NAV = [
 
 // Bottom nav items (mobile only — fewer items)
 const ADMIN_BOTTOM = [
-  { to: '/admin/dashboard', label: 'Home', icon: Icon.home },
-  { to: '/admin/customers', label: 'Customers', icon: Icon.customers },
-  { to: '/admin/transactions', label: 'Payments', icon: Icon.payments },
-  { to: '/admin/settings', label: 'Settings', icon: Icon.settings },
+  { to: '/admin/dashboard',         label: 'Home',      icon: Icon.home },
+  { to: '/admin/customers',         label: 'Customers', icon: Icon.customers },
+  { to: '/admin/overdue-accounts',  label: 'Overdue',   icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /> },
+  { to: '/admin/transactions',      label: 'Payments',  icon: Icon.payments },
+  { to: '/admin/settings',          label: 'Settings',  icon: Icon.settings },
 ]
+
+const PAGE_TITLES = {
+  '/admin/dashboard':        'Dashboard',
+  '/admin/customers':        'Customers',
+  '/admin/overdue-accounts': 'Overdue',
+  '/admin/staff':            'Staff',
+  '/admin/devices':          'Devices',
+  '/admin/transactions':     'Transactions',
+  '/admin/reports':          'Reports',
+  '/admin/audit-logs':       'Audit Logs',
+  '/admin/settings':         'Settings',
+  '/staff/dashboard':        'Dashboard',
+  '/staff/customers':        'My Customers',
+  '/staff/customers/add':    'Add Customer',
+  '/customer/dashboard':     'Dashboard',
+  '/customer/payments':      'Payments',
+  '/customer/profile':       'My Profile',
+}
+
+function getPageTitle(pathname) {
+  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname]
+  // Detail pages
+  if (/\/customers\/[^/]+$/.test(pathname)) return 'Customer Detail'
+  return 'Tritech Hub iOS'
+}
 
 // ─── Notification Bell ────────────────────────────────────────────────────────
 function NotificationBell() {
@@ -311,25 +337,27 @@ export default function Layout({ role }) {
       <div className="flex-1 flex flex-col min-w-0 lg:ml-60">
 
         {/* Mobile top bar */}
-        <header className="lg:hidden bg-green-900 text-white sticky top-0 z-40 shadow-md">
-          <div className="flex items-center justify-between px-4 h-14">
+        <header className="lg:hidden bg-green-900 text-white sticky top-0 z-40" style={{ boxShadow: '0 1px 0 rgba(255,255,255,0.06), 0 4px 16px rgba(0,0,0,0.18)' }}>
+          <div className="flex items-center justify-between px-3 h-14">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-xl hover:bg-white/10 transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 active:bg-white/20 transition-colors flex-shrink-0"
             >
               <NavIcon path={Icon.menu} className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center">
-                <span className="text-green-800 font-black text-xs">TH</span>
-              </div>
-              <p className="font-bold text-sm">Tritech Hub iOS</p>
+
+            <div className="flex-1 flex flex-col items-center justify-center min-w-0 px-2">
+              <p className="text-white font-bold text-sm leading-tight truncate">
+                {getPageTitle(location.pathname)}
+              </p>
+              <p className="text-green-300/70 text-[10px] font-medium leading-tight">Tritech Hub iOS</p>
             </div>
-            <div className="flex items-center gap-1">
+
+            <div className="flex items-center gap-0.5 flex-shrink-0">
               {role === 'admin' && <NotificationBell />}
               <button
                 onClick={() => setLogoutModal(true)}
-                className="p-2 rounded-xl hover:bg-white/10 transition-colors"
+                className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 active:bg-white/20 transition-colors"
                 title="Sign out"
               >
                 <NavIcon path={Icon.logout} className="w-5 h-5" />
@@ -365,7 +393,8 @@ export default function Layout({ role }) {
       </div>
 
       {/* ── Mobile Bottom Nav ── */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden"
+           style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderTop: '1px solid rgba(0,0,0,0.08)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="flex items-stretch h-16">
           {bottomItems.map((item) => {
             const dashboardPath = `/${role}/dashboard`
@@ -378,13 +407,18 @@ export default function Layout({ role }) {
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 transition-colors
-                  ${isActive ? 'text-green-800' : 'text-gray-400 hover:text-gray-600'}`}
+                className="flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 transition-colors"
               >
-                <div className={`p-1 rounded-xl ${isActive ? 'bg-green-50' : ''}`}>
-                  <NavIcon path={item.icon} className="w-5 h-5" />
+                {/* Active indicator line at top */}
+                <div className={`absolute top-0 h-0.5 w-8 rounded-full transition-all duration-200 ${isActive ? 'bg-green-700' : 'bg-transparent'}`} style={{ position: 'relative', marginBottom: '-2px' }} />
+
+                <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-all duration-200
+                  ${isActive ? 'bg-green-100' : ''}`}>
+                  <NavIcon path={item.icon} className={`w-5 h-5 transition-colors ${isActive ? 'text-green-800' : 'text-gray-400'}`} />
                 </div>
-                <span className="text-[10px] font-semibold">{item.label.split(' ')[0]}</span>
+                <span className={`text-[10px] font-semibold transition-colors ${isActive ? 'text-green-800' : 'text-gray-400'}`}>
+                  {item.label.split(' ')[0]}
+                </span>
               </NavLink>
             )
           })}
