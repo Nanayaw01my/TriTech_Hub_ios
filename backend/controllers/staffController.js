@@ -251,7 +251,7 @@ const addCustomer = async (req, res) => {
 
     // --- 6. Handle photos: store base64 strings directly in MongoDB (no disk files) ---
     const photos = {};
-    const photoFields = ['ghana_card_front', 'ghana_card_back', 'customer_photo', 'guarantor_photo'];
+    const photoFields = ['ghana_card_front', 'ghana_card_back', 'customer_photo', 'guarantor_photo', 'signature'];
     for (const field of photoFields) {
       if (req.files?.[field]?.[0]) {
         // multer file: convert to base64 for consistent storage

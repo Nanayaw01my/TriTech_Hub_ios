@@ -115,10 +115,11 @@ export default function AdminCustomerDetail() {
   }
 
   const photos = customer.photos || {}
-  const cardFront = photoUrl(photos.ghana_card_front)
-  const cardBack  = photoUrl(photos.ghana_card_back)
-  const custPhoto = photoUrl(photos.customer_photo)
-  const guarPhoto = photoUrl(photos.guarantor_photo)
+  const cardFront  = photoUrl(photos.ghana_card_front)
+  const cardBack   = photoUrl(photos.ghana_card_back)
+  const custPhoto  = photoUrl(photos.customer_photo)
+  const guarPhoto  = photoUrl(photos.guarantor_photo)
+  const signature  = photoUrl(photos.signature)
 
   return (
     <div className="max-w-3xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
@@ -216,6 +217,24 @@ export default function AdminCustomerDetail() {
             : <PhotoEmpty label="Guarantor Photo" />
           }
         </div>
+
+        {/* Signature */}
+        {signature ? (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Customer Signature</p>
+            <div className="border border-gray-200 rounded-xl overflow-hidden bg-white inline-block cursor-pointer"
+                 onClick={() => setImageModal(signature)}>
+              <img src={signature} alt="Customer Signature" className="h-20 w-auto object-contain block" />
+            </div>
+          </div>
+        ) : (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Customer Signature</p>
+            <div className="h-16 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center">
+              <p className="text-xs text-gray-400">No signature on file</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Device Info */}

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import CameraCapture from '../../components/CameraCapture'
+import SignaturePad from '../../components/SignaturePad'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import toast from 'react-hot-toast'
 import PaystackPop from '@paystack/inline-js'
@@ -43,7 +44,7 @@ const initForm = {
   // Step 1
   full_name: '', email: '', phone: '', ghana_card_id: '', password: '', confirm_password: '',
   // Step 2 - photos
-  ghana_card_front: null, ghana_card_back: null, customer_photo: null, guarantor_photo: null, proof_of_income: null,
+  ghana_card_front: null, ghana_card_back: null, customer_photo: null, guarantor_photo: null, proof_of_income: null, signature: null,
   // Step 3
   occupation: '', income_amount: '', income_source: '',
   region: '', district: '', location: '', landmark: '', gps_address: '',
@@ -118,6 +119,7 @@ export default function StaffAddCustomer() {
     if (s === 2) {
       if (!form.ghana_card_front) e.ghana_card_front = 'Ghana Card front photo is required'
       if (!form.ghana_card_back) e.ghana_card_back = 'Ghana Card back photo is required'
+      if (!form.signature) e.signature = 'Customer signature is required'
     }
     if (s === 3) {
       if (!form.occupation.trim()) e.occupation = 'Occupation is required'
@@ -154,6 +156,7 @@ export default function StaffAddCustomer() {
     ghana_card_back: form.ghana_card_back,
     customer_photo: form.customer_photo,
     guarantor_photo: form.guarantor_photo,
+    signature: form.signature,
     proof_of_income: form.proof_of_income,
     occupation: form.occupation,
     income_amount: form.income_amount,
@@ -379,6 +382,16 @@ export default function StaffAddCustomer() {
           </div>
 
           {/* Proof of Income - file upload */}
+          <div className="mt-2 lg:col-span-2">
+            <SignaturePad
+              label="Customer Signature"
+              required
+              onSign={(dataUrl) => set('signature', dataUrl)}
+              onClear={() => set('signature', null)}
+            />
+            {errors.signature && <p className="text-xs text-red-500 mt-1">{errors.signature}</p>}
+          </div>
+
           <div className="lg:col-span-2">
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
               Proof of Income <span className="text-gray-400 font-normal text-xs">(Optional)</span>

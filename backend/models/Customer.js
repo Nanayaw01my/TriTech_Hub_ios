@@ -44,6 +44,10 @@ const CustomerSchema = new mongoose.Schema(
         type: String,
         default: null,
       },
+      signature: {
+        type: String,
+        default: null,
+      },
     },
     occupation: {
       type: String,
