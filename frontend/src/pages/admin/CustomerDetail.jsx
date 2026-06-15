@@ -19,6 +19,7 @@ export default function AdminCustomerDetail() {
   const [lockLoading, setLockLoading] = useState(false)
   const [resetModal, setResetModal] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
+  const [reminderLoading, setReminderLoading] = useState(false)
   const [imageModal, setImageModal] = useState(null)
 
   const fetchCustomer = async () => {
@@ -70,6 +71,18 @@ export default function AdminCustomerDetail() {
       toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Failed to reset password')
     } finally {
       setResetLoading(false)
+    }
+  }
+
+  const handleSendReminder = async () => {
+    setReminderLoading(true)
+    try {
+      await api.post(`/admin/customers/${id}/remind`)
+      toast.success('Payment reminder sent to customer!')
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to send reminder')
+    } finally {
+      setReminderLoading(false)
     }
   }
 
@@ -306,6 +319,19 @@ export default function AdminCustomerDetail() {
           </svg>
           Reset Customer Password
         </button>
+        {plan && plan.status !== 'completed' && (
+          <button
+            onClick={handleSendReminder}
+            disabled={reminderLoading}
+            className="w-full py-3 px-4 rounded-xl border-2 border-blue-200 text-blue-700 font-semibold text-sm
+                       hover:bg-blue-50 transition-colors flex items-center gap-2 mt-2 disabled:opacity-50"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            {reminderLoading ? 'Sending…' : 'Send Payment Reminder'}
+          </button>
+        )}
       </div>
 
       {/* Payment History */}

@@ -7,6 +7,7 @@ const InstallmentPlan = require('../models/InstallmentPlan');
 const Payment = require('../models/Payment');
 const AuditLog = require('../models/AuditLog');
 const { generateStaffId } = require('../utils/accountGenerator');
+const { sendPaymentReminderSMS, sendDeviceLockedSMS, sendDeviceUnlockedSMS } = require('../utils/sms');
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
 
@@ -719,30 +720,60 @@ const getTransactions = async (req, res) => {
 
     const filter = {};
     if (req.query.payment_method) filter.payment_method = req.query.payment_method;
-    if (req.query.from_date || req.query.to_date) {
+
+    // Accept both from/to and from_date/to_date
+    const fromDate = req.query.from || req.query.from_date;
+    const toDate = req.query.to || req.query.to_date;
+    if (fromDate || toDate) {
       filter.payment_date = {};
-      if (req.query.from_date) filter.payment_date.$gte = new Date(req.query.from_date);
-      if (req.query.to_date) filter.payment_date.$lte = new Date(req.query.to_date);
+      if (fromDate) filter.payment_date.$gte = new Date(fromDate);
+      if (toDate) {
+        const end = new Date(toDate);
+        end.setHours(23, 59, 59, 999);
+        filter.payment_date.$lte = end;
+      }
     }
 
-    const [payments, total] = await Promise.all([
+    const [payments, total, amountAgg] = await Promise.all([
       Payment.find(filter)
         .populate({ path: 'customer_id', select: 'full_name email phone' })
-        .populate({ path: 'installment_plan_id', select: 'device_id frequency' })
-        .populate({ path: 'recorded_by', select: 'name email role' })
+        .populate({ path: 'installment_plan_id', select: 'frequency' })
         .sort({ payment_date: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
       Payment.countDocuments(filter),
+      Payment.aggregate([{ $match: filter }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
     ]);
+
+    const totalAmount = amountAgg[0]?.total || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    const transactions = payments.map(p => ({
+      _id: p._id,
+      id: p._id,
+      customer_name: p.customer_id?.full_name || 'Unknown',
+      customer_email: p.customer_id?.email || '',
+      customer_phone: p.customer_id?.phone || '',
+      amount: p.amount,
+      payment_method: p.payment_method,
+      method: p.payment_method,
+      reference: p.paystack_reference || p.reference || '',
+      status: p.paystack_status === 'success' ? 'paid' : (p.paystack_status || 'paid'),
+      payment_date: p.payment_date,
+      created_at: p.payment_date || p.createdAt,
+      notes: p.notes || '',
+    }));
 
     return res.status(200).json({
       success: true,
       message: 'Transactions retrieved.',
       data: {
-        payments,
-        pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+        transactions,
+        total,
+        totalPages,
+        total_amount: totalAmount,
+        pagination: { page, limit, total, pages: totalPages },
       },
     });
   } catch (error) {
@@ -1132,6 +1163,323 @@ const getNotifications = async (req, res) => {
   }
 };
 
+// ─── OVERDUE ACCOUNTS ────────────────────────────────────────────────────────
+
+const getOverdueAccounts = async (req, res) => {
+  try {
+    const now = new Date();
+    const plans = await InstallmentPlan.find({
+      $or: [
+        { status: 'defaulted' },
+        { status: 'active', next_due_date: { $lt: now } },
+      ],
+    })
+      .populate({ path: 'customer_id', select: 'full_name phone email' })
+      .populate({ path: 'device_id', select: 'model lock_status serial_number' })
+      .sort({ next_due_date: 1 })
+      .lean();
+
+    const accounts = plans.map(plan => {
+      const dueDate = plan.next_due_date ? new Date(plan.next_due_date) : null;
+      const daysOverdue = dueDate ? Math.floor((now - dueDate) / (1000 * 60 * 60 * 24)) : null;
+      return {
+        plan_id: plan._id,
+        customer_id: plan.customer_id?._id,
+        customer_name: plan.customer_id?.full_name || 'Unknown',
+        customer_phone: plan.customer_id?.phone || '',
+        customer_email: plan.customer_id?.email || '',
+        device_model: plan.device_id?.model || 'iPhone',
+        device_id: plan.device_id?._id,
+        lock_status: plan.device_id?.lock_status || 'unlocked',
+        serial_number: plan.device_id?.serial_number || '',
+        installment_amount: plan.installment_amount || 0,
+        remaining_balance: plan.remaining_balance || 0,
+        next_due_date: plan.next_due_date,
+        days_overdue: daysOverdue,
+        plan_status: plan.status,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: { accounts, total: accounts.length },
+    });
+  } catch (error) {
+    console.error('getOverdueAccounts error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── REVENUE FORECAST ────────────────────────────────────────────────────────
+
+const getRevenueForecast = async (req, res) => {
+  try {
+    const now = new Date();
+    const sixMonthsLater = new Date(now);
+    sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
+
+    const plans = await InstallmentPlan.find({
+      status: { $in: ['active', 'defaulted'] },
+    }).lean();
+
+    // Build 6-month buckets
+    const forecast = {};
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleDateString('en-GH', { month: 'short', year: 'numeric' });
+      forecast[key] = { month: key, label, projected_revenue: 0, payment_count: 0 };
+    }
+
+    for (const plan of plans) {
+      const items = plan.schedule || [];
+      for (const item of items) {
+        if (item.paid || !item.due_date) continue;
+        const dueDate = new Date(item.due_date);
+        if (dueDate < now || dueDate > sixMonthsLater) continue;
+        const key = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}`;
+        if (forecast[key]) {
+          forecast[key].projected_revenue += item.amount || plan.installment_amount || 0;
+          forecast[key].payment_count += 1;
+        }
+      }
+    }
+
+    const forecastData = Object.values(forecast);
+    const totalProjected = forecastData.reduce((s, m) => s + m.projected_revenue, 0);
+
+    return res.status(200).json({
+      success: true,
+      data: { forecast: forecastData, total_projected: totalProjected },
+    });
+  } catch (error) {
+    console.error('getRevenueForecast error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── SEND PAYMENT REMINDER ────────────────────────────────────────────────────
+
+const sendCustomerReminder = async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id).lean();
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Customer not found.' });
+    }
+
+    const plan = await InstallmentPlan.findOne({
+      customer_id: customer._id,
+      status: { $in: ['active', 'defaulted'] },
+    })
+      .populate({ path: 'device_id', select: 'model' })
+      .lean();
+
+    if (!plan) {
+      return res.status(404).json({ success: false, message: 'No active plan found for this customer.' });
+    }
+
+    const reminderDetails = {
+      deviceModel: plan.device_id?.model || 'iPhone',
+      installmentAmount: plan.installment_amount,
+      remainingBalance: plan.remaining_balance,
+      nextDueDate: plan.next_due_date,
+      isOverdue: plan.status === 'defaulted' || new Date(plan.next_due_date) < new Date(),
+    };
+
+    let emailSent = false;
+    let smsSent = false;
+
+    try {
+      const { sendPaymentReminderEmail } = require('../utils/email');
+      await sendPaymentReminderEmail(customer.email, customer.full_name, reminderDetails);
+      emailSent = true;
+    } catch (emailErr) {
+      console.error('sendCustomerReminder email error:', emailErr.message);
+    }
+
+    if (customer.phone) {
+      try {
+        await sendPaymentReminderSMS(customer.phone, customer.full_name, reminderDetails);
+        smsSent = true;
+      } catch (smsErr) {
+        console.error('sendCustomerReminder SMS error:', smsErr.message);
+      }
+    }
+
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'payment_reminder_sent',
+      target_user_id: customer.user_id,
+      details: { customer_id: customer._id, plan_id: plan._id, email_sent: emailSent, sms_sent: smsSent },
+    });
+
+    const channels = [emailSent && 'email', smsSent && 'SMS'].filter(Boolean).join(' & ');
+    const message = channels
+      ? `Payment reminder sent via ${channels}.`
+      : 'Reminder logged, but notification could not be sent. Check server settings.';
+    return res.status(200).json({ success: true, message });
+  } catch (error) {
+    console.error('sendCustomerReminder error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── EXPORT TRANSACTIONS CSV ─────────────────────────────────────────────────
+
+const exportTransactions = async (req, res) => {
+  try {
+    const filter = {};
+    const fromDate = req.query.from || req.query.from_date;
+    const toDate = req.query.to || req.query.to_date;
+    if (fromDate || toDate) {
+      filter.payment_date = {};
+      if (fromDate) filter.payment_date.$gte = new Date(fromDate);
+      if (toDate) {
+        const end = new Date(toDate);
+        end.setHours(23, 59, 59, 999);
+        filter.payment_date.$lte = end;
+      }
+    }
+
+    const payments = await Payment.find(filter)
+      .populate({ path: 'customer_id', select: 'full_name phone email' })
+      .sort({ payment_date: -1 })
+      .lean();
+
+    const rows = payments.map(p => [
+      p.payment_date ? new Date(p.payment_date).toLocaleDateString('en-GH') : '',
+      `"${p.customer_id?.full_name || ''}"`,
+      `"${p.customer_id?.phone || ''}"`,
+      p.amount || 0,
+      `"${p.payment_method || ''}"`,
+      `"${p.paystack_reference || ''}"`,
+      p.paystack_status === 'success' ? 'Paid' : (p.paystack_status || 'Paid'),
+    ].join(','));
+
+    const csv = ['Date,Customer,Phone,Amount (GHS),Method,Reference,Status', ...rows].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="transactions_export.csv"`);
+    return res.send(csv);
+  } catch (error) {
+    console.error('exportTransactions error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── EXPORT CUSTOMERS CSV ────────────────────────────────────────────────────
+
+const exportCustomers = async (req, res) => {
+  try {
+    const customers = await Customer.find({})
+      .populate({ path: 'user_id', select: 'account_number email' })
+      .lean();
+
+    const plans = await InstallmentPlan.find({}).lean();
+    const planMap = {};
+    for (const p of plans) {
+      planMap[p.customer_id.toString()] = p;
+    }
+
+    const rows = customers.map(c => {
+      const plan = planMap[c._id.toString()];
+      return [
+        `"${c.full_name || ''}"`,
+        `"${c.user_id?.account_number || ''}"`,
+        `"${c.email || ''}"`,
+        `"${c.phone || ''}"`,
+        `"${c.location || ''}"`,
+        `"${c.district || ''}"`,
+        `"${c.region || ''}"`,
+        plan ? Number(plan.remaining_balance || 0).toFixed(2) : '0.00',
+        plan ? (plan.status || 'active') : 'no plan',
+        plan?.next_due_date ? new Date(plan.next_due_date).toLocaleDateString('en-GH') : '',
+      ].join(',');
+    });
+
+    const csv = ['Name,Account No,Email,Phone,Location,District,Region,Remaining Balance (GHS),Plan Status,Next Due Date', ...rows].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="customers_export.csv"');
+    return res.send(csv);
+  } catch (error) {
+    console.error('exportCustomers error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── LOCK/UNLOCK CUSTOMER DEVICE ─────────────────────────────────────────────
+
+const lockCustomerDevice = async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id).lean();
+    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found.' });
+
+    const plan = await InstallmentPlan.findOne({ customer_id: customer._id }).lean();
+    if (!plan || !plan.device_id) return res.status(404).json({ success: false, message: 'No device found for this customer.' });
+
+    const device = await Device.findById(plan.device_id);
+    if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
+
+    device.lock_status = 'locked';
+    await device.save();
+
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'device_lock',
+      device_udid: device.udid,
+      target_user_id: customer.user_id,
+      details: { device_id: device._id, customer_id: customer._id, reason: req.body.reason || 'Manual lock by admin' },
+    });
+
+    if (customer.phone) {
+      sendDeviceLockedSMS(customer.phone, customer.full_name, device.model).catch(e =>
+        console.error('[SMS] Lock notification failed:', e.message)
+      );
+    }
+
+    return res.status(200).json({ success: true, message: 'Device locked successfully.' });
+  } catch (error) {
+    console.error('lockCustomerDevice error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+const unlockCustomerDevice = async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id).lean();
+    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found.' });
+
+    const plan = await InstallmentPlan.findOne({ customer_id: customer._id }).lean();
+    if (!plan || !plan.device_id) return res.status(404).json({ success: false, message: 'No device found for this customer.' });
+
+    const device = await Device.findById(plan.device_id);
+    if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
+
+    device.lock_status = 'unlocked';
+    await device.save();
+
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'device_unlock',
+      device_udid: device.udid,
+      target_user_id: customer.user_id,
+      details: { device_id: device._id, customer_id: customer._id, reason: req.body.reason || 'Manual unlock by admin' },
+    });
+
+    if (customer.phone) {
+      sendDeviceUnlockedSMS(customer.phone, customer.full_name, device.model).catch(e =>
+        console.error('[SMS] Unlock notification failed:', e.message)
+      );
+    }
+
+    return res.status(200).json({ success: true, message: 'Device unlocked successfully.' });
+  } catch (error) {
+    console.error('unlockCustomerDevice error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 module.exports = {
   getDashboard,
   getCustomers,
@@ -1158,4 +1506,11 @@ module.exports = {
   updateSettings,
   clearAllData,
   getNotifications,
+  getOverdueAccounts,
+  getRevenueForecast,
+  sendCustomerReminder,
+  exportTransactions,
+  exportCustomers,
+  lockCustomerDevice,
+  unlockCustomerDevice,
 };

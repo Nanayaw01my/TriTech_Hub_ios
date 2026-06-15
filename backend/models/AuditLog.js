@@ -25,6 +25,7 @@ const AuditLogSchema = new mongoose.Schema(
         'installment_completed',
         'installment_defaulted',
         'manual_payment',
+        'payment_reminder_sent',
       ],
       required: true,
     },

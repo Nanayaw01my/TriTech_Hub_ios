@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  LineChart, Line, Legend,
 } from 'recharts'
 import api from '../../api/axios'
 import LoadingSpinner from '../../components/LoadingSpinner'
@@ -13,6 +14,9 @@ export default function AdminReports() {
   const [chartData, setChartData] = useState([])
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [forecast, setForecast] = useState([])
+  const [totalProjected, setTotalProjected] = useState(0)
+  const [forecastLoading, setForecastLoading] = useState(true)
 
   const fetchReports = useCallback(async () => {
     setLoading(true)
@@ -29,6 +33,23 @@ export default function AdminReports() {
   }, [period])
 
   useEffect(() => { fetchReports() }, [fetchReports])
+
+  useEffect(() => {
+    const loadForecast = async () => {
+      setForecastLoading(true)
+      try {
+        const res = await api.get('/admin/revenue-forecast')
+        const d = res.data?.data || res.data
+        setForecast(Array.isArray(d.forecast) ? d.forecast : [])
+        setTotalProjected(d.total_projected || 0)
+      } catch {
+        // silently fail
+      } finally {
+        setForecastLoading(false)
+      }
+    }
+    loadForecast()
+  }, [])
 
   const statCards = [
     {
@@ -121,6 +142,48 @@ export default function AdminReports() {
               <p className="text-gray-400 text-sm">No revenue data available for this period</p>
             </div>
           )}
+
+          {/* Revenue Forecast */}
+          <div className="bg-white rounded-2xl shadow-card p-4 mb-5">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-base font-bold text-gray-800">6-Month Revenue Forecast</h3>
+              <span className="text-xs font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-lg">
+                Projected
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 mb-4">
+              Expected income from active installment schedules
+            </p>
+            {forecastLoading ? (
+              <div className="flex justify-center py-8"><LoadingSpinner size="md" /></div>
+            ) : forecast.length === 0 ? (
+              <p className="text-center text-gray-400 text-sm py-8">No active plans to forecast</p>
+            ) : (
+              <>
+                <div className="bg-blue-50 rounded-2xl p-3 mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium">Total Projected (6 months)</p>
+                    <p className="text-xl font-black text-blue-700">
+                      GHS {Number(totalProjected).toLocaleString('en-GH', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <span className="text-3xl">📊</span>
+                </div>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={forecast} margin={{ top: 0, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                    <Tooltip
+                      formatter={(value) => [`GHS ${Number(value).toLocaleString()}`, 'Projected']}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                    />
+                    <Bar dataKey="projected_revenue" fill="#1565C0" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </>
+            )}
+          </div>
 
         </>
       )}

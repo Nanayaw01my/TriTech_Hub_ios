@@ -233,7 +233,7 @@ export default function StaffAddCustomer() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pb-28 lg:pb-6 pt-4">
+    <div className="px-4 pb-28 lg:pb-8 pt-4 lg:max-w-5xl lg:mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <button
@@ -255,129 +255,131 @@ export default function StaffAddCustomer() {
         {STEPS.map((label, idx) => (
           <div key={label} className="flex-1">
             <div className={`h-1.5 rounded-full transition-all duration-300 ${idx + 1 <= step ? 'bg-green-600' : 'bg-gray-200'}`} />
+            <p className={`hidden lg:block text-[10px] font-semibold mt-1 text-center truncate ${idx + 1 <= step ? 'text-green-700' : 'text-gray-400'}`}>
+              {label}
+            </p>
           </div>
         ))}
       </div>
 
       {/* STEP 1: Personal Info */}
       {step === 1 && (
-        <div className="space-y-4">
-          <h2 className="text-base font-bold text-gray-800">Personal Information</h2>
-
-          <FormField label="Full Name" required error={errors.full_name}>
-            <input
-              type="text"
-              value={form.full_name}
-              onChange={(e) => set('full_name', e.target.value)}
-              placeholder="Customer's full name"
-              className={inputClass(errors.full_name)}
-              autoCapitalize="words"
-            />
-          </FormField>
-
-          <FormField label="Email Address" required error={errors.email}>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => set('email', e.target.value)}
-              placeholder="customer@example.com"
-              className={inputClass(errors.email)}
-              inputMode="email"
-              autoCapitalize="none"
-            />
-          </FormField>
-
-          <FormField label="Phone Number" required error={errors.phone}>
-            <input
-              type="tel"
-              value={form.phone}
-              onChange={(e) => set('phone', e.target.value)}
-              placeholder="0244000000"
-              className={inputClass(errors.phone)}
-              inputMode="tel"
-            />
-          </FormField>
-
-          <FormField label="Ghana Card ID" required error={errors.ghana_card_id}>
-            <input
-              type="text"
-              value={form.ghana_card_id}
-              onChange={(e) => set('ghana_card_id', e.target.value.toUpperCase())}
-              placeholder="GHA-000000000-0"
-              className={inputClass(errors.ghana_card_id)}
-              autoCapitalize="characters"
-            />
-          </FormField>
-
-          <FormField
-            label={`Password (max 5 characters)`}
-            required
-            error={errors.password}
-          >
-            <div className="relative">
+        <div className="bg-white rounded-2xl shadow-sm p-5 lg:p-6">
+          <h2 className="text-base font-bold text-gray-800 mb-4">Personal Information</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <FormField label="Full Name" required error={errors.full_name}>
               <input
                 type="text"
-                value={form.password}
-                onChange={(e) => set('password', e.target.value.slice(0, 5))}
-                placeholder="5-char password"
-                maxLength={5}
-                className={inputClass(errors.password) + ' pr-16'}
+                value={form.full_name}
+                onChange={(e) => set('full_name', e.target.value)}
+                placeholder="Customer's full name"
+                className={inputClass(errors.full_name)}
+                autoCapitalize="words"
               />
-              <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold ${form.password.length === 5 ? 'text-green-600' : 'text-gray-400'}`}>
-                {form.password.length}/5
-              </span>
-            </div>
-          </FormField>
+            </FormField>
 
-          <FormField label="Confirm Password" required error={errors.confirm_password}>
-            <input
-              type="text"
-              value={form.confirm_password}
-              onChange={(e) => set('confirm_password', e.target.value.slice(0, 5))}
-              placeholder="Confirm password"
-              maxLength={5}
-              className={inputClass(errors.confirm_password)}
-            />
-          </FormField>
+            <FormField label="Email Address" required error={errors.email}>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => set('email', e.target.value)}
+                placeholder="customer@example.com"
+                className={inputClass(errors.email)}
+                inputMode="email"
+                autoCapitalize="none"
+              />
+            </FormField>
+
+            <FormField label="Phone Number" required error={errors.phone}>
+              <input
+                type="tel"
+                value={form.phone}
+                onChange={(e) => set('phone', e.target.value)}
+                placeholder="0244000000"
+                className={inputClass(errors.phone)}
+                inputMode="tel"
+              />
+            </FormField>
+
+            <FormField label="Ghana Card ID" required error={errors.ghana_card_id}>
+              <input
+                type="text"
+                value={form.ghana_card_id}
+                onChange={(e) => set('ghana_card_id', e.target.value.toUpperCase())}
+                placeholder="GHA-000000000-0"
+                className={inputClass(errors.ghana_card_id)}
+                autoCapitalize="characters"
+              />
+            </FormField>
+
+            <FormField label="Password (max 5 characters)" required error={errors.password}>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={form.password}
+                  onChange={(e) => set('password', e.target.value.slice(0, 5))}
+                  placeholder="5-char password"
+                  maxLength={5}
+                  className={inputClass(errors.password) + ' pr-16'}
+                />
+                <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold ${form.password.length === 5 ? 'text-green-600' : 'text-gray-400'}`}>
+                  {form.password.length}/5
+                </span>
+              </div>
+            </FormField>
+
+            <FormField label="Confirm Password" required error={errors.confirm_password}>
+              <input
+                type="text"
+                value={form.confirm_password}
+                onChange={(e) => set('confirm_password', e.target.value.slice(0, 5))}
+                placeholder="Confirm password"
+                maxLength={5}
+                className={inputClass(errors.confirm_password)}
+              />
+            </FormField>
+          </div>
         </div>
       )}
 
       {/* STEP 2: Photos */}
       {step === 2 && (
-        <div className="space-y-5">
-          <h2 className="text-base font-bold text-gray-800">Photo Capture</h2>
-          <p className="text-sm text-gray-500">Ghana Card photos are required. Please ensure photos are clear and readable.</p>
+        <div className="bg-white rounded-2xl shadow-sm p-5 lg:p-6">
+          <h2 className="text-base font-bold text-gray-800 mb-1">Photo Capture</h2>
+          <p className="text-sm text-gray-500 mb-4">Ghana Card photos are required. Please ensure photos are clear and readable.</p>
 
-          <div data-error={errors.ghana_card_front}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div data-error={errors.ghana_card_front}>
+              <CameraCapture
+                label="Ghana Card - Front"
+                required
+                onCapture={(img) => set('ghana_card_front', img)}
+              />
+              {errors.ghana_card_front && <p className="text-xs text-red-500 mt-1">{errors.ghana_card_front}</p>}
+            </div>
+
+            <div data-error={errors.ghana_card_back}>
+              <CameraCapture
+                label="Ghana Card - Back"
+                required
+                onCapture={(img) => set('ghana_card_back', img)}
+              />
+              {errors.ghana_card_back && <p className="text-xs text-red-500 mt-1">{errors.ghana_card_back}</p>}
+            </div>
+
             <CameraCapture
-              label="Ghana Card - Front"
-              required
-              onCapture={(img) => set('ghana_card_front', img)}
+              label="Customer Photo (Optional)"
+              onCapture={(img) => set('customer_photo', img)}
             />
-            {errors.ghana_card_front && <p className="text-xs text-red-500 mt-1">{errors.ghana_card_front}</p>}
-          </div>
 
-          <div data-error={errors.ghana_card_back}>
             <CameraCapture
-              label="Ghana Card - Back"
-              required
-              onCapture={(img) => set('ghana_card_back', img)}
+              label="Guarantor Photo (Optional)"
+              onCapture={(img) => set('guarantor_photo', img)}
             />
-            {errors.ghana_card_back && <p className="text-xs text-red-500 mt-1">{errors.ghana_card_back}</p>}
           </div>
-
-          <CameraCapture
-            label="Customer Photo (Optional)"
-            onCapture={(img) => set('customer_photo', img)}
-          />
-
-          <CameraCapture
-            label="Guarantor Photo (Optional)"
-            onCapture={(img) => set('guarantor_photo', img)}
-          />
 
           {/* Proof of Income - file upload */}
-          <div>
+          <div className="lg:col-span-2">
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
               Proof of Income <span className="text-gray-400 font-normal text-xs">(Optional)</span>
             </label>
@@ -425,103 +427,105 @@ export default function StaffAddCustomer() {
       {/* STEP 3: Address & Income */}
       {step === 3 && (
         <div className="space-y-4">
-          <h2 className="text-base font-bold text-gray-800">Address & Income</h2>
+          <div className="bg-white rounded-2xl shadow-sm p-5 lg:p-6">
+            <h2 className="text-base font-bold text-gray-800 mb-4">Address & Income</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <FormField label="Occupation" required error={errors.occupation}>
+                <input
+                  type="text"
+                  value={form.occupation}
+                  onChange={(e) => set('occupation', e.target.value)}
+                  placeholder="e.g. Teacher, Trader, Engineer"
+                  className={inputClass(errors.occupation)}
+                  autoCapitalize="words"
+                />
+              </FormField>
 
-          <FormField label="Occupation" required error={errors.occupation}>
-            <input
-              type="text"
-              value={form.occupation}
-              onChange={(e) => set('occupation', e.target.value)}
-              placeholder="e.g. Teacher, Trader, Engineer"
-              className={inputClass(errors.occupation)}
-              autoCapitalize="words"
-            />
-          </FormField>
+              <div className="lg:col-span-1" />
 
-          <div className="grid grid-cols-2 gap-3">
-            <FormField label="Income Amount (GHS)">
-              <input
-                type="number"
-                value={form.income_amount}
-                onChange={(e) => set('income_amount', e.target.value)}
-                placeholder="Monthly income"
-                className={inputClass()}
-                inputMode="numeric"
-              />
-            </FormField>
-            <FormField label="Income Source">
-              <input
-                type="text"
-                value={form.income_source}
-                onChange={(e) => set('income_source', e.target.value)}
-                placeholder="e.g. Salary"
-                className={inputClass()}
-              />
-            </FormField>
+              <FormField label="Income Amount (GHS)">
+                <input
+                  type="number"
+                  value={form.income_amount}
+                  onChange={(e) => set('income_amount', e.target.value)}
+                  placeholder="Monthly income"
+                  className={inputClass()}
+                  inputMode="numeric"
+                />
+              </FormField>
+
+              <FormField label="Income Source">
+                <input
+                  type="text"
+                  value={form.income_source}
+                  onChange={(e) => set('income_source', e.target.value)}
+                  placeholder="e.g. Salary"
+                  className={inputClass()}
+                />
+              </FormField>
+
+              <FormField label="Region" required error={errors.region}>
+                <select
+                  value={form.region}
+                  onChange={(e) => { set('region', e.target.value); set('district', '') }}
+                  className={selectClass(errors.region)}
+                >
+                  <option value="">Select Region</option>
+                  {Object.keys(GHANA_REGIONS).sort().map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </FormField>
+
+              <FormField label="District">
+                <select
+                  value={form.district}
+                  onChange={(e) => set('district', e.target.value)}
+                  className={selectClass()}
+                  disabled={!form.region}
+                >
+                  <option value="">{form.region ? 'Select District' : 'Select Region first'}</option>
+                  {districts.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </FormField>
+
+              <FormField label="Location / Town" required error={errors.location}>
+                <input
+                  type="text"
+                  value={form.location}
+                  onChange={(e) => set('location', e.target.value)}
+                  placeholder="Town or neighborhood"
+                  className={inputClass(errors.location)}
+                />
+              </FormField>
+
+              <FormField label="Landmark">
+                <input
+                  type="text"
+                  value={form.landmark}
+                  onChange={(e) => set('landmark', e.target.value)}
+                  placeholder="Near church, school, etc."
+                  className={inputClass()}
+                />
+              </FormField>
+
+              <FormField label="GPS Address">
+                <input
+                  type="text"
+                  value={form.gps_address}
+                  onChange={(e) => set('gps_address', e.target.value)}
+                  placeholder="GH-123-456"
+                  className={inputClass()}
+                />
+              </FormField>
+            </div>
           </div>
 
-          <FormField label="Region" required error={errors.region}>
-            <select
-              value={form.region}
-              onChange={(e) => { set('region', e.target.value); set('district', '') }}
-              className={selectClass(errors.region)}
-            >
-              <option value="">Select Region</option>
-              {Object.keys(GHANA_REGIONS).sort().map(r => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
-          </FormField>
-
-          {form.region && (
-            <FormField label="District">
-              <select
-                value={form.district}
-                onChange={(e) => set('district', e.target.value)}
-                className={selectClass()}
-              >
-                <option value="">Select District</option>
-                {districts.map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </FormField>
-          )}
-
-          <FormField label="Location / Town" required error={errors.location}>
-            <input
-              type="text"
-              value={form.location}
-              onChange={(e) => set('location', e.target.value)}
-              placeholder="Town or neighborhood"
-              className={inputClass(errors.location)}
-            />
-          </FormField>
-
-          <FormField label="Landmark">
-            <input
-              type="text"
-              value={form.landmark}
-              onChange={(e) => set('landmark', e.target.value)}
-              placeholder="Near church, school, etc."
-              className={inputClass()}
-            />
-          </FormField>
-
-          <FormField label="GPS Address">
-            <input
-              type="text"
-              value={form.gps_address}
-              onChange={(e) => set('gps_address', e.target.value)}
-              placeholder="GH-123-456"
-              className={inputClass()}
-            />
-          </FormField>
-
-          <div className="border-t border-gray-100 pt-4">
-            <h3 className="text-sm font-bold text-gray-700 mb-3">Guarantor Information</h3>
-
-            <div className="space-y-3">
+          <div className="bg-white rounded-2xl shadow-sm p-5 lg:p-6">
+            <h3 className="text-sm font-bold text-gray-700 mb-4">Guarantor Information</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <FormField label="Guarantor Full Name">
                 <input
                   type="text"
@@ -532,26 +536,7 @@ export default function StaffAddCustomer() {
                   autoCapitalize="words"
                 />
               </FormField>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Guarantor Phone">
-                  <input
-                    type="tel"
-                    value={form.guarantor_phone}
-                    onChange={(e) => set('guarantor_phone', e.target.value)}
-                    placeholder="Phone"
-                    className={inputClass()}
-                  />
-                </FormField>
-                <FormField label="Relationship">
-                  <input
-                    type="text"
-                    value={form.guarantor_relationship}
-                    onChange={(e) => set('guarantor_relationship', e.target.value)}
-                    placeholder="e.g. Spouse"
-                    className={inputClass()}
-                  />
-                </FormField>
-              </div>
+
               <FormField label="Guarantor Ghana Card ID">
                 <input
                   type="text"
@@ -562,6 +547,26 @@ export default function StaffAddCustomer() {
                   autoCapitalize="characters"
                 />
               </FormField>
+
+              <FormField label="Guarantor Phone">
+                <input
+                  type="tel"
+                  value={form.guarantor_phone}
+                  onChange={(e) => set('guarantor_phone', e.target.value)}
+                  placeholder="Phone"
+                  className={inputClass()}
+                />
+              </FormField>
+
+              <FormField label="Relationship">
+                <input
+                  type="text"
+                  value={form.guarantor_relationship}
+                  onChange={(e) => set('guarantor_relationship', e.target.value)}
+                  placeholder="e.g. Spouse, Brother"
+                  className={inputClass()}
+                />
+              </FormField>
             </div>
           </div>
         </div>
@@ -569,153 +574,156 @@ export default function StaffAddCustomer() {
 
       {/* STEP 4: Device & Plan */}
       {step === 4 && (
-        <div className="space-y-4">
-          <h2 className="text-base font-bold text-gray-800">Device & Payment Plan</h2>
+        <div className="lg:grid lg:grid-cols-5 lg:gap-6 lg:items-start">
+          {/* Form col */}
+          <div className="lg:col-span-3 space-y-4">
+            <div className="bg-white rounded-2xl shadow-sm p-5 lg:p-6">
+              <h2 className="text-base font-bold text-gray-800 mb-4">Device & Payment Plan</h2>
 
-          <FormField label="iPhone Model" required error={errors.device_model}>
-            {devicesLoading ? (
-              <div className="flex items-center gap-2 px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm text-gray-400">
-                <LoadingSpinner size="sm" /> Loading available devices...
+              <div className="space-y-4">
+                <FormField label="iPhone Model" required error={errors.device_model}>
+                  {devicesLoading ? (
+                    <div className="flex items-center gap-2 px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm text-gray-400">
+                      <LoadingSpinner size="sm" /> Loading available devices...
+                    </div>
+                  ) : availableDevices.length === 0 ? (
+                    <div className="px-4 py-3 border-2 border-orange-200 bg-orange-50 rounded-2xl text-sm text-orange-700 font-medium">
+                      No available devices in stock. Ask admin to add devices first.
+                    </div>
+                  ) : (
+                    <select
+                      value={form.device_model}
+                      onChange={(e) => {
+                        const d = availableDevices.find(i => i._id === e.target.value)
+                        set('device_model', d ? d.model : '')
+                        set('device_price', d ? String(d.price) : '')
+                        set('device_id', d ? d._id : '')
+                      }}
+                      className={selectClass(errors.device_model)}
+                    >
+                      <option value="">Select iPhone Model</option>
+                      {availableDevices.map(d => (
+                        <option key={d._id} value={d._id}>
+                          {d.model}{d.storage ? ` ${d.storage}` : ''}{d.color ? ` (${d.color})` : ''} — GHS {Number(d.price).toLocaleString()}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </FormField>
+
+                {form.device_model && (
+                  <div className="flex items-center gap-3 p-3 bg-green-50 rounded-2xl border border-green-200">
+                    <svg className="w-8 h-8 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <div>
+                      <p className="font-bold text-green-800">{form.device_model}</p>
+                      <p className="text-sm text-green-600">GHS {Number(form.device_price).toLocaleString()}</p>
+                    </div>
+                  </div>
+                )}
+
+                <FormField label="Down Payment (GHS)" required error={errors.down_payment}>
+                  <input
+                    type="number"
+                    value={form.down_payment}
+                    onChange={(e) => set('down_payment', e.target.value)}
+                    placeholder="Enter down payment amount"
+                    className={inputClass(errors.down_payment)}
+                    inputMode="numeric"
+                    min="0"
+                    max={form.device_price}
+                  />
+                </FormField>
+
+                <FormField label="Payment Frequency">
+                  <div className="grid grid-cols-3 gap-2">
+                    {['daily', 'weekly', 'monthly'].map(freq => (
+                      <button
+                        key={freq}
+                        type="button"
+                        onClick={() => {
+                          set('payment_frequency', freq)
+                          set('duration', DEFAULT_DURATION[freq])
+                        }}
+                        className={`py-3 px-2 rounded-2xl border-2 text-sm font-semibold capitalize transition-all
+                          ${form.payment_frequency === freq
+                            ? 'border-green-600 bg-green-50 text-green-700'
+                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                          }`}
+                      >
+                        {freq}
+                      </button>
+                    ))}
+                  </div>
+                </FormField>
+
+                <FormField label="Plan Duration">
+                  <div className="flex flex-wrap gap-2">
+                    {DURATION_OPTIONS[form.payment_frequency].map(d => {
+                      const unit = form.payment_frequency === 'daily' ? 'days'
+                        : form.payment_frequency === 'weekly' ? 'wks' : 'mths'
+                      return (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => set('duration', d)}
+                          className={`px-4 py-2.5 rounded-2xl border-2 text-sm font-semibold transition-all
+                            ${form.duration === d
+                              ? 'border-green-600 bg-green-50 text-green-700'
+                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                            }`}
+                        >
+                          {d} {unit}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </FormField>
               </div>
-            ) : availableDevices.length === 0 ? (
-              <div className="px-4 py-3 border-2 border-orange-200 bg-orange-50 rounded-2xl text-sm text-orange-700 font-medium">
-                No available devices in stock. Ask admin to add devices first.
+            </div>
+
+            {/* Mobile-only payment preview */}
+            {form.device_model && Number(form.down_payment) > 0 && (
+              <div className="lg:hidden bg-white rounded-2xl border-2 border-green-200 p-4 space-y-2.5">
+                <h3 className="text-sm font-bold text-gray-800 mb-3">Payment Preview</h3>
+                <PaymentPreviewRows preview={preview} frequency={form.payment_frequency} />
               </div>
-            ) : (
-              <select
-                value={form.device_model}
-                onChange={(e) => {
-                  const d = availableDevices.find(i => i._id === e.target.value)
-                  set('device_model', d ? d.model : '')
-                  set('device_price', d ? String(d.price) : '')
-                  set('device_id', d ? d._id : '')
-                }}
-                className={selectClass(errors.device_model)}
-              >
-                <option value="">Select iPhone Model</option>
-                {availableDevices.map(d => (
-                  <option key={d._id} value={d._id}>
-                    {d.model}{d.storage ? ` ${d.storage}` : ''}{d.color ? ` (${d.color})` : ''} — GHS {Number(d.price).toLocaleString()}
-                  </option>
-                ))}
-              </select>
             )}
-          </FormField>
+          </div>
 
-          {form.device_model && (
-            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-2xl border border-green-200">
-              <svg className="w-8 h-8 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-              <div>
-                <p className="font-bold text-green-800">{form.device_model}</p>
-                <p className="text-sm text-green-600">GHS {Number(form.device_price).toLocaleString()}</p>
+          {/* Desktop sticky preview col */}
+          <div className="hidden lg:block lg:col-span-2">
+            <div className="sticky top-4 bg-white rounded-2xl border-2 border-green-200 p-5 space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-8 h-8 rounded-xl bg-green-100 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-sm font-bold text-gray-800">Payment Preview</h3>
               </div>
-            </div>
-          )}
-
-          <FormField label="Down Payment (GHS)" required error={errors.down_payment}>
-            <input
-              type="number"
-              value={form.down_payment}
-              onChange={(e) => set('down_payment', e.target.value)}
-              placeholder="Enter down payment amount"
-              className={inputClass(errors.down_payment)}
-              inputMode="numeric"
-              min="0"
-              max={form.device_price}
-            />
-          </FormField>
-
-          <FormField label="Payment Frequency">
-            <div className="grid grid-cols-3 gap-2">
-              {['daily', 'weekly', 'monthly'].map(freq => (
-                <button
-                  key={freq}
-                  type="button"
-                  onClick={() => {
-                    set('payment_frequency', freq)
-                    set('duration', DEFAULT_DURATION[freq])
-                  }}
-                  className={`py-3 px-2 rounded-2xl border-2 text-sm font-semibold capitalize transition-all
-                    ${form.payment_frequency === freq
-                      ? 'border-green-600 bg-green-50 text-green-700'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                    }`}
-                >
-                  {freq}
-                </button>
-              ))}
-            </div>
-          </FormField>
-
-          <FormField label="Plan Duration">
-            <div className="flex flex-wrap gap-2">
-              {DURATION_OPTIONS[form.payment_frequency].map(d => {
-                const unit = form.payment_frequency === 'daily' ? 'days'
-                  : form.payment_frequency === 'weekly' ? 'wks' : 'mths'
-                return (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => set('duration', d)}
-                    className={`px-4 py-2.5 rounded-2xl border-2 text-sm font-semibold transition-all
-                      ${form.duration === d
-                        ? 'border-green-600 bg-green-50 text-green-700'
-                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                      }`}
-                  >
-                    {d} {unit}
-                  </button>
-                )
-              })}
-            </div>
-          </FormField>
-
-          {/* Payment Preview */}
-          {form.device_model && Number(form.down_payment) > 0 && (
-            <div className="bg-white rounded-2xl border-2 border-green-200 p-4 space-y-2.5">
-              <h3 className="text-sm font-bold text-gray-800 mb-3">Payment Preview</h3>
-              <PreviewRow label="Total Price" value={`GHS ${preview.price.toLocaleString()}`} />
-              <PreviewRow label="Down Payment" value={`GHS ${preview.down.toLocaleString()}`} />
-              <PreviewRow
-                label="Remaining Balance"
-                value={`GHS ${preview.remaining.toLocaleString()}`}
-                highlight
-              />
-              <div className="border-t border-gray-100 my-1" />
-              <PreviewRow
-                label={`Installment per ${form.payment_frequency.replace('ly', '')}`}
-                value={`GHS ${preview.installmentAmount.toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                bold
-              />
-              <PreviewRow label="Number of Payments" value={`${preview.numPayments} payments`} />
-              {preview.firstDueDate && (
-                <PreviewRow
-                  label="First Due Date"
-                  value={format(preview.firstDueDate, 'dd MMM yyyy')}
-                />
-              )}
-              {preview.finalDate && (
-                <PreviewRow
-                  label="Final Payment Date"
-                  value={format(preview.finalDate, 'dd MMM yyyy')}
-                />
+              {form.device_model && Number(form.down_payment) > 0 ? (
+                <PaymentPreviewRows preview={preview} frequency={form.payment_frequency} />
+              ) : (
+                <div className="py-6 text-center">
+                  <p className="text-sm text-gray-400">Select a device and enter a down payment to see the payment breakdown.</p>
+                </div>
               )}
             </div>
-          )}
+          </div>
         </div>
       )}
 
-      {/* Navigation Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-safe flex gap-3">
+      {/* Navigation Buttons — fixed on mobile, inline on desktop */}
+      <div className="fixed bottom-0 left-0 right-0 lg:static lg:mt-5 bg-white lg:bg-transparent border-t border-gray-200 lg:border-0 p-4 lg:p-0 pb-safe flex gap-3 lg:max-w-3xl">
         {step > 1 && (
           <button
             type="button"
             onClick={prevStep}
             className="flex-1 py-3.5 border-2 border-gray-200 rounded-2xl text-gray-700 font-bold text-sm hover:bg-gray-50 transition-colors"
           >
-            Back
+            ← Back
           </button>
         )}
         {step < 4 ? (
@@ -769,6 +777,29 @@ function PreviewRow({ label, value, highlight, bold }) {
       <span className={`text-sm font-semibold ${highlight ? 'text-red-600' : bold ? 'text-green-800 text-base font-bold' : 'text-gray-800'}`}>
         {value}
       </span>
+    </div>
+  )
+}
+
+function PaymentPreviewRows({ preview, frequency }) {
+  return (
+    <div className="space-y-2.5">
+      <PreviewRow label="Total Price" value={`GHS ${preview.price.toLocaleString()}`} />
+      <PreviewRow label="Down Payment" value={`GHS ${preview.down.toLocaleString()}`} />
+      <PreviewRow label="Remaining Balance" value={`GHS ${preview.remaining.toLocaleString()}`} highlight />
+      <div className="border-t border-gray-100 my-1" />
+      <PreviewRow
+        label={`Installment per ${frequency.replace('ly', '')}`}
+        value={`GHS ${preview.installmentAmount.toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+        bold
+      />
+      <PreviewRow label="Number of Payments" value={`${preview.numPayments} payments`} />
+      {preview.firstDueDate && (
+        <PreviewRow label="First Due Date" value={format(preview.firstDueDate, 'dd MMM yyyy')} />
+      )}
+      {preview.finalDate && (
+        <PreviewRow label="Final Payment Date" value={format(preview.finalDate, 'dd MMM yyyy')} />
+      )}
     </div>
   )
 }

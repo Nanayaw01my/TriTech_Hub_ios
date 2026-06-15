@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React from 'react'
 import toast from 'react-hot-toast'
 
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_your_key_here'
@@ -14,19 +14,6 @@ export default function PaystackButton({
   className = '',
   metadata = {},
 }) {
-  const paystackLoaded = useRef(false)
-
-  useEffect(() => {
-    if (!paystackLoaded.current && !window.PaystackPop) {
-      const script = document.createElement('script')
-      script.src = 'https://js.paystack.co/v1/inline.js'
-      script.async = true
-      script.onload = () => { paystackLoaded.current = true }
-      document.head.appendChild(script)
-    } else {
-      paystackLoaded.current = true
-    }
-  }, [])
 
   const handlePayment = () => {
     if (!email) {

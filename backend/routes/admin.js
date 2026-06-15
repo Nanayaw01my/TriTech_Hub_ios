@@ -28,6 +28,13 @@ const {
   updateStaffCommissionRate,
   clearAllData,
   getNotifications,
+  getOverdueAccounts,
+  getRevenueForecast,
+  sendCustomerReminder,
+  exportTransactions,
+  exportCustomers,
+  lockCustomerDevice,
+  unlockCustomerDevice,
 } = require('../controllers/adminController');
 
 // Apply authentication and admin authorization to all routes
@@ -35,9 +42,11 @@ router.use(authenticate, authorize('admin'));
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
 router.get('/dashboard', getDashboard);
+router.get('/overdue-accounts', getOverdueAccounts);
 
 // ─── CUSTOMERS ────────────────────────────────────────────────────────────────
 router.get('/customers', getCustomers);
+router.get('/customers/export', exportCustomers);
 router.get('/customers/:id', getCustomerDetail);
 router.put(
   '/customers/:id',
@@ -63,6 +72,9 @@ router.post(
   ],
   resetCustomerPassword
 );
+router.post('/customers/:id/lock', [param('id').isMongoId()], lockCustomerDevice);
+router.post('/customers/:id/unlock', [param('id').isMongoId()], unlockCustomerDevice);
+router.post('/customers/:id/remind', [param('id').isMongoId()], sendCustomerReminder);
 
 // ─── STAFF ────────────────────────────────────────────────────────────────────
 router.get('/staff', getStaff);
@@ -128,10 +140,12 @@ router.post(
 );
 
 // ─── TRANSACTIONS ─────────────────────────────────────────────────────────────
+router.get('/transactions/export', exportTransactions);
 router.get('/transactions', getTransactions);
 
 // ─── REPORTS ──────────────────────────────────────────────────────────────────
 router.get('/reports', getReports);
+router.get('/revenue-forecast', getRevenueForecast);
 
 // ─── AUDIT LOGS ───────────────────────────────────────────────────────────────
 router.get('/audit-logs', getAuditLogs);
