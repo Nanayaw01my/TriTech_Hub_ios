@@ -51,14 +51,14 @@ const sendSMS = async (to, message) => {
 
 // keep messages under 160 chars
 const sendAdminSaleSMS = async (adminPhone, sale) => {
-  const branch = sale.branch ? ` @${sale.branch}` : '';
-  const freq   = sale.frequency === 'monthly' ? 'mo' : sale.frequency === 'weekly' ? 'wk' : 'day';
+  const branch = sale.branch ? `, ${sale.branch} Branch` : '';
+  const freq   = sale.frequency === 'monthly' ? 'month' : sale.frequency === 'weekly' ? 'week' : 'day';
   const price  = Number(sale.totalPrice).toLocaleString();
   const down   = Number(sale.downPayment).toLocaleString();
   const inst   = Number(sale.installmentAmount).toLocaleString();
   const n      = sale.totalPayments;
 
-  const msg = `NEW SALE: ${sale.deviceModel} | Staff: ${sale.staffName}${branch} | Cust: ${sale.customerName} ${sale.customerPhone || ''} | Price: GHS ${price} | Down: GHS ${down} | GHS ${inst}/${freq} x ${n} -Tritech`;
+  const msg = `Tritech Hub Sale Alert\n${sale.deviceModel} sold by ${sale.staffName}${branch}.\nCustomer: ${sale.customerName} (${sale.customerPhone || 'N/A'})\nPrice: GHS ${price} | Down: GHS ${down}\nPlan: GHS ${inst} x ${n} payments/${freq}`;
   await sendSMS(adminPhone, msg);
 };
 

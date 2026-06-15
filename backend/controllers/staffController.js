@@ -216,19 +216,31 @@ const addCustomer = async (req, res) => {
       });
     }
 
-    // --- 2. Find the specific device or match by model ---
-    let device = null;
+    // --- 2. Find catalog device and clone it for this customer ---
+    // Devices act as a catalog — the original stays available so staff can
+    // keep selling it. Each sale creates its own device record.
+    let catalogDevice = null;
     if (device_id_param) {
-      device = await Device.findOne({ _id: device_id_param, sold_status: 'available' });
-      if (!device) {
-        return res.status(400).json({ success: false, message: 'Selected device is no longer available. Please choose another.' });
+      catalogDevice = await Device.findById(device_id_param);
+      if (!catalogDevice) {
+        return res.status(400).json({ success: false, message: 'Selected device not found. Please choose another.' });
       }
     } else {
-      device = await Device.findOne({ model: device_model, sold_status: 'available' });
-      if (!device) {
-        device = await Device.create({ model: device_model, price: Number(device_price) || 0, sold_status: 'available' });
+      catalogDevice = await Device.findOne({ model: device_model, sold_status: 'available' });
+      if (!catalogDevice) {
+        catalogDevice = await Device.create({ model: device_model, price: Number(device_price) || 0 });
       }
     }
+
+    // Create a fresh device record for this specific customer
+    const device = await Device.create({
+      model: catalogDevice.model,
+      color: catalogDevice.color,
+      storage: catalogDevice.storage,
+      price: Number(device_price) || catalogDevice.price,
+      imei: catalogDevice.imei || null,
+      sold_status: 'sold',
+    });
 
     // --- 3. Check email uniqueness ---
     const existingEmail = await User.findOne({ email: email.toLowerCase().trim() });
@@ -343,11 +355,8 @@ const addCustomer = async (req, res) => {
       schedule,
     });
 
-    // --- 10. Update device status ---
-    await Device.findByIdAndUpdate(device._id, {
-      sold_status: 'sold',
-      assigned_to: newCustomer._id,
-    });
+    // --- 10. Link device to customer ---
+    await Device.findByIdAndUpdate(device._id, { assigned_to: newCustomer._id });
 
     // --- 11. Record down payment if paid via Paystack ---
     if (downPaymentAmount > 0 && down_payment_reference) {
