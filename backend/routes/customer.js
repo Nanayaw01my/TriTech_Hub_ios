@@ -8,6 +8,12 @@ const {
   makePayment,
   getProfile,
 } = require('../controllers/customerController');
+const { getPublicSettings } = require('../controllers/adminController');
+
+// Public route (no auth required)
+router.get('/business-info', (req, res) => {
+  res.json({ success: true, data: getPublicSettings() });
+});
 
 // Apply authentication and customer authorization to all routes
 router.use(authenticate, authorize('customer'));

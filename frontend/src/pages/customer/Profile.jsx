@@ -15,6 +15,7 @@ export default function CustomerProfile() {
   const [copied, setCopied] = useState(false)
   const [logoutModal, setLogoutModal] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
+  const [bizInfo, setBizInfo] = useState({ contact_phone: '', whatsapp_number: '' })
 
   const fetchProfile = useCallback(async () => {
     setLoading(true)
@@ -29,6 +30,13 @@ export default function CustomerProfile() {
   }, [])
 
   useEffect(() => { fetchProfile() }, [fetchProfile])
+
+  useEffect(() => {
+    api.get('/customer/business-info').then(res => {
+      const d = res.data?.data || {}
+      setBizInfo({ contact_phone: d.contact_phone || '', whatsapp_number: d.whatsapp_number || '' })
+    }).catch(() => {})
+  }, [])
 
   const copyAccountNumber = () => {
     const acct = user?.account_number || profile?.user?.account_number || profile?.account_number
@@ -243,7 +251,7 @@ export default function CustomerProfile() {
       <div className="bg-white rounded-2xl shadow-card p-5 mb-4">
         <h3 className="text-sm font-bold text-gray-800 mb-3">Contact Support</h3>
         <a
-          href="tel:+233000000000"
+          href={bizInfo.contact_phone ? `tel:${bizInfo.contact_phone}` : '#'}
           className="flex items-center gap-4 py-3 px-4 bg-green-50 rounded-2xl hover:bg-green-100 transition-colors"
         >
           <div className="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center">
@@ -261,7 +269,7 @@ export default function CustomerProfile() {
         </a>
 
         <a
-          href="https://wa.me/233000000000"
+          href={bizInfo.whatsapp_number ? `https://wa.me/${bizInfo.whatsapp_number.replace(/[^0-9]/g, '')}` : '#'}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-4 py-3 px-4 bg-green-50 rounded-2xl hover:bg-green-100 transition-colors mt-2"

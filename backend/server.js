@@ -132,9 +132,12 @@ app.get('/api/dbstatus', async (req, res) => {
   }
 });
 
-// ─── FORCE RESEED ─────────────────────────────────────────────────────────────
+// ─── FORCE RESEED (dev only) ───────────────────────────────────────────────────
 
 app.get('/api/forceseed', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ success: false, error: 'Not available in production' });
+  }
   const User = require('./models/User');
   try {
     await User.deleteMany({ email: { $in: ['admin@tritech.com', 'staff@tritech.com'] } });

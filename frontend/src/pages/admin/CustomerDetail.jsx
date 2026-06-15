@@ -64,7 +64,7 @@ export default function AdminCustomerDetail() {
   const handleResetPassword = async () => {
     setResetLoading(true)
     try {
-      await api.post(`/admin/customers/${id}/reset-password`)
+      await api.post(`/admin/reset-customer-password/${id}`)
       toast.success('Password reset email sent to customer!')
       setResetModal(false)
     } catch (err) {

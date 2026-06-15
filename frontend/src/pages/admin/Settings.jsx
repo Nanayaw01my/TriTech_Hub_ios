@@ -68,7 +68,7 @@ export default function AdminSettings() {
     if (!validatePassword()) return
     setPwLoading(true)
     try {
-      await api.post('/admin/change-password', {
+      await api.post('/auth/change-password', {
         current_password: passwordForm.current_password,
         new_password: passwordForm.new_password,
       })

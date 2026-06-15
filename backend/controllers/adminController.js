@@ -987,6 +987,8 @@ let appSettings = {
   business_name: 'Tritech Hub iOS',
   contact_email: 'support@tritech.com',
   contact_phone: '',
+  contact_address: '',
+  whatsapp_number: '',
   lock_grace_period_hours: 48,
   installment_frequencies: ['daily', 'weekly', 'monthly'],
   currency: 'GHS',
@@ -1491,7 +1493,16 @@ const unlockCustomerDevice = async (req, res) => {
   }
 };
 
+const getPublicSettings = () => ({
+  business_name: appSettings.business_name,
+  contact_phone: appSettings.contact_phone,
+  contact_email: appSettings.contact_email,
+  whatsapp_number: appSettings.whatsapp_number,
+  contact_address: appSettings.contact_address,
+});
+
 module.exports = {
+  getPublicSettings,
   getDashboard,
   getCustomers,
   getCustomerDetail,
