@@ -8,6 +8,7 @@ const Payment = require('../models/Payment');
 const AuditLog = require('../models/AuditLog');
 const { generateStaffId } = require('../utils/accountGenerator');
 const { sendPaymentReminderSMS, sendDeviceLockedSMS, sendDeviceUnlockedSMS } = require('../utils/sms');
+const { sendLockNotificationEmail, sendDeviceUnlockedEmail } = require('../utils/email');
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
 
@@ -1437,6 +1438,11 @@ const lockCustomerDevice = async (req, res) => {
         console.error('[SMS] Lock notification failed:', e.message)
       );
     }
+    if (customer.email) {
+      sendLockNotificationEmail(customer.email, customer.full_name, device.model).catch(e =>
+        console.error('[Email] Lock notification failed:', e.message)
+      );
+    }
 
     return res.status(200).json({ success: true, message: 'Device locked successfully.' });
   } catch (error) {
@@ -1470,6 +1476,11 @@ const unlockCustomerDevice = async (req, res) => {
     if (customer.phone) {
       sendDeviceUnlockedSMS(customer.phone, customer.full_name, device.model).catch(e =>
         console.error('[SMS] Unlock notification failed:', e.message)
+      );
+    }
+    if (customer.email) {
+      sendDeviceUnlockedEmail(customer.email, customer.full_name, device.model).catch(e =>
+        console.error('[Email] Unlock notification failed:', e.message)
       );
     }
 

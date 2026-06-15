@@ -8,6 +8,7 @@ const AuditLog = require('../models/AuditLog');
 const { initializePayment, verifyPayment } = require('../utils/paystack');
 const { unlockDevice: mdmUnlock } = require('../utils/simpleMDM');
 const { sendPaymentConfirmationEmail } = require('../utils/email');
+const { sendPaymentConfirmedSMS } = require('../utils/sms');
 
 /**
  * Helper: Process a successful payment (used by both verify endpoint and webhook).
@@ -149,13 +150,14 @@ const processSuccessfulPayment = async ({
     },
   });
 
-  // Send payment confirmation email
+  // Send payment confirmation email + SMS
+  const deviceModel = device?.model || 'iPhone';
+  const paymentsLeft = Math.max(0, plan.total_payments - newPaymentsMade);
+
   try {
-    const customerEmail = customer.email;
-    if (customerEmail) {
-      const paymentsLeft = Math.max(0, plan.total_payments - newPaymentsMade);
-      await sendPaymentConfirmationEmail(customerEmail, customer.full_name, amountGHS, {
-        deviceModel: device?.model || 'iPhone',
+    if (customer.email) {
+      await sendPaymentConfirmationEmail(customer.email, customer.full_name, amountGHS, {
+        deviceModel,
         remainingBalance: newRemainingBalance,
         paymentsLeft,
         nextDueDate: isCompleted ? null : nextDueDate,
@@ -164,6 +166,13 @@ const processSuccessfulPayment = async ({
     }
   } catch (emailError) {
     console.error('Payment confirmation email failed:', emailError.message);
+  }
+
+  if (customer.phone) {
+    sendPaymentConfirmedSMS(customer.phone, customer.full_name, amountGHS, {
+      deviceModel,
+      remainingBalance: newRemainingBalance,
+    }).catch(e => console.error('Payment confirmation SMS failed:', e.message));
   }
 
   return {

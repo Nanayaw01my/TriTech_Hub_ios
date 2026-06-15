@@ -9,7 +9,7 @@ const Payment = require('../models/Payment');
 const AuditLog = require('../models/AuditLog');
 const { generateAccountNumber } = require('../utils/accountGenerator');
 const { initializePayment } = require('../utils/paystack');
-const { sendAdminSaleNotificationEmail } = require('../utils/email');
+const { sendAdminSaleNotificationEmail, sendCustomerWelcomeEmail } = require('../utils/email');
 const { sendAdminSaleSMS, sendCustomerWelcomeSMS } = require('../utils/sms');
 const { v4: uuidv4 } = require('uuid');
 
@@ -425,7 +425,15 @@ const addCustomer = async (req, res) => {
           console.log('[Sale notify] SMS sent to:', adminPhone);
         }
 
-        // Welcome SMS to customer
+        // Welcome email + SMS to customer
+        if (newCustomer.email) {
+          try {
+            await sendCustomerWelcomeEmail(newCustomer.email, newCustomer.full_name, newUser.account_number);
+            console.log('[Sale notify] Welcome email sent to:', newCustomer.email);
+          } catch (e) {
+            console.error('[Sale notify] Welcome email failed:', e?.message || e);
+          }
+        }
         if (newCustomer.phone) {
           await sendCustomerWelcomeSMS(
             newCustomer.phone,

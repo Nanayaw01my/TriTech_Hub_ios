@@ -384,6 +384,78 @@ async function sendAdminOverdueAlertEmail(adminEmail, customers) {
   });
 }
 
+const sendCustomerWelcomeEmail = async (email, name, accountNumber) => {
+  await send({
+    to: email,
+    toName: name,
+    subject: `Welcome to Tritech Hub iOS — Your account is ready`,
+    html: `
+      <!DOCTYPE html><html><head>
+      <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+      <style>
+        body{font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0}
+        .container{max-width:600px;margin:40px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+        .header{background:#166534;color:#fff;padding:30px;text-align:center}
+        .header h1{margin:0;font-size:24px}
+        .body{padding:30px;color:#333}
+        .body p{line-height:1.6;margin-bottom:16px}
+        .info-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:16px;margin:20px 0}
+        .footer{background:#f8f8f8;padding:20px 30px;text-align:center;font-size:12px;color:#888;border-top:1px solid #eee}
+      </style>
+      </head><body>
+      <div class="container">
+        <div class="header"><h1>Welcome to Tritech Hub iOS</h1></div>
+        <div class="body">
+          <h2>Hello, ${name}!</h2>
+          <p>Your installment account has been created. Here are your account details:</p>
+          <div class="info-box">
+            <strong>Account Number:</strong> ${accountNumber}<br/>
+            <strong>Portal:</strong> <a href="https://tritechhub.online">tritechhub.online</a><br/>
+            <strong>Login:</strong> Use your email address and the password provided by our staff.
+          </div>
+          <p>You can log in to track your installment balance, make payments, and view your payment history.</p>
+          <p>If you have any questions, contact our support team.</p>
+        </div>
+        <div class="footer"><p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p></div>
+      </div>
+      </body></html>`,
+    text: `Welcome to Tritech Hub iOS!\n\nHello, ${name}!\n\nYour account has been created.\nAccount Number: ${accountNumber}\nLogin at: tritechhub.online\n\nUse your email and password provided by our staff to log in.\n\n© ${new Date().getFullYear()} Tritech Hub iOS`,
+  });
+};
+
+const sendDeviceUnlockedEmail = async (email, name, deviceModel) => {
+  await send({
+    to: email,
+    toName: name,
+    subject: `Your ${deviceModel} has been unlocked — Tritech Hub iOS`,
+    html: `
+      <!DOCTYPE html><html><head>
+      <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+      <style>
+        body{font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0}
+        .container{max-width:600px;margin:40px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+        .header{background:#166534;color:#fff;padding:30px;text-align:center}
+        .header h1{margin:0;font-size:24px}
+        .body{padding:30px;color:#333}
+        .body p{line-height:1.6;margin-bottom:16px}
+        .footer{background:#f8f8f8;padding:20px 30px;text-align:center;font-size:12px;color:#888;border-top:1px solid #eee}
+      </style>
+      </head><body>
+      <div class="container">
+        <div class="header"><h1>Device Unlocked</h1></div>
+        <div class="body">
+          <h2>Hello, ${name}!</h2>
+          <p>Your <strong>${deviceModel}</strong> has been unlocked. Thank you for making your payment!</p>
+          <p>Your device is now fully functional. Keep up with your installment schedule to avoid future interruptions.</p>
+          <p>Log in at <a href="https://tritechhub.online">tritechhub.online</a> to view your remaining balance and payment history.</p>
+        </div>
+        <div class="footer"><p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p></div>
+      </div>
+      </body></html>`,
+    text: `Hello, ${name}!\n\nYour ${deviceModel} has been unlocked. Thank you for your payment!\n\nLog in at tritechhub.online to track your remaining balance.\n\n© ${new Date().getFullYear()} Tritech Hub iOS`,
+  });
+};
+
 module.exports = {
   sendPasswordResetEmail,
   sendPaymentConfirmationEmail,
@@ -392,4 +464,6 @@ module.exports = {
   sendAdminPaymentReminderEmail,
   sendAdminOverdueAlertEmail,
   sendAdminSaleNotificationEmail,
+  sendCustomerWelcomeEmail,
+  sendDeviceUnlockedEmail,
 };
