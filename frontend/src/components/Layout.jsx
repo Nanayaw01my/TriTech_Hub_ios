@@ -26,6 +26,8 @@ const NavIcon = ({ path, className = 'w-5 h-5' }) => (
 )
 
 // ─── Nav definitions ──────────────────────────────────────────────────────────
+const Icon_info = <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+
 const ADMIN_NAV = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: Icon.home },
   { to: '/admin/customers', label: 'Customers', icon: Icon.customers },
@@ -36,18 +38,21 @@ const ADMIN_NAV = [
   { to: '/admin/reports', label: 'Reports', icon: Icon.reports },
   { to: '/admin/audit-logs', label: 'Audit Logs', icon: Icon.audit },
   { to: '/admin/settings', label: 'Settings', icon: Icon.settings },
+  { to: '/admin/about', label: 'About', icon: Icon_info },
 ]
 
 const STAFF_NAV = [
   { to: '/staff/dashboard', label: 'Dashboard', icon: Icon.home },
   { to: '/staff/customers', label: 'My Customers', icon: Icon.customers },
   { to: '/staff/customers/add', label: 'Add Customer', icon: Icon.addCustomer },
+  { to: '/staff/about', label: 'About', icon: Icon_info },
 ]
 
 const CUSTOMER_NAV = [
   { to: '/customer/dashboard', label: 'Dashboard', icon: Icon.home },
   { to: '/customer/payments', label: 'Payments', icon: Icon.payments },
   { to: '/customer/profile', label: 'My Profile', icon: Icon.profile },
+  { to: '/customer/about', label: 'Help', icon: Icon_info },
 ]
 
 // Bottom nav items (mobile only — fewer items)
@@ -69,12 +74,15 @@ const PAGE_TITLES = {
   '/admin/reports':          'Reports',
   '/admin/audit-logs':       'Audit Logs',
   '/admin/settings':         'Settings',
+  '/admin/about':            'About',
   '/staff/dashboard':        'Dashboard',
   '/staff/customers':        'My Customers',
   '/staff/customers/add':    'Add Customer',
+  '/staff/about':            'About',
   '/customer/dashboard':     'Dashboard',
   '/customer/payments':      'Payments',
   '/customer/profile':       'My Profile',
+  '/customer/about':         'Help & Info',
 }
 
 function getPageTitle(pathname) {

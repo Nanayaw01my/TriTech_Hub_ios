@@ -23,17 +23,20 @@ import AdminTransactions from './pages/admin/Transactions'
 import AdminReports from './pages/admin/Reports'
 import AdminAuditLogs from './pages/admin/AuditLogs'
 import AdminSettings from './pages/admin/Settings'
+import AdminAbout from './pages/admin/About'
 
 // Staff pages
 import StaffDashboard from './pages/staff/Dashboard'
 import StaffCustomers from './pages/staff/Customers'
 import StaffAddCustomer from './pages/staff/AddCustomer'
 import StaffCustomerDetail from './pages/staff/CustomerDetail'
+import StaffAbout from './pages/staff/About'
 
 // Customer pages
 import CustomerDashboard from './pages/customer/Dashboard'
 import CustomerPayments from './pages/customer/Payments'
 import CustomerProfile from './pages/customer/Profile'
+import CustomerAbout from './pages/customer/About'
 
 // Layout
 import Layout from './components/Layout'
@@ -113,6 +116,7 @@ function AppRoutes() {
         <Route path="reports" element={<AdminReports />} />
         <Route path="audit-logs" element={<AdminAuditLogs />} />
         <Route path="settings" element={<AdminSettings />} />
+        <Route path="about" element={<AdminAbout />} />
       </Route>
 
       {/* Staff routes */}
@@ -129,6 +133,7 @@ function AppRoutes() {
         <Route path="customers" element={<StaffCustomers />} />
         <Route path="customers/add" element={<StaffAddCustomer />} />
         <Route path="customers/:id" element={<StaffCustomerDetail />} />
+        <Route path="about" element={<StaffAbout />} />
       </Route>
 
       {/* Customer routes */}
@@ -144,6 +149,7 @@ function AppRoutes() {
         <Route path="dashboard" element={<CustomerDashboard />} />
         <Route path="payments" element={<CustomerPayments />} />
         <Route path="profile" element={<CustomerProfile />} />
+        <Route path="about" element={<CustomerAbout />} />
       </Route>
 
       {/* 404 */}
