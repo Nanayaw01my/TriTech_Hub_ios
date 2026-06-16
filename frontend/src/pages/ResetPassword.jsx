@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 export default function ResetPassword() {
-  const { token } = useParams()
+  const [searchParams] = useSearchParams()
+  const token = searchParams.get('token')
+  const email = searchParams.get('email')
   const navigate = useNavigate()
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -33,7 +35,7 @@ export default function ResetPassword() {
 
     setLoading(true)
     try {
-      await api.post(`/auth/reset-password/${token}`, { password })
+      await api.post('/auth/reset-password', { token, email, password })
       setSuccess(true)
       toast.success('Password reset successfully!')
       setTimeout(() => navigate('/login'), 2500)
@@ -44,6 +46,28 @@ export default function ResetPassword() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!token || !email) {
+    return (
+      <div className="min-h-screen bg-green-800 flex flex-col">
+        <div className="flex-1 bg-white rounded-t-3xl mt-24 px-6 pt-12 pb-safe flex flex-col items-center justify-center text-center">
+          <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-5">
+            <svg className="w-10 h-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Invalid Reset Link</h2>
+          <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+            This link is invalid or has expired. Please request a new password reset.
+          </p>
+          <Link to="/forgot-password"
+            className="w-full max-w-xs py-3.5 bg-green-800 text-white font-bold rounded-2xl text-center block hover:bg-green-900">
+            Request New Link
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   if (success) {
