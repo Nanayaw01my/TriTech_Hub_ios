@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import LoadingSpinner from './components/LoadingSpinner'
 import SplashScreen from './components/SplashScreen'
+import ErrorBoundary from './components/ErrorBoundary'
+import OfflineBanner from './components/OfflineBanner'
+import NotFound from './pages/NotFound'
 
 // Public pages
 import Login from './pages/Login'
@@ -143,8 +146,8 @@ function AppRoutes() {
         <Route path="profile" element={<CustomerProfile />} />
       </Route>
 
-      {/* Catch all */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* 404 */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }
@@ -158,13 +161,14 @@ export default function App() {
   }
 
   return (
-    <>
+    <ErrorBoundary>
+      <OfflineBanner />
       {splash && <SplashScreen onDone={handleSplashDone} />}
       <BrowserRouter>
         <AuthProvider>
           <AppRoutes />
         </AuthProvider>
       </BrowserRouter>
-    </>
+    </ErrorBoundary>
   )
 }

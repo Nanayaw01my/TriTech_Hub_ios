@@ -15,6 +15,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
   const [amount, setAmount] = useState(String(defaultAmount ?? plan?.installment_amount ?? ''))
   const [processing, setProcessing] = useState(false)
   const [verifying, setVerifying] = useState(false)
+  const [receipt, setReceipt] = useState(null)
 
   const installmentAmt = plan?.installment_amount || 0
   const remaining = plan?.remaining_balance || 0
@@ -47,11 +48,18 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
             if (res.data.success) {
               if (res.data.payment_pending) {
                 toast.success('Payment sent! Approve the prompt on your phone — it will appear in payment history once confirmed.', { duration: 6000 })
+                onSuccess()
+                onClose()
               } else {
-                toast.success('Payment recorded successfully!')
+                const paidAmt = parseFloat(amount)
+                setReceipt({
+                  amount: paidAmt,
+                  reference: transaction.reference,
+                  date: new Date(),
+                  newBalance: Math.max(0, (plan?.remaining_balance || 0) - paidAmt),
+                })
+                onSuccess()
               }
-              onSuccess()
-              onClose()
             } else {
               toast.error(res.data.message || 'Payment verification failed')
             }
@@ -86,7 +94,56 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50 px-4 pb-4 sm:p-4">
       <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-xl">
-        {verifying ? (
+        {receipt ? (
+          /* ── Payment Receipt ── */
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-lg font-black text-gray-900 mb-1">Payment Successful</p>
+            <p className="text-xs text-gray-400 mb-5">TriTech Hub iOS · Payment Receipt</p>
+
+            <div className="bg-gray-50 rounded-2xl p-4 text-left space-y-3 mb-5">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500">Customer</span>
+                <span className="text-xs font-bold text-gray-800">{customer.full_name}</span>
+              </div>
+              <div className="border-t border-dashed border-gray-200" />
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500">Amount Paid</span>
+                <span className="text-sm font-black text-green-700">GHS {Number(receipt.amount).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500">Date</span>
+                <span className="text-xs font-semibold text-gray-700">
+                  {format(receipt.date, 'dd MMM yyyy · h:mm a')}
+                </span>
+              </div>
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-xs text-gray-500 flex-shrink-0">Reference</span>
+                <span className="text-xs font-mono text-gray-500 text-right break-all">
+                  {receipt.reference}
+                </span>
+              </div>
+              <div className="border-t border-dashed border-gray-200" />
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500">Remaining Balance</span>
+                <span className={`text-xs font-bold ${receipt.newBalance === 0 ? 'text-green-700' : 'text-orange-600'}`}>
+                  {receipt.newBalance === 0 ? 'Fully Paid ✓' : `GHS ${Number(receipt.newBalance).toLocaleString()}`}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="w-full py-3.5 bg-green-800 text-white font-black rounded-2xl active:scale-95 transition-all"
+            >
+              Done
+            </button>
+          </div>
+        ) : verifying ? (
           <div className="text-center py-8">
             <LoadingSpinner size="lg" />
             <p className="mt-4 font-semibold text-gray-700">Recording payment…</p>

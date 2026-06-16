@@ -294,6 +294,11 @@ export default function Layout({ role }) {
   const [loggingOut, setLoggingOut] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  useEffect(() => {
+    const title = getPageTitle(location.pathname)
+    document.title = title === 'Tritech Hub iOS' ? 'TriTech Hub iOS' : `${title} · TriTech Hub iOS`
+  }, [location.pathname])
+
   const navItems = role === 'admin' ? ADMIN_NAV : role === 'staff' ? STAFF_NAV : CUSTOMER_NAV
   const bottomItems = role === 'admin' ? ADMIN_BOTTOM : navItems
 
