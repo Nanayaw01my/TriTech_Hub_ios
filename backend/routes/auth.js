@@ -8,6 +8,8 @@ const {
   forgotPassword,
   resetPassword,
   changePassword,
+  forgotPasswordSMS,
+  resetPasswordOTP,
 } = require('../controllers/authController');
 
 /**
@@ -58,6 +60,28 @@ router.post(
       .withMessage('Password must be at least 1 character.'),
   ],
   resetPassword
+);
+
+/**
+ * POST /api/auth/forgot-password-sms
+ */
+router.post(
+  '/forgot-password-sms',
+  [body('phone').notEmpty().withMessage('Phone number is required.')],
+  forgotPasswordSMS
+);
+
+/**
+ * POST /api/auth/reset-password-otp
+ */
+router.post(
+  '/reset-password-otp',
+  [
+    body('phone').notEmpty().withMessage('Phone number is required.'),
+    body('otp').notEmpty().isLength({ min: 6, max: 6 }).withMessage('Enter the 6-digit code.'),
+    body('password').notEmpty().withMessage('New password is required.'),
+  ],
+  resetPasswordOTP
 );
 
 /**

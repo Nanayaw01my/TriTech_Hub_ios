@@ -92,8 +92,14 @@ const sendPaymentConfirmedSMS = async (phone, name, amount, details) => {
   await sendSMS(phone, msg);
 };
 
+const sendPasswordResetOTP = async (phone, otp) => {
+  const msg = `Your TriTech Hub password reset code is: ${otp}. Valid for 10 minutes. Do not share this code. -Tritech Hub`;
+  return sendSMS(phone, msg);
+};
+
 module.exports = {
   sendSMS,
+  sendPasswordResetOTP,
   sendAdminSaleSMS,
   sendCustomerWelcomeSMS,
   sendPaymentReminderSMS,

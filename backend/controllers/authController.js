@@ -1,9 +1,11 @@
 const crypto = require('crypto');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
+const Customer = require('../models/Customer');
 const PasswordReset = require('../models/PasswordReset');
 const AuditLog = require('../models/AuditLog');
 const { sendPasswordResetEmail } = require('../utils/email');
+const { sendPasswordResetOTP } = require('../utils/sms');
 
 /**
  * POST /api/auth/login
@@ -361,4 +363,140 @@ const changePassword = async (req, res) => {
   }
 };
 
-module.exports = { login, logout, forgotPassword, resetPassword, changePassword };
+const formatPhone = (phone) => {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('233') && digits.length === 12) return digits;
+  if (digits.startsWith('0') && digits.length === 10) return '233' + digits.slice(1);
+  if (digits.length === 9) return '233' + digits;
+  return digits;
+};
+
+const findUserByPhone = async (phone) => {
+  const formatted = formatPhone(phone);
+  if (!formatted) return null;
+  // Check User model directly (staff/admin)
+  let user = await User.findOne({ phone: { $in: [phone, formatted] } });
+  if (user) return user;
+  // Check Customer model (customers store phone separately)
+  const customer = await Customer.findOne({ phone: { $in: [phone, formatted] } });
+  if (customer?.user_id) {
+    user = await User.findById(customer.user_id);
+    return user;
+  }
+  return null;
+};
+
+/**
+ * POST /api/auth/forgot-password-sms
+ * Send a 6-digit OTP to the user's phone number.
+ */
+const forgotPasswordSMS = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) {
+      return res.status(400).json({ success: false, message: 'Phone number is required.' });
+    }
+
+    const formatted = formatPhone(phone);
+    if (!formatted) {
+      return res.status(400).json({ success: false, message: 'Invalid phone number.' });
+    }
+
+    const user = await findUserByPhone(phone);
+
+    // Always return success to prevent enumeration
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: 'If an account with that number exists, a code has been sent.',
+      });
+    }
+
+    // Invalidate existing OTPs for this phone
+    await PasswordReset.updateMany({ phone: formatted, used: false }, { used: true });
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
+
+    await PasswordReset.create({
+      phone: formatted,
+      token: hashedOtp,
+      expires_at: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+    });
+
+    try {
+      await sendPasswordResetOTP(formatted, otp);
+    } catch (smsErr) {
+      console.error('OTP SMS error:', smsErr.message);
+    }
+
+    await AuditLog.create({
+      user_id: user._id,
+      action: 'password_reset',
+      details: { event: 'otp_sent', phone: formatted },
+      ip_address: req.ip,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'If an account with that number exists, a code has been sent.',
+    });
+  } catch (error) {
+    console.error('forgotPasswordSMS error:', error);
+    return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+  }
+};
+
+/**
+ * POST /api/auth/reset-password-otp
+ * Verify the 6-digit OTP and reset password.
+ */
+const resetPasswordOTP = async (req, res) => {
+  try {
+    const { phone, otp, password } = req.body;
+    if (!phone || !otp || !password) {
+      return res.status(400).json({ success: false, message: 'Phone, code, and new password are required.' });
+    }
+
+    const formatted = formatPhone(phone);
+    const hashedOtp = crypto.createHash('sha256').update(otp.trim()).digest('hex');
+
+    const record = await PasswordReset.findOne({
+      phone: formatted,
+      token: hashedOtp,
+      used: false,
+      expires_at: { $gt: new Date() },
+    });
+
+    if (!record) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired code. Please request a new one.' });
+    }
+
+    const user = await findUserByPhone(phone);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    user.password = password;
+    await user.save();
+
+    record.used = true;
+    await record.save();
+
+    await AuditLog.create({
+      user_id: user._id,
+      action: 'password_reset',
+      details: { event: 'otp_reset_completed', phone: formatted },
+      ip_address: req.ip,
+    });
+
+    return res.status(200).json({ success: true, message: 'Password reset successfully.' });
+  } catch (error) {
+    console.error('resetPasswordOTP error:', error);
+    return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+  }
+};
+
+module.exports = { login, logout, forgotPassword, resetPassword, changePassword, forgotPasswordSMS, resetPasswordOTP };
