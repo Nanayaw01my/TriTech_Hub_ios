@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -145,10 +145,17 @@ export default function Login() {
 
             {/* Password */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-2"
-                style={{ color: 'rgba(255,255,255,0.45)' }}>
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-bold uppercase tracking-wider"
+                  style={{ color: 'rgba(255,255,255,0.45)' }}>
+                  Password
+                </label>
+                <Link to="/forgot-password"
+                  className="text-xs font-semibold transition-opacity hover:opacity-80"
+                  style={{ color: '#81C784' }}>
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }}>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
