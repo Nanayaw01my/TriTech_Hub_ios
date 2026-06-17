@@ -1578,7 +1578,7 @@ const getPublicSettings = () => ({
 const downloadBackup = async (req, res) => {
   try {
     const [customers, devices, plans, payments, staff] = await Promise.all([
-      Customer.find().lean(),
+      Customer.find().select('-photos').lean(),
       Device.find().lean(),
       InstallmentPlan.find().lean(),
       Payment.find().lean(),
