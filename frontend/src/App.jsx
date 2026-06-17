@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { useIdleTimeout } from './hooks/useIdleTimeout'
 import LoadingSpinner from './components/LoadingSpinner'
 import SplashScreen from './components/SplashScreen'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -85,9 +86,16 @@ function RoleRedirect() {
   return <Navigate to="/login" replace />
 }
 
+function IdleWatcher() {
+  useIdleTimeout()
+  return null
+}
+
 function AppRoutes() {
   return (
-    <Routes>
+    <>
+      <IdleWatcher />
+      <Routes>
       {/* Root redirect */}
       <Route path="/" element={<RoleRedirect />} />
 
@@ -155,6 +163,7 @@ function AppRoutes() {
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </>
   )
 }
 
