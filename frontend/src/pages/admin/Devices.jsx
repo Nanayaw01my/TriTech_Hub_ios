@@ -141,7 +141,7 @@ export default function AdminDevices() {
 
   const validateForm = () => {
     const e = {}
-    if (!form.model) e.model = 'Select a model'
+    if (!form.model.trim()) e.model = 'Model name is required'
     if (!form.serial_number.trim()) e.serial_number = 'Serial number required'
     setErrors(e)
     return Object.keys(e).length === 0
@@ -510,17 +510,21 @@ export default function AdminDevices() {
                 {/* Model */}
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">iPhone Model *</label>
-                  <select
+                  <input
+                    type="text"
+                    list="iphone-models-list"
                     value={form.model}
                     onChange={(e) => handleModelChange(e.target.value)}
+                    placeholder="e.g. iPhone 17 Pro Max"
+                    autoComplete="off"
                     className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-gray-50
                       ${errors.model ? 'border-red-400' : 'border-gray-100'}`}
-                  >
-                    <option value="">Select model</option>
+                  />
+                  <datalist id="iphone-models-list">
                     {IPHONE_MODELS.map(m => (
-                      <option key={m.model} value={m.model}>{m.model}</option>
+                      <option key={m.model} value={m.model} />
                     ))}
-                  </select>
+                  </datalist>
                   {errors.model && <p className="text-xs text-red-500 mt-1">{errors.model}</p>}
                 </div>
 
