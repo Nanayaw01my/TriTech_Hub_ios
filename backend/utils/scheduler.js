@@ -4,7 +4,7 @@ const Device = require('../models/Device');
 const Customer = require('../models/Customer');
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
-const { sendLockNotificationEmail, sendAdminPaymentReminderEmail, sendAdminOverdueAlertEmail } = require('./email');
+const { sendLockNotificationEmail, sendAdminPaymentReminderEmail, sendAdminOverdueAlertEmail, sendPaymentReminderEmail } = require('./email');
 
 /**
  * Check for overdue installment plans and lock devices.
@@ -17,6 +17,43 @@ const checkOverduePayments = async () => {
 
   try {
     const cutoffDate = new Date(Date.now() - 48 * 60 * 60 * 1000); // 48 hours ago
+    const now = new Date();
+
+    // Send overdue warnings (0–48h overdue) — not yet locked, but urgently remind customer
+    try {
+      const warningPlans = await InstallmentPlan.find({
+        status: 'active',
+        next_due_date: { $lt: now, $gte: cutoffDate },
+      })
+        .populate({ path: 'device_id', select: 'model' })
+        .populate({ path: 'customer_id', select: 'full_name phone email user_id' });
+
+      for (const plan of warningPlans) {
+        const customer = plan.customer_id;
+        if (!customer || !plan.device_id) continue;
+        try {
+          let customerEmail = customer.email;
+          if (!customerEmail && customer.user_id) {
+            const userRecord = await User.findById(customer.user_id).select('email');
+            customerEmail = userRecord?.email;
+          }
+          if (customerEmail) {
+            await sendPaymentReminderEmail(customerEmail, customer.full_name, {
+              deviceModel: plan.device_id.model,
+              installmentAmount: plan.installment_amount,
+              remainingBalance: plan.remaining_balance,
+              nextDueDate: plan.next_due_date,
+              isOverdue: true,
+            });
+            console.log(`[Scheduler] Overdue warning email sent to ${customer.full_name} (${customerEmail})`);
+          }
+        } catch (emailErr) {
+          console.error(`[Scheduler] Failed to send overdue warning to ${customer?.full_name}: ${emailErr.message}`);
+        }
+      }
+    } catch (warnErr) {
+      console.error('[Scheduler] Error sending overdue warnings:', warnErr.message);
+    }
 
     // Find all active plans where next_due_date is past the 48-hour cutoff
     const overduePlans = await InstallmentPlan.find({
@@ -148,24 +185,48 @@ const checkUpcomingPayments = async () => {
       next_due_date: { $gte: now, $lte: in48Hours },
     })
       .populate({ path: 'device_id', select: 'model' })
-      .populate({ path: 'customer_id', select: 'full_name phone' });
+      .populate({ path: 'customer_id', select: 'full_name phone email user_id' });
 
     if (upcomingPlans.length === 0) {
       console.log('[Scheduler] No upcoming payments in the next 48 hours.');
       return;
     }
 
-    const reminderList = upcomingPlans
-      .filter((p) => p.device_id && p.customer_id)
-      .map((p) => ({
-        customerName: p.customer_id.full_name,
-        phone: p.customer_id.phone || '',
-        deviceModel: p.device_id.model,
-        amount: p.installment_amount,
-        dueDate: new Date(p.next_due_date).toLocaleDateString('en-GH', {
-          weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
-        }),
-      }));
+    const validPlans = upcomingPlans.filter((p) => p.device_id && p.customer_id);
+
+    // Email each customer individually about their upcoming payment
+    for (const plan of validPlans) {
+      const customer = plan.customer_id;
+      try {
+        let customerEmail = customer.email;
+        if (!customerEmail && customer.user_id) {
+          const userRecord = await User.findById(customer.user_id).select('email');
+          customerEmail = userRecord?.email;
+        }
+        if (customerEmail) {
+          await sendPaymentReminderEmail(customerEmail, customer.full_name, {
+            deviceModel: plan.device_id.model,
+            installmentAmount: plan.installment_amount,
+            remainingBalance: plan.remaining_balance,
+            nextDueDate: plan.next_due_date,
+            isOverdue: false,
+          });
+          console.log(`[Scheduler] Upcoming payment reminder sent to ${customer.full_name} (${customerEmail})`);
+        }
+      } catch (emailErr) {
+        console.error(`[Scheduler] Failed to send reminder to ${customer.full_name}: ${emailErr.message}`);
+      }
+    }
+
+    const reminderList = validPlans.map((p) => ({
+      customerName: p.customer_id.full_name,
+      phone: p.customer_id.phone || '',
+      deviceModel: p.device_id.model,
+      amount: p.installment_amount,
+      dueDate: new Date(p.next_due_date).toLocaleDateString('en-GH', {
+        weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+      }),
+    }));
 
     if (reminderList.length > 0 && process.env.ADMIN_EMAIL) {
       await sendAdminPaymentReminderEmail(process.env.ADMIN_EMAIL, reminderList);
