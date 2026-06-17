@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import api from '../../api/axios'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import StatusBadge from '../../components/StatusBadge'
@@ -510,21 +510,11 @@ export default function AdminDevices() {
                 {/* Model */}
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">iPhone Model *</label>
-                  <input
-                    type="text"
-                    list="iphone-models-list"
+                  <ModelPickerInput
                     value={form.model}
-                    onChange={(e) => handleModelChange(e.target.value)}
-                    placeholder="e.g. iPhone 17 Pro Max"
-                    autoComplete="off"
-                    className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-gray-50
-                      ${errors.model ? 'border-red-400' : 'border-gray-100'}`}
+                    onChange={(v) => handleModelChange(v)}
+                    error={errors.model}
                   />
-                  <datalist id="iphone-models-list">
-                    {IPHONE_MODELS.map(m => (
-                      <option key={m.model} value={m.model} />
-                    ))}
-                  </datalist>
                   {errors.model && <p className="text-xs text-red-500 mt-1">{errors.model}</p>}
                 </div>
 
@@ -649,6 +639,76 @@ export default function AdminDevices() {
         loading={lockLoading}
       />
       </div>{/* end max-w-5xl */}
+    </div>
+  )
+}
+
+function ModelPickerInput({ value, onChange, error }) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState(value || '')
+  const containerRef = useRef(null)
+
+  useEffect(() => { setSearch(value || '') }, [value])
+
+  useEffect(() => {
+    const close = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('touchstart', close)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('touchstart', close)
+    }
+  }, [])
+
+  const filtered = IPHONE_MODELS.filter(m =>
+    m.model.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const handleInput = (e) => {
+    const v = e.target.value
+    setSearch(v)
+    onChange(v)
+    setOpen(true)
+  }
+
+  const select = (model) => {
+    setSearch(model)
+    onChange(model)
+    setOpen(false)
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input
+        type="text"
+        value={search}
+        onChange={handleInput}
+        onFocus={() => setOpen(true)}
+        placeholder="e.g. iPhone 17 Pro Max"
+        autoComplete="off"
+        className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-gray-50
+          ${error ? 'border-red-400' : 'border-gray-100'}`}
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden max-h-56 overflow-y-auto">
+          {filtered.map(m => (
+            <button
+              key={m.model}
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); select(m.model) }}
+              onTouchEnd={(e) => { e.preventDefault(); select(m.model) }}
+              className="w-full text-left px-4 py-3 text-sm hover:bg-green-50 active:bg-green-100 border-b border-gray-50 last:border-0 flex justify-between items-center gap-2"
+            >
+              <span className="font-medium text-gray-800">{m.model}</span>
+              <span className="text-xs text-gray-400 flex-shrink-0">GHS {m.price.toLocaleString()}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
