@@ -12,6 +12,7 @@ export default function AdminCustomerDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [customer, setCustomer] = useState(null)
+  const [plan, setPlan] = useState(null)
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [lockModal, setLockModal] = useState(false)
@@ -27,11 +28,8 @@ export default function AdminCustomerDetail() {
       const res = await api.get(`/admin/customers/${id}`)
       const d = res.data?.data || res.data
       setCustomer(d?.customer || d)
+      setPlan(d?.plan || null)
       setTransactions(Array.isArray(d?.payments) ? d.payments : [])
-      // plan is stored separately; attach it to customer for display
-      if (d?.plan) {
-        setCustomer(prev => ({ ...prev, payment_plan: d.plan }))
-      }
     } catch (err) {
       console.error(err)
       toast.error('Failed to load customer details')
@@ -40,9 +38,7 @@ export default function AdminCustomerDetail() {
     }
   }
 
-  useEffect(() => {
-    fetchCustomer()
-  }, [id])
+  useEffect(() => { fetchCustomer() }, [id])
 
   const handleLockToggle = async () => {
     setLockLoading(true)
@@ -65,7 +61,7 @@ export default function AdminCustomerDetail() {
     setResetLoading(true)
     try {
       await api.post(`/admin/reset-customer-password/${id}`)
-      toast.success('Password reset email sent to customer!')
+      toast.success('Password reset sent to customer!')
       setResetModal(false)
     } catch (err) {
       toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Failed to reset password')
@@ -103,27 +99,30 @@ export default function AdminCustomerDetail() {
     )
   }
 
-  const plan = customer.payment_plan || customer.plan
-  const device = customer.device
+  const device = plan?.device_id || customer.device
+  const loc = customer.location || {}
+  const guarantor = customer.guarantor || {}
+  const income = customer.income || {}
+  const createdBy = customer.created_by
 
-  // Convert stored file path or base64 to a usable URL
   const photoUrl = (p) => {
     if (!p) return null
     if (p.startsWith('data:')) return p
-    const filename = p.replace(/\\/g, '/').split('/').pop()
-    return `/uploads/${filename}`
+    return `/uploads/${p.replace(/\\/g, '/').split('/').pop()}`
   }
 
   const photos = customer.photos || {}
-  const cardFront  = photoUrl(photos.ghana_card_front)
-  const cardBack   = photoUrl(photos.ghana_card_back)
-  const custPhoto  = photoUrl(photos.customer_photo)
-  const guarPhoto  = photoUrl(photos.guarantor_photo)
-  const signature  = photoUrl(photos.signature)
+  const cardFront = photoUrl(photos.ghana_card_front)
+  const cardBack  = photoUrl(photos.ghana_card_back)
+  const custPhoto = photoUrl(photos.customer_photo)
+  const guarPhoto = photoUrl(photos.guarantor_photo)
+  const signature = photoUrl(photos.signature)
+
+  const locationParts = [loc.town, loc.district, loc.region].filter(Boolean)
 
   return (
     <div className="max-w-3xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
-      {/* Back button */}
+      {/* Back */}
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-1.5 text-green-700 font-semibold text-sm mb-4 hover:text-green-900"
@@ -134,17 +133,13 @@ export default function AdminCustomerDetail() {
         Back to Customers
       </button>
 
-      {/* Customer Info Card */}
+      {/* ── HEADER CARD ─────────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-card p-5 mb-4">
         <div className="flex items-start gap-4">
-          <div className="w-20 h-20 rounded-2xl bg-green-100 overflow-hidden flex-shrink-0">
-            {customer.photo_url ? (
-              <img
-                src={customer.photo_url}
-                alt={customer.full_name}
-                className="w-full h-full object-cover cursor-pointer"
-                onClick={() => setImageModal(customer.photo_url)}
-              />
+          <div className="w-20 h-20 rounded-2xl bg-green-100 overflow-hidden flex-shrink-0 cursor-pointer"
+               onClick={() => custPhoto && setImageModal(custPhoto)}>
+            {custPhoto ? (
+              <img src={custPhoto} alt={customer.full_name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <span className="text-green-800 font-black text-3xl">
@@ -163,121 +158,110 @@ export default function AdminCustomerDetail() {
           </div>
         </div>
 
-        <div className="mt-4 space-y-2 text-sm">
-          <div className="flex items-center gap-2 text-gray-600">
-            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            {customer.email}
-          </div>
-          <div className="flex items-center gap-2 text-gray-600">
-            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-            {customer.phone}
-          </div>
-          {customer.ghana_card_id && (
-            <div className="flex items-center gap-2 text-gray-600">
-              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-              </svg>
-              Ghana Card: {customer.ghana_card_id}
-            </div>
+        {/* Registration meta */}
+        <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+          {customer.createdAt && (
+            <span>Registered: <span className="font-semibold text-gray-700">{format(new Date(customer.createdAt), 'dd MMM yyyy')}</span></span>
           )}
-          {customer.location && (
-            <div className="flex items-center gap-2 text-gray-600">
-              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              {[customer.location, customer.district, customer.region].filter(Boolean).join(', ')}
-            </div>
+          {createdBy?.name && (
+            <span>By: <span className="font-semibold text-gray-700">{createdBy.name}</span>{createdBy.staff_id ? ` (${createdBy.staff_id})` : ''}</span>
           )}
         </div>
       </div>
 
-      {/* Customer Photos */}
+      {/* ── PERSONAL DETAILS ─────────────────────────────────── */}
+      <Section title="Personal Details">
+        <Row label="Email" value={customer.email} />
+        <Row label="Phone" value={customer.phone} />
+        {customer.ghana_card_id && <Row label="Ghana Card ID" value={customer.ghana_card_id} mono />}
+        {customer.occupation && <Row label="Occupation" value={customer.occupation} />}
+        {(income.amount > 0 || income.source) && (
+          <Row
+            label="Income"
+            value={[
+              income.amount > 0 ? `GHS ${Number(income.amount).toLocaleString()}` : null,
+              income.source,
+            ].filter(Boolean).join(' — ')}
+          />
+        )}
+      </Section>
+
+      {/* ── LOCATION ─────────────────────────────────────────── */}
+      {(locationParts.length > 0 || loc.landmark || loc.gps_address) && (
+        <Section title="Location">
+          {locationParts.length > 0 && (
+            <Row label="Area" value={locationParts.join(', ')} />
+          )}
+          {loc.landmark && <Row label="Landmark" value={loc.landmark} />}
+          {loc.gps_address && <Row label="GPS Address" value={loc.gps_address} mono />}
+        </Section>
+      )}
+
+      {/* ── GUARANTOR ────────────────────────────────────────── */}
+      {(guarantor.full_name || guarantor.phone) && (
+        <Section title="Guarantor">
+          {guarantor.full_name && <Row label="Name" value={guarantor.full_name} />}
+          {guarantor.phone && <Row label="Phone" value={guarantor.phone} />}
+          {guarantor.ghana_card_id && <Row label="Ghana Card ID" value={guarantor.ghana_card_id} mono />}
+          {guarantor.relationship && <Row label="Relationship" value={guarantor.relationship} />}
+        </Section>
+      )}
+
+      {/* ── PHOTOS ───────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
-        <h3 className="text-sm font-bold text-gray-800 mb-3">Photos</h3>
+        <h3 className="text-sm font-bold text-gray-800 mb-3">Photos & Documents</h3>
         <div className="grid grid-cols-2 gap-3">
           {cardFront
             ? <PhotoThumb label="Ghana Card — Front" src={cardFront} onView={() => setImageModal(cardFront)} />
-            : <PhotoEmpty label="Ghana Card — Front" />
-          }
+            : <PhotoEmpty label="Ghana Card — Front" />}
           {cardBack
             ? <PhotoThumb label="Ghana Card — Back" src={cardBack} onView={() => setImageModal(cardBack)} />
-            : <PhotoEmpty label="Ghana Card — Back" />
-          }
+            : <PhotoEmpty label="Ghana Card — Back" />}
           {custPhoto
             ? <PhotoThumb label="Customer Photo" src={custPhoto} onView={() => setImageModal(custPhoto)} />
-            : <PhotoEmpty label="Customer Photo" />
-          }
+            : <PhotoEmpty label="Customer Photo" />}
           {guarPhoto
             ? <PhotoThumb label="Guarantor Photo" src={guarPhoto} onView={() => setImageModal(guarPhoto)} />
-            : <PhotoEmpty label="Guarantor Photo" />
-          }
+            : <PhotoEmpty label="Guarantor Photo" />}
         </div>
-
-        {/* Signature */}
-        {signature ? (
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Customer Signature</p>
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Customer Signature</p>
+          {signature ? (
             <div className="border border-gray-200 rounded-xl overflow-hidden bg-white inline-block cursor-pointer"
                  onClick={() => setImageModal(signature)}>
-              <img src={signature} alt="Customer Signature" className="h-20 w-auto object-contain block" />
+              <img src={signature} alt="Signature" className="h-20 w-auto object-contain block" />
             </div>
-          </div>
-        ) : (
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Customer Signature</p>
+          ) : (
             <div className="h-16 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center">
               <p className="text-xs text-gray-400">No signature on file</p>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Device Info */}
+      {/* ── DEVICE ───────────────────────────────────────────── */}
       {device && (
         <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-gray-800">Device</h3>
-            <div className="flex gap-2">
-              {device.is_locked ? (
-                <button
-                  onClick={() => { setLockAction('unlock'); setLockModal(true) }}
-                  className="px-3 py-1.5 bg-green-100 text-green-700 rounded-xl text-xs font-semibold hover:bg-green-200 transition-colors"
-                >
-                  Unlock Device
-                </button>
-              ) : (
-                <button
-                  onClick={() => { setLockAction('lock'); setLockModal(true) }}
-                  className="px-3 py-1.5 bg-red-100 text-red-700 rounded-xl text-xs font-semibold hover:bg-red-200 transition-colors"
-                >
-                  Lock Device
-                </button>
-              )}
-            </div>
+            {device.is_locked ? (
+              <button
+                onClick={() => { setLockAction('unlock'); setLockModal(true) }}
+                className="px-3 py-1.5 bg-green-100 text-green-700 rounded-xl text-xs font-semibold hover:bg-green-200 transition-colors"
+              >Unlock Device</button>
+            ) : (
+              <button
+                onClick={() => { setLockAction('lock'); setLockModal(true) }}
+                className="px-3 py-1.5 bg-red-100 text-red-700 rounded-xl text-xs font-semibold hover:bg-red-200 transition-colors"
+              >Lock Device</button>
+            )}
           </div>
           <div className="space-y-1.5 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Model</span>
-              <span className="font-semibold text-gray-800">{device.model || device.device_model}</span>
-            </div>
-            {device.serial_number && (
-              <div className="flex justify-between">
-                <span className="text-gray-500">Serial</span>
-                <span className="font-mono text-xs text-gray-700">{device.serial_number}</span>
-              </div>
-            )}
-            {device.udid && (
-              <div className="flex justify-between">
-                <span className="text-gray-500">UDID/IMEI</span>
-                <span className="font-mono text-xs text-gray-700 truncate max-w-[150px]">{device.udid}</span>
-              </div>
-            )}
-            <div className="flex justify-between items-center">
+            <Row label="Model" value={device.model || device.device_model} />
+            {device.serial_number && <Row label="Serial Number" value={device.serial_number} mono />}
+            {device.imei && <Row label="IMEI" value={device.imei} mono />}
+            {device.udid && <Row label="UDID" value={device.udid} mono truncate />}
+            <div className="flex justify-between items-center pt-0.5">
               <span className="text-gray-500">Lock Status</span>
               <StatusBadge status={device.is_locked ? 'locked' : 'unlocked'} />
             </div>
@@ -285,92 +269,100 @@ export default function AdminCustomerDetail() {
         </div>
       )}
 
-      {/* Payment Plan */}
+      {/* ── PAYMENT PLAN ─────────────────────────────────────── */}
       {plan && (
         <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
-          <h3 className="text-sm font-bold text-gray-800 mb-3">Payment Plan</h3>
-          <ProgressBar
-            current={plan.payments_made || 0}
-            total={plan.total_payments || 1}
-            height="lg"
-          />
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 text-sm">
-            <div>
-              <p className="text-xs text-gray-500">Device Price</p>
-              <p className="font-bold text-gray-800">GHS {Number(plan.total_price || plan.device_price || 0).toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Down Payment</p>
-              <p className="font-bold text-gray-800">GHS {Number(plan.down_payment || 0).toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Installment</p>
-              <p className="font-bold text-gray-800">GHS {Number(plan.installment_amount || 0).toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Frequency</p>
-              <p className="font-bold text-gray-800 capitalize">{plan.payment_frequency || plan.frequency}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Remaining</p>
-              <p className="font-bold text-red-600">GHS {Number(plan.remaining_balance || 0).toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Next Due</p>
-              <p className="font-bold text-gray-800">
-                {plan.next_due_date ? format(new Date(plan.next_due_date), 'dd MMM yyyy') : 'N/A'}
-              </p>
-            </div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-gray-800">Payment Plan</h3>
+            <StatusBadge status={plan.status || 'active'} />
+          </div>
+          <ProgressBar current={plan.payments_made || 0} total={plan.total_payments || 1} height="lg" />
+          <p className="text-xs text-gray-500 mt-1 text-right">
+            {plan.payments_made || 0} of {plan.total_payments || 0} payments made
+          </p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 mt-4 text-sm">
+            <InfoCell label="Device Price" value={`GHS ${Number(plan.total_price || plan.device_price || 0).toLocaleString()}`} />
+            <InfoCell label="Down Payment" value={`GHS ${Number(plan.down_payment || 0).toLocaleString()}`} />
+            <InfoCell label="Installment" value={`GHS ${Number(plan.installment_amount || 0).toLocaleString()}`} />
+            <InfoCell label="Frequency" value={<span className="capitalize">{plan.payment_frequency || plan.frequency || 'N/A'}</span>} />
+            <InfoCell label="Amount Paid" value={`GHS ${Number(plan.amount_paid || 0).toLocaleString()}`} />
+            <InfoCell label="Remaining" value={`GHS ${Number(plan.remaining_balance || 0).toLocaleString()}`} valueClass="text-red-600" />
+            {plan.start_date && (
+              <InfoCell label="Start Date" value={format(new Date(plan.start_date), 'dd MMM yyyy')} />
+            )}
+            {plan.next_due_date && (
+              <InfoCell label="Next Due" value={format(new Date(plan.next_due_date), 'dd MMM yyyy')} />
+            )}
           </div>
         </div>
       )}
 
-      {/* Admin Actions */}
+      {/* ── ADMIN ACTIONS ────────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
         <h3 className="text-sm font-bold text-gray-800 mb-3">Admin Actions</h3>
-        <button
-          onClick={() => setResetModal(true)}
-          className="w-full py-3 px-4 rounded-xl border-2 border-orange-200 text-orange-700 font-semibold text-sm
-                     hover:bg-orange-50 transition-colors flex items-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-          </svg>
-          Reset Customer Password
-        </button>
-        {plan && plan.status !== 'completed' && (
+        <div className="space-y-2">
           <button
-            onClick={handleSendReminder}
-            disabled={reminderLoading}
-            className="w-full py-3 px-4 rounded-xl border-2 border-blue-200 text-blue-700 font-semibold text-sm
-                       hover:bg-blue-50 transition-colors flex items-center gap-2 mt-2 disabled:opacity-50"
+            onClick={() => setResetModal(true)}
+            className="w-full py-3 px-4 rounded-xl border-2 border-orange-200 text-orange-700 font-semibold text-sm
+                       hover:bg-orange-50 transition-colors flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
-            {reminderLoading ? 'Sending…' : 'Send Payment Reminder'}
+            Reset Customer Password
           </button>
-        )}
+          {plan && plan.status !== 'completed' && (
+            <button
+              onClick={handleSendReminder}
+              disabled={reminderLoading}
+              className="w-full py-3 px-4 rounded-xl border-2 border-blue-200 text-blue-700 font-semibold text-sm
+                         hover:bg-blue-50 transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              {reminderLoading ? 'Sending…' : 'Send Payment Reminder'}
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Payment History */}
+      {/* ── PAYMENT HISTORY ──────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-card p-4">
-        <h3 className="text-sm font-bold text-gray-800 mb-3">Payment History</h3>
+        <h3 className="text-sm font-bold text-gray-800 mb-3">
+          Payment History
+          {transactions.length > 0 && (
+            <span className="ml-2 text-xs font-normal text-gray-400">({transactions.length} records)</span>
+          )}
+        </h3>
         {transactions.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-6">No payments yet</p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {transactions.map((tx) => (
-              <div key={tx._id || tx.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">
+              <div key={tx._id || tx.id} className="p-3 bg-gray-50 rounded-xl">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm font-bold text-gray-900">
                     GHS {Number(tx.amount).toLocaleString()}
                   </p>
-                  <p className="text-xs text-gray-500">
-                    {tx.created_at ? format(new Date(tx.created_at), 'dd MMM yyyy, HH:mm') : ''} • {tx.payment_method || tx.method}
-                  </p>
+                  <StatusBadge status={tx.status || 'paid'} />
                 </div>
-                <StatusBadge status={tx.status || 'paid'} />
+                <div className="text-xs text-gray-500 space-y-0.5">
+                  <p>
+                    {tx.payment_date || tx.created_at
+                      ? format(new Date(tx.payment_date || tx.created_at), 'dd MMM yyyy, HH:mm')
+                      : ''}
+                    {' · '}
+                    <span className="capitalize">{(tx.payment_method || tx.method || '').replace('_', ' ')}</span>
+                  </p>
+                  {tx.paystack_reference && (
+                    <p className="font-mono">Ref: {tx.paystack_reference}</p>
+                  )}
+                  {tx.paid_by?.name && (
+                    <p>Collected by: <span className="font-semibold text-gray-700">{tx.paid_by.name}</span></p>
+                  )}
+                  {tx.notes && <p className="italic">"{tx.notes}"</p>}
+                </div>
               </div>
             ))}
           </div>
@@ -399,13 +391,13 @@ export default function AdminCustomerDetail() {
         onClose={() => setResetModal(false)}
         onConfirm={handleResetPassword}
         title="Reset Password"
-        message={`Send a password reset link to ${customer.email}?`}
-        confirmText="Send Reset Link"
+        message={`Reset password for ${customer.full_name}? They will receive an SMS with a reset code.`}
+        confirmText="Reset Password"
         confirmVariant="primary"
         loading={resetLoading}
       />
 
-      {/* Image Viewer Modal */}
+      {/* Image Viewer */}
       {imageModal && (
         <div
           className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4"
@@ -427,6 +419,38 @@ export default function AdminCustomerDetail() {
           </button>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function Section({ title, children }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
+      <h3 className="text-sm font-bold text-gray-800 mb-3">{title}</h3>
+      <div className="space-y-1.5 text-sm">{children}</div>
+    </div>
+  )
+}
+
+function Row({ label, value, mono, truncate }) {
+  if (!value && value !== 0) return null
+  return (
+    <div className="flex justify-between items-start gap-3">
+      <span className="text-gray-500 flex-shrink-0">{label}</span>
+      <span className={`font-semibold text-gray-800 text-right ${mono ? 'font-mono text-xs' : ''} ${truncate ? 'truncate max-w-[180px]' : ''}`}>
+        {value}
+      </span>
+    </div>
+  )
+}
+
+function InfoCell({ label, value, valueClass = 'text-gray-800' }) {
+  return (
+    <div>
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className={`font-bold ${valueClass}`}>{value}</p>
     </div>
   )
 }
@@ -460,7 +484,7 @@ function PhotoThumb({ label, src, onView }) {
       </div>
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
         <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114zM10 7v3m0 0v3m0-3h3m-3 0H7" />
         </svg>
       </div>
     </button>
