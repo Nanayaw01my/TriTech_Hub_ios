@@ -247,9 +247,11 @@ function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
     <div className="flex flex-col h-full bg-gradient-to-b from-green-900 to-green-950">
       {/* Brand */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
-        <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-          <span className="text-green-800 font-black text-sm">TH</span>
-        </div>
+        <img
+          src="/logo.png"
+          alt="Tritech Hub iOS"
+          className="w-9 h-9 rounded-xl object-cover flex-shrink-0 shadow-sm"
+        />
         <div>
           <p className="text-white font-bold text-sm leading-tight">Tritech Hub iOS</p>
           <p className="text-green-300 text-xs">{roleLabel}</p>
@@ -359,11 +361,14 @@ export default function Layout({ role }) {
               <NavIcon path={Icon.menu} className="w-5 h-5" />
             </button>
 
-            <div className="flex-1 flex flex-col items-center justify-center min-w-0 px-2">
-              <p className="text-white font-bold text-sm leading-tight truncate">
-                {getPageTitle(location.pathname)}
-              </p>
-              <p className="text-green-300/70 text-[10px] font-medium leading-tight">Tritech Hub iOS</p>
+            <div className="flex-1 flex items-center justify-center gap-2 min-w-0 px-2">
+              <img src="/logo.png" alt="Tritech Hub iOS" className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
+              <div className="flex flex-col items-start min-w-0">
+                <p className="text-white font-bold text-sm leading-tight truncate">
+                  {getPageTitle(location.pathname)}
+                </p>
+                <p className="text-green-300/70 text-[10px] font-medium leading-tight">Tritech Hub iOS</p>
+              </div>
             </div>
 
             <div className="flex items-center gap-0.5 flex-shrink-0">
