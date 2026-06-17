@@ -36,6 +36,7 @@ const {
   exportCustomers,
   lockCustomerDevice,
   unlockCustomerDevice,
+  downloadBackup,
 } = require('../controllers/adminController');
 
 // Apply authentication and admin authorization to all routes
@@ -158,6 +159,9 @@ router.put('/settings', updateSettings);
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 router.get('/notifications', getNotifications);
+
+// ─── BACKUP ───────────────────────────────────────────────────────────────────
+router.get('/backup', downloadBackup);
 
 // ─── DANGER ZONE ──────────────────────────────────────────────────────────────
 router.delete('/clear-all-data', clearAllData);

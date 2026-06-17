@@ -26,6 +26,7 @@ export default function AdminSettings() {
   const [showClearModal, setShowClearModal] = useState(false)
   const [clearConfirmText, setClearConfirmText] = useState('')
   const [clearLoading, setClearLoading] = useState(false)
+  const [backupLoading, setBackupLoading] = useState(false)
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -79,6 +80,25 @@ export default function AdminSettings() {
       toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Failed to change password')
     } finally {
       setPwLoading(false)
+    }
+  }
+
+  const handleDownloadBackup = async () => {
+    setBackupLoading(true)
+    try {
+      const res = await api.get('/admin/backup')
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `tritechhub-backup-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success(`Backup downloaded! ${res.data.counts?.customers ?? 0} customers, ${res.data.counts?.payments ?? 0} payments.`)
+    } catch {
+      toast.error('Failed to download backup')
+    } finally {
+      setBackupLoading(false)
     }
   }
 
@@ -285,6 +305,28 @@ export default function AdminSettings() {
           </button>
         </form>
       </div>
+      {/* Backup */}
+      <div className="bg-white rounded-2xl shadow-card p-5 border-2 border-blue-50">
+        <h2 className="text-base font-bold text-gray-900 mb-1">Data Backup</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Download a full copy of all your data — customers, devices, payments, and plans — as a JSON file you can save on your computer.
+        </p>
+        <button
+          onClick={handleDownloadBackup}
+          disabled={backupLoading}
+          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white font-bold rounded-2xl text-sm
+                     hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-60"
+        >
+          {backupLoading ? (
+            <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Preparing…</>
+          ) : (
+            <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg> Download Backup</>
+          )}
+        </button>
+      </div>
+
       {/* Danger Zone */}
       <div className="bg-white rounded-2xl shadow-card p-5 border-2 border-red-100">
         <h2 className="text-base font-bold text-red-700 mb-1">Danger Zone</h2>

@@ -1574,6 +1574,40 @@ const getPublicSettings = () => ({
   contact_address: appSettings.contact_address,
 });
 
+// ─── BACKUP ──────────────────────────────────────────────────────────────────
+const downloadBackup = async (req, res) => {
+  try {
+    const [customers, devices, plans, payments, staff] = await Promise.all([
+      Customer.find().lean(),
+      Device.find().lean(),
+      InstallmentPlan.find().lean(),
+      Payment.find().lean(),
+      User.find({ role: { $in: ['admin', 'staff'] } }).select('-password').lean(),
+    ]);
+
+    const backup = {
+      exported_at: new Date().toISOString(),
+      exported_by: req.user?.email || 'admin',
+      counts: {
+        customers: customers.length,
+        devices: devices.length,
+        installment_plans: plans.length,
+        payments: payments.length,
+        staff: staff.length,
+      },
+      data: { customers, devices, installment_plans: plans, payments, staff },
+    };
+
+    const filename = `tritechhub-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.status(200).json(backup);
+  } catch (error) {
+    console.error('downloadBackup error:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate backup.' });
+  }
+};
+
 module.exports = {
   getPublicSettings,
   getDashboard,
@@ -1609,4 +1643,5 @@ module.exports = {
   exportCustomers,
   lockCustomerDevice,
   unlockCustomerDevice,
+  downloadBackup,
 };
