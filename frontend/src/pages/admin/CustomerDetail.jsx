@@ -13,6 +13,7 @@ export default function AdminCustomerDetail() {
   const navigate = useNavigate()
   const [customer, setCustomer] = useState(null)
   const [plan, setPlan] = useState(null)
+  const [settings, setSettings] = useState({ business_name: 'Tritech Hub iOS', contact_phone: '' })
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [lockModal, setLockModal] = useState(false)
@@ -38,7 +39,15 @@ export default function AdminCustomerDetail() {
     }
   }
 
-  useEffect(() => { fetchCustomer() }, [id])
+  useEffect(() => {
+    fetchCustomer()
+    api.get('/admin/settings').then(r => {
+      const s = r.data?.data || r.data
+      if (s?.business_name || s?.contact_phone) {
+        setSettings({ business_name: s.business_name || 'Tritech Hub iOS', contact_phone: s.contact_phone || '' })
+      }
+    }).catch(() => {})
+  }, [id])
 
   const handleLockToggle = async () => {
     setLockLoading(true)
@@ -370,18 +379,14 @@ export default function AdminCustomerDetail() {
       </div>
 
       {/* Lock/Unlock Modal */}
-      <ConfirmModal
+      <LockDeviceModal
         isOpen={lockModal}
         onClose={() => setLockModal(false)}
         onConfirm={handleLockToggle}
-        title={lockAction === 'lock' ? 'Lock Device' : 'Unlock Device'}
-        message={
-          lockAction === 'lock'
-            ? `This will remotely lock ${customer.full_name}'s iPhone. They won't be able to use it until unlocked.`
-            : `This will unlock ${customer.full_name}'s iPhone and restore access.`
-        }
-        confirmText={lockAction === 'lock' ? 'Lock Device' : 'Unlock Device'}
-        confirmVariant={lockAction === 'lock' ? 'danger' : 'primary'}
+        action={lockAction}
+        customer={customer}
+        device={device}
+        settings={settings}
         loading={lockLoading}
       />
 
@@ -463,6 +468,131 @@ function PhotoEmpty({ label }) {
       </svg>
       <p className="text-gray-400 text-xs font-medium text-center px-2 leading-tight">{label}</p>
       <p className="text-gray-300 text-[10px]">Not captured</p>
+    </div>
+  )
+}
+
+function LockDeviceModal({ isOpen, onClose, onConfirm, action, customer, device, settings, loading }) {
+  const [copied, setCopied] = useState(false)
+  if (!isOpen) return null
+
+  const isLocking = action === 'lock'
+  const businessName = settings?.business_name || 'Tritech Hub iOS'
+  const phone = settings?.contact_phone || ''
+
+  const lostModeMessage = `This iPhone belongs to ${businessName}.${phone ? ` Call ${phone} to unlock.` : ''} Make your payment at tritechhub.online to restore access.`
+
+  const copyMessage = () => {
+    navigator.clipboard.writeText(lostModeMessage).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    }).catch(() => {
+      // fallback for older browsers
+      const el = document.createElement('textarea')
+      el.value = lostModeMessage
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      document.body.removeChild(el)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className={`px-5 pt-6 pb-4 ${isLocking ? 'bg-red-50' : 'bg-green-50'}`}>
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 ${isLocking ? 'bg-red-100' : 'bg-green-100'}`}>
+            <svg className={`w-6 h-6 ${isLocking ? 'text-red-600' : 'text-green-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {isLocking
+                ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+              }
+            </svg>
+          </div>
+          <h2 className="text-lg font-black text-gray-900">{isLocking ? 'Lock Device' : 'Unlock Device'}</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            {isLocking
+              ? `Mark ${customer?.full_name}'s ${device?.model || 'iPhone'} as locked. The customer will be notified by SMS, WhatsApp and email.`
+              : `Restore access to ${customer?.full_name}'s ${device?.model || 'iPhone'}.`
+            }
+          </p>
+        </div>
+
+        <div className="px-5 py-4 space-y-4">
+          {/* Lost Mode instructions — only when locking */}
+          {isLocking && (
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+              <p className="text-xs font-bold text-blue-800 uppercase tracking-wide mb-2">iCloud Lost Mode — copy this message</p>
+              <p className="text-sm text-blue-900 leading-relaxed mb-3 font-medium">{lostModeMessage}</p>
+              <button
+                type="button"
+                onClick={copyMessage}
+                className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2
+                  ${copied ? 'bg-green-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'}`}
+              >
+                {copied ? (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Copy Message
+                  </>
+                )}
+              </button>
+
+              <div className="mt-3 space-y-1.5">
+                <p className="text-xs font-bold text-blue-700">Steps on iCloud:</p>
+                {[
+                  'Go to icloud.com/find on any browser',
+                  'Sign in with your Apple ID',
+                  `Find "${device?.model || 'the device'}" in the list`,
+                  'Click the device → Lost Mode → Turn On',
+                  'Paste the message above + enter your phone number',
+                  'Click Activate — the message shows on the lock screen',
+                ].map((step, i) => (
+                  <div key={i} className="flex gap-2 items-start">
+                    <span className="w-4 h-4 rounded-full bg-blue-200 text-blue-800 text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                    <p className="text-xs text-blue-800">{step}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              disabled={loading}
+              className="flex-1 py-3.5 border-2 border-gray-200 text-gray-700 font-bold rounded-2xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={loading}
+              className={`flex-1 py-3.5 font-bold rounded-2xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2
+                ${isLocking ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-green-700 hover:bg-green-800 text-white'}`}
+            >
+              {loading ? <LoadingSpinner size="sm" color="white" /> : null}
+              {isLocking ? 'Lock Device' : 'Unlock Device'}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
