@@ -7,8 +7,9 @@ const InstallmentPlan = require('../models/InstallmentPlan');
 const Payment = require('../models/Payment');
 const AuditLog = require('../models/AuditLog');
 const { generateStaffId } = require('../utils/accountGenerator');
-const { sendPaymentReminderSMS, sendDeviceLockedSMS, sendDeviceUnlockedSMS } = require('../utils/sms');
+const { sendPaymentReminderSMS, sendDeviceLockedSMS, sendDeviceUnlockedSMS, sendDeviceLockedWhatsApp, sendDeviceUnlockedWhatsApp } = require('../utils/sms');
 const { sendLockNotificationEmail, sendDeviceUnlockedEmail } = require('../utils/email');
+const { lockDevice: mdmLock, unlockDevice: mdmUnlock } = require('../utils/simpleMDM');
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
 
@@ -1500,17 +1501,33 @@ const lockCustomerDevice = async (req, res) => {
     device.lock_status = 'locked';
     await device.save();
 
+    // Send actual lock command to the physical device via SimpleMDM
+    let mdmResult = 'skipped (no UDID)';
+    if (device.udid) {
+      try {
+        await mdmLock(device.udid);
+        mdmResult = 'sent';
+        console.log(`[MDM] Lock command sent for UDID ${device.udid}`);
+      } catch (mdmErr) {
+        mdmResult = `failed: ${mdmErr.message}`;
+        console.error(`[MDM] Lock failed for UDID ${device.udid}:`, mdmErr.message);
+      }
+    }
+
     await AuditLog.create({
       user_id: req.user._id,
       action: 'device_lock',
       device_udid: device.udid,
       target_user_id: customer.user_id,
-      details: { device_id: device._id, customer_id: customer._id, reason: req.body.reason || 'Manual lock by admin' },
+      details: { device_id: device._id, customer_id: customer._id, reason: req.body.reason || 'Manual lock by admin', mdm: mdmResult },
     });
 
     if (customer.phone) {
       sendDeviceLockedSMS(customer.phone, customer.full_name, device.model).catch(e =>
         console.error('[SMS] Lock notification failed:', e.message)
+      );
+      sendDeviceLockedWhatsApp(customer.phone, customer.full_name, device.model).catch(e =>
+        console.error('[WhatsApp] Lock notification failed:', e.message)
       );
     }
     if (customer.email) {
@@ -1519,7 +1536,7 @@ const lockCustomerDevice = async (req, res) => {
       );
     }
 
-    return res.status(200).json({ success: true, message: 'Device locked successfully.' });
+    return res.status(200).json({ success: true, message: 'Device locked successfully.', mdm: mdmResult });
   } catch (error) {
     console.error('lockCustomerDevice error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
@@ -1540,17 +1557,33 @@ const unlockCustomerDevice = async (req, res) => {
     device.lock_status = 'unlocked';
     await device.save();
 
+    // Send actual unlock command to the physical device via SimpleMDM
+    let mdmResult = 'skipped (no UDID)';
+    if (device.udid) {
+      try {
+        await mdmUnlock(device.udid);
+        mdmResult = 'sent';
+        console.log(`[MDM] Unlock command sent for UDID ${device.udid}`);
+      } catch (mdmErr) {
+        mdmResult = `failed: ${mdmErr.message}`;
+        console.error(`[MDM] Unlock failed for UDID ${device.udid}:`, mdmErr.message);
+      }
+    }
+
     await AuditLog.create({
       user_id: req.user._id,
       action: 'device_unlock',
       device_udid: device.udid,
       target_user_id: customer.user_id,
-      details: { device_id: device._id, customer_id: customer._id, reason: req.body.reason || 'Manual unlock by admin' },
+      details: { device_id: device._id, customer_id: customer._id, reason: req.body.reason || 'Manual unlock by admin', mdm: mdmResult },
     });
 
     if (customer.phone) {
       sendDeviceUnlockedSMS(customer.phone, customer.full_name, device.model).catch(e =>
         console.error('[SMS] Unlock notification failed:', e.message)
+      );
+      sendDeviceUnlockedWhatsApp(customer.phone, customer.full_name, device.model).catch(e =>
+        console.error('[WhatsApp] Unlock notification failed:', e.message)
       );
     }
     if (customer.email) {
@@ -1559,7 +1592,7 @@ const unlockCustomerDevice = async (req, res) => {
       );
     }
 
-    return res.status(200).json({ success: true, message: 'Device unlocked successfully.' });
+    return res.status(200).json({ success: true, message: 'Device unlocked successfully.', mdm: mdmResult });
   } catch (error) {
     console.error('unlockCustomerDevice error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
