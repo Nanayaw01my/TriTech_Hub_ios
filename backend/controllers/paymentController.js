@@ -8,7 +8,8 @@ const AuditLog = require('../models/AuditLog');
 const { initializePayment, verifyPayment } = require('../utils/paystack');
 const { unlockDevice: mdmUnlock } = require('../utils/simpleMDM');
 const { sendPaymentConfirmationEmail } = require('../utils/email');
-const { sendPaymentConfirmedSMS } = require('../utils/sms');
+const { sendPaymentConfirmedSMS, sendPaymentConfirmedWhatsApp, sendPlanCompletedWhatsApp, sendDeviceUnlockedWhatsApp } = require('../utils/sms');
+const { sendDeviceUnlockedEmail } = require('../utils/email');
 
 /**
  * Helper: Process a successful payment (used by both verify endpoint and webhook).
@@ -173,6 +174,24 @@ const processSuccessfulPayment = async ({
       deviceModel,
       remainingBalance: newRemainingBalance,
     }).catch(e => console.error('Payment confirmation SMS failed:', e.message));
+
+    sendPaymentConfirmedWhatsApp(customer.phone, customer.full_name, amountGHS, {
+      deviceModel,
+      remainingBalance: newRemainingBalance,
+      reference,
+    }).catch(e => console.error('Payment confirmation WhatsApp failed:', e.message));
+  }
+
+  // Special congratulations notifications when plan is fully paid
+  if (isCompleted) {
+    if (customer.phone) {
+      sendPlanCompletedWhatsApp(customer.phone, customer.full_name, deviceModel)
+        .catch(e => console.error('Plan completed WhatsApp failed:', e.message));
+    }
+    if (customer.email) {
+      sendDeviceUnlockedEmail(customer.email, customer.full_name, deviceModel)
+        .catch(e => console.error('Plan completed email failed:', e.message));
+    }
   }
 
   return {

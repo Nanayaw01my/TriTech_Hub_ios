@@ -10,7 +10,7 @@ const AuditLog = require('../models/AuditLog');
 const { generateAccountNumber } = require('../utils/accountGenerator');
 const { initializePayment } = require('../utils/paystack');
 const { sendAdminSaleNotificationEmail, sendCustomerWelcomeEmail } = require('../utils/email');
-const { sendAdminSaleSMS, sendCustomerWelcomeSMS } = require('../utils/sms');
+const { sendAdminSaleSMS, sendAdminSaleWhatsApp, sendCustomerWelcomeSMS } = require('../utils/sms');
 const { v4: uuidv4 } = require('uuid');
 
 // Save a base64-encoded image to disk, return the file path (or null).
@@ -425,13 +425,18 @@ const addCustomer = async (req, res) => {
           }
         }
 
-        // SMS notification
+        // SMS + WhatsApp notification to admin
         const adminPhone = process.env.ADMIN_PHONE || adminUser?.phone;
         if (adminPhone) {
           await sendAdminSaleSMS(adminPhone, salePayload).catch(e =>
             console.error('[Sale notify] SMS failed:', e.message)
           );
           console.log('[Sale notify] SMS sent to:', adminPhone);
+
+          await sendAdminSaleWhatsApp(adminPhone, salePayload).catch(e =>
+            console.error('[Sale notify] WhatsApp failed:', e.message)
+          );
+          console.log('[Sale notify] WhatsApp sent to:', adminPhone);
         }
 
         // Welcome email + SMS to customer

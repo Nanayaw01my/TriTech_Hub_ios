@@ -5,6 +5,7 @@ const Customer = require('../models/Customer');
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
 const { sendLockNotificationEmail, sendAdminPaymentReminderEmail, sendAdminOverdueAlertEmail, sendPaymentReminderEmail } = require('./email');
+const { sendPaymentReminderSMS, sendPaymentReminderWhatsApp, sendDeviceLockedSMS, sendDeviceLockedWhatsApp } = require('./sms');
 
 /**
  * Check for overdue installment plans and lock devices.
@@ -37,15 +38,24 @@ const checkOverduePayments = async () => {
             const userRecord = await User.findById(customer.user_id).select('email');
             customerEmail = userRecord?.email;
           }
+          const overdueDetails = {
+            deviceModel: plan.device_id.model,
+            installmentAmount: plan.installment_amount,
+            remainingBalance: plan.remaining_balance,
+            nextDueDate: plan.next_due_date,
+            isOverdue: true,
+          };
+
           if (customerEmail) {
-            await sendPaymentReminderEmail(customerEmail, customer.full_name, {
-              deviceModel: plan.device_id.model,
-              installmentAmount: plan.installment_amount,
-              remainingBalance: plan.remaining_balance,
-              nextDueDate: plan.next_due_date,
-              isOverdue: true,
-            });
-            console.log(`[Scheduler] Overdue warning email sent to ${customer.full_name} (${customerEmail})`);
+            await sendPaymentReminderEmail(customerEmail, customer.full_name, overdueDetails);
+            console.log(`[Scheduler] Overdue warning email sent to ${customer.full_name}`);
+          }
+          if (customer.phone) {
+            await sendPaymentReminderSMS(customer.phone, customer.full_name, overdueDetails)
+              .catch(e => console.error(`[Scheduler] Overdue SMS failed:`, e.message));
+            await sendPaymentReminderWhatsApp(customer.phone, customer.full_name, overdueDetails)
+              .catch(e => console.error(`[Scheduler] Overdue WhatsApp failed:`, e.message));
+            console.log(`[Scheduler] Overdue warning SMS+WhatsApp sent to ${customer.full_name}`);
           }
         } catch (emailErr) {
           console.error(`[Scheduler] Failed to send overdue warning to ${customer?.full_name}: ${emailErr.message}`);
@@ -130,9 +140,16 @@ const checkOverduePayments = async () => {
             await sendLockNotificationEmail(customerEmail, customer.full_name, device.model);
             console.log(`[Scheduler] Lock notification email sent to ${customerEmail}`);
           }
+          if (customer.phone) {
+            await sendDeviceLockedSMS(customer.phone, customer.full_name, device.model)
+              .catch(e => console.error(`[Scheduler] Lock SMS failed:`, e.message));
+            await sendDeviceLockedWhatsApp(customer.phone, customer.full_name, device.model)
+              .catch(e => console.error(`[Scheduler] Lock WhatsApp failed:`, e.message));
+            console.log(`[Scheduler] Lock SMS+WhatsApp sent to ${customer.full_name}`);
+          }
         } catch (emailError) {
           console.error(
-            `[Scheduler] Failed to send lock notification email: ${emailError.message}`
+            `[Scheduler] Failed to send lock notification: ${emailError.message}`
           );
         }
 
@@ -203,15 +220,25 @@ const checkUpcomingPayments = async () => {
           const userRecord = await User.findById(customer.user_id).select('email');
           customerEmail = userRecord?.email;
         }
+        const reminderDetails = {
+          deviceModel: plan.device_id.model,
+          installmentAmount: plan.installment_amount,
+          remainingBalance: plan.remaining_balance,
+          nextDueDate: plan.next_due_date,
+          isOverdue: false,
+        };
+
         if (customerEmail) {
-          await sendPaymentReminderEmail(customerEmail, customer.full_name, {
-            deviceModel: plan.device_id.model,
-            installmentAmount: plan.installment_amount,
-            remainingBalance: plan.remaining_balance,
-            nextDueDate: plan.next_due_date,
-            isOverdue: false,
-          });
-          console.log(`[Scheduler] Upcoming payment reminder sent to ${customer.full_name} (${customerEmail})`);
+          await sendPaymentReminderEmail(customerEmail, customer.full_name, reminderDetails);
+          console.log(`[Scheduler] Upcoming payment email sent to ${customer.full_name}`);
+        }
+
+        if (customer.phone) {
+          await sendPaymentReminderSMS(customer.phone, customer.full_name, reminderDetails)
+            .catch(e => console.error(`[Scheduler] Reminder SMS failed for ${customer.full_name}:`, e.message));
+          await sendPaymentReminderWhatsApp(customer.phone, customer.full_name, reminderDetails)
+            .catch(e => console.error(`[Scheduler] Reminder WhatsApp failed for ${customer.full_name}:`, e.message));
+          console.log(`[Scheduler] Upcoming payment SMS+WhatsApp sent to ${customer.full_name}`);
         }
       } catch (emailErr) {
         console.error(`[Scheduler] Failed to send reminder to ${customer.full_name}: ${emailErr.message}`);

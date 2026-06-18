@@ -23,7 +23,6 @@ const sendSMS = async (to, message) => {
     return;
   }
 
-  // Use Arkesel v2 API — better delivery rates
   try {
     const res = await axios.post(
       'https://sms.arkesel.com/api/v2/sms/send',
@@ -36,7 +35,6 @@ const sendSMS = async (to, message) => {
     console.warn(`[SMS] v2 failed (${v2Err.response?.status}), trying v1...`);
   }
 
-  // Fallback to v1 API
   try {
     const res = await axios.get('https://sms.arkesel.com/sms/api', {
       params: { action: 'send-sms', api_key: ARKESEL_API_KEY, to: phone, from: SENDER_ID, sms: message },
@@ -49,16 +47,36 @@ const sendSMS = async (to, message) => {
   }
 };
 
-// keep messages under 160 chars
+const sendWhatsApp = async (to, message) => {
+  if (!ARKESEL_API_KEY) {
+    console.warn('[WhatsApp] ARKESEL_API_KEY not set — skipping');
+    return;
+  }
+  const phone = formatPhone(to);
+  if (!phone) {
+    console.warn('[WhatsApp] Invalid phone:', to);
+    return;
+  }
+
+  try {
+    const res = await axios.post(
+      'https://sms.arkesel.com/api/v2/sms/send',
+      { sender: SENDER_ID, message, recipients: [phone], type: 'whatsapp' },
+      { headers: { 'api-key': ARKESEL_API_KEY } }
+    );
+    console.log(`[WhatsApp] Sent to ${phone}:`, JSON.stringify(res.data));
+    return res.data;
+  } catch (err) {
+    console.error(`[WhatsApp] Failed for ${phone}:`, err.response?.data || err.message);
+  }
+};
+
+// ─── SMS functions ────────────────────────────────────────────────────────────
+
 const sendAdminSaleSMS = async (adminPhone, sale) => {
   const branch = sale.branch ? `, ${sale.branch} Branch` : '';
   const freq   = sale.frequency === 'monthly' ? 'month' : sale.frequency === 'weekly' ? 'week' : 'day';
-  const price  = Number(sale.totalPrice).toLocaleString();
-  const down   = Number(sale.downPayment).toLocaleString();
-  const inst   = Number(sale.installmentAmount).toLocaleString();
-  const n      = sale.totalPayments;
-
-  const msg = `Tritech Hub Sale Alert\n${sale.deviceModel} sold by ${sale.staffName}${branch}.\nCustomer: ${sale.customerName} (${sale.customerPhone || 'N/A'})\nPrice: GHS ${price} | Down: GHS ${down}\nPlan: GHS ${inst} x ${n} payments/${freq}`;
+  const msg = `Tritech Hub Sale Alert\n${sale.deviceModel} sold by ${sale.staffName}${branch}.\nCustomer: ${sale.customerName} (${sale.customerPhone || 'N/A'})\nPrice: GHS ${Number(sale.totalPrice).toLocaleString()} | Down: GHS ${Number(sale.downPayment).toLocaleString()}\nPlan: GHS ${Number(sale.installmentAmount).toLocaleString()} x ${sale.totalPayments} payments/${freq}`;
   await sendSMS(adminPhone, msg);
 };
 
@@ -88,7 +106,9 @@ const sendDeviceUnlockedSMS = async (phone, name, deviceModel) => {
 
 const sendPaymentConfirmedSMS = async (phone, name, amount, details) => {
   const { deviceModel, remainingBalance } = details;
-  const msg = `Hi ${name}, GHS ${Number(amount).toLocaleString()} received for your ${deviceModel}. Balance: GHS ${Number(remainingBalance).toLocaleString()}. -Tritech Hub`;
+  const msg = remainingBalance <= 0
+    ? `Congratulations ${name}! Your ${deviceModel} is fully paid off. It is now yours! Thank you. -Tritech Hub`
+    : `Hi ${name}, GHS ${Number(amount).toLocaleString()} received for your ${deviceModel}. Balance: GHS ${Number(remainingBalance).toLocaleString()}. -Tritech Hub`;
   await sendSMS(phone, msg);
 };
 
@@ -97,13 +117,62 @@ const sendPasswordResetOTP = async (phone, otp) => {
   return sendSMS(phone, msg);
 };
 
+// ─── WhatsApp functions ───────────────────────────────────────────────────────
+
+const sendAdminSaleWhatsApp = async (adminPhone, sale) => {
+  const branch = sale.branch ? ` | Branch: ${sale.branch}` : '';
+  const freq   = sale.frequency === 'monthly' ? 'month' : sale.frequency === 'weekly' ? 'week' : 'day';
+  const msg = `*Tritech Hub — New Sale* 🎉\n\n*Staff:* ${sale.staffName}${branch}\n*Customer:* ${sale.customerName}\n*Phone:* ${sale.customerPhone || 'N/A'}\n*Device:* ${sale.deviceModel}\n*Price:* GHS ${Number(sale.totalPrice).toLocaleString()}\n*Down Payment:* GHS ${Number(sale.downPayment).toLocaleString()}\n*Plan:* GHS ${Number(sale.installmentAmount).toLocaleString()} × ${sale.totalPayments} payments/${freq}`;
+  await sendWhatsApp(adminPhone, msg);
+};
+
+const sendPaymentReminderWhatsApp = async (phone, name, details) => {
+  const { deviceModel, installmentAmount, remainingBalance, nextDueDate, isOverdue } = details;
+  const due = nextDueDate ? new Date(nextDueDate).toLocaleDateString('en-GH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+  const msg = isOverdue
+    ? `*Tritech Hub — Payment Overdue* ⚠️\n\nHi ${name}, your installment payment for your *${deviceModel}* is overdue.\n\n*Amount Due:* GHS ${Number(installmentAmount).toLocaleString()}\n*Due Date:* ${due}\n*Balance:* GHS ${Number(remainingBalance).toLocaleString()}\n\nPlease pay now at *tritechhub.online* to avoid your device being locked.`
+    : `*Tritech Hub — Payment Reminder* 📅\n\nHi ${name}, your next installment for your *${deviceModel}* is coming up.\n\n*Amount:* GHS ${Number(installmentAmount).toLocaleString()}\n*Due Date:* ${due}\n*Balance:* GHS ${Number(remainingBalance).toLocaleString()}\n\nPay at *tritechhub.online*`;
+  await sendWhatsApp(phone, msg);
+};
+
+const sendDeviceLockedWhatsApp = async (phone, name, deviceModel) => {
+  const msg = `*Tritech Hub — Device Locked* 🔒\n\nHi ${name}, your *${deviceModel}* has been locked due to overdue payment.\n\nTo unlock your device, log in to *tritechhub.online* and make your payment. Your device will be unlocked within minutes.\n\nContact us if you need help.`;
+  await sendWhatsApp(phone, msg);
+};
+
+const sendDeviceUnlockedWhatsApp = async (phone, name, deviceModel) => {
+  const msg = `*Tritech Hub — Device Unlocked* ✅\n\nHi ${name}, your *${deviceModel}* has been unlocked. Thank you for your payment!\n\nKeep up with your installment schedule. Log in at *tritechhub.online* to view your balance.`;
+  await sendWhatsApp(phone, msg);
+};
+
+const sendPlanCompletedWhatsApp = async (phone, name, deviceModel) => {
+  const msg = `*Tritech Hub — Congratulations!* 🎉\n\nHi ${name}, you have fully paid for your *${deviceModel}*!\n\nThe device is now completely yours. Thank you for trusting Tritech Hub iOS.\n\nLog in at *tritechhub.online* to download your payment history.`;
+  await sendWhatsApp(phone, msg);
+};
+
+const sendPaymentConfirmedWhatsApp = async (phone, name, amount, details) => {
+  const { deviceModel, remainingBalance, reference } = details;
+  const msg = remainingBalance <= 0
+    ? `*Tritech Hub — Plan Complete!* 🎉\n\nCongratulations ${name}! Your *${deviceModel}* is now fully paid off!\n\nRef: ${reference || 'N/A'}\nTotal Paid: GHS ${Number(amount).toLocaleString()}\n\nThe device is yours. Thank you!`
+    : `*Tritech Hub — Payment Received* ✅\n\nHi ${name}, we received your payment.\n\n*Amount:* GHS ${Number(amount).toLocaleString()}\n*Device:* ${deviceModel}\n*Balance Left:* GHS ${Number(remainingBalance).toLocaleString()}\n*Ref:* ${reference || 'N/A'}`;
+  await sendWhatsApp(phone, msg);
+};
+
 module.exports = {
   sendSMS,
+  sendWhatsApp,
   sendPasswordResetOTP,
   sendAdminSaleSMS,
+  sendAdminSaleWhatsApp,
   sendCustomerWelcomeSMS,
   sendPaymentReminderSMS,
+  sendPaymentReminderWhatsApp,
   sendDeviceLockedSMS,
+  sendDeviceLockedWhatsApp,
   sendDeviceUnlockedSMS,
+  sendDeviceUnlockedWhatsApp,
+  sendPlanCompletedWhatsApp,
   sendPaymentConfirmedSMS,
+  sendPaymentConfirmedWhatsApp,
 };
+
