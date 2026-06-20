@@ -23,6 +23,8 @@ export default function AdminCustomerDetail() {
   const [resetLoading, setResetLoading] = useState(false)
   const [reminderLoading, setReminderLoading] = useState(false)
   const [imageModal, setImageModal] = useState(null)
+  const [repossessModal, setRepossessModal] = useState(false)
+  const [repossessLoading, setRepossessLoading] = useState(false)
 
   const fetchCustomer = async () => {
     try {
@@ -76,6 +78,20 @@ export default function AdminCustomerDetail() {
       toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Failed to reset password')
     } finally {
       setResetLoading(false)
+    }
+  }
+
+  const handleRepossess = async () => {
+    setRepossessLoading(true)
+    try {
+      await api.post(`/admin/customers/${id}/repossess`)
+      toast.success('Device repossessed and returned to inventory.')
+      setRepossessModal(false)
+      navigate('/admin/customers')
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Repossession failed')
+    } finally {
+      setRepossessLoading(false)
     }
   }
 
@@ -333,6 +349,18 @@ export default function AdminCustomerDetail() {
               {reminderLoading ? 'Sending…' : 'Send Payment Reminder'}
             </button>
           )}
+          {plan?.status === 'defaulted' && (
+            <button
+              onClick={() => setRepossessModal(true)}
+              className="w-full py-3 px-4 rounded-xl border-2 border-red-200 text-red-700 font-semibold text-sm
+                         hover:bg-red-50 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Repossess Device
+            </button>
+          )}
           <a
             href={`/api/admin/customers/${id}/receipt`}
             target="_blank"
@@ -412,6 +440,18 @@ export default function AdminCustomerDetail() {
         confirmText="Reset Password"
         confirmVariant="primary"
         loading={resetLoading}
+      />
+
+      {/* Repossess Device Modal */}
+      <ConfirmModal
+        isOpen={repossessModal}
+        onClose={() => setRepossessModal(false)}
+        onConfirm={handleRepossess}
+        title="Repossess Device"
+        message={`Return ${device?.model || 'the device'} to inventory? This marks the plan as closed and makes the device available for resale.`}
+        confirmText="Repossess"
+        confirmVariant="danger"
+        loading={repossessLoading}
       />
 
       {/* Image Viewer */}

@@ -39,6 +39,7 @@ const {
   downloadBackup,
   globalSearch,
   generateReceipt,
+  repossessDevice,
 } = require('../controllers/adminController');
 
 // Apply authentication and admin authorization to all routes
@@ -79,6 +80,7 @@ router.post(
 router.post('/customers/:id/lock', [param('id').isMongoId()], lockCustomerDevice);
 router.post('/customers/:id/unlock', [param('id').isMongoId()], unlockCustomerDevice);
 router.post('/customers/:id/remind', [param('id').isMongoId()], sendCustomerReminder);
+router.post('/customers/:id/repossess', [param('id').isMongoId().withMessage('Invalid customer ID.')], repossessDevice);
 
 // ─── STAFF ────────────────────────────────────────────────────────────────────
 router.get('/staff', getStaff);

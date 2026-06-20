@@ -4,8 +4,9 @@ const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const Customer = require('../models/Customer');
 const PasswordReset = require('../models/PasswordReset');
+const TempOTP = require('../models/TempOTP');
 const AuditLog = require('../models/AuditLog');
-const { sendPasswordResetEmail } = require('../utils/email');
+const { sendPasswordResetEmail, sendAdminLoginOTPEmail } = require('../utils/email');
 const { sendPasswordResetOTP } = require('../utils/sms');
 const logger = require('../utils/logger');
 const TokenBlacklist = require('../models/TokenBlacklist');
@@ -71,6 +72,31 @@ const login = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials.',
+      });
+    }
+
+    // Admin requires 2FA — send OTP before issuing JWT
+    if (user.role === 'admin') {
+      await TempOTP.deleteMany({ user_id: user._id });
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
+      await TempOTP.create({
+        user_id: user._id,
+        otp_hash: otpHash,
+        expires_at: new Date(Date.now() + 10 * 60 * 1000),
+      });
+
+      try {
+        await sendAdminLoginOTPEmail(user.email, user.name, otp);
+      } catch (emailErr) {
+        logger.error('Admin OTP email failed:', emailErr.message);
+      }
+
+      logger.info(`Admin 2FA OTP sent to ${user.email}`);
+      return res.status(200).json({
+        success: true,
+        message: 'A verification code has been sent to your email.',
+        data: { requiresOtp: true, userId: user._id.toString() },
       });
     }
 
@@ -505,4 +531,69 @@ const resetPasswordOTP = async (req, res) => {
   }
 };
 
-module.exports = { login, logout, forgotPassword, resetPassword, changePassword, forgotPasswordSMS, resetPasswordOTP };
+/**
+ * POST /api/auth/verify-otp
+ * Verify admin 2FA OTP and issue JWT.
+ */
+const verifyAdminOTP = async (req, res) => {
+  try {
+    const { userId, otp } = req.body;
+    if (!userId || !otp) {
+      return res.status(400).json({ success: false, message: 'User ID and verification code are required.' });
+    }
+
+    const otpHash = crypto.createHash('sha256').update(otp.trim()).digest('hex');
+
+    const record = await TempOTP.findOne({
+      user_id: userId,
+      otp_hash: otpHash,
+      used: false,
+      expires_at: { $gt: new Date() },
+    });
+
+    if (!record) {
+      return res.status(401).json({ success: false, message: 'Invalid or expired verification code.' });
+    }
+
+    record.used = true;
+    await record.save();
+
+    const user = await User.findById(userId);
+    if (!user || !user.is_active) {
+      return res.status(401).json({ success: false, message: 'User not found or deactivated.' });
+    }
+
+    const token = user.generateAuthToken();
+    const userData = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      staff_id: user.staff_id,
+      account_number: user.account_number,
+      is_active: user.is_active,
+      created_at: user.created_at,
+    };
+
+    await AuditLog.create({
+      user_id: user._id,
+      action: 'login',
+      details: { event: 'admin_2fa_login_success', email: user.email },
+      ip_address: req.ip,
+    });
+
+    logger.info(`Admin 2FA login success: ${user.email}`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful.',
+      data: { token, user: userData },
+    });
+  } catch (error) {
+    logger.error('verifyAdminOTP error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+module.exports = { login, logout, forgotPassword, resetPassword, changePassword, forgotPasswordSMS, resetPasswordOTP, verifyAdminOTP };

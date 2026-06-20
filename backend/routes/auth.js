@@ -10,6 +10,7 @@ const {
   changePassword,
   forgotPasswordSMS,
   resetPasswordOTP,
+  verifyAdminOTP,
 } = require('../controllers/authController');
 
 /**
@@ -100,6 +101,19 @@ router.post(
       .withMessage('New password must be at least 1 character.'),
   ],
   changePassword
+);
+
+/**
+ * POST /api/auth/verify-otp
+ * Verify admin 2FA code and receive JWT.
+ */
+router.post(
+  '/verify-otp',
+  [
+    body('userId').notEmpty().withMessage('User ID is required.'),
+    body('otp').notEmpty().isLength({ min: 6, max: 6 }).withMessage('Enter the 6-digit code.'),
+  ],
+  verifyAdminOTP
 );
 
 module.exports = router;

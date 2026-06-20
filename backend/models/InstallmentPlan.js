@@ -89,7 +89,7 @@ const InstallmentPlanSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['active', 'completed', 'defaulted'],
+      enum: ['active', 'completed', 'defaulted', 'repossessed'],
       default: 'active',
     },
     schedule: [ScheduleItemSchema],

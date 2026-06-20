@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import api from '../api/axios'
 import toast from 'react-hot-toast'
 import LoadingSpinner from '../components/LoadingSpinner'
 
@@ -11,7 +12,13 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [logoError, setLogoError] = useState(false)
-  const { login } = useAuth()
+  // 2FA state
+  const [otpStep, setOtpStep] = useState(false)
+  const [pendingUserId, setPendingUserId] = useState(null)
+  const [otp, setOtp] = useState(['', '', '', '', '', ''])
+  const otpRefs = useRef([])
+
+  const { login, loginWithData } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
@@ -21,13 +28,54 @@ export default function Login() {
     if (!password) { setError('Please enter your password'); return }
     setLoading(true)
     try {
-      const userData = await login({ identifier: identifier.trim(), password })
-      toast.success(`Welcome back, ${userData.full_name || userData.name}!`)
-      if (userData.role === 'admin') navigate('/admin/dashboard')
-      else if (userData.role === 'staff') navigate('/staff/dashboard')
+      const result = await login({ identifier: identifier.trim(), password })
+      if (result?.requiresOtp) {
+        setPendingUserId(result.userId)
+        setOtpStep(true)
+        toast.success('A 6-digit code has been sent to your email.')
+        return
+      }
+      toast.success(`Welcome back, ${result.full_name || result.name}!`)
+      if (result.role === 'admin') navigate('/admin/dashboard')
+      else if (result.role === 'staff') navigate('/staff/dashboard')
       else navigate('/customer/dashboard')
     } catch (err) {
       const msg = err?.response?.data?.error || err?.response?.data?.message || 'Invalid credentials. Please try again.'
+      setError(msg)
+      toast.error(msg)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleOtpChange = (index, value) => {
+    if (!/^\d*$/.test(value)) return
+    const next = [...otp]
+    next[index] = value.slice(-1)
+    setOtp(next)
+    if (value && index < 5) otpRefs.current[index + 1]?.focus()
+  }
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus()
+    }
+  }
+
+  const handleOtpSubmit = async (e) => {
+    e.preventDefault()
+    const code = otp.join('')
+    if (code.length !== 6) { setError('Please enter the full 6-digit code.'); return }
+    setError('')
+    setLoading(true)
+    try {
+      const res = await api.post('/auth/verify-otp', { userId: pendingUserId, otp: code })
+      const { token, user: userData } = res.data.data
+      loginWithData(token, userData)
+      toast.success(`Welcome back, ${userData.name}!`)
+      navigate('/admin/dashboard')
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Invalid or expired code. Please try again.'
       setError(msg)
       toast.error(msg)
     } finally {
@@ -96,6 +144,71 @@ export default function Login() {
         <div className="h-1" style={{ background: 'linear-gradient(90deg, #1B5E20, #2E7D32, #4CAF50, #81C784)' }} />
 
         <div className="px-7 pt-7 pb-8">
+
+          {/* OTP Verification Screen */}
+          {otpStep ? (
+            <>
+              <div className="text-center mb-6">
+                <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
+                  style={{ background: 'rgba(76,175,80,0.15)', border: '1.5px solid rgba(76,175,80,0.3)' }}>
+                  <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="#4CAF50" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-black text-white">Two-Factor Verification</h2>
+                <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Check your email for a 6-digit code</p>
+              </div>
+
+              {error && (
+                <div className="flex items-start gap-2.5 px-4 py-3 rounded-2xl text-sm mb-4"
+                  style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#fca5a5' }}>
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleOtpSubmit} className="space-y-5" noValidate>
+                <div className="flex gap-2 justify-center">
+                  {otp.map((digit, i) => (
+                    <input
+                      key={i}
+                      ref={el => otpRefs.current[i] = el}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={e => handleOtpChange(i, e.target.value)}
+                      onKeyDown={e => handleOtpKeyDown(i, e)}
+                      className="w-11 h-14 text-center text-xl font-black rounded-xl outline-none transition-all"
+                      style={{
+                        background: 'rgba(255,255,255,0.06)',
+                        border: digit ? '2px solid #4CAF50' : '1.5px solid rgba(255,255,255,0.15)',
+                        color: 'white',
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-4 font-black text-sm rounded-2xl flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  style={{ background: 'linear-gradient(135deg, #2E7D32, #4CAF50)', color: 'white', boxShadow: '0 8px 24px rgba(46,125,50,0.4)' }}
+                >
+                  {loading ? <><LoadingSpinner size="sm" color="white" /> Verifying…</> : 'Verify & Sign In'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setOtpStep(false); setOtp(['','','','','','']); setError('') }}
+                  className="w-full text-center text-sm font-semibold transition-opacity hover:opacity-80"
+                  style={{ color: 'rgba(255,255,255,0.4)' }}
+                >
+                  ← Back to login
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
           <h2 className="text-xl font-black text-white">Welcome back</h2>
           <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Sign in to your account</p>
 
@@ -222,6 +335,8 @@ export default function Login() {
               )}
             </button>
           </form>
+            </>
+          )}
         </div>
       </div>
 

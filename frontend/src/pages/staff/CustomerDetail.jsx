@@ -271,6 +271,7 @@ export default function StaffCustomerDetail() {
   const [loading, setLoading] = useState(true)
   const [showPayModal, setShowPayModal] = useState(false)
   const [defaultPayAmount, setDefaultPayAmount] = useState(null)
+  const [imageModal, setImageModal] = useState(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -302,6 +303,18 @@ export default function StaffCustomerDetail() {
   const canPay = plan?.status === 'active' && (plan?.remaining_balance || 0) > 0
   const downPaymentDue = plan?.down_payment > 0 && payments.length === 0
 
+  const photoUrl = (p) => {
+    if (!p) return null
+    if (p.startsWith('data:') || p.startsWith('http')) return p
+    return `/uploads/${p.replace(/\\/g, '/').split('/').pop()}`
+  }
+  const photos = customer.photos || {}
+  const cardFront = photoUrl(photos.ghana_card_front)
+  const cardBack  = photoUrl(photos.ghana_card_back)
+  const custPhoto = photoUrl(photos.customer_photo)
+  const guarPhoto = photoUrl(photos.guarantor_photo)
+  const sigPhoto  = photoUrl(photos.signature)
+
   return (
     <div className="max-w-3xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
       <button
@@ -317,9 +330,10 @@ export default function StaffCustomerDetail() {
       {/* Customer Profile */}
       <div className="bg-white rounded-2xl shadow-card p-5 mb-4">
         <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-green-100 overflow-hidden flex-shrink-0">
-            {customer.photos?.customer_photo ? (
-              <img src={customer.photos.customer_photo} alt="" className="w-full h-full object-cover" />
+          <div className="w-16 h-16 rounded-2xl bg-green-100 overflow-hidden flex-shrink-0 cursor-pointer"
+               onClick={() => custPhoto && setImageModal(custPhoto)}>
+            {custPhoto ? (
+              <img src={custPhoto} alt="" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <span className="text-green-800 font-black text-2xl">
@@ -338,6 +352,42 @@ export default function StaffCustomerDetail() {
           </div>
         </div>
       </div>
+
+      {/* Photos & Documents */}
+      {(cardFront || cardBack || custPhoto || guarPhoto || sigPhoto) && (
+        <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
+          <h3 className="text-sm font-bold text-gray-800 mb-3">Photos & Documents</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Ghana Card — Front', src: cardFront },
+              { label: 'Ghana Card — Back',  src: cardBack  },
+              { label: 'Customer Photo',     src: custPhoto },
+              { label: 'Guarantor Photo',    src: guarPhoto },
+            ].map(({ label, src }) => src ? (
+              <button key={label} onClick={() => setImageModal(src)}
+                className="relative rounded-2xl overflow-hidden bg-gray-50 aspect-[4/3] w-full border border-gray-200">
+                <img src={src} alt={label} className="w-full h-full object-cover" />
+                <div className="absolute bottom-0 left-0 right-0 bg-black/40 py-1 px-2">
+                  <p className="text-white text-[10px] font-semibold truncate">{label}</p>
+                </div>
+              </button>
+            ) : (
+              <div key={label} className="rounded-2xl bg-gray-50 aspect-[4/3] border-2 border-dashed border-gray-200 flex items-center justify-center">
+                <p className="text-gray-300 text-xs text-center px-2">{label}</p>
+              </div>
+            ))}
+          </div>
+          {sigPhoto && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <p className="text-xs text-gray-500 font-semibold mb-2">Signature</p>
+              <button onClick={() => setImageModal(sigPhoto)}
+                className="border border-gray-200 rounded-xl overflow-hidden inline-block">
+                <img src={sigPhoto} alt="Signature" className="h-16 object-contain block" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Device */}
       {(device || plan?.device_id) && (
@@ -464,6 +514,21 @@ export default function StaffCustomerDetail() {
           </div>
         )}
       </div>
+
+      {/* Image Viewer */}
+      {imageModal && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+             onClick={() => setImageModal(null)}>
+          <img src={imageModal} alt="Full view" className="max-w-full max-h-full object-contain rounded-xl"
+               onClick={e => e.stopPropagation()} />
+          <button onClick={() => setImageModal(null)}
+            className="absolute top-4 right-4 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Payment Modal */}
       {showPayModal && plan && (

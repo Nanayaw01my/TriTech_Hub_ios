@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
 import LoadingSpinner from '../../components/LoadingSpinner'
@@ -46,6 +46,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null)
   const [recentTransactions, setRecentTransactions] = useState([])
   const [revenueData, setRevenueData] = useState([])
+  const [planStats, setPlanStats] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -59,6 +60,13 @@ export default function AdminDashboard() {
         if (statsRes.status === 'fulfilled') {
           const d = statsRes.value.data?.data || statsRes.value.data
           setStats(d?.stats || d || {})
+          const s = d?.stats || d || {}
+          if (s.activeInstallmentPlans !== undefined) {
+            setPlanStats([
+              { name: 'Active', value: s.activeInstallmentPlans ?? 0, color: '#16a34a' },
+              { name: 'Overdue', value: s.overduePayments ?? 0, color: '#ef4444' },
+            ])
+          }
           const txList = d?.recentTransactions
           if (Array.isArray(txList)) setRecentTransactions(txList)
         }
@@ -189,6 +197,35 @@ export default function AdminDashboard() {
                     />
                     <Bar dataKey="total_revenue" fill="#2E7D32" radius={[4, 4, 0, 0]} />
                   </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Plan Status Chart */}
+            {planStats.some(s => s.value > 0) && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Plan Status</p>
+                <ResponsiveContainer width="100%" height={160}>
+                  <PieChart>
+                    <Pie
+                      data={planStats}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={65}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {planStats.map((entry, index) => (
+                        <Cell key={index} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value, name) => [value, name]}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                    />
+                    <Legend iconType="circle" iconSize={8} />
+                  </PieChart>
                 </ResponsiveContainer>
               </div>
             )}

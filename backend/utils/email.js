@@ -456,6 +456,37 @@ const sendDeviceUnlockedEmail = async (email, name, deviceModel) => {
   });
 };
 
+const sendAdminLoginOTPEmail = async (email, name, otp) => {
+  return send({
+    to: email,
+    toName: name || 'Admin',
+    subject: 'Your Tritech Hub Login Code',
+    html: `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+      body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb}
+      .wrap{max-width:480px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
+      .header{background:linear-gradient(135deg,#1B5E20,#2E7D32);padding:32px 24px;text-align:center}
+      .header h1{color:#fff;margin:0;font-size:22px;font-weight:900}
+      .body{padding:32px 24px}
+      .otp-box{background:#f0fdf4;border:2px solid #4CAF50;border-radius:12px;padding:24px;text-align:center;margin:24px 0}
+      .otp-code{font-size:40px;font-weight:900;letter-spacing:10px;color:#1B5E20;font-family:monospace}
+      .footer{background:#f3f4f6;padding:16px 24px;text-align:center;color:#9ca3af;font-size:12px}
+    </style></head><body>
+    <div class="wrap">
+      <div class="header"><h1>Tritech Hub iOS</h1></div>
+      <div class="body">
+        <p style="color:#374151">Hello <strong>${name || 'Admin'}</strong>,</p>
+        <p style="color:#6b7280">Your login verification code is:</p>
+        <div class="otp-box"><div class="otp-code">${otp}</div></div>
+        <p style="color:#6b7280;font-size:14px">This code expires in <strong>10 minutes</strong>. Never share it with anyone.</p>
+        <p style="color:#6b7280;font-size:14px">If you did not attempt to log in, please change your password immediately.</p>
+      </div>
+      <div class="footer"><p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p></div>
+    </div>
+    </body></html>`,
+    text: `Hello ${name || 'Admin'},\n\nYour Tritech Hub login code is: ${otp}\n\nThis code expires in 10 minutes. Do not share it.\n\n© ${new Date().getFullYear()} Tritech Hub iOS`,
+  });
+};
+
 module.exports = {
   sendPasswordResetEmail,
   sendPaymentConfirmationEmail,
@@ -466,4 +497,5 @@ module.exports = {
   sendAdminSaleNotificationEmail,
   sendCustomerWelcomeEmail,
   sendDeviceUnlockedEmail,
+  sendAdminLoginOTPEmail,
 };

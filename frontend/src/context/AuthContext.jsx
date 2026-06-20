@@ -27,8 +27,14 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (credentials) => {
     const response = await api.post('/auth/login', credentials)
-    const { token, user: userData } = response.data.data
+    const data = response.data.data
 
+    // Admin 2FA: signal caller to show OTP screen
+    if (data?.requiresOtp) {
+      return data
+    }
+
+    const { token, user: userData } = data
     if (!token || !userData) {
       throw new Error('Invalid response from server')
     }
@@ -39,6 +45,14 @@ export function AuthProvider({ children }) {
     setUser(userData)
     setIsAuthenticated(true)
 
+    return userData
+  }, [])
+
+  const loginWithData = useCallback((token, userData) => {
+    localStorage.setItem('token', token)
+    localStorage.setItem('user', JSON.stringify(userData))
+    setUser(userData)
+    setIsAuthenticated(true)
     return userData
   }, [])
 
@@ -69,6 +83,7 @@ export function AuthProvider({ children }) {
     isAuthenticated,
     userRole,
     login,
+    loginWithData,
     logout,
     updateUser,
   }

@@ -252,6 +252,47 @@ export default function CustomerDashboard() {
                   </div>
                 )}
               </div>
+
+              {/* Payment Schedule */}
+              {plan?.schedule && plan.schedule.length > 0 && (
+                <div className="bg-white rounded-2xl shadow-card p-4 mt-4">
+                  <h3 className="text-base font-bold text-gray-800 mb-3">Payment Schedule</h3>
+                  <div className="space-y-1 max-h-64 overflow-y-auto">
+                    {plan.schedule.map((item, idx) => {
+                      const isPast = new Date(item.due_date) < new Date()
+                      return (
+                        <div key={item._id || idx}
+                          className={`flex items-center justify-between py-2 px-3 rounded-xl text-sm
+                            ${item.paid ? 'bg-green-50' : isPast ? 'bg-red-50' : 'bg-gray-50'}`}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0
+                              ${item.paid ? 'bg-green-500' : isPast ? 'bg-red-400' : 'bg-gray-300'}`}>
+                              {item.paid ? (
+                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              ) : (
+                                <span className="text-white text-[9px] font-bold">{idx + 1}</span>
+                              )}
+                            </div>
+                            <span className={`text-xs font-medium ${item.paid ? 'text-green-700' : isPast ? 'text-red-600' : 'text-gray-600'}`}>
+                              {format(new Date(item.due_date), 'dd MMM yyyy')}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-xs font-bold ${item.paid ? 'text-green-700' : isPast ? 'text-red-600' : 'text-gray-700'}`}>
+                              GHS {Number(item.amount).toLocaleString()}
+                            </span>
+                            <p className={`text-[10px] ${item.paid ? 'text-green-500' : isPast ? 'text-red-400' : 'text-gray-400'}`}>
+                              {item.paid ? 'Paid' : isPast ? 'Overdue' : 'Upcoming'}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
           </div>

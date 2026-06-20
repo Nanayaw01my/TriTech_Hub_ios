@@ -1818,6 +1818,56 @@ const generateReceipt = async (req, res) => {
   }
 };
 
+// ─── REPOSSESS DEVICE ────────────────────────────────────────────────────────
+
+const repossessDevice = async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id);
+    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found.' });
+
+    const plan = await InstallmentPlan.findOne({ customer_id: customer._id });
+    if (!plan) return res.status(404).json({ success: false, message: 'No installment plan found for this customer.' });
+
+    if (plan.status !== 'defaulted') {
+      return res.status(400).json({ success: false, message: 'Device can only be repossessed from a defaulted plan.' });
+    }
+
+    const device = await Device.findById(plan.device_id);
+    if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
+
+    device.lock_status = 'unlocked';
+    device.sold_status = 'available';
+    device.assigned_to = null;
+    await device.save();
+
+    plan.status = 'repossessed';
+    await plan.save();
+
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'device_repossessed',
+      details: {
+        customer_id: customer._id,
+        customer_name: customer.full_name,
+        device_id: device._id,
+        device_model: device.model,
+        plan_id: plan._id,
+      },
+      ip_address: req.ip,
+    });
+
+    logger.info(`Device repossessed: ${device.model} from ${customer.full_name}`);
+
+    return res.status(200).json({
+      success: true,
+      message: `Device "${device.model}" has been repossessed and is now available for resale.`,
+    });
+  } catch (error) {
+    logger.error('repossessDevice error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 module.exports = {
   getPublicSettings,
   getDashboard,
@@ -1856,4 +1906,5 @@ module.exports = {
   downloadBackup,
   globalSearch,
   generateReceipt,
+  repossessDevice,
 };
