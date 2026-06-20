@@ -28,9 +28,12 @@ const NavIcon = ({ path, className = 'w-5 h-5' }) => (
 // ─── Nav definitions ──────────────────────────────────────────────────────────
 const Icon_info = <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 
+const Icon_search = <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+
 const ADMIN_NAV = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: Icon.home },
   { to: '/admin/customers', label: 'Customers', icon: Icon.customers },
+  { to: '/admin/search', label: 'Search', icon: Icon_search },
   { to: '/admin/overdue-accounts', label: 'Overdue', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /> },
   { to: '/admin/staff', label: 'Staff', icon: Icon.staff },
   { to: '/admin/devices', label: 'Devices', icon: Icon.devices },
@@ -67,6 +70,7 @@ const ADMIN_BOTTOM = [
 const PAGE_TITLES = {
   '/admin/dashboard':        'Dashboard',
   '/admin/customers':        'Customers',
+  '/admin/search':           'Search',
   '/admin/overdue-accounts': 'Overdue',
   '/admin/staff':            'Staff',
   '/admin/devices':          'Devices',

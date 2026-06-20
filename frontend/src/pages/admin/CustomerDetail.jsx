@@ -116,7 +116,7 @@ export default function AdminCustomerDetail() {
 
   const photoUrl = (p) => {
     if (!p) return null
-    if (p.startsWith('data:')) return p
+    if (p.startsWith('data:') || p.startsWith('http')) return p
     return `/uploads/${p.replace(/\\/g, '/').split('/').pop()}`
   }
 
@@ -333,6 +333,18 @@ export default function AdminCustomerDetail() {
               {reminderLoading ? 'Sending…' : 'Send Payment Reminder'}
             </button>
           )}
+          <a
+            href={`/api/admin/customers/${id}/receipt`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3 px-4 rounded-xl border-2 border-green-200 text-green-700 font-semibold text-sm
+                       hover:bg-green-50 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Download PDF Receipt
+          </a>
         </div>
       </div>
 

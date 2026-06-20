@@ -1642,6 +1642,182 @@ const downloadBackup = async (req, res) => {
   }
 };
 
+// ─── GLOBAL SEARCH ───────────────────────────────────────────────────────────
+
+const globalSearch = async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    if (q.length < 2) {
+      return res.status(200).json({ success: true, data: { customers: [], devices: [], payments: [] } });
+    }
+
+    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+    const [customers, devices, payments] = await Promise.all([
+      Customer.find({
+        $or: [{ full_name: regex }, { phone: regex }, { email: regex }, { ghana_card_id: regex }],
+      })
+        .select('full_name phone email ghana_card_id createdAt')
+        .limit(8).lean(),
+
+      Device.find({
+        $or: [{ model: regex }, { serial_number: regex }, { imei: regex }],
+      })
+        .select('model serial_number imei lock_status sold_status')
+        .limit(8).lean(),
+
+      Payment.find({ paystack_reference: regex })
+        .populate({ path: 'customer_id', select: 'full_name' })
+        .select('amount payment_date paystack_reference payment_method')
+        .limit(8).lean(),
+    ]);
+
+    return res.status(200).json({ success: true, data: { customers, devices, payments } });
+  } catch (error) {
+    logger.error('globalSearch error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── PDF RECEIPT ─────────────────────────────────────────────────────────────
+
+const generateReceipt = async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id)
+      .populate({ path: 'user_id', select: 'account_number email' })
+      .populate({ path: 'created_by', select: 'name staff_id' })
+      .lean();
+
+    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found.' });
+
+    const [plan, payments] = await Promise.all([
+      InstallmentPlan.findOne({ customer_id: customer._id })
+        .populate({ path: 'device_id', select: 'model price serial_number imei' })
+        .lean(),
+      Payment.find({ customer_id: customer._id }).sort({ payment_date: 1 }).lean(),
+    ]);
+
+    const settings = await Settings.getSingleton();
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="receipt-${customer.full_name.replace(/\s+/g, '-')}.pdf"`);
+    doc.pipe(res);
+
+    const primaryColor = '#16a34a';
+    const lightGray = '#f3f4f6';
+    const darkText = '#111827';
+    const mutedText = '#6b7280';
+
+    // ── Header ──
+    doc.rect(0, 0, doc.page.width, 80).fill(primaryColor);
+    doc.fillColor('white').fontSize(22).font('Helvetica-Bold')
+      .text(settings.business_name || 'Tritech Hub iOS', 50, 25);
+    doc.fontSize(10).font('Helvetica')
+      .text('Installment Agreement & Receipt', 50, 52);
+    if (settings.contact_phone) {
+      doc.text(`Tel: ${settings.contact_phone}`, doc.page.width - 180, 35, { width: 130, align: 'right' });
+    }
+    doc.moveDown(3);
+
+    // ── Customer Info ──
+    doc.fillColor(darkText).fontSize(13).font('Helvetica-Bold').text('Customer Information', 50, 100);
+    doc.moveTo(50, 116).lineTo(doc.page.width - 50, 116).strokeColor(primaryColor).lineWidth(1.5).stroke();
+
+    const infoY = 125;
+    doc.fontSize(10).font('Helvetica');
+    const col2 = doc.page.width / 2 + 10;
+
+    const drawRow = (label, value, x, y) => {
+      doc.fillColor(mutedText).text(label, x, y, { width: 120 });
+      doc.fillColor(darkText).text(value || '—', x + 125, y, { width: 170 });
+    };
+
+    drawRow('Full Name', customer.full_name, 50, infoY);
+    drawRow('Phone', customer.phone, 50, infoY + 18);
+    drawRow('Email', customer.email || '—', 50, infoY + 36);
+    drawRow('Ghana Card ID', customer.ghana_card_id || '—', 50, infoY + 54);
+    drawRow('Account Number', customer.user_id?.account_number || '—', col2, infoY);
+    drawRow('Registered', customer.createdAt ? new Date(customer.createdAt).toLocaleDateString('en-GH') : '—', col2, infoY + 18);
+    drawRow('By Staff', customer.created_by?.name || '—', col2, infoY + 36);
+
+    // ── Device & Plan ──
+    if (plan) {
+      const device = plan.device_id;
+      doc.moveDown(4);
+      doc.fillColor(darkText).fontSize(13).font('Helvetica-Bold').text('Device & Installment Plan');
+      doc.moveTo(50, doc.y + 2).lineTo(doc.page.width - 50, doc.y + 2).strokeColor(primaryColor).lineWidth(1.5).stroke();
+      doc.moveDown(0.5);
+
+      const py = doc.y;
+      doc.fontSize(10).font('Helvetica');
+      drawRow('Device Model', device?.model || '—', 50, py);
+      drawRow('Serial Number', device?.serial_number || '—', 50, py + 18);
+      drawRow('IMEI', device?.imei || '—', 50, py + 36);
+      drawRow('Device Price', `GHS ${Number(plan.total_price).toLocaleString()}`, col2, py);
+      drawRow('Down Payment', `GHS ${Number(plan.down_payment).toLocaleString()}`, col2, py + 18);
+      drawRow('Installment Amount', `GHS ${Number(plan.installment_amount).toLocaleString()}`, col2, py + 36);
+      drawRow('Frequency', (plan.frequency || '').charAt(0).toUpperCase() + (plan.frequency || '').slice(1), 50, py + 54);
+      drawRow('Total Payments', `${plan.total_payments}`, col2, py + 54);
+      drawRow('Plan Status', (plan.status || '').toUpperCase(), 50, py + 72);
+      drawRow('Remaining Balance', `GHS ${Number(plan.remaining_balance).toLocaleString()}`, col2, py + 72);
+    }
+
+    // ── Payment History ──
+    if (payments.length > 0) {
+      doc.moveDown(5);
+      doc.fillColor(darkText).fontSize(13).font('Helvetica-Bold').text('Payment History');
+      doc.moveTo(50, doc.y + 2).lineTo(doc.page.width - 50, doc.y + 2).strokeColor(primaryColor).lineWidth(1.5).stroke();
+      doc.moveDown(0.5);
+
+      const tableTop = doc.y;
+      const cols = [50, 160, 280, 380, 480];
+      const headers = ['Date', 'Amount (GHS)', 'Method', 'Reference', 'Status'];
+
+      // Table header
+      doc.rect(50, tableTop, doc.page.width - 100, 20).fill(lightGray);
+      doc.fillColor(darkText).fontSize(9).font('Helvetica-Bold');
+      headers.forEach((h, i) => doc.text(h, cols[i], tableTop + 5, { width: 100 }));
+
+      let rowY = tableTop + 22;
+      doc.font('Helvetica').fontSize(9);
+      payments.forEach((p, idx) => {
+        if (idx % 2 === 0) doc.rect(50, rowY - 2, doc.page.width - 100, 16).fill('#f9fafb');
+        doc.fillColor(darkText);
+        doc.text(p.payment_date ? new Date(p.payment_date).toLocaleDateString('en-GH') : '—', cols[0], rowY, { width: 105 });
+        doc.text(`GHS ${Number(p.amount).toLocaleString()}`, cols[1], rowY, { width: 115 });
+        doc.text(p.payment_method === 'manual_cash' ? 'Cash' : 'Paystack', cols[2], rowY, { width: 95 });
+        doc.text(p.paystack_reference || '—', cols[3], rowY, { width: 95 });
+        doc.text('Paid', cols[4], rowY, { width: 60 });
+        rowY += 18;
+
+        if (rowY > doc.page.height - 100) { doc.addPage(); rowY = 50; }
+      });
+
+      const totalPaid = payments.reduce((s, p) => s + (p.amount || 0), 0);
+      doc.moveDown(1);
+      doc.font('Helvetica-Bold').fontSize(10).fillColor(primaryColor)
+        .text(`Total Paid: GHS ${totalPaid.toLocaleString()}`, { align: 'right' });
+    }
+
+    // ── Footer ──
+    doc.moveDown(3);
+    doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).strokeColor('#e5e7eb').lineWidth(1).stroke();
+    doc.moveDown(0.5);
+    doc.fontSize(8).fillColor(mutedText).font('Helvetica')
+      .text(`Generated by ${settings.business_name || 'Tritech Hub iOS'} on ${new Date().toLocaleString('en-GH')}`, { align: 'center' })
+      .text('This document is system-generated and serves as an official record.', { align: 'center' });
+
+    doc.end();
+  } catch (error) {
+    logger.error('generateReceipt error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, message: 'Failed to generate receipt.' });
+    }
+  }
+};
+
 module.exports = {
   getPublicSettings,
   getDashboard,
@@ -1678,4 +1854,6 @@ module.exports = {
   lockCustomerDevice,
   unlockCustomerDevice,
   downloadBackup,
+  globalSearch,
+  generateReceipt,
 };

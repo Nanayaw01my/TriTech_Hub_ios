@@ -1,5 +1,16 @@
 require('dotenv').config();
 
+const Sentry = require('@sentry/node');
+
+// Initialise Sentry before anything else (no-op if SENTRY_DSN is not set)
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: 0.2,
+  });
+}
+
 const express = require('express');
 const path = require('path');
 const helmet = require('helmet');
@@ -223,6 +234,11 @@ app.get(/^(?!\/api).*$/, (req, res) => {
 });
 
 // ─── GLOBAL ERROR HANDLER ─────────────────────────────────────────────────────
+
+// Sentry error handler (must come before custom error handler)
+if (process.env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {

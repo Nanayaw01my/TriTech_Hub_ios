@@ -416,16 +416,17 @@ const paystackWebhook = async (req, res) => {
     const signature = req.headers['x-paystack-signature'];
     const webhookSecret = process.env.PAYSTACK_WEBHOOK_SECRET || process.env.PAYSTACK_SECRET_KEY;
 
-    if (signature && webhookSecret) {
-      const hash = crypto
-        .createHmac('sha512', webhookSecret)
-        .update(JSON.stringify(req.body))
-        .digest('hex');
-
-      if (hash !== signature) {
-        logger.warn('Paystack webhook: Invalid signature');
-        return res.status(401).json({ success: false, message: 'Invalid webhook signature.' });
-      }
+    if (!signature || !webhookSecret) {
+      logger.warn('Paystack webhook: Missing signature or secret');
+      return res.status(401).json({ success: false, message: 'Unauthorized.' });
+    }
+    const hash = crypto
+      .createHmac('sha512', webhookSecret)
+      .update(JSON.stringify(req.body))
+      .digest('hex');
+    if (hash !== signature) {
+      logger.warn('Paystack webhook: Invalid signature — possible spoofed request');
+      return res.status(401).json({ success: false, message: 'Invalid webhook signature.' });
     }
 
     const event = req.body;

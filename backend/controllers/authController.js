@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const Customer = require('../models/Customer');
@@ -7,6 +8,7 @@ const AuditLog = require('../models/AuditLog');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { sendPasswordResetOTP } = require('../utils/sms');
 const logger = require('../utils/logger');
+const TokenBlacklist = require('../models/TokenBlacklist');
 
 /**
  * POST /api/auth/login
@@ -111,20 +113,23 @@ const login = async (req, res) => {
  */
 const logout = async (req, res) => {
   try {
-    // Clear cookie if used
-    res.clearCookie('token');
+    // Blacklist the token so it can't be reused even before it expires
+    const token = req.headers.authorization?.split(' ')[1] || req.cookies?.token;
+    if (token) {
+      const decoded = jwt.decode(token);
+      if (decoded?.exp) {
+        await TokenBlacklist.create({
+          token,
+          expires_at: new Date(decoded.exp * 1000),
+        }).catch(() => {}); // ignore duplicate key if already blacklisted
+      }
+    }
 
-    return res.status(200).json({
-      success: true,
-      message: 'Logged out successfully.',
-      data: null,
-    });
+    res.clearCookie('token');
+    return res.status(200).json({ success: true, message: 'Logged out successfully.', data: null });
   } catch (error) {
     logger.error('Logout error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Server error during logout.',
-    });
+    return res.status(500).json({ success: false, message: 'Server error during logout.' });
   }
 };
 

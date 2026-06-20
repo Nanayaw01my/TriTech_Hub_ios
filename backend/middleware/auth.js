@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const TokenBlacklist = require('../models/TokenBlacklist');
 
 /**
  * Authenticate: verify JWT token from Authorization header or cookie.
@@ -19,6 +20,11 @@ const authenticate = async (req, res, next) => {
         success: false,
         message: 'Access denied. No token provided.',
       });
+    }
+
+    const blacklisted = await TokenBlacklist.findOne({ token });
+    if (blacklisted) {
+      return res.status(401).json({ success: false, message: 'Token has been revoked. Please log in again.' });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);

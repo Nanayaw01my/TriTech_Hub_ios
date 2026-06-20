@@ -25,6 +25,7 @@ import AdminReports from './pages/admin/Reports'
 import AdminAuditLogs from './pages/admin/AuditLogs'
 import AdminSettings from './pages/admin/Settings'
 import AdminAbout from './pages/admin/About'
+import AdminSearch from './pages/admin/Search'
 
 // Staff pages
 import StaffDashboard from './pages/staff/Dashboard'
@@ -117,6 +118,7 @@ function AppRoutes() {
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="customers" element={<AdminCustomers />} />
         <Route path="customers/:id" element={<AdminCustomerDetail />} />
+        <Route path="search" element={<AdminSearch />} />
         <Route path="overdue-accounts" element={<AdminOverdueAccounts />} />
         <Route path="staff" element={<AdminStaff />} />
         <Route path="devices" element={<AdminDevices />} />

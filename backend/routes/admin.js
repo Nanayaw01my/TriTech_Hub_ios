@@ -37,6 +37,8 @@ const {
   lockCustomerDevice,
   unlockCustomerDevice,
   downloadBackup,
+  globalSearch,
+  generateReceipt,
 } = require('../controllers/adminController');
 
 // Apply authentication and admin authorization to all routes
@@ -162,6 +164,12 @@ router.get('/notifications', getNotifications);
 
 // ─── BACKUP ───────────────────────────────────────────────────────────────────
 router.get('/backup', downloadBackup);
+
+// ─── GLOBAL SEARCH ────────────────────────────────────────────────────────────
+router.get('/search', globalSearch);
+
+// ─── PDF RECEIPT ──────────────────────────────────────────────────────────────
+router.get('/customers/:id/receipt', generateReceipt);
 
 // ─── DANGER ZONE ──────────────────────────────────────────────────────────────
 router.delete('/clear-all-data', clearAllData);
