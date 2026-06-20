@@ -16,6 +16,7 @@ const PasswordResetSchema = new mongoose.Schema(
     token: {
       type: String,
       required: true,
+      trim: true,
     },
     expires_at: {
       type: Date,
@@ -38,8 +39,9 @@ const PasswordResetSchema = new mongoose.Schema(
 
 // TTL index: automatically remove documents after expires_at
 PasswordResetSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
-PasswordResetSchema.index({ email: 1 });
-PasswordResetSchema.index({ phone: 1 });
-PasswordResetSchema.index({ token: 1 });
+// Compound indexes include `used` so lookups hit the index directly
+PasswordResetSchema.index({ email: 1, used: 1 });
+PasswordResetSchema.index({ phone: 1, used: 1 });
+PasswordResetSchema.index({ token: 1 }, { unique: true });
 
 module.exports = mongoose.model('PasswordReset', PasswordResetSchema);

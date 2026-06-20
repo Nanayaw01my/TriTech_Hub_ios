@@ -118,4 +118,10 @@ const CustomerSchema = new mongoose.Schema(
   }
 );
 
+CustomerSchema.index({ user_id: 1 });
+CustomerSchema.index({ created_by: 1 });
+CustomerSchema.index({ email: 1 });
+CustomerSchema.index({ phone: 1 });
+CustomerSchema.index({ full_name: 'text' });
+
 module.exports = mongoose.model('Customer', CustomerSchema);

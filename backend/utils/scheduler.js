@@ -6,6 +6,7 @@ const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
 const { sendLockNotificationEmail, sendAdminPaymentReminderEmail, sendAdminOverdueAlertEmail, sendPaymentReminderEmail } = require('./email');
 const { sendPaymentReminderSMS, sendPaymentReminderWhatsApp, sendDeviceLockedSMS, sendDeviceLockedWhatsApp } = require('./sms');
+const logger = require('./logger');
 
 /**
  * Check for overdue installment plans and lock devices.
@@ -14,7 +15,7 @@ const { sendPaymentReminderSMS, sendPaymentReminderWhatsApp, sendDeviceLockedSMS
  * - next_due_date is more than 48 hours in the past
  */
 const checkOverduePayments = async () => {
-  console.log('[Scheduler] Running checkOverduePayments job...');
+  logger.info('[Scheduler] Running checkOverduePayments job...');
 
   try {
     const cutoffDate = new Date(Date.now() - 48 * 60 * 60 * 1000); // 48 hours ago
@@ -48,21 +49,21 @@ const checkOverduePayments = async () => {
 
           if (customerEmail) {
             await sendPaymentReminderEmail(customerEmail, customer.full_name, overdueDetails);
-            console.log(`[Scheduler] Overdue warning email sent to ${customer.full_name}`);
+            logger.info('[Scheduler] Overdue warning email sent to %s', customer.full_name);
           }
           if (customer.phone) {
             await sendPaymentReminderSMS(customer.phone, customer.full_name, overdueDetails)
-              .catch(e => console.error(`[Scheduler] Overdue SMS failed:`, e.message));
+              .catch(e => logger.error('[Scheduler] Overdue SMS failed: %s', e.message));
             await sendPaymentReminderWhatsApp(customer.phone, customer.full_name, overdueDetails)
-              .catch(e => console.error(`[Scheduler] Overdue WhatsApp failed:`, e.message));
-            console.log(`[Scheduler] Overdue warning SMS+WhatsApp sent to ${customer.full_name}`);
+              .catch(e => logger.error('[Scheduler] Overdue WhatsApp failed: %s', e.message));
+            logger.info('[Scheduler] Overdue warning SMS+WhatsApp sent to %s', customer.full_name);
           }
         } catch (emailErr) {
-          console.error(`[Scheduler] Failed to send overdue warning to ${customer?.full_name}: ${emailErr.message}`);
+          logger.error('[Scheduler] Failed to send overdue warning to %s: %s', customer?.full_name, emailErr.message);
         }
       }
     } catch (warnErr) {
-      console.error('[Scheduler] Error sending overdue warnings:', warnErr.message);
+      logger.error('[Scheduler] Error sending overdue warnings: %s', warnErr.message);
     }
 
     // Find all active plans where next_due_date is past the 48-hour cutoff
@@ -80,11 +81,11 @@ const checkOverduePayments = async () => {
       });
 
     if (overduePlans.length === 0) {
-      console.log('[Scheduler] No overdue plans found.');
+      logger.info('[Scheduler] No overdue plans found.');
       return;
     }
 
-    console.log(`[Scheduler] Found ${overduePlans.length} overdue plan(s). Processing...`);
+    logger.info('[Scheduler] Found %d overdue plan(s). Processing...', overduePlans.length);
 
     const overdueAdminList = [];
 
@@ -94,19 +95,17 @@ const checkOverduePayments = async () => {
         const customer = plan.customer_id;
 
         if (!device || !customer) {
-          console.warn(`[Scheduler] Plan ${plan._id} missing device or customer data. Skipping.`);
+          logger.warn('[Scheduler] Plan %s missing device or customer data. Skipping.', plan._id);
           continue;
         }
 
         // Skip if device is already locked
         if (device.lock_status === 'locked') {
-          console.log(`[Scheduler] Device ${device._id} already marked as locked. Skipping.`);
+          logger.info('[Scheduler] Device %s already marked as locked. Skipping.', device._id);
           continue;
         }
 
-        console.log(
-          `[Scheduler] Marking device ${device._id} as locked for overdue plan ${plan._id} (customer: ${customer.full_name})`
-        );
+        logger.info('[Scheduler] Marking device %s as locked for overdue plan %s (customer: %s)', device._id, plan._id, customer.full_name);
 
         // Mark device as locked in DB and plan as defaulted
         await Device.findByIdAndUpdate(device._id, { lock_status: 'locked' });
@@ -138,19 +137,17 @@ const checkOverduePayments = async () => {
 
           if (customerEmail) {
             await sendLockNotificationEmail(customerEmail, customer.full_name, device.model);
-            console.log(`[Scheduler] Lock notification email sent to ${customerEmail}`);
+            logger.info('[Scheduler] Lock notification email sent to %s', customerEmail);
           }
           if (customer.phone) {
             await sendDeviceLockedSMS(customer.phone, customer.full_name, device.model)
-              .catch(e => console.error(`[Scheduler] Lock SMS failed:`, e.message));
+              .catch(e => logger.error('[Scheduler] Lock SMS failed: %s', e.message));
             await sendDeviceLockedWhatsApp(customer.phone, customer.full_name, device.model)
-              .catch(e => console.error(`[Scheduler] Lock WhatsApp failed:`, e.message));
-            console.log(`[Scheduler] Lock SMS+WhatsApp sent to ${customer.full_name}`);
+              .catch(e => logger.error('[Scheduler] Lock WhatsApp failed: %s', e.message));
+            logger.info('[Scheduler] Lock SMS+WhatsApp sent to %s', customer.full_name);
           }
         } catch (emailError) {
-          console.error(
-            `[Scheduler] Failed to send lock notification: ${emailError.message}`
-          );
+          logger.error('[Scheduler] Failed to send lock notification: %s', emailError.message);
         }
 
         // Collect for admin overdue alert
@@ -162,12 +159,9 @@ const checkOverduePayments = async () => {
           hoursOverdue: Math.round((Date.now() - new Date(plan.next_due_date)) / (1000 * 60 * 60)),
         });
 
-        console.log(
-          `[Scheduler] Successfully processed overdue plan ${plan._id}: device locked, plan defaulted.`
-        );
+        logger.info('[Scheduler] Successfully processed overdue plan %s: device locked, plan defaulted.', plan._id);
       } catch (planError) {
-        console.error(`[Scheduler] Error processing plan ${plan._id}: ${planError.message}`);
-        // Continue with next plan
+        logger.error('[Scheduler] Error processing plan %s: %s', plan._id, planError.message);
       }
     }
 
@@ -175,15 +169,15 @@ const checkOverduePayments = async () => {
     if (overdueAdminList.length > 0 && process.env.ADMIN_EMAIL) {
       try {
         await sendAdminOverdueAlertEmail(process.env.ADMIN_EMAIL, overdueAdminList);
-        console.log(`[Scheduler] Admin overdue alert sent to ${process.env.ADMIN_EMAIL} for ${overdueAdminList.length} customer(s).`);
+        logger.info('[Scheduler] Admin overdue alert sent to %s for %d customer(s).', process.env.ADMIN_EMAIL, overdueAdminList.length);
       } catch (adminEmailError) {
-        console.error(`[Scheduler] Failed to send admin overdue alert: ${adminEmailError.message}`);
+        logger.error('[Scheduler] Failed to send admin overdue alert: %s', adminEmailError.message);
       }
     }
 
-    console.log('[Scheduler] checkOverduePayments job completed.');
+    logger.info('[Scheduler] checkOverduePayments job completed.');
   } catch (error) {
-    console.error('[Scheduler] Fatal error in checkOverduePayments:', error.message);
+    logger.error('[Scheduler] Fatal error in checkOverduePayments: %s', error.message);
   }
 };
 
@@ -191,7 +185,7 @@ const checkOverduePayments = async () => {
  * Check for payments due within the next 48 hours and email the admin a reminder.
  */
 const checkUpcomingPayments = async () => {
-  console.log('[Scheduler] Running checkUpcomingPayments job...');
+  logger.info('[Scheduler] Running checkUpcomingPayments job...');
 
   try {
     const now = new Date();
@@ -205,7 +199,7 @@ const checkUpcomingPayments = async () => {
       .populate({ path: 'customer_id', select: 'full_name phone email user_id' });
 
     if (upcomingPlans.length === 0) {
-      console.log('[Scheduler] No upcoming payments in the next 48 hours.');
+      logger.info('[Scheduler] No upcoming payments in the next 48 hours.');
       return;
     }
 
@@ -230,18 +224,18 @@ const checkUpcomingPayments = async () => {
 
         if (customerEmail) {
           await sendPaymentReminderEmail(customerEmail, customer.full_name, reminderDetails);
-          console.log(`[Scheduler] Upcoming payment email sent to ${customer.full_name}`);
+          logger.info('[Scheduler] Upcoming payment email sent to %s', customer.full_name);
         }
 
         if (customer.phone) {
           await sendPaymentReminderSMS(customer.phone, customer.full_name, reminderDetails)
-            .catch(e => console.error(`[Scheduler] Reminder SMS failed for ${customer.full_name}:`, e.message));
+            .catch(e => logger.error('[Scheduler] Reminder SMS failed for %s: %s', customer.full_name, e.message));
           await sendPaymentReminderWhatsApp(customer.phone, customer.full_name, reminderDetails)
-            .catch(e => console.error(`[Scheduler] Reminder WhatsApp failed for ${customer.full_name}:`, e.message));
-          console.log(`[Scheduler] Upcoming payment SMS+WhatsApp sent to ${customer.full_name}`);
+            .catch(e => logger.error('[Scheduler] Reminder WhatsApp failed for %s: %s', customer.full_name, e.message));
+          logger.info('[Scheduler] Upcoming payment SMS+WhatsApp sent to %s', customer.full_name);
         }
       } catch (emailErr) {
-        console.error(`[Scheduler] Failed to send reminder to ${customer.full_name}: ${emailErr.message}`);
+        logger.error('[Scheduler] Failed to send reminder to %s: %s', customer.full_name, emailErr.message);
       }
     }
 
@@ -257,10 +251,10 @@ const checkUpcomingPayments = async () => {
 
     if (reminderList.length > 0 && process.env.ADMIN_EMAIL) {
       await sendAdminPaymentReminderEmail(process.env.ADMIN_EMAIL, reminderList);
-      console.log(`[Scheduler] Admin payment reminder sent for ${reminderList.length} upcoming payment(s).`);
+      logger.info('[Scheduler] Admin payment reminder sent for %d upcoming payment(s).', reminderList.length);
     }
   } catch (error) {
-    console.error('[Scheduler] Fatal error in checkUpcomingPayments:', error.message);
+    logger.error('[Scheduler] Fatal error in checkUpcomingPayments: %s', error.message);
   }
 };
 
@@ -270,21 +264,21 @@ const checkUpcomingPayments = async () => {
  * - Daily at 8 AM: email admin about payments due in the next 48 hours.
  */
 const startScheduler = () => {
-  console.log('[Scheduler] Initializing scheduled jobs...');
+  logger.info('[Scheduler] Initializing scheduled jobs...');
 
   // Run every hour at minute 0
   cron.schedule('0 * * * *', async () => {
     await checkOverduePayments();
   });
 
-  console.log('[Scheduler] Overdue payment checker scheduled: every hour.');
+  logger.info('[Scheduler] Overdue payment checker scheduled: every hour.');
 
   // Run daily at 8:00 AM to remind admin about upcoming payments
   cron.schedule('0 8 * * *', async () => {
     await checkUpcomingPayments();
   });
 
-  console.log('[Scheduler] Upcoming payment reminder scheduled: daily at 08:00.');
+  logger.info('[Scheduler] Upcoming payment reminder scheduled: daily at 08:00.');
 
   // Run an initial check at startup (delayed by 10 seconds to allow DB connection)
   setTimeout(async () => {

@@ -59,4 +59,10 @@ const DeviceSchema = new mongoose.Schema(
   }
 );
 
+DeviceSchema.index({ assigned_to: 1 });
+DeviceSchema.index({ lock_status: 1 });
+DeviceSchema.index({ sold_status: 1 });
+DeviceSchema.index({ lock_status: 1, sold_status: 1 });
+DeviceSchema.index({ model: 'text' });
+
 module.exports = mongoose.model('Device', DeviceSchema);

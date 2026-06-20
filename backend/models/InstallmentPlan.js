@@ -99,4 +99,10 @@ const InstallmentPlanSchema = new mongoose.Schema(
   }
 );
 
+InstallmentPlanSchema.index({ customer_id: 1 });
+InstallmentPlanSchema.index({ customer_id: 1, status: 1 });
+InstallmentPlanSchema.index({ status: 1, next_due_date: 1 });
+InstallmentPlanSchema.index({ created_by: 1 });
+InstallmentPlanSchema.index({ device_id: 1 });
+
 module.exports = mongoose.model('InstallmentPlan', InstallmentPlanSchema);

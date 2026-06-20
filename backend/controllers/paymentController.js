@@ -10,6 +10,7 @@ const { unlockDevice: mdmUnlock } = require('../utils/simpleMDM');
 const { sendPaymentConfirmationEmail } = require('../utils/email');
 const { sendPaymentConfirmedSMS, sendPaymentConfirmedWhatsApp, sendPlanCompletedWhatsApp, sendDeviceUnlockedWhatsApp } = require('../utils/sms');
 const { sendDeviceUnlockedEmail } = require('../utils/email');
+const logger = require('../utils/logger');
 
 /**
  * Helper: Process a successful payment (used by both verify endpoint and webhook).
@@ -101,7 +102,7 @@ const processSuccessfulPayment = async ({
       try {
         await mdmUnlock(device.udid);
       } catch (mdmError) {
-        console.error(`MDM unlock failed after plan completion for UDID ${device.udid}:`, mdmError.message);
+        logger.error(`MDM unlock failed after plan completion for UDID ${device.udid}:`, mdmError.message);
       }
     }
 
@@ -124,7 +125,7 @@ const processSuccessfulPayment = async ({
       try {
         await mdmUnlock(device.udid);
       } catch (mdmError) {
-        console.error(`MDM unlock failed after payment for UDID ${device.udid}:`, mdmError.message);
+        logger.error(`MDM unlock failed after payment for UDID ${device.udid}:`, mdmError.message);
       }
     }
 
@@ -166,31 +167,31 @@ const processSuccessfulPayment = async ({
       });
     }
   } catch (emailError) {
-    console.error('Payment confirmation email failed:', emailError.message);
+    logger.error('Payment confirmation email failed:', emailError.message);
   }
 
   if (customer.phone) {
     sendPaymentConfirmedSMS(customer.phone, customer.full_name, amountGHS, {
       deviceModel,
       remainingBalance: newRemainingBalance,
-    }).catch(e => console.error('Payment confirmation SMS failed:', e.message));
+    }).catch(e => logger.error('Payment confirmation SMS failed:', e.message));
 
     sendPaymentConfirmedWhatsApp(customer.phone, customer.full_name, amountGHS, {
       deviceModel,
       remainingBalance: newRemainingBalance,
       reference,
-    }).catch(e => console.error('Payment confirmation WhatsApp failed:', e.message));
+    }).catch(e => logger.error('Payment confirmation WhatsApp failed:', e.message));
   }
 
   // Special congratulations notifications when plan is fully paid
   if (isCompleted) {
     if (customer.phone) {
       sendPlanCompletedWhatsApp(customer.phone, customer.full_name, deviceModel)
-        .catch(e => console.error('Plan completed WhatsApp failed:', e.message));
+        .catch(e => logger.error('Plan completed WhatsApp failed:', e.message));
     }
     if (customer.email) {
       sendDeviceUnlockedEmail(customer.email, customer.full_name, deviceModel)
-        .catch(e => console.error('Plan completed email failed:', e.message));
+        .catch(e => logger.error('Plan completed email failed:', e.message));
     }
   }
 
@@ -275,7 +276,7 @@ const initializePaymentHandler = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('initializePayment error:', error);
+    logger.error('initializePayment error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -299,7 +300,7 @@ const verifyPaymentHandler = async (req, res) => {
     } catch (verifyErr) {
       // Paystack API timed out or is unreachable — tell frontend to check back later
       const isTimeout = verifyErr.code === 'ECONNABORTED' || verifyErr.code === 'ETIMEDOUT';
-      console.error(`verifyPayment network error (${verifyErr.code}): ${verifyErr.message}`);
+      logger.error(`verifyPayment network error (${verifyErr.code}): ${verifyErr.message}`);
       return res.status(504).json({
         success: false,
         payment_pending: true,
@@ -399,7 +400,7 @@ const verifyPaymentHandler = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('verifyPayment error:', error);
+    logger.error('verifyPayment error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -422,13 +423,13 @@ const paystackWebhook = async (req, res) => {
         .digest('hex');
 
       if (hash !== signature) {
-        console.warn('Paystack webhook: Invalid signature');
+        logger.warn('Paystack webhook: Invalid signature');
         return res.status(401).json({ success: false, message: 'Invalid webhook signature.' });
       }
     }
 
     const event = req.body;
-    console.log(`Paystack webhook received: ${event.event}`);
+    logger.info(`Paystack webhook received: ${event.event}`);
 
     // Handle charge.success event
     if (event.event === 'charge.success') {
@@ -453,7 +454,7 @@ const paystackWebhook = async (req, res) => {
         }
 
         if (!customer) {
-          console.error(`Webhook: Customer not found for reference ${paystackData.reference}`);
+          logger.error(`Webhook: Customer not found for reference ${paystackData.reference}`);
           return;
         }
 
@@ -469,7 +470,7 @@ const paystackWebhook = async (req, res) => {
         }
 
         if (!plan) {
-          console.error(`Webhook: Plan not found for customer ${customer._id}`);
+          logger.error(`Webhook: Plan not found for customer ${customer._id}`);
           return;
         }
 
@@ -492,15 +493,15 @@ const paystackWebhook = async (req, res) => {
         });
 
         if (result.duplicate) {
-          console.log(`Webhook: Duplicate payment for reference ${paystackData.reference}`);
+          logger.info(`Webhook: Duplicate payment for reference ${paystackData.reference}`);
         } else {
-          console.log(
+          logger.info(
             `Webhook: Payment processed for ${customer.full_name}. ` +
             `Amount: GHS ${paystackData.amount / 100}. Completed: ${result.isCompleted}`
           );
         }
       } catch (processError) {
-        console.error('Webhook processing error:', processError.message);
+        logger.error('Webhook processing error:', processError.message);
       }
 
       return; // Already responded
@@ -509,7 +510,7 @@ const paystackWebhook = async (req, res) => {
     // For other event types, acknowledge receipt
     return res.status(200).json({ success: true, message: 'Webhook received.' });
   } catch (error) {
-    console.error('Webhook handler error:', error);
+    logger.error('Webhook handler error:', error);
     // Always return 200 to Paystack to prevent retries
     return res.status(200).json({ success: true, message: 'Webhook received.' });
   }

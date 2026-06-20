@@ -98,4 +98,8 @@ UserSchema.methods.generateAuthToken = function () {
   );
 };
 
+UserSchema.index({ role: 1 });
+UserSchema.index({ is_active: 1 });
+UserSchema.index({ role: 1, is_active: 1 });
+
 module.exports = mongoose.model('User', UserSchema);

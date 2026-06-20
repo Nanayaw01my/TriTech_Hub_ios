@@ -1,4 +1,5 @@
 const axios = require('axios');
+const logger = require('./logger');
 
 const SIMPLEMDM_BASE_URL = 'https://a.simplemdm.com/api/v1';
 
@@ -35,7 +36,7 @@ const findDeviceByUDID = async (udid) => {
     }
     return null;
   } catch (error) {
-    console.error('SimpleMDM findDeviceByUDID error:', error.message);
+    logger.error('SimpleMDM findDeviceByUDID error: %s', error.message);
     return null;
   }
 };
@@ -84,7 +85,7 @@ const lockDevice = async (udid) => {
       };
     } catch (fallbackError) {
       const msg = fallbackError.response?.data?.errors?.[0] || fallbackError.message || 'Failed to lock device';
-      console.error(`SimpleMDM lockDevice error for UDID ${udid}:`, msg);
+      logger.error('SimpleMDM lockDevice error for UDID %s: %s', udid, msg);
       throw new Error(msg);
     }
   }
@@ -127,7 +128,7 @@ const unlockDevice = async (udid) => {
       };
     } catch (fallbackError) {
       const msg = fallbackError.response?.data?.errors?.[0] || fallbackError.message || 'Failed to unlock device';
-      console.error(`SimpleMDM unlockDevice error for UDID ${udid}:`, msg);
+      logger.error('SimpleMDM unlockDevice error for UDID %s: %s', udid, msg);
       throw new Error(msg);
     }
   }

@@ -1,5 +1,6 @@
 const axios = require('axios');
 
+const logger = require('./logger');
 const ARKESEL_API_KEY = process.env.ARKESEL_API_KEY;
 const SENDER_ID       = process.env.ARKESEL_SENDER_ID || 'Tritech';
 
@@ -14,12 +15,12 @@ const formatPhone = (phone) => {
 
 const sendSMS = async (to, message) => {
   if (!ARKESEL_API_KEY) {
-    console.warn('[SMS] ARKESEL_API_KEY not set — skipping');
+    logger.warn('[SMS] ARKESEL_API_KEY not set — skipping');
     return;
   }
   const phone = formatPhone(to);
   if (!phone) {
-    console.warn('[SMS] Invalid phone:', to);
+    logger.warn('[SMS] Invalid phone:', to);
     return;
   }
 
@@ -29,32 +30,32 @@ const sendSMS = async (to, message) => {
       { sender: SENDER_ID, message, recipients: [phone] },
       { headers: { 'api-key': ARKESEL_API_KEY } }
     );
-    console.log(`[SMS] v2 sent to ${phone}:`, JSON.stringify(res.data));
+    logger.info(`[SMS] v2 sent to ${phone}:`, JSON.stringify(res.data));
     return res.data;
   } catch (v2Err) {
-    console.warn(`[SMS] v2 failed (${v2Err.response?.status}), trying v1...`);
+    logger.warn(`[SMS] v2 failed (${v2Err.response?.status}), trying v1...`);
   }
 
   try {
     const res = await axios.get('https://sms.arkesel.com/sms/api', {
       params: { action: 'send-sms', api_key: ARKESEL_API_KEY, to: phone, from: SENDER_ID, sms: message },
     });
-    console.log(`[SMS] v1 sent to ${phone}:`, JSON.stringify(res.data));
+    logger.info(`[SMS] v1 sent to ${phone}:`, JSON.stringify(res.data));
     return res.data;
   } catch (v1Err) {
     const detail = v1Err.response?.data ? JSON.stringify(v1Err.response.data) : v1Err.message;
-    console.error(`[SMS] Both v1+v2 failed for ${phone}:`, detail);
+    logger.error(`[SMS] Both v1+v2 failed for ${phone}:`, detail);
   }
 };
 
 const sendWhatsApp = async (to, message) => {
   if (!ARKESEL_API_KEY) {
-    console.warn('[WhatsApp] ARKESEL_API_KEY not set — skipping');
+    logger.warn('[WhatsApp] ARKESEL_API_KEY not set — skipping');
     return;
   }
   const phone = formatPhone(to);
   if (!phone) {
-    console.warn('[WhatsApp] Invalid phone:', to);
+    logger.warn('[WhatsApp] Invalid phone:', to);
     return;
   }
 
@@ -64,10 +65,10 @@ const sendWhatsApp = async (to, message) => {
       { sender: SENDER_ID, message, recipients: [phone], type: 'whatsapp' },
       { headers: { 'api-key': ARKESEL_API_KEY } }
     );
-    console.log(`[WhatsApp] Sent to ${phone}:`, JSON.stringify(res.data));
+    logger.info(`[WhatsApp] Sent to ${phone}:`, JSON.stringify(res.data));
     return res.data;
   } catch (err) {
-    console.error(`[WhatsApp] Failed for ${phone}:`, err.response?.data || err.message);
+    logger.error(`[WhatsApp] Failed for ${phone}:`, err.response?.data || err.message);
   }
 };
 

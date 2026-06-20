@@ -10,6 +10,7 @@ const bcrypt = require('bcryptjs');
 
 const connectDB = require('./config/db');
 const { startScheduler } = require('./utils/scheduler');
+const logger = require('./utils/logger');
 
 // ─── APP SETUP ───────────────────────────────────────────────────────────────
 
@@ -58,22 +59,43 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Rate limiting: 100 requests per 15 minutes per IP
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+// Global rate limit: 200 requests per 15 minutes per IP
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
   standardHeaders: true,
   legacyHeaders: false,
-  message: {
-    success: false,
-    message: 'Too many requests from this IP. Please try again in 15 minutes.',
-  },
-  skip: (req) => {
-    // Skip rate limiting for webhook endpoint (Paystack needs to send many events)
-    return req.path.startsWith('/api/webhooks/');
-  },
+  message: { success: false, message: 'Too many requests. Please try again in 15 minutes.' },
+  skip: (req) => req.path.startsWith('/api/webhooks/'),
 });
-app.use(limiter);
+app.use(globalLimiter);
+
+// Strict limiter for login / register: 10 attempts per 15 minutes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many login attempts. Please wait 15 minutes.' },
+});
+
+// Password-reset limiter: 5 attempts per hour
+const passwordResetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many password reset requests. Please wait an hour.' },
+});
+
+// Payment limiter: 30 requests per minute
+const paymentLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many payment requests. Please slow down.' },
+});
 
 // ─── REQUEST PARSING ──────────────────────────────────────────────────────────
 
@@ -92,7 +114,11 @@ app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 // ─── LOGGING ─────────────────────────────────────────────────────────────────
 
 if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+  app.use(
+    morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev', {
+      stream: { write: (msg) => logger.http(msg.trim()) },
+    })
+  );
 }
 
 // ─── STATIC FILES ─────────────────────────────────────────────────────────────
@@ -172,6 +198,13 @@ app.get('/api/forceseed', async (req, res) => {
 
 // ─── API ROUTES ───────────────────────────────────────────────────────────────
 
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/forgot-password', passwordResetLimiter);
+app.use('/api/auth/forgot-password-sms', passwordResetLimiter);
+app.use('/api/auth/reset-password', passwordResetLimiter);
+app.use('/api/auth/reset-password-otp', passwordResetLimiter);
+app.use('/api/payment', paymentLimiter);
+
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/staff', require('./routes/staff'));
@@ -193,7 +226,7 @@ app.get(/^(?!\/api).*$/, (req, res) => {
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
+  logger.error('Unhandled error: %s', err.message, { stack: err.stack });
 
   // Handle CORS errors
   if (err.message && err.message.includes('CORS policy')) {
@@ -264,7 +297,7 @@ const seedDatabase = async () => {
         created_at: new Date(),
         updated_at: new Date(),
       });
-      console.log('✓ Default admin created: admin@tritech.com / admin123');
+      logger.info('Default admin created: admin@tritech.com / admin123');
     }
 
     // ── Seed Staff ──
@@ -282,7 +315,7 @@ const seedDatabase = async () => {
         created_at: new Date(),
         updated_at: new Date(),
       });
-      console.log('✓ Default staff created: staff@tritech.com / staff123');
+      logger.info('Default staff created: staff@tritech.com / staff123');
     }
 
     // ── Seed Sample Devices ──
@@ -346,13 +379,12 @@ const seedDatabase = async () => {
       ];
 
       await Device.insertMany(sampleDevices);
-      console.log(`✓ ${sampleDevices.length} sample iPhone devices seeded.`);
+      logger.info('%d sample iPhone devices seeded.', sampleDevices.length);
     }
 
-    console.log('Database seed complete.');
+    logger.info('Database seed complete.');
   } catch (error) {
-    console.error('Database seed error:', error.message);
-    // Non-fatal: continue starting server even if seeding fails
+    logger.error('Database seed error: %s', error.message);
   }
 };
 
@@ -361,12 +393,7 @@ const seedDatabase = async () => {
 const startServer = async () => {
   // Bind port FIRST so Render sees the service as alive
   app.listen(PORT, () => {
-    console.log(`\n========================================`);
-    console.log(`  Tritech Hub iOS API`);
-    console.log(`  Server running on port ${PORT}`);
-    console.log(`  Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`  Health: http://localhost:${PORT}/health`);
-    console.log(`========================================\n`);
+    logger.info('Tritech Hub iOS API — port %d — env: %s', PORT, process.env.NODE_ENV || 'development');
   });
 
   // Then connect to MongoDB (retries in background)
@@ -375,32 +402,21 @@ const startServer = async () => {
     await seedDatabase();
     startScheduler();
   } catch (error) {
-    console.error('MongoDB init failed:', error.message);
-    // Server stays up; requests will fail gracefully until DB is reachable
+    logger.error('MongoDB init failed: %s', error.message);
   }
 };
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled Rejection: %s', reason);
 });
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+  logger.error('Uncaught Exception: %s', error.message, { stack: error.stack });
   process.exit(1);
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT received. Shutting down gracefully...');
-  process.exit(0);
-});
+process.on('SIGTERM', () => { logger.info('SIGTERM received. Shutting down.'); process.exit(0); });
+process.on('SIGINT', () => { logger.info('SIGINT received. Shutting down.'); process.exit(0); });
 
 startServer();
 

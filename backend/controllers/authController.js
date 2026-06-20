@@ -6,6 +6,7 @@ const PasswordReset = require('../models/PasswordReset');
 const AuditLog = require('../models/AuditLog');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { sendPasswordResetOTP } = require('../utils/sms');
+const logger = require('../utils/logger');
 
 /**
  * POST /api/auth/login
@@ -96,7 +97,7 @@ const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Login error:', error);
+    logger.error('Login error:', error);
     return res.status(500).json({
       success: false,
       message: 'Server error during login.',
@@ -119,7 +120,7 @@ const logout = async (req, res) => {
       data: null,
     });
   } catch (error) {
-    console.error('Logout error:', error);
+    logger.error('Logout error:', error);
     return res.status(500).json({
       success: false,
       message: 'Server error during logout.',
@@ -180,7 +181,7 @@ const forgotPassword = async (req, res) => {
     try {
       await sendPasswordResetEmail(email, user.name, resetUrl);
     } catch (emailError) {
-      console.error('Failed to send password reset email:', emailError.message);
+      logger.error('Failed to send password reset email:', emailError.message);
       // Don't expose email errors to the client
     }
 
@@ -198,7 +199,7 @@ const forgotPassword = async (req, res) => {
       data: null,
     });
   } catch (error) {
-    console.error('Forgot password error:', error);
+    logger.error('Forgot password error:', error);
     return res.status(500).json({
       success: false,
       message: 'Server error. Please try again.',
@@ -278,7 +279,7 @@ const resetPassword = async (req, res) => {
       data: null,
     });
   } catch (error) {
-    console.error('Reset password error:', error);
+    logger.error('Reset password error:', error);
     return res.status(500).json({
       success: false,
       message: 'Server error. Please try again.',
@@ -355,7 +356,7 @@ const changePassword = async (req, res) => {
       data: null,
     });
   } catch (error) {
-    console.error('Change password error:', error);
+    logger.error('Change password error:', error);
     return res.status(500).json({
       success: false,
       message: 'Server error. Please try again.',
@@ -429,7 +430,7 @@ const forgotPasswordSMS = async (req, res) => {
     try {
       await sendPasswordResetOTP(formatted, otp);
     } catch (smsErr) {
-      console.error('OTP SMS error:', smsErr.message);
+      logger.error('OTP SMS error:', smsErr.message);
     }
 
     await AuditLog.create({
@@ -444,7 +445,7 @@ const forgotPasswordSMS = async (req, res) => {
       message: 'If an account with that number exists, a code has been sent.',
     });
   } catch (error) {
-    console.error('forgotPasswordSMS error:', error);
+    logger.error('forgotPasswordSMS error:', error);
     return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
   }
 };
@@ -494,7 +495,7 @@ const resetPasswordOTP = async (req, res) => {
 
     return res.status(200).json({ success: true, message: 'Password reset successfully.' });
   } catch (error) {
-    console.error('resetPasswordOTP error:', error);
+    logger.error('resetPasswordOTP error:', error);
     return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
   }
 };

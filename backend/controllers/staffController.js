@@ -12,6 +12,7 @@ const { initializePayment } = require('../utils/paystack');
 const { sendAdminSaleNotificationEmail, sendCustomerWelcomeEmail } = require('../utils/email');
 const { sendAdminSaleSMS, sendAdminSaleWhatsApp, sendCustomerWelcomeSMS } = require('../utils/sms');
 const { v4: uuidv4 } = require('uuid');
+const logger = require('../utils/logger');
 
 // Save a base64-encoded image to disk, return the file path (or null).
 const saveBase64Image = async (base64String, fieldName) => {
@@ -153,7 +154,7 @@ const getMyCustomers = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Staff getMyCustomers error:', error);
+    logger.error('Staff getMyCustomers error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -419,9 +420,9 @@ const addCustomer = async (req, res) => {
         if (adminEmail) {
           try {
             await sendAdminSaleNotificationEmail(adminEmail, salePayload);
-            console.log('[Sale notify] Email sent to:', adminEmail);
+            logger.info('[Sale notify] Email sent to:', adminEmail);
           } catch (e) {
-            console.error('[Sale notify] Email failed:', e?.message || e);
+            logger.error('[Sale notify] Email failed:', e?.message || e);
           }
         }
 
@@ -429,23 +430,23 @@ const addCustomer = async (req, res) => {
         const adminPhone = process.env.ADMIN_PHONE || adminUser?.phone;
         if (adminPhone) {
           await sendAdminSaleSMS(adminPhone, salePayload).catch(e =>
-            console.error('[Sale notify] SMS failed:', e.message)
+            logger.error('[Sale notify] SMS failed:', e.message)
           );
-          console.log('[Sale notify] SMS sent to:', adminPhone);
+          logger.info('[Sale notify] SMS sent to:', adminPhone);
 
           await sendAdminSaleWhatsApp(adminPhone, salePayload).catch(e =>
-            console.error('[Sale notify] WhatsApp failed:', e.message)
+            logger.error('[Sale notify] WhatsApp failed:', e.message)
           );
-          console.log('[Sale notify] WhatsApp sent to:', adminPhone);
+          logger.info('[Sale notify] WhatsApp sent to:', adminPhone);
         }
 
         // Welcome email + SMS to customer
         if (newCustomer.email) {
           try {
             await sendCustomerWelcomeEmail(newCustomer.email, newCustomer.full_name, newUser.account_number);
-            console.log('[Sale notify] Welcome email sent to:', newCustomer.email);
+            logger.info('[Sale notify] Welcome email sent to:', newCustomer.email);
           } catch (e) {
-            console.error('[Sale notify] Welcome email failed:', e?.message || e);
+            logger.error('[Sale notify] Welcome email failed:', e?.message || e);
           }
         }
         if (newCustomer.phone) {
@@ -454,10 +455,10 @@ const addCustomer = async (req, res) => {
             newCustomer.full_name,
             newUser.account_number,
             process.env.FRONTEND_URL || 'tritechhub.online'
-          ).catch(e => console.error('[Sale notify] Welcome SMS failed:', e.message));
+          ).catch(e => logger.error('[Sale notify] Welcome SMS failed:', e.message));
         }
       } catch (err) {
-        console.error('[Sale notify] Notification error:', err.message);
+        logger.error('[Sale notify] Notification error:', err.message);
       }
     })();
 
@@ -486,7 +487,7 @@ const addCustomer = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Staff addCustomer error:', error);
+    logger.error('Staff addCustomer error:', error);
     if (error.code === 11000) {
       return res.status(409).json({ success: false, message: 'Duplicate entry: email or account number already exists.' });
     }
@@ -532,7 +533,7 @@ const getCustomerDetail = async (req, res) => {
       data: { customer, plan, payments },
     });
   } catch (error) {
-    console.error('Staff getCustomerDetail error:', error);
+    logger.error('Staff getCustomerDetail error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -573,7 +574,7 @@ const getCustomerPayments = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Staff getCustomerPayments error:', error);
+    logger.error('Staff getCustomerPayments error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -647,7 +648,7 @@ const makePaymentForCustomer = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Staff makePaymentForCustomer error:', error);
+    logger.error('Staff makePaymentForCustomer error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -659,7 +660,7 @@ const getAvailableDevices = async (req, res) => {
       .sort({ model: 1 });
     return res.status(200).json({ success: true, data: { devices } });
   } catch (error) {
-    console.error('Staff getAvailableDevices error:', error);
+    logger.error('Staff getAvailableDevices error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -695,7 +696,7 @@ const getStaffStats = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('getStaffStats error:', error);
+    logger.error('getStaffStats error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };

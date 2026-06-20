@@ -6,10 +6,12 @@ const Device = require('../models/Device');
 const InstallmentPlan = require('../models/InstallmentPlan');
 const Payment = require('../models/Payment');
 const AuditLog = require('../models/AuditLog');
+const Settings = require('../models/Settings');
 const { generateStaffId } = require('../utils/accountGenerator');
 const { sendPaymentReminderSMS, sendDeviceLockedSMS, sendDeviceUnlockedSMS, sendDeviceLockedWhatsApp, sendDeviceUnlockedWhatsApp } = require('../utils/sms');
 const { sendLockNotificationEmail, sendDeviceUnlockedEmail } = require('../utils/email');
 const { lockDevice: mdmLock, unlockDevice: mdmUnlock } = require('../utils/simpleMDM');
+const logger = require('../utils/logger');
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
 
@@ -78,7 +80,7 @@ const getDashboard = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Admin getDashboard error:', error);
+    logger.error('Admin getDashboard error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -175,7 +177,7 @@ const getCustomers = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Admin getCustomers error:', error);
+    logger.error('Admin getCustomers error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -211,7 +213,7 @@ const getCustomerDetail = async (req, res) => {
       data: { customer, plan, payments },
     });
   } catch (error) {
-    console.error('Admin getCustomerDetail error:', error);
+    logger.error('Admin getCustomerDetail error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -257,7 +259,7 @@ const updateCustomer = async (req, res) => {
       data: { customer },
     });
   } catch (error) {
-    console.error('Admin updateCustomer error:', error);
+    logger.error('Admin updateCustomer error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -291,7 +293,7 @@ const deleteCustomer = async (req, res) => {
       data: null,
     });
   } catch (error) {
-    console.error('Admin deleteCustomer error:', error);
+    logger.error('Admin deleteCustomer error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -338,7 +340,7 @@ const getStaff = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Admin getStaff error:', error);
+    logger.error('Admin getStaff error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -390,7 +392,7 @@ const addStaff = async (req, res) => {
       data: { staff: staffData },
     });
   } catch (error) {
-    console.error('Admin addStaff error:', error);
+    logger.error('Admin addStaff error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -431,7 +433,7 @@ const updateStaff = async (req, res) => {
       data: { staff: staffMember },
     });
   } catch (error) {
-    console.error('Admin updateStaff error:', error);
+    logger.error('Admin updateStaff error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -466,7 +468,7 @@ const deleteStaff = async (req, res) => {
       data: null,
     });
   } catch (error) {
-    console.error('Admin deleteStaff error:', error);
+    logger.error('Admin deleteStaff error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -513,7 +515,7 @@ const getDevices = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Admin getDevices error:', error);
+    logger.error('Admin getDevices error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -586,7 +588,7 @@ const getDeviceSales = async (req, res) => {
       data: { sales, total, page, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error('getDeviceSales error:', error);
+    logger.error('getDeviceSales error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -622,7 +624,7 @@ const addDevice = async (req, res) => {
     if (error.code === 11000) {
       return res.status(409).json({ success: false, message: 'A device with that serial number or UDID already exists.' });
     }
-    console.error('Admin addDevice error:', error);
+    logger.error('Admin addDevice error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -665,7 +667,7 @@ const updateDevice = async (req, res) => {
     if (error.code === 11000) {
       return res.status(409).json({ success: false, message: 'A device with that serial number or UDID already exists.' });
     }
-    console.error('Admin updateDevice error:', error);
+    logger.error('Admin updateDevice error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -703,7 +705,7 @@ const deleteDevice = async (req, res) => {
       data: null,
     });
   } catch (error) {
-    console.error('Admin deleteDevice error:', error);
+    logger.error('Admin deleteDevice error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -740,7 +742,7 @@ const lockDeviceHandler = async (req, res) => {
       data: { device },
     });
   } catch (error) {
-    console.error('Admin lockDevice error:', error);
+    logger.error('Admin lockDevice error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -777,7 +779,7 @@ const unlockDeviceHandler = async (req, res) => {
       data: { device },
     });
   } catch (error) {
-    console.error('Admin unlockDevice error:', error);
+    logger.error('Admin unlockDevice error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -852,7 +854,7 @@ const getTransactions = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Admin getTransactions error:', error);
+    logger.error('Admin getTransactions error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -954,7 +956,7 @@ const getReports = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Admin getReports error:', error);
+    logger.error('Admin getReports error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -994,7 +996,7 @@ const getAuditLogs = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Admin getAuditLogs error:', error);
+    logger.error('Admin getAuditLogs error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -1049,54 +1051,53 @@ const resetCustomerPassword = async (req, res) => {
       data: null,
     });
   } catch (error) {
-    console.error('Admin resetCustomerPassword error:', error);
+    logger.error('Admin resetCustomerPassword error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
 
 // ─── SETTINGS ─────────────────────────────────────────────────────────────────
 
-// In-memory settings store (in production, persist to DB or config file)
-let appSettings = {
-  business_name: 'Tritech Hub iOS',
-  contact_email: 'support@tritech.com',
-  contact_phone: '',
-  contact_address: '',
-  whatsapp_number: '',
-  lock_grace_period_hours: 48,
-  installment_frequencies: ['daily', 'weekly', 'monthly'],
-  currency: 'GHS',
-};
+const SETTINGS_ALLOWED_KEYS = [
+  'business_name', 'contact_email', 'contact_phone', 'contact_address',
+  'whatsapp_number', 'lock_grace_period_hours', 'installment_frequencies', 'currency',
+];
 
 const getSettings = async (req, res) => {
   try {
+    const settings = await Settings.getSingleton();
     return res.status(200).json({
       success: true,
       message: 'Settings retrieved.',
-      data: { settings: appSettings },
+      data: { settings },
     });
   } catch (error) {
-    console.error('Admin getSettings error:', error);
+    logger.error('Admin getSettings error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
 
 const updateSettings = async (req, res) => {
   try {
-    const allowedKeys = Object.keys(appSettings);
-    for (const key of allowedKeys) {
-      if (req.body[key] !== undefined) {
-        appSettings[key] = req.body[key];
-      }
+    const updates = {};
+    for (const key of SETTINGS_ALLOWED_KEYS) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
 
+    const settings = await Settings.findOneAndUpdate(
+      {},
+      { $set: updates },
+      { upsert: true, new: true, runValidators: true }
+    );
+
+    logger.info('Settings updated by admin %s', req.user?.id);
     return res.status(200).json({
       success: true,
       message: 'Settings updated.',
-      data: { settings: appSettings },
+      data: { settings },
     });
   } catch (error) {
-    console.error('Admin updateSettings error:', error);
+    logger.error('Admin updateSettings error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -1144,7 +1145,7 @@ const getStaffSales = async (req, res) => {
 
     return res.status(200).json({ success: true, data: { salesData, period } });
   } catch (error) {
-    console.error('Admin getStaffSales error:', error);
+    logger.error('Admin getStaffSales error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -1164,7 +1165,7 @@ const updateStaffCommissionRate = async (req, res) => {
     if (!user) return res.status(404).json({ success: false, message: 'Staff not found.' });
     return res.status(200).json({ success: true, data: { user }, message: 'Commission rate updated.' });
   } catch (error) {
-    console.error('Admin updateStaffCommissionRate error:', error);
+    logger.error('Admin updateStaffCommissionRate error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -1202,7 +1203,7 @@ const clearAllData = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Admin clearAllData error:', error);
+    logger.error('Admin clearAllData error:', error);
     return res.status(500).json({ success: false, message: 'Server error while clearing data.' });
   }
 };
@@ -1235,7 +1236,7 @@ const getNotifications = async (req, res) => {
 
     return res.status(200).json({ success: true, data: { unreadCount, items } });
   } catch (error) {
-    console.error('getNotifications error:', error);
+    logger.error('getNotifications error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -1282,7 +1283,7 @@ const getOverdueAccounts = async (req, res) => {
       data: { accounts, total: accounts.length },
     });
   } catch (error) {
-    console.error('getOverdueAccounts error:', error);
+    logger.error('getOverdueAccounts error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -1330,7 +1331,7 @@ const getRevenueForecast = async (req, res) => {
       data: { forecast: forecastData, total_projected: totalProjected },
     });
   } catch (error) {
-    console.error('getRevenueForecast error:', error);
+    logger.error('getRevenueForecast error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -1371,7 +1372,7 @@ const sendCustomerReminder = async (req, res) => {
       await sendPaymentReminderEmail(customer.email, customer.full_name, reminderDetails);
       emailSent = true;
     } catch (emailErr) {
-      console.error('sendCustomerReminder email error:', emailErr.message);
+      logger.error('sendCustomerReminder email error:', emailErr.message);
     }
 
     if (customer.phone) {
@@ -1379,7 +1380,7 @@ const sendCustomerReminder = async (req, res) => {
         await sendPaymentReminderSMS(customer.phone, customer.full_name, reminderDetails);
         smsSent = true;
       } catch (smsErr) {
-        console.error('sendCustomerReminder SMS error:', smsErr.message);
+        logger.error('sendCustomerReminder SMS error:', smsErr.message);
       }
     }
 
@@ -1396,7 +1397,7 @@ const sendCustomerReminder = async (req, res) => {
       : 'Reminder logged, but notification could not be sent. Check server settings.';
     return res.status(200).json({ success: true, message });
   } catch (error) {
-    console.error('sendCustomerReminder error:', error);
+    logger.error('sendCustomerReminder error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -1439,7 +1440,7 @@ const exportTransactions = async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="transactions_export.csv"`);
     return res.send(csv);
   } catch (error) {
-    console.error('exportTransactions error:', error);
+    logger.error('exportTransactions error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -1480,7 +1481,7 @@ const exportCustomers = async (req, res) => {
     res.setHeader('Content-Disposition', 'attachment; filename="customers_export.csv"');
     return res.send(csv);
   } catch (error) {
-    console.error('exportCustomers error:', error);
+    logger.error('exportCustomers error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -1507,10 +1508,10 @@ const lockCustomerDevice = async (req, res) => {
       try {
         await mdmLock(device.udid);
         mdmResult = 'sent';
-        console.log(`[MDM] Lock command sent for UDID ${device.udid}`);
+        logger.info(`[MDM] Lock command sent for UDID ${device.udid}`);
       } catch (mdmErr) {
         mdmResult = `failed: ${mdmErr.message}`;
-        console.error(`[MDM] Lock failed for UDID ${device.udid}:`, mdmErr.message);
+        logger.error(`[MDM] Lock failed for UDID ${device.udid}:`, mdmErr.message);
       }
     }
 
@@ -1524,21 +1525,21 @@ const lockCustomerDevice = async (req, res) => {
 
     if (customer.phone) {
       sendDeviceLockedSMS(customer.phone, customer.full_name, device.model).catch(e =>
-        console.error('[SMS] Lock notification failed:', e.message)
+        logger.error('[SMS] Lock notification failed:', e.message)
       );
       sendDeviceLockedWhatsApp(customer.phone, customer.full_name, device.model).catch(e =>
-        console.error('[WhatsApp] Lock notification failed:', e.message)
+        logger.error('[WhatsApp] Lock notification failed:', e.message)
       );
     }
     if (customer.email) {
       sendLockNotificationEmail(customer.email, customer.full_name, device.model).catch(e =>
-        console.error('[Email] Lock notification failed:', e.message)
+        logger.error('[Email] Lock notification failed:', e.message)
       );
     }
 
     return res.status(200).json({ success: true, message: 'Device locked successfully.', mdm: mdmResult });
   } catch (error) {
-    console.error('lockCustomerDevice error:', error);
+    logger.error('lockCustomerDevice error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -1563,10 +1564,10 @@ const unlockCustomerDevice = async (req, res) => {
       try {
         await mdmUnlock(device.udid);
         mdmResult = 'sent';
-        console.log(`[MDM] Unlock command sent for UDID ${device.udid}`);
+        logger.info(`[MDM] Unlock command sent for UDID ${device.udid}`);
       } catch (mdmErr) {
         mdmResult = `failed: ${mdmErr.message}`;
-        console.error(`[MDM] Unlock failed for UDID ${device.udid}:`, mdmErr.message);
+        logger.error(`[MDM] Unlock failed for UDID ${device.udid}:`, mdmErr.message);
       }
     }
 
@@ -1580,21 +1581,21 @@ const unlockCustomerDevice = async (req, res) => {
 
     if (customer.phone) {
       sendDeviceUnlockedSMS(customer.phone, customer.full_name, device.model).catch(e =>
-        console.error('[SMS] Unlock notification failed:', e.message)
+        logger.error('[SMS] Unlock notification failed:', e.message)
       );
       sendDeviceUnlockedWhatsApp(customer.phone, customer.full_name, device.model).catch(e =>
-        console.error('[WhatsApp] Unlock notification failed:', e.message)
+        logger.error('[WhatsApp] Unlock notification failed:', e.message)
       );
     }
     if (customer.email) {
       sendDeviceUnlockedEmail(customer.email, customer.full_name, device.model).catch(e =>
-        console.error('[Email] Unlock notification failed:', e.message)
+        logger.error('[Email] Unlock notification failed:', e.message)
       );
     }
 
     return res.status(200).json({ success: true, message: 'Device unlocked successfully.', mdm: mdmResult });
   } catch (error) {
-    console.error('unlockCustomerDevice error:', error);
+    logger.error('unlockCustomerDevice error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -1636,7 +1637,7 @@ const downloadBackup = async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.status(200).json(backup);
   } catch (error) {
-    console.error('downloadBackup error:', error);
+    logger.error('downloadBackup error:', error);
     res.status(500).json({ success: false, message: 'Failed to generate backup.' });
   }
 };

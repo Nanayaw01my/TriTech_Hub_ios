@@ -4,6 +4,7 @@ const Payment = require('../models/Payment');
 const Device = require('../models/Device');
 const { initializePayment } = require('../utils/paystack');
 const { v4: uuidv4 } = require('uuid');
+const logger = require('../utils/logger');
 
 /**
  * GET /api/customer/dashboard
@@ -99,7 +100,7 @@ const getDashboard = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Customer getDashboard error:', error);
+    logger.error('Customer getDashboard error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -138,7 +139,7 @@ const getPayments = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Customer getPayments error:', error);
+    logger.error('Customer getPayments error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -212,7 +213,7 @@ const makePayment = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Customer makePayment error:', error);
+    logger.error('Customer makePayment error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -237,7 +238,7 @@ const getProfile = async (req, res) => {
       data: { customer },
     });
   } catch (error) {
-    console.error('Customer getProfile error:', error);
+    logger.error('Customer getProfile error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
