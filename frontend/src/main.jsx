@@ -4,6 +4,24 @@ import { Toaster } from 'react-hot-toast'
 import App from './App.jsx'
 import './index.css'
 
+// Register service worker for PWA (offline support + auto-updates)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      // When a new SW version is waiting, reload all clients to activate it
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker?.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // New version ready — reload so users get the update automatically
+            window.location.reload();
+          }
+        });
+      });
+    }).catch(() => {});
+  });
+}
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props)

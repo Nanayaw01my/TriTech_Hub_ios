@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
@@ -12,6 +12,31 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [logoError, setLogoError] = useState(false)
+  // PWA install prompt
+  const [installPrompt, setInstallPrompt] = useState(null)
+  const [showInstallBanner, setShowInstallBanner] = useState(false)
+
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault()
+      setInstallPrompt(e)
+      setShowInstallBanner(true)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const handleInstall = async () => {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    const { outcome } = await installPrompt.userChoice
+    if (outcome === 'accepted') {
+      setShowInstallBanner(false)
+      toast.success('App installed! Find it on your home screen.')
+    }
+    setInstallPrompt(null)
+  }
+
   // 2FA state
   const [otpStep, setOtpStep] = useState(false)
   const [pendingUserId, setPendingUserId] = useState(null)
@@ -95,6 +120,30 @@ export default function Login() {
         style={{ background: 'radial-gradient(circle, rgba(27,94,32,0.16) 0%, transparent 70%)' }} />
       <div className="absolute top-1/2 right-1/3 w-56 h-56 rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(76,175,80,0.07) 0%, transparent 70%)' }} />
+
+      {/* PWA Install Banner (Android Chrome only — iOS shows Add to Home Screen manually) */}
+      {showInstallBanner && (
+        <div className="fixed top-4 left-4 right-4 z-50 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-2xl"
+          style={{ background: 'rgba(30,51,35,0.97)', border: '1px solid rgba(76,175,80,0.35)', backdropFilter: 'blur(12px)' }}>
+          <img src="/logo.png" alt="" className="w-10 h-10 rounded-xl flex-shrink-0 object-cover" />
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-sm font-bold leading-tight">Install TriTech Hub</p>
+            <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Add to home screen for quick access</p>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <button onClick={() => setShowInstallBanner(false)}
+              className="text-xs px-3 py-1.5 rounded-xl font-semibold"
+              style={{ color: 'rgba(255,255,255,0.4)' }}>
+              Later
+            </button>
+            <button onClick={handleInstall}
+              className="text-xs px-3 py-1.5 rounded-xl font-bold"
+              style={{ background: '#2E7D32', color: 'white' }}>
+              Install
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Logo + branding */}
       <div className="text-center mb-8">
