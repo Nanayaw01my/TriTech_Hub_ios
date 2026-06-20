@@ -1,6 +1,4 @@
 const { validationResult } = require('express-validator');
-const path = require('path');
-const fs = require('fs');
 const User = require('../models/User');
 const Customer = require('../models/Customer');
 const Device = require('../models/Device');
@@ -13,21 +11,12 @@ const { sendAdminSaleNotificationEmail, sendCustomerWelcomeEmail } = require('..
 const { sendAdminSaleSMS, sendAdminSaleWhatsApp, sendCustomerWelcomeSMS } = require('../utils/sms');
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../utils/logger');
+const { uploadBase64 } = require('../utils/cloudinary');
 
-// Save a base64-encoded image to disk, return the file path (or null).
-const saveBase64Image = async (base64String, fieldName) => {
-  if (!base64String || typeof base64String !== 'string') return null;
-  const match = base64String.match(/^data:(.+?);base64,(.+)$/);
-  if (!match) return null;
-  const mimeType = match[1];
-  const data = match[2];
-  const ext = mimeType.includes('png') ? '.png' : mimeType.includes('pdf') ? '.pdf' : '.jpg';
-  const uploadDir = process.env.UPLOAD_PATH || './uploads';
-  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-  const filename = `${fieldName}-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-  const filepath = path.join(uploadDir, filename);
-  await fs.promises.writeFile(filepath, Buffer.from(data, 'base64'));
-  return filepath;
+// Upload a base64-encoded image to Cloudinary, return the secure URL (or null).
+const saveBase64Image = async (base64String, fieldName, customerId = '') => {
+  const folder = `tritech/customers/${customerId || 'general'}`;
+  return uploadBase64(base64String, folder);
 };
 
 /**
@@ -262,29 +251,28 @@ const addCustomer = async (req, res) => {
       account_number: accountNumber,
     });
 
-    // --- 6. Handle photos: store base64 strings directly in MongoDB (no disk files) ---
-    const photos = {};
+    // --- 6. Upload photos to Cloudinary, store permanent URLs ---
+    const toBase64DataUrl = (file) => {
+      if (!file) return null;
+      const buf = file.buffer || require('fs').readFileSync(file.path);
+      return `data:${file.mimetype || 'image/jpeg'};base64,${buf.toString('base64')}`;
+    };
+
+    const folder = `tritech/customers/${newUser._id}`;
     const photoFields = ['ghana_card_front', 'ghana_card_back', 'customer_photo', 'guarantor_photo', 'signature'];
-    for (const field of photoFields) {
-      if (req.files?.[field]?.[0]) {
-        // multer file: convert to base64 for consistent storage
-        const buf = req.files[field][0].buffer || require('fs').readFileSync(req.files[field][0].path);
-        const mime = req.files[field][0].mimetype || 'image/jpeg';
-        photos[field] = `data:${mime};base64,${buf.toString('base64')}`;
-      } else if (req.body[field] && req.body[field].startsWith('data:')) {
-        // base64 data URL from camera/gallery — store directly
-        photos[field] = req.body[field];
-      }
-    }
+    const photos = {};
+    await Promise.all(photoFields.map(async (field) => {
+      const raw = req.files?.[field]?.[0]
+        ? toBase64DataUrl(req.files[field][0])
+        : (req.body[field]?.startsWith('data:') ? req.body[field] : null);
+      if (raw) photos[field] = await saveBase64Image(raw, field, newUser._id);
+    }));
 
     let proof_of_income = null;
-    if (req.files?.proof_of_income?.[0]) {
-      const buf = req.files.proof_of_income[0].buffer || require('fs').readFileSync(req.files.proof_of_income[0].path);
-      const mime = req.files.proof_of_income[0].mimetype || 'image/jpeg';
-      proof_of_income = `data:${mime};base64,${buf.toString('base64')}`;
-    } else if (req.body.proof_of_income && req.body.proof_of_income.startsWith('data:')) {
-      proof_of_income = req.body.proof_of_income;
-    }
+    const rawProof = req.files?.proof_of_income?.[0]
+      ? toBase64DataUrl(req.files.proof_of_income[0])
+      : (req.body.proof_of_income?.startsWith('data:') ? req.body.proof_of_income : null);
+    if (rawProof) proof_of_income = await saveBase64Image(rawProof, 'proof_of_income', newUser._id);
 
     // --- 7. Create Customer record ---
     const newCustomer = await Customer.create({
