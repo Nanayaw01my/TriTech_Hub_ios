@@ -571,4 +571,73 @@ const verifyAdminOTP = async (req, res) => {
   }
 };
 
-module.exports = { login, logout, forgotPassword, resetPassword, changePassword, forgotPasswordSMS, resetPasswordOTP, verifyAdminOTP };
+/**
+ * PUT /api/auth/profile
+ * Update the authenticated user's name and/or email.
+ * Requires current_password to confirm identity.
+ */
+const updateProfile = async (req, res) => {
+  try {
+    const { name, email, current_password } = req.body;
+
+    if (!current_password) {
+      return res.status(400).json({ success: false, message: 'Current password is required to save changes.' });
+    }
+    if (!name && !email) {
+      return res.status(400).json({ success: false, message: 'Provide at least a name or email to update.' });
+    }
+
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+    const isMatch = await user.comparePassword(current_password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Current password is incorrect.' });
+    }
+
+    if (email && email.toLowerCase().trim() !== user.email) {
+      const existing = await User.findOne({ email: email.toLowerCase().trim() });
+      if (existing) {
+        return res.status(409).json({ success: false, message: 'That email is already in use by another account.' });
+      }
+      user.email = email.toLowerCase().trim();
+    }
+
+    if (name && name.trim()) {
+      user.name = name.trim();
+    }
+
+    await user.save();
+
+    await AuditLog.create({
+      user_id: user._id,
+      action: 'profile_updated',
+      details: { updated_fields: [...(name ? ['name'] : []), ...(email ? ['email'] : [])] },
+      ip_address: req.ip,
+    });
+
+    logger.info(`Profile updated for ${user.email}`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully.',
+      data: {
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          staff_id: user.staff_id,
+          account_number: user.account_number,
+          is_active: user.is_active,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error('updateProfile error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+module.exports = { login, logout, forgotPassword, resetPassword, changePassword, forgotPasswordSMS, resetPasswordOTP, verifyAdminOTP, updateProfile };

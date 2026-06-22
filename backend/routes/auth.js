@@ -11,6 +11,7 @@ const {
   forgotPasswordSMS,
   resetPasswordOTP,
   verifyAdminOTP,
+  updateProfile,
 } = require('../controllers/authController');
 
 /**
@@ -114,6 +115,19 @@ router.post(
     body('otp').notEmpty().isLength({ min: 6, max: 6 }).withMessage('Enter the 6-digit code.'),
   ],
   verifyAdminOTP
+);
+
+/**
+ * PUT /api/auth/profile
+ * Update authenticated user's name and/or email (requires current password).
+ */
+router.put(
+  '/profile',
+  authenticate,
+  [
+    body('current_password').notEmpty().withMessage('Current password is required.'),
+  ],
+  updateProfile
 );
 
 module.exports = router;

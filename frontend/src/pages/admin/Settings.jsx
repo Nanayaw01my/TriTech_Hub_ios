@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import api from '../../api/axios'
+import { useAuth } from '../../context/AuthContext'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import toast from 'react-hot-toast'
 
 export default function AdminSettings() {
+  const { user, updateUser } = useAuth()
+
   const [settings, setSettings] = useState({
     business_name: 'Tritech Hub iOS',
     contact_email: '',
@@ -17,6 +20,11 @@ export default function AdminSettings() {
   const [settingsLoading, setSettingsLoading] = useState(true)
   const [settingsSaving, setSettingsSaving] = useState(false)
 
+  // My Account
+  const [profileForm, setProfileForm] = useState({ name: '', email: '', current_password: '' })
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [showProfilePw, setShowProfilePw] = useState(false)
+
   const [passwordForm, setPasswordForm] = useState({ current_password: '', new_password: '', confirm_password: '' })
   const [showCurrentPw, setShowCurrentPw] = useState(false)
   const [showNewPw, setShowNewPw] = useState(false)
@@ -27,6 +35,10 @@ export default function AdminSettings() {
   const [clearConfirmText, setClearConfirmText] = useState('')
   const [clearLoading, setClearLoading] = useState(false)
   const [backupLoading, setBackupLoading] = useState(false)
+
+  useEffect(() => {
+    if (user) setProfileForm(f => ({ ...f, name: user.name || '', email: user.email || '' }))
+  }, [user])
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -41,6 +53,27 @@ export default function AdminSettings() {
     }
     fetchSettings()
   }, [])
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault()
+    if (!profileForm.current_password) { toast.error('Enter your current password to save changes.'); return }
+    if (!profileForm.name.trim() && !profileForm.email.trim()) { toast.error('Provide a name or email to update.'); return }
+    setProfileLoading(true)
+    try {
+      const res = await api.put('/auth/profile', {
+        name: profileForm.name.trim(),
+        email: profileForm.email.trim(),
+        current_password: profileForm.current_password,
+      })
+      updateUser(res.data.data.user)
+      setProfileForm(f => ({ ...f, current_password: '' }))
+      toast.success('Account updated successfully!')
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to update account.')
+    } finally {
+      setProfileLoading(false)
+    }
+  }
 
   const handleSaveSettings = async (e) => {
     e.preventDefault()
@@ -142,6 +175,71 @@ export default function AdminSettings() {
       <div className="hidden lg:block mb-5">
         <h1 className="text-2xl font-black text-gray-900">Settings</h1>
         <p className="text-sm text-gray-500 mt-0.5">Configure app settings</p>
+      </div>
+
+      {/* My Account */}
+      <div className="bg-white rounded-2xl shadow-card p-5 mb-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-2xl bg-green-100 flex items-center justify-center flex-shrink-0">
+            <span className="text-green-800 font-black text-base">
+              {(user?.name || 'A').charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-gray-800">My Account</h2>
+            <p className="text-xs text-gray-400">Change your login name or email</p>
+          </div>
+        </div>
+        <form onSubmit={handleSaveProfile} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
+            <input
+              type="text"
+              value={profileForm.name}
+              onChange={e => setProfileForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="Your name"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-green-600"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Login Email</label>
+            <input
+              type="email"
+              value={profileForm.email}
+              onChange={e => setProfileForm(f => ({ ...f, email: e.target.value }))}
+              placeholder="admin@example.com"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-green-600"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Current Password <span className="text-gray-400 font-normal">(required to save)</span>
+            </label>
+            <div className="relative">
+              <input
+                type={showProfilePw ? 'text' : 'password'}
+                value={profileForm.current_password}
+                onChange={e => setProfileForm(f => ({ ...f, current_password: e.target.value }))}
+                placeholder="Enter your current password"
+                className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-green-600"
+              />
+              <button type="button" onClick={() => setShowProfilePw(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400">
+                {showProfilePw ? '🙈' : '👁'}
+              </button>
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={profileLoading}
+            className="w-full py-3.5 bg-green-800 text-white font-bold rounded-2xl
+                       hover:bg-green-900 disabled:opacity-60 flex items-center justify-center gap-2
+                       active:scale-95 transition-all"
+          >
+            {profileLoading && <LoadingSpinner size="sm" color="white" />}
+            Save Account Changes
+          </button>
+        </form>
       </div>
 
       {/* Business Settings */}
