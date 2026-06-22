@@ -27,14 +27,8 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (credentials) => {
     const response = await api.post('/auth/login', credentials)
-    const data = response.data.data
+    const { token, user: userData } = response.data.data
 
-    // Admin 2FA: signal caller to show OTP screen
-    if (data?.requiresOtp) {
-      return data
-    }
-
-    const { token, user: userData } = data
     if (!token || !userData) {
       throw new Error('Invalid response from server')
     }

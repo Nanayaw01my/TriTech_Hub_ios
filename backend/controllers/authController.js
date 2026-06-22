@@ -75,31 +75,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Admin requires 2FA — send OTP before issuing JWT
-    if (user.role === 'admin') {
-      await TempOTP.deleteMany({ user_id: user._id });
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
-      await TempOTP.create({
-        user_id: user._id,
-        otp_hash: otpHash,
-        expires_at: new Date(Date.now() + 10 * 60 * 1000),
-      });
-
-      try {
-        await sendAdminLoginOTPEmail(user.email, user.name, otp);
-      } catch (emailErr) {
-        logger.error('Admin OTP email failed:', emailErr.message);
-      }
-
-      logger.info(`Admin 2FA OTP sent to ${user.email}`);
-      return res.status(200).json({
-        success: true,
-        message: 'A verification code has been sent to your email.',
-        data: { requiresOtp: true, userId: user._id.toString() },
-      });
-    }
-
     // Generate JWT
     const token = user.generateAuthToken();
 
