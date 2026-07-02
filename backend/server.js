@@ -209,29 +209,30 @@ app.get('/api/forceseed', async (req, res) => {
 
 // ─── MAINTENANCE MODE ─────────────────────────────────────────────────────────
 
-app.get('/api/status', async (req, res) => {
+const isMaintenanceOn = async () => {
+  if (process.env.MAINTENANCE_MODE === 'true') return true;
   try {
     const Settings = require('./models/Settings');
     const settings = await Settings.getSingleton();
-    return res.status(200).json({ success: true, maintenance: settings.maintenance_mode || false });
+    return settings.maintenance_mode || false;
   } catch {
-    return res.status(200).json({ success: true, maintenance: false });
+    return false;
   }
+};
+
+app.get('/api/status', async (req, res) => {
+  const maintenance = await isMaintenanceOn();
+  return res.status(200).json({ success: true, maintenance });
 });
 
 const maintenanceGuard = async (req, res, next) => {
-  try {
-    const Settings = require('./models/Settings');
-    const settings = await Settings.getSingleton();
-    if (settings.maintenance_mode) {
-      return res.status(503).json({
-        success: false,
-        maintenance: true,
-        message: 'The system is under maintenance. Please check back soon.',
-      });
-    }
-  } catch {
-    // If settings can't be read, allow through
+  const maintenance = await isMaintenanceOn();
+  if (maintenance) {
+    return res.status(503).json({
+      success: false,
+      maintenance: true,
+      message: 'The system is under maintenance. Please check back soon.',
+    });
   }
   next();
 };
