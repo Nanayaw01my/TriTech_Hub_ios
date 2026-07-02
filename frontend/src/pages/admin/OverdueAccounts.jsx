@@ -81,8 +81,8 @@ export default function OverdueAccounts() {
         <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
       ) : accounts.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-card p-12 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-green-100 flex items-center justify-center mx-auto mb-3">
-            <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto mb-3">
+            <svg className="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
@@ -114,7 +114,7 @@ export default function OverdueAccounts() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <button
                         onClick={() => navigate(`/admin/customers/${acct.customer_id}`)}
-                        className="text-base font-bold text-gray-900 hover:text-green-700 transition-colors"
+                        className="text-base font-bold text-gray-900 hover:text-emerald-700 transition-colors"
                       >
                         {acct.customer_name}
                       </button>
@@ -147,7 +147,7 @@ export default function OverdueAccounts() {
                     {isLocked ? (
                       <button
                         onClick={() => setLockModal({ customerId: acct.customer_id, customerName: acct.customer_name, action: 'unlock' })}
-                        className="px-4 py-2 bg-green-100 text-green-700 rounded-xl text-xs font-semibold hover:bg-green-200 transition-colors"
+                        className="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-semibold hover:bg-emerald-200 transition-colors"
                       >
                         Unlock
                       </button>

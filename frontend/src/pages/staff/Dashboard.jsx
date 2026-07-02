@@ -151,7 +151,7 @@ export default function StaffDashboard() {
           {/* Register CTA */}
           <button
             onClick={() => navigate('/staff/customers/add')}
-            className="w-full py-4 bg-green-800 text-white font-black text-base rounded-2xl
+            className="w-full py-4 bg-emerald-700 text-white font-black text-base rounded-2xl
                        flex items-center justify-center gap-3 shadow-lg
                        active:scale-95 transition-all duration-150 hover:bg-green-900"
           >
@@ -171,7 +171,7 @@ export default function StaffDashboard() {
               <h3 className="text-base font-bold text-gray-800">Recent Customers</h3>
               <button
                 onClick={() => navigate('/staff/customers')}
-                className="text-sm text-green-700 font-semibold hover:text-green-900"
+                className="text-sm text-emerald-700 font-semibold hover:text-emerald-900"
               >
                 View All →
               </button>
@@ -195,11 +195,11 @@ export default function StaffDashboard() {
                     onClick={() => navigate(`/staff/customers/${c._id || c.id}`)}
                     className="flex items-center gap-3 py-3 cursor-pointer hover:bg-gray-50 -mx-1 px-1 rounded-xl transition-colors"
                   >
-                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
                       {c.photo_url ? (
                         <img src={c.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
                       ) : (
-                        <span className="text-green-800 font-bold text-sm">
+                        <span className="text-emerald-800 font-bold text-sm">
                           {(c.full_name || c.name || 'C').charAt(0).toUpperCase()}
                         </span>
                       )}

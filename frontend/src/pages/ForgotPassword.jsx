@@ -56,17 +56,17 @@ export default function ForgotPassword() {
 
   if (resetDone) {
     return (
-      <div className="min-h-screen bg-green-800 flex flex-col">
+      <div className="min-h-screen bg-emerald-700 flex flex-col">
         <div className="flex-1 bg-white rounded-t-3xl mt-24 px-6 pt-12 pb-safe flex flex-col items-center justify-center text-center">
-          <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-5">
-            <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mb-5">
+            <svg className="w-10 h-10 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Password Reset!</h2>
           <p className="text-gray-500 text-sm mb-6">Your password has been updated. You can now log in.</p>
           <Link to="/login"
-            className="w-full max-w-xs py-3.5 bg-green-800 text-white font-bold rounded-2xl text-center block hover:bg-green-900">
+            className="w-full max-w-xs py-3.5 bg-emerald-700 text-white font-bold rounded-2xl text-center block hover:bg-green-900">
             Go to Login
           </Link>
         </div>
@@ -75,10 +75,10 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-green-800 flex flex-col">
+    <div className="min-h-screen bg-emerald-700 flex flex-col">
       <div className="flex-shrink-0 px-6 pt-14 pb-8 text-center">
         <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
-          <svg className="w-9 h-9 text-green-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-9 h-9 text-emerald-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
           </svg>
         </div>
@@ -112,14 +112,14 @@ export default function ForgotPassword() {
                   inputMode="tel"
                   autoComplete="tel"
                   className="w-full px-4 py-3.5 text-base border-2 border-gray-200 rounded-2xl
-                             focus:outline-none focus:border-green-600 bg-white placeholder-gray-400
+                             focus:outline-none focus:border-emerald-600 bg-white placeholder-gray-400
                              transition-colors min-h-[52px]"
                 />
               </div>
               <button
                 type="submit"
                 disabled={smsLoading}
-                className="w-full py-4 bg-green-800 text-white font-bold text-base rounded-2xl
+                className="w-full py-4 bg-emerald-700 text-white font-bold text-base rounded-2xl
                            min-h-[52px] flex items-center justify-center gap-2
                            active:scale-95 transition-all disabled:opacity-60 hover:bg-green-900"
               >
@@ -133,7 +133,7 @@ export default function ForgotPassword() {
             <p className="text-gray-500 text-sm mb-6">
               A 6-digit code was sent to <span className="font-semibold text-gray-700">{phone}</span>.{' '}
               <button onClick={() => { setOtpSent(false); setOtp(''); setError('') }}
-                className="text-green-700 font-semibold hover:underline">
+                className="text-emerald-700 font-semibold hover:underline">
                 Change number
               </button>
             </p>
@@ -158,7 +158,7 @@ export default function ForgotPassword() {
                   autoComplete="one-time-code"
                   maxLength={6}
                   className="w-full px-4 py-3.5 text-2xl font-black text-center tracking-[0.4em]
-                             border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-green-600
+                             border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-emerald-600
                              bg-white placeholder-gray-300 transition-colors min-h-[52px]"
                 />
               </div>
@@ -173,7 +173,7 @@ export default function ForgotPassword() {
                     placeholder="Enter new password"
                     autoComplete="new-password"
                     className="w-full px-4 py-3.5 pr-12 text-base border-2 border-gray-200 rounded-2xl
-                               focus:outline-none focus:border-green-600 bg-white placeholder-gray-400
+                               focus:outline-none focus:border-emerald-600 bg-white placeholder-gray-400
                                transition-colors min-h-[52px]"
                   />
                   <button type="button" onClick={() => setShowPassword(v => !v)} tabIndex={-1}
@@ -203,14 +203,14 @@ export default function ForgotPassword() {
                                ? 'border-red-400 focus:border-red-500'
                                : confirmPassword && confirmPassword === newPassword
                                ? 'border-green-400 focus:border-green-500'
-                               : 'border-gray-200 focus:border-green-600'}`}
+                               : 'border-gray-200 focus:border-emerald-600'}`}
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={resetLoading || otp.length !== 6 || !newPassword || !confirmPassword}
-                className="w-full py-4 bg-green-800 text-white font-bold text-base rounded-2xl
+                className="w-full py-4 bg-emerald-700 text-white font-bold text-base rounded-2xl
                            min-h-[52px] flex items-center justify-center gap-2
                            active:scale-95 transition-all disabled:opacity-60 hover:bg-green-900 mt-2"
               >
@@ -221,7 +221,7 @@ export default function ForgotPassword() {
                 Didn't receive the code?{' '}
                 <button type="button"
                   onClick={() => { setOtpSent(false); setOtp(''); setError('') }}
-                  className="text-green-700 font-semibold hover:underline">
+                  className="text-emerald-700 font-semibold hover:underline">
                   Resend
                 </button>
               </p>
@@ -231,7 +231,7 @@ export default function ForgotPassword() {
 
         <div className="text-center mt-6">
           <Link to="/login"
-            className="inline-flex items-center gap-1.5 text-green-700 font-semibold text-sm hover:text-green-900">
+            className="inline-flex items-center gap-1.5 text-emerald-700 font-semibold text-sm hover:text-emerald-900">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>

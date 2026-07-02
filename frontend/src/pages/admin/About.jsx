@@ -12,8 +12,8 @@ function Section({ title, children }) {
 function Row({ icon, label, desc }) {
   return (
     <div className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0">
-      <div className="w-8 h-8 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <svg className="w-4 h-4 text-green-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <svg className="w-4 h-4 text-emerald-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           {icon}
         </svg>
       </div>
@@ -27,7 +27,7 @@ function Row({ icon, label, desc }) {
 
 function Rule({ color, text }) {
   const colors = {
-    green: 'bg-green-50 text-green-800 border-green-200',
+    green: 'bg-emerald-50 text-emerald-800 border-emerald-200',
     red:   'bg-red-50 text-red-800 border-red-200',
     blue:  'bg-blue-50 text-blue-800 border-blue-200',
     amber: 'bg-amber-50 text-amber-800 border-amber-200',
@@ -73,9 +73,9 @@ export default function AdminAbout() {
               { label: 'Staff', desc: 'Register & pay' },
               { label: 'Customer', desc: 'View & track' },
             ].map(r => (
-              <div key={r.label} className="bg-green-50 rounded-xl p-2.5 text-center">
-                <p className="text-xs font-black text-green-900">{r.label}</p>
-                <p className="text-[10px] text-green-700 mt-0.5">{r.desc}</p>
+              <div key={r.label} className="bg-emerald-50 rounded-xl p-2.5 text-center">
+                <p className="text-xs font-black text-emerald-900">{r.label}</p>
+                <p className="text-[10px] text-emerald-700 mt-0.5">{r.desc}</p>
               </div>
             ))}
           </div>

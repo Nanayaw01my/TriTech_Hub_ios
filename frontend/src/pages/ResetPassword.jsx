@@ -50,7 +50,7 @@ export default function ResetPassword() {
 
   if (!token || !email) {
     return (
-      <div className="min-h-screen bg-green-800 flex flex-col">
+      <div className="min-h-screen bg-emerald-700 flex flex-col">
         <div className="flex-1 bg-white rounded-t-3xl mt-24 px-6 pt-12 pb-safe flex flex-col items-center justify-center text-center">
           <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-5">
             <svg className="w-10 h-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -62,7 +62,7 @@ export default function ResetPassword() {
             This link is invalid or has expired. Please request a new password reset.
           </p>
           <Link to="/forgot-password"
-            className="w-full max-w-xs py-3.5 bg-green-800 text-white font-bold rounded-2xl text-center block hover:bg-green-900">
+            className="w-full max-w-xs py-3.5 bg-emerald-700 text-white font-bold rounded-2xl text-center block hover:bg-green-900">
             Request New Link
           </Link>
         </div>
@@ -72,16 +72,16 @@ export default function ResetPassword() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-green-800 flex flex-col">
+      <div className="min-h-screen bg-emerald-700 flex flex-col">
         <div className="flex-1 bg-white rounded-t-3xl mt-24 px-6 pt-12 pb-safe flex flex-col items-center justify-center text-center">
-          <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-5">
-            <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mb-5">
+            <svg className="w-10 h-10 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Password Reset!</h2>
           <p className="text-gray-600 text-sm mb-6">Your password has been updated successfully. Redirecting to login...</p>
-          <Link to="/login" className="text-green-700 font-semibold text-sm hover:text-green-900">
+          <Link to="/login" className="text-emerald-700 font-semibold text-sm hover:text-emerald-900">
             Go to Login Now
           </Link>
         </div>
@@ -90,10 +90,10 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-green-800 flex flex-col">
+    <div className="min-h-screen bg-emerald-700 flex flex-col">
       <div className="flex-shrink-0 px-6 pt-14 pb-8 text-center">
         <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
-          <svg className="w-9 h-9 text-green-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-9 h-9 text-emerald-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         </div>
@@ -131,7 +131,7 @@ export default function ResetPassword() {
                 placeholder="Enter new password"
                 maxLength={100}
                 className="w-full px-4 py-3.5 pr-12 text-base border-2 border-gray-200 rounded-2xl
-                           focus:outline-none focus:border-green-600 bg-white placeholder-gray-400
+                           focus:outline-none focus:border-emerald-600 bg-white placeholder-gray-400
                            transition-colors min-h-[52px]"
                 autoComplete="new-password"
               />
@@ -178,7 +178,7 @@ export default function ResetPassword() {
                              ? 'border-red-400 focus:border-red-500'
                              : confirmPassword && confirmPassword === password
                              ? 'border-green-400 focus:border-green-500'
-                             : 'border-gray-200 focus:border-green-600'
+                             : 'border-gray-200 focus:border-emerald-600'
                            }`}
                 autoComplete="new-password"
               />
@@ -208,7 +208,7 @@ export default function ResetPassword() {
           <button
             type="submit"
             disabled={loading || !password || !confirmPassword}
-            className="w-full py-4 bg-green-800 text-white font-bold text-base rounded-2xl
+            className="w-full py-4 bg-emerald-700 text-white font-bold text-base rounded-2xl
                        min-h-[52px] flex items-center justify-center gap-2
                        active:scale-95 transition-all duration-150
                        disabled:opacity-60 hover:bg-green-900 mt-2"
@@ -227,7 +227,7 @@ export default function ResetPassword() {
         <div className="text-center mt-6">
           <Link
             to="/login"
-            className="inline-flex items-center gap-1.5 text-green-700 font-semibold text-sm hover:text-green-900"
+            className="inline-flex items-center gap-1.5 text-emerald-700 font-semibold text-sm hover:text-emerald-900"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />

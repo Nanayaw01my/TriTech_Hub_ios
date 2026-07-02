@@ -260,7 +260,7 @@ export default function AdminDevices() {
         <select
           value={lockFilter}
           onChange={(e) => setLockFilter(e.target.value)}
-          className="flex-1 px-3 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-white"
+          className="flex-1 px-3 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-white"
         >
           <option value="">All Lock Status</option>
           <option value="false">Unlocked</option>
@@ -325,7 +325,7 @@ export default function AdminDevices() {
                     onClick={() => setLockModal(d)}
                     className={`mt-1.5 text-xs px-3 py-1.5 rounded-xl font-semibold transition-colors
                       ${isLocked
-                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                        ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
                         : 'bg-red-100 text-red-700 hover:bg-red-200'
                       }`}
                   >
@@ -353,13 +353,13 @@ export default function AdminDevices() {
                 value={salesSearch}
                 onChange={(e) => { setSalesSearch(e.target.value); setSalesPage(1) }}
                 placeholder="Search by customer, device..."
-                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-white"
+                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-white"
               />
             </div>
             <select
               value={salesStatus}
               onChange={(e) => { setSalesStatus(e.target.value); setSalesPage(1) }}
-              className="px-3 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-white"
+              className="px-3 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-white"
             >
               <option value="">All Status</option>
               <option value="active">Active</option>
@@ -396,7 +396,7 @@ export default function AdminDevices() {
                     >
                       {/* Customer + Device row */}
                       <div className="flex items-start gap-3 mb-3">
-                        <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0 font-black text-green-800 text-lg">
+                        <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0 font-black text-emerald-800 text-lg">
                           {s.customer_name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -408,7 +408,7 @@ export default function AdminDevices() {
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-xs text-gray-400">{s.start_date ? format(new Date(s.start_date), 'dd MMM yyyy') : ''}</p>
-                          <p className="text-xs text-green-600 font-semibold mt-0.5">{s.staff_name}</p>
+                          <p className="text-xs text-emerald-600 font-semibold mt-0.5">{s.staff_name}</p>
                         </div>
                       </div>
 
@@ -435,11 +435,11 @@ export default function AdminDevices() {
                         </div>
                         <div className="text-center">
                           <p className="text-xs text-gray-400 mb-0.5">Paid</p>
-                          <p className="text-sm font-black text-green-700">GHS {Number(s.amount_paid).toLocaleString()}</p>
+                          <p className="text-sm font-black text-emerald-700">GHS {Number(s.amount_paid).toLocaleString()}</p>
                         </div>
                         <div className="text-center">
                           <p className="text-xs text-gray-400 mb-0.5">Balance</p>
-                          <p className={`text-sm font-black ${s.remaining_balance > 0 ? 'text-orange-600' : 'text-green-700'}`}>
+                          <p className={`text-sm font-black ${s.remaining_balance > 0 ? 'text-orange-600' : 'text-emerald-700'}`}>
                             GHS {Number(s.remaining_balance).toLocaleString()}
                           </p>
                         </div>
@@ -449,11 +449,11 @@ export default function AdminDevices() {
                       <div className="mt-2">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-[10px] text-gray-400">{s.payments_made}/{s.total_payments} payments</span>
-                          <span className="text-[10px] font-bold text-green-700">{pct}%</span>
+                          <span className="text-[10px] font-bold text-emerald-700">{pct}%</span>
                         </div>
                         <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all ${isCompleted ? 'bg-green-500' : isDefaulted ? 'bg-red-400' : 'bg-green-600'}`}
+                            className={`h-full rounded-full transition-all ${isCompleted ? 'bg-emerald-500' : isDefaulted ? 'bg-red-400' : 'bg-green-600'}`}
                             style={{ width: `${Math.min(100, pct)}%` }}
                           />
                         </div>
@@ -525,7 +525,7 @@ export default function AdminDevices() {
                     <select
                       value={form.color}
                       onChange={(e) => setForm(f => ({ ...f, color: e.target.value }))}
-                      className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-gray-50"
+                      className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-gray-50"
                     >
                       <option value="">Select color</option>
                       {IPHONE_COLORS.map(c => (
@@ -538,7 +538,7 @@ export default function AdminDevices() {
                     <select
                       value={form.storage}
                       onChange={(e) => setForm(f => ({ ...f, storage: e.target.value }))}
-                      className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-gray-50"
+                      className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-gray-50"
                     >
                       <option value="">Select storage</option>
                       {STORAGE_OPTIONS.map(s => (
@@ -569,7 +569,7 @@ export default function AdminDevices() {
                     value={form.price}
                     onChange={(e) => setForm(f => ({ ...f, price: e.target.value }))}
                     placeholder="Auto-filled from model"
-                    className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-gray-50"
+                    className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-gray-50"
                   />
                 </div>
 
@@ -581,7 +581,7 @@ export default function AdminDevices() {
                     value={form.serial_number}
                     onChange={(e) => setForm(f => ({ ...f, serial_number: e.target.value }))}
                     placeholder="e.g. F2LW2ABCDEF"
-                    className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-green-600 font-mono bg-gray-50
+                    className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 font-mono bg-gray-50
                       ${errors.serial_number ? 'border-red-400' : 'border-gray-100'}`}
                   />
                   {errors.serial_number && <p className="text-xs text-red-500 mt-1">{errors.serial_number}</p>}
@@ -595,7 +595,7 @@ export default function AdminDevices() {
                     value={form.udid}
                     onChange={(e) => setForm(f => ({ ...f, udid: e.target.value }))}
                     placeholder="Device UDID or IMEI"
-                    className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-green-600 font-mono bg-gray-50"
+                    className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 font-mono bg-gray-50"
                   />
                 </div>
 
@@ -690,7 +690,7 @@ function ModelPickerInput({ value, onChange, error }) {
         onFocus={() => setOpen(true)}
         placeholder="e.g. iPhone 17 Pro Max"
         autoComplete="off"
-        className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-gray-50
+        className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-gray-50
           ${error ? 'border-red-400' : 'border-gray-100'}`}
       />
       {open && filtered.length > 0 && (
@@ -701,7 +701,7 @@ function ModelPickerInput({ value, onChange, error }) {
               type="button"
               onMouseDown={(e) => { e.preventDefault(); select(m.model) }}
               onTouchEnd={(e) => { e.preventDefault(); select(m.model) }}
-              className="w-full text-left px-4 py-3 text-sm hover:bg-green-50 active:bg-green-100 border-b border-gray-50 last:border-0 flex justify-between items-center gap-2"
+              className="w-full text-left px-4 py-3 text-sm hover:bg-emerald-50 active:bg-emerald-100 border-b border-gray-50 last:border-0 flex justify-between items-center gap-2"
             >
               <span className="font-medium text-gray-800">{m.model}</span>
               <span className="text-xs text-gray-400 flex-shrink-0">GHS {m.price.toLocaleString()}</span>

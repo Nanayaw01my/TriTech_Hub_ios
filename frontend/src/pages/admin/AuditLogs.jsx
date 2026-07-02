@@ -25,9 +25,9 @@ const ACTION_TYPES = [
 
 const ACTION_COLORS = {
   device_lock: 'text-red-600 bg-red-50',
-  device_unlock: 'text-green-600 bg-green-50',
-  payment_made: 'text-green-600 bg-green-50',
-  manual_payment: 'text-green-600 bg-green-50',
+  device_unlock: 'text-emerald-600 bg-emerald-50',
+  payment_made: 'text-emerald-600 bg-emerald-50',
+  manual_payment: 'text-emerald-600 bg-emerald-50',
   customer_registered: 'text-purple-600 bg-purple-50',
   customer_updated: 'text-blue-600 bg-blue-50',
   customer_deleted: 'text-red-600 bg-red-50',
@@ -38,7 +38,7 @@ const ACTION_COLORS = {
   device_updated: 'text-purple-600 bg-purple-50',
   device_deleted: 'text-red-600 bg-red-50',
   password_reset: 'text-orange-600 bg-orange-50',
-  installment_completed: 'text-green-600 bg-green-50',
+  installment_completed: 'text-emerald-600 bg-emerald-50',
   installment_defaulted: 'text-red-600 bg-red-50',
 }
 
@@ -87,7 +87,7 @@ export default function AdminAuditLogs() {
         <select
           value={actionFilter}
           onChange={(e) => { setActionFilter(e.target.value); setPage(1) }}
-          className="w-full sm:w-64 px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-white"
+          className="w-full sm:w-64 px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-white"
         >
           <option value="">All Actions</option>
           {ACTION_TYPES.map(a => (

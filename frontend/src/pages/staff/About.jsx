@@ -12,7 +12,7 @@ function Section({ title, children }) {
 function Step({ num, title, desc }) {
   return (
     <div className="flex items-start gap-3 py-3 border-b border-gray-50 last:border-0">
-      <div className="w-7 h-7 rounded-full bg-green-800 text-white text-xs font-black flex items-center justify-center flex-shrink-0 mt-0.5">
+      <div className="w-7 h-7 rounded-full bg-emerald-700 text-white text-xs font-black flex items-center justify-center flex-shrink-0 mt-0.5">
         {num}
       </div>
       <div>
@@ -25,7 +25,7 @@ function Step({ num, title, desc }) {
 
 function Rule({ color, text }) {
   const colors = {
-    green: 'bg-green-50 text-green-800 border-green-200',
+    green: 'bg-emerald-50 text-emerald-800 border-emerald-200',
     red:   'bg-red-50 text-red-800 border-red-200',
     amber: 'bg-amber-50 text-amber-800 border-amber-200',
   }

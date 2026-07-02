@@ -56,8 +56,8 @@ export default function AdminReports() {
       label: 'Total Revenue',
       value: `GHS ${Number(summary?.totalRevenue || 0).toLocaleString()}`,
       icon: '💰',
-      bg: 'bg-green-50',
-      text: 'text-green-800',
+      bg: 'bg-emerald-50',
+      text: 'text-emerald-800',
     },
     {
       label: 'Transactions',
@@ -163,7 +163,7 @@ export default function AdminReports() {
           <div className="bg-white rounded-2xl shadow-card p-4 mb-5">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-base font-bold text-gray-800">6-Month Revenue Forecast</h3>
-              <span className="text-xs font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-lg">
+              <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg">
                 Projected
               </span>
             </div>

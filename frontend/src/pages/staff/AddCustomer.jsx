@@ -265,7 +265,7 @@ export default function StaffAddCustomer() {
         {STEPS.map((label, idx) => (
           <div key={label} className="flex-1">
             <div className={`h-1.5 rounded-full transition-all duration-300 ${idx + 1 <= step ? 'bg-green-600' : 'bg-gray-200'}`} />
-            <p className={`hidden lg:block text-[10px] font-semibold mt-1 text-center truncate ${idx + 1 <= step ? 'text-green-700' : 'text-gray-400'}`}>
+            <p className={`hidden lg:block text-[10px] font-semibold mt-1 text-center truncate ${idx + 1 <= step ? 'text-emerald-700' : 'text-gray-400'}`}>
               {label}
             </p>
           </div>
@@ -332,7 +332,7 @@ export default function StaffAddCustomer() {
                   maxLength={5}
                   className={inputClass(errors.password) + ' pr-16'}
                 />
-                <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold ${form.password.length === 5 ? 'text-green-600' : 'text-gray-400'}`}>
+                <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold ${form.password.length === 5 ? 'text-emerald-600' : 'text-gray-400'}`}>
                   {form.password.length}/5
                 </span>
               </div>
@@ -404,12 +404,12 @@ export default function StaffAddCustomer() {
               Proof of Income <span className="text-gray-400 font-normal text-xs">(Optional)</span>
             </label>
             {form.proof_of_income ? (
-              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-2xl border border-green-200">
-                <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-2xl border border-emerald-200">
+                <svg className="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-green-700">Document uploaded</p>
+                  <p className="text-sm font-semibold text-emerald-700">Document uploaded</p>
                 </div>
                 <button
                   type="button"
@@ -420,7 +420,7 @@ export default function StaffAddCustomer() {
                 </button>
               </div>
             ) : (
-              <label className="w-full h-24 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-green-500 hover:bg-green-50 transition-colors">
+              <label className="w-full h-24 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-green-500 hover:bg-emerald-50 transition-colors">
                 <svg className="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
@@ -632,13 +632,13 @@ export default function StaffAddCustomer() {
                 </FormField>
 
                 {form.device_model && (
-                  <div className="flex items-center gap-3 p-3 bg-green-50 rounded-2xl border border-green-200">
-                    <svg className="w-8 h-8 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-2xl border border-emerald-200">
+                    <svg className="w-8 h-8 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
                     <div>
-                      <p className="font-bold text-green-800">{form.device_model}</p>
-                      <p className="text-sm text-green-600">GHS {Number(form.device_price).toLocaleString()}</p>
+                      <p className="font-bold text-emerald-800">{form.device_model}</p>
+                      <p className="text-sm text-emerald-600">GHS {Number(form.device_price).toLocaleString()}</p>
                     </div>
                   </div>
                 )}
@@ -668,7 +668,7 @@ export default function StaffAddCustomer() {
                         }}
                         className={`py-3 px-2 rounded-2xl border-2 text-sm font-semibold capitalize transition-all
                           ${form.payment_frequency === freq
-                            ? 'border-green-600 bg-green-50 text-green-700'
+                            ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
                             : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                       >
@@ -690,7 +690,7 @@ export default function StaffAddCustomer() {
                           onClick={() => set('duration', d)}
                           className={`px-4 py-2.5 rounded-2xl border-2 text-sm font-semibold transition-all
                             ${form.duration === d
-                              ? 'border-green-600 bg-green-50 text-green-700'
+                              ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                             }`}
                         >
@@ -705,7 +705,7 @@ export default function StaffAddCustomer() {
 
             {/* Mobile-only payment preview */}
             {form.device_model && Number(form.down_payment) > 0 && (
-              <div className="lg:hidden bg-white rounded-2xl border-2 border-green-200 p-4 space-y-2.5">
+              <div className="lg:hidden bg-white rounded-2xl border-2 border-emerald-200 p-4 space-y-2.5">
                 <h3 className="text-sm font-bold text-gray-800 mb-3">Payment Preview</h3>
                 <PaymentPreviewRows preview={preview} frequency={form.payment_frequency} />
               </div>
@@ -714,10 +714,10 @@ export default function StaffAddCustomer() {
 
           {/* Desktop sticky preview col */}
           <div className="hidden lg:block lg:col-span-2">
-            <div className="sticky top-4 bg-white rounded-2xl border-2 border-green-200 p-5 space-y-3">
+            <div className="sticky top-4 bg-white rounded-2xl border-2 border-emerald-200 p-5 space-y-3">
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-xl bg-green-100 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
                 </div>
@@ -750,7 +750,7 @@ export default function StaffAddCustomer() {
           <button
             type="button"
             onClick={nextStep}
-            className="flex-1 py-3.5 bg-green-800 text-white font-bold text-sm rounded-2xl hover:bg-green-900 active:scale-95 transition-all"
+            className="flex-1 py-3.5 bg-emerald-700 text-white font-bold text-sm rounded-2xl hover:bg-green-900 active:scale-95 transition-all"
           >
             Continue →
           </button>
@@ -759,7 +759,7 @@ export default function StaffAddCustomer() {
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="flex-1 py-3.5 bg-green-800 text-white font-bold text-sm rounded-2xl
+            className="flex-1 py-3.5 bg-emerald-700 text-white font-bold text-sm rounded-2xl
                        hover:bg-green-900 disabled:opacity-60 flex items-center justify-center gap-2
                        active:scale-95 transition-all"
           >
@@ -794,7 +794,7 @@ function PreviewRow({ label, value, highlight, bold }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm text-gray-600">{label}</span>
-      <span className={`text-sm font-semibold ${highlight ? 'text-red-600' : bold ? 'text-green-800 text-base font-bold' : 'text-gray-800'}`}>
+      <span className={`text-sm font-semibold ${highlight ? 'text-red-600' : bold ? 'text-emerald-800 text-base font-bold' : 'text-gray-800'}`}>
         {value}
       </span>
     </div>
@@ -825,7 +825,7 @@ function PaymentPreviewRows({ preview, frequency }) {
 }
 
 const inputClass = (error) =>
-  `w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-white min-h-[48px] ${error ? 'border-red-400' : 'border-gray-200'}`
+  `w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-white min-h-[48px] ${error ? 'border-red-400' : 'border-gray-200'}`
 
 const selectClass = (error) =>
-  `w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-green-600 bg-white min-h-[48px] ${error ? 'border-red-400' : 'border-gray-200'}`
+  `w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-white min-h-[48px] ${error ? 'border-red-400' : 'border-gray-200'}`

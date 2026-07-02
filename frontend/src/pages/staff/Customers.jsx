@@ -90,7 +90,7 @@ export default function StaffCustomers() {
           onChange={(e) => { setSearch(e.target.value); setPage(1) }}
           placeholder="Search by name or account number..."
           className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-2xl text-sm
-                     focus:outline-none focus:border-green-600 bg-white"
+                     focus:outline-none focus:border-emerald-600 bg-white"
         />
       </div>
 
@@ -107,7 +107,7 @@ export default function StaffCustomers() {
           {!search && (
             <button
               onClick={() => navigate('/staff/customers/add')}
-              className="mt-3 px-5 py-2.5 bg-green-800 text-white font-semibold text-sm rounded-xl"
+              className="mt-3 px-5 py-2.5 bg-emerald-700 text-white font-semibold text-sm rounded-xl"
             >
               Register First Customer
             </button>
@@ -122,11 +122,11 @@ export default function StaffCustomers() {
                 onClick={() => navigate(`/staff/customers/${c.id || c._id}`)}
                 className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
               >
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
                   {c.photo_url ? (
                     <img src={c.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
                   ) : (
-                    <span className="text-green-800 font-bold text-sm">
+                    <span className="text-emerald-800 font-bold text-sm">
                       {(c.full_name || c.name || 'C').charAt(0).toUpperCase()}
                     </span>
                   )}

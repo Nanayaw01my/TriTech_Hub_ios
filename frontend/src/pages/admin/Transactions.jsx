@@ -123,7 +123,7 @@ export default function AdminTransactions() {
             type="date"
             value={dateFrom}
             onChange={(e) => { setDateFrom(e.target.value); setPage(1) }}
-            className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-green-600"
+            className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-emerald-600"
           />
         </div>
         <div className="flex-1">
@@ -132,7 +132,7 @@ export default function AdminTransactions() {
             type="date"
             value={dateTo}
             onChange={(e) => { setDateTo(e.target.value); setPage(1) }}
-            className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-green-600"
+            className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-emerald-600"
           />
         </div>
       </div>
@@ -160,8 +160,8 @@ export default function AdminTransactions() {
             <div className="divide-y divide-gray-50">
               {transactions.map((tx) => (
                 <div key={tx._id || tx.id} className="flex items-center gap-3 px-4 py-3.5">
-                  <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                     </svg>
                   </div>
@@ -178,7 +178,7 @@ export default function AdminTransactions() {
                       <p className="text-xs font-mono text-gray-400 truncate">{tx.reference}</p>
                     )}
                   </div>
-                  <p className="text-sm font-bold text-green-800 flex-shrink-0">
+                  <p className="text-sm font-bold text-emerald-800 flex-shrink-0">
                     GHS {Number(tx.amount || 0).toLocaleString()}
                   </p>
                 </div>

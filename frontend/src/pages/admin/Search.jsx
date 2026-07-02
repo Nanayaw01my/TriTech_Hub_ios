@@ -86,10 +86,10 @@ export default function AdminSearch() {
                   <button
                     key={c._id}
                     onClick={() => navigate(`/admin/customers/${c._id}`)}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-green-50 transition-colors text-left"
+                    className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-emerald-50 transition-colors text-left"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
-                      <span className="text-green-800 font-black text-sm">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                      <span className="text-emerald-800 font-black text-sm">
                         {(c.full_name || 'C').charAt(0).toUpperCase()}
                       </span>
                     </div>
@@ -127,7 +127,7 @@ export default function AdminSearch() {
                         {d.imei ? ` · IMEI: ${d.imei}` : ''}
                       </p>
                     </div>
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${d.lock_status === 'locked' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${d.lock_status === 'locked' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
                       {d.lock_status}
                     </span>
                   </div>

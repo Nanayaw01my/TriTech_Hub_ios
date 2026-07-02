@@ -46,10 +46,10 @@ export default function CustomerDashboard() {
 
   const paidAmount = (plan?.down_payment || 0) + ((plan?.payments_made || 0) * (plan?.installment_amount || 0))
 
-  const statusColor = isLocked ? 'bg-red-700' : isOverdue ? 'bg-orange-700' : 'bg-green-800'
+  const statusColor = isLocked ? 'bg-red-600' : isOverdue ? 'bg-orange-600' : 'bg-emerald-600'
 
   return (
-    <div className="pb-24 lg:pb-6 min-h-screen bg-gray-50">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
 
       {/* ── Mobile Hero Header (hidden on desktop) ── */}
       <div className={`lg:hidden px-5 pt-6 pb-10 ${statusColor}`}>
@@ -66,12 +66,12 @@ export default function CustomerDashboard() {
 
       {/* ── Desktop Header (hidden on mobile) ── */}
       <div className="hidden lg:block px-0 pt-2 pb-6">
-        <p className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-1">My Account</p>
+        <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1">My Account</p>
         <h1 className="text-2xl font-black text-gray-900 leading-tight">
           Welcome back, {(user?.full_name || user?.name || 'Customer').split(' ')[0]}!
         </h1>
         {user?.account_number && (
-          <p className="text-sm font-bold text-green-700 mt-0.5">{user.account_number}</p>
+          <p className="text-sm font-bold text-emerald-600 mt-0.5">{user.account_number}</p>
         )}
         <p className="text-xs text-gray-400 mt-0.5">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
       </div>
@@ -88,13 +88,13 @@ export default function CustomerDashboard() {
                 {/* Device header */}
                 <div className="flex items-start gap-3 mb-4">
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0
-                    ${isLocked ? 'bg-red-100' : 'bg-green-100'}`}>
+                    ${isLocked ? 'bg-red-100' : 'bg-emerald-100'}`}>
                     {isLocked ? (
                       <svg className="w-7 h-7 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                       </svg>
                     ) : (
-                      <svg className="w-7 h-7 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-7 h-7 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                       </svg>
                     )}
@@ -139,9 +139,9 @@ export default function CustomerDashboard() {
 
                 {/* Stats grid */}
                 <div className="grid grid-cols-3 gap-1.5 mb-4">
-                  <div className="bg-green-50 rounded-2xl p-3 text-center">
+                  <div className="bg-emerald-50 rounded-2xl p-3 text-center">
                     <p className="text-xs text-gray-500 mb-0.5">Paid</p>
-                    <p className="text-xs font-bold text-green-700">
+                    <p className="text-xs font-bold text-emerald-700">
                       GHS {paidAmount.toLocaleString()}
                     </p>
                   </div>
@@ -182,10 +182,10 @@ export default function CustomerDashboard() {
 
                 {/* Completed */}
                 {isCompleted && (
-                  <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4 mb-4 text-center">
+                  <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 mb-4 text-center">
                     <p className="text-2xl mb-1">🎉</p>
-                    <p className="font-bold text-green-700">Fully Paid!</p>
-                    <p className="text-sm text-green-600">Your {device.model} is completely yours!</p>
+                    <p className="font-bold text-emerald-700">Fully Paid!</p>
+                    <p className="text-sm text-emerald-600">Your {device.model} is completely yours!</p>
                   </div>
                 )}
 
@@ -213,7 +213,7 @@ export default function CustomerDashboard() {
                   <h3 className="text-base font-bold text-gray-800">Recent Payments</h3>
                   <button
                     onClick={() => navigate('/customer/payments')}
-                    className="text-sm text-green-700 font-semibold hover:text-green-900"
+                    className="text-sm text-emerald-700 font-semibold hover:text-emerald-900"
                   >
                     View All →
                   </button>
@@ -232,7 +232,7 @@ export default function CustomerDashboard() {
                     {recentPayments.slice(0, 5).map((p) => (
                       <div key={p.id || p._id} className="flex items-center justify-between py-2.5">
                         <div>
-                          <p className="text-sm font-semibold text-green-700">
+                          <p className="text-sm font-semibold text-emerald-700">
                             GHS {Number(p.amount || 0).toLocaleString()}
                           </p>
                           <p className="text-xs text-gray-400">
@@ -245,7 +245,7 @@ export default function CustomerDashboard() {
                               ? format(new Date(p.created_at || p.payment_date || p.createdAt), 'dd MMM yyyy')
                               : ''}
                           </p>
-                          <span className="text-xs font-semibold text-green-600">Paid</span>
+                          <span className="text-xs font-semibold text-emerald-600">Paid</span>
                         </div>
                       </div>
                     ))}
@@ -263,10 +263,10 @@ export default function CustomerDashboard() {
                       return (
                         <div key={item._id || idx}
                           className={`flex items-center justify-between py-2 px-3 rounded-xl text-sm
-                            ${item.paid ? 'bg-green-50' : isPast ? 'bg-red-50' : 'bg-gray-50'}`}>
+                            ${item.paid ? 'bg-emerald-50' : isPast ? 'bg-red-50' : 'bg-gray-50'}`}>
                           <div className="flex items-center gap-2">
                             <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0
-                              ${item.paid ? 'bg-green-500' : isPast ? 'bg-red-400' : 'bg-gray-300'}`}>
+                              ${item.paid ? 'bg-emerald-500' : isPast ? 'bg-red-400' : 'bg-gray-300'}`}>
                               {item.paid ? (
                                 <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -275,12 +275,12 @@ export default function CustomerDashboard() {
                                 <span className="text-white text-[9px] font-bold">{idx + 1}</span>
                               )}
                             </div>
-                            <span className={`text-xs font-medium ${item.paid ? 'text-green-700' : isPast ? 'text-red-600' : 'text-gray-600'}`}>
+                            <span className={`text-xs font-medium ${item.paid ? 'text-emerald-700' : isPast ? 'text-red-600' : 'text-gray-600'}`}>
                               {format(new Date(item.due_date), 'dd MMM yyyy')}
                             </span>
                           </div>
                           <div className="text-right">
-                            <span className={`text-xs font-bold ${item.paid ? 'text-green-700' : isPast ? 'text-red-600' : 'text-gray-700'}`}>
+                            <span className={`text-xs font-bold ${item.paid ? 'text-emerald-700' : isPast ? 'text-red-600' : 'text-gray-700'}`}>
                               GHS {Number(item.amount).toLocaleString()}
                             </span>
                             <p className={`text-[10px] ${item.paid ? 'text-green-500' : isPast ? 'text-red-400' : 'text-gray-400'}`}>
@@ -315,7 +315,7 @@ export default function CustomerDashboard() {
               <h3 className="text-base font-bold text-gray-800">Recent Payments</h3>
               <button
                 onClick={() => navigate('/customer/payments')}
-                className="text-sm text-green-700 font-semibold hover:text-green-900"
+                className="text-sm text-emerald-700 font-semibold hover:text-emerald-900"
               >
                 View All
               </button>
@@ -324,7 +324,7 @@ export default function CustomerDashboard() {
               {recentPayments.slice(0, 5).map((p) => (
                 <div key={p.id || p._id} className="flex items-center justify-between py-2.5">
                   <div>
-                    <p className="text-sm font-semibold text-green-700">
+                    <p className="text-sm font-semibold text-emerald-700">
                       GHS {Number(p.amount || 0).toLocaleString()}
                     </p>
                     <p className="text-xs text-gray-400">
@@ -337,7 +337,7 @@ export default function CustomerDashboard() {
                         ? format(new Date(p.created_at || p.payment_date || p.createdAt), 'dd MMM yyyy')
                         : ''}
                     </p>
-                    <span className="text-xs font-semibold text-green-600">Paid</span>
+                    <span className="text-xs font-semibold text-emerald-600">Paid</span>
                   </div>
                 </div>
               ))}

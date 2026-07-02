@@ -119,7 +119,7 @@ export default function AdminCustomerDetail() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4 px-4">
         <p className="text-gray-500 text-lg">Customer not found</p>
-        <button onClick={() => navigate(-1)} className="text-green-700 font-semibold">Go Back</button>
+        <button onClick={() => navigate(-1)} className="text-emerald-700 font-semibold">Go Back</button>
       </div>
     )
   }
@@ -150,7 +150,7 @@ export default function AdminCustomerDetail() {
       {/* Back */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-1.5 text-green-700 font-semibold text-sm mb-4 hover:text-green-900"
+        className="flex items-center gap-1.5 text-emerald-700 font-semibold text-sm mb-4 hover:text-emerald-900"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -161,13 +161,13 @@ export default function AdminCustomerDetail() {
       {/* ── HEADER CARD ─────────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-card p-5 mb-4">
         <div className="flex items-start gap-4">
-          <div className="w-20 h-20 rounded-2xl bg-green-100 overflow-hidden flex-shrink-0 cursor-pointer"
+          <div className="w-20 h-20 rounded-2xl bg-emerald-100 overflow-hidden flex-shrink-0 cursor-pointer"
                onClick={() => custPhoto && setImageModal(custPhoto)}>
             {custPhoto ? (
               <img src={custPhoto} alt={customer.full_name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <span className="text-green-800 font-black text-3xl">
+                <span className="text-emerald-800 font-black text-3xl">
                   {(customer.full_name || 'C').charAt(0).toUpperCase()}
                 </span>
               </div>
@@ -175,7 +175,7 @@ export default function AdminCustomerDetail() {
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-black text-gray-900">{customer.full_name}</h1>
-            <p className="text-sm font-bold text-green-700 mt-0.5">{customer.account_number}</p>
+            <p className="text-sm font-bold text-emerald-700 mt-0.5">{customer.account_number}</p>
             <div className="flex flex-wrap gap-1.5 mt-2">
               <StatusBadge status={plan?.status || customer.plan_status || 'active'} />
               {device?.is_locked && <StatusBadge status="locked" />}
@@ -272,7 +272,7 @@ export default function AdminCustomerDetail() {
             {device.is_locked ? (
               <button
                 onClick={() => { setLockAction('unlock'); setLockModal(true) }}
-                className="px-3 py-1.5 bg-green-100 text-green-700 rounded-xl text-xs font-semibold hover:bg-green-200 transition-colors"
+                className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-semibold hover:bg-emerald-200 transition-colors"
               >Unlock Device</button>
             ) : (
               <button
@@ -365,8 +365,8 @@ export default function AdminCustomerDetail() {
             href={`/api/admin/customers/${id}/receipt`}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full py-3 px-4 rounded-xl border-2 border-green-200 text-green-700 font-semibold text-sm
-                       hover:bg-green-50 transition-colors flex items-center gap-2"
+            className="w-full py-3 px-4 rounded-xl border-2 border-emerald-200 text-emerald-700 font-semibold text-sm
+                       hover:bg-emerald-50 transition-colors flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -558,9 +558,9 @@ function LockDeviceModal({ isOpen, onClose, onConfirm, action, customer, device,
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className={`px-5 pt-6 pb-4 ${isLocking ? 'bg-red-50' : 'bg-green-50'}`}>
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 ${isLocking ? 'bg-red-100' : 'bg-green-100'}`}>
-            <svg className={`w-6 h-6 ${isLocking ? 'text-red-600' : 'text-green-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className={`px-5 pt-6 pb-4 ${isLocking ? 'bg-red-50' : 'bg-emerald-50'}`}>
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 ${isLocking ? 'bg-red-100' : 'bg-emerald-100'}`}>
+            <svg className={`w-6 h-6 ${isLocking ? 'text-red-600' : 'text-emerald-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               {isLocking
                 ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
@@ -637,7 +637,7 @@ function LockDeviceModal({ isOpen, onClose, onConfirm, action, customer, device,
               onClick={onConfirm}
               disabled={loading}
               className={`flex-1 py-3.5 font-bold rounded-2xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2
-                ${isLocking ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-green-700 hover:bg-green-800 text-white'}`}
+                ${isLocking ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
             >
               {loading ? <LoadingSpinner size="sm" color="white" /> : null}
               {isLocking ? 'Lock Device' : 'Unlock Device'}

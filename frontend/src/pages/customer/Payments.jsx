@@ -107,7 +107,7 @@ export default function CustomerPayments() {
               label="Pay Now"
               onSuccess={handlePaymentSuccess}
               onClose={() => {}}
-              className="bg-white text-green-800 hover:bg-green-50"
+              className="bg-white text-emerald-800 hover:bg-emerald-50"
             />
           </div>
         </div>
@@ -118,7 +118,7 @@ export default function CustomerPayments() {
         <div className="hidden lg:grid grid-cols-2 gap-3 mb-5">
           <div className="bg-white rounded-2xl shadow-card p-4 text-center">
             <p className="text-xs text-gray-500 mb-1">Total Paid</p>
-            <p className="text-lg font-black text-green-700">
+            <p className="text-lg font-black text-emerald-700">
               GHS {paidAmount.toLocaleString()}
             </p>
           </div>
@@ -147,14 +147,14 @@ export default function CustomerPayments() {
           <div className="divide-y divide-gray-50">
             {payments.map((p) => (
               <div key={p.id || p._id} className="flex items-start gap-3 py-3.5">
-                <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <svg className="w-4 h-4 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-4 h-4 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <p className="text-base font-bold text-green-700">
+                    <p className="text-base font-bold text-emerald-700">
                       GHS {Number(p.amount || 0).toLocaleString()}
                     </p>
                     <StatusBadge status={p.status || 'paid'} />

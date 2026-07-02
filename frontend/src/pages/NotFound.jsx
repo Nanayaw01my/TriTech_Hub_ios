@@ -23,14 +23,14 @@ export default function NotFound() {
         }}>
           404
         </div>
-        <div className="w-16 h-1 bg-green-700 rounded-full mx-auto mb-6" />
+        <div className="w-16 h-1 bg-emerald-600 rounded-full mx-auto mb-6" />
         <h1 className="text-2xl font-black text-gray-900 mb-2">Page Not Found</h1>
         <p className="text-gray-500 text-sm mb-8 leading-relaxed">
           This page doesn't exist or you don't have permission to view it.
         </p>
         <button
           onClick={handleGoHome}
-          className="w-full py-3.5 bg-green-800 text-white font-bold rounded-2xl
+          className="w-full py-3.5 bg-emerald-700 text-white font-bold rounded-2xl
                      hover:bg-green-900 active:scale-95 transition-all"
         >
           Back to Home
