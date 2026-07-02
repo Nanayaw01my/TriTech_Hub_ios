@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "scripts": {
     "build": "cd frontend && npm install && npm run build && cd ../backend && npm install",
-    "start": "cd backend && node server.js"
+    "start": "cd backend && node server.js",
+    "build:apk": "npx @bubblewrap/cli build --config android/bubblewrap.json",
+    "build:apk:init": "npx @bubblewrap/cli init --manifest https://tritechhub.online/manifest.json --package-id com.tritechhub.ios"
+  },
+  "devDependencies": {
+    "@bubblewrap/cli": "^2.8.0"
   }
 }

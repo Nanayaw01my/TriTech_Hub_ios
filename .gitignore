@@ -4,3 +4,6 @@ backend/public/
 .env
 *.local
 uploads/
+# Android keystore (private signing key)
+android/*.keystore
+dist/

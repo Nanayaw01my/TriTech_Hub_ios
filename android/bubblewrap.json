@@ -1,0 +1,29 @@
+{
+  "clipPackage": "com.tritechhub.ios",
+  "hosts": [
+    "tritechhub.online"
+  ],
+  "appVersion": 1,
+  "appVersionName": "1.0.0",
+  "shortcutsShortId": [
+    "dashboard",
+    "customers",
+    "overdue"
+  ],
+  "useBrowserOnChromeOS": false,
+  "isIconAdaptive": true,
+  "isSplashIconMaskable": true,
+  "startUrl": "/",
+  "enableNotifications": true,
+  "androidMinSdkVersion": 21,
+  "androidTargetSdkVersion": 34,
+  "displayMode": "standalone",
+  "themeColor": "#2E7D32",
+  "backgroundColor": "#060d09",
+  "orientation": "any",
+  "name": "TriTech Hub iOS",
+  "shortName": "TriTech Hub",
+  "iconUrl": "https://tritechhub.online/logo.png",
+  "maskableIconUrl": "https://tritechhub.online/logo.png",
+  "monochromeIconUrl": "https://tritechhub.online/logo.png"
+}
