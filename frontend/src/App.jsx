@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { useIdleTimeout } from './hooks/useIdleTimeout'
@@ -6,6 +6,7 @@ import LoadingSpinner from './components/LoadingSpinner'
 import SplashScreen from './components/SplashScreen'
 import ErrorBoundary from './components/ErrorBoundary'
 import OfflineBanner from './components/OfflineBanner'
+import MaintenanceScreen from './components/MaintenanceScreen'
 import NotFound from './pages/NotFound'
 
 // Public pages
@@ -93,6 +94,20 @@ function IdleWatcher() {
 }
 
 function AppRoutes() {
+  const { isAuthenticated, userRole } = useAuth()
+  const [maintenance, setMaintenance] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/status')
+      .then(r => r.json())
+      .then(d => setMaintenance(d?.maintenance || false))
+      .catch(() => {})
+  }, [])
+
+  if (maintenance && isAuthenticated && userRole !== 'admin') {
+    return <MaintenanceScreen />
+  }
+
   return (
     <>
       <IdleWatcher />

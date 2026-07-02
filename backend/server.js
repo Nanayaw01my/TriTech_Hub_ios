@@ -207,6 +207,35 @@ app.get('/api/forceseed', async (req, res) => {
   }
 });
 
+// ─── MAINTENANCE MODE ─────────────────────────────────────────────────────────
+
+app.get('/api/status', async (req, res) => {
+  try {
+    const Settings = require('./models/Settings');
+    const settings = await Settings.getSingleton();
+    return res.status(200).json({ success: true, maintenance: settings.maintenance_mode || false });
+  } catch {
+    return res.status(200).json({ success: true, maintenance: false });
+  }
+});
+
+const maintenanceGuard = async (req, res, next) => {
+  try {
+    const Settings = require('./models/Settings');
+    const settings = await Settings.getSingleton();
+    if (settings.maintenance_mode) {
+      return res.status(503).json({
+        success: false,
+        maintenance: true,
+        message: 'The system is under maintenance. Please check back soon.',
+      });
+    }
+  } catch {
+    // If settings can't be read, allow through
+  }
+  next();
+};
+
 // ─── API ROUTES ───────────────────────────────────────────────────────────────
 
 app.use('/api/auth/login', authLimiter);
@@ -218,8 +247,8 @@ app.use('/api/payment', paymentLimiter);
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
-app.use('/api/staff', require('./routes/staff'));
-app.use('/api/customer', require('./routes/customer'));
+app.use('/api/staff', maintenanceGuard, require('./routes/staff'));
+app.use('/api/customer', maintenanceGuard, require('./routes/customer'));
 app.use('/api/payment', require('./routes/payment'));
 app.use('/api/webhooks', require('./routes/webhook'));
 

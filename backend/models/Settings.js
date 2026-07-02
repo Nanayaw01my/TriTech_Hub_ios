@@ -10,6 +10,7 @@ const SettingsSchema = new mongoose.Schema(
     lock_grace_period_hours: { type: Number, default: 48 },
     installment_frequencies: { type: [String], default: ['daily', 'weekly', 'monthly'] },
     currency: { type: String, trim: true, default: 'GHS' },
+    maintenance_mode: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

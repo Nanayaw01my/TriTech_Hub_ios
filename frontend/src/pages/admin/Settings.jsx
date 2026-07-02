@@ -16,6 +16,7 @@ export default function AdminSettings() {
     currency: 'GHS',
     payment_reminder_days: 1,
     auto_lock_days: 3,
+    maintenance_mode: false,
   })
   const [settingsLoading, setSettingsLoading] = useState(true)
   const [settingsSaving, setSettingsSaving] = useState(false)
@@ -30,6 +31,8 @@ export default function AdminSettings() {
   const [showNewPw, setShowNewPw] = useState(false)
   const [pwLoading, setPwLoading] = useState(false)
   const [pwErrors, setPwErrors] = useState({})
+
+  const [maintenanceToggling, setMaintenanceToggling] = useState(false)
 
   const [showClearModal, setShowClearModal] = useState(false)
   const [clearConfirmText, setClearConfirmText] = useState('')
@@ -113,6 +116,22 @@ export default function AdminSettings() {
       toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Failed to change password')
     } finally {
       setPwLoading(false)
+    }
+  }
+
+  const handleToggleMaintenance = async () => {
+    const newValue = !settings.maintenance_mode
+    setMaintenanceToggling(true)
+    try {
+      await api.put('/admin/settings', { ...settings, maintenance_mode: newValue })
+      setSettings(s => ({ ...s, maintenance_mode: newValue }))
+      toast.success(newValue
+        ? 'Maintenance mode ON — staff & customers are blocked.'
+        : 'Maintenance mode OFF — system is live again.')
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to update maintenance mode')
+    } finally {
+      setMaintenanceToggling(false)
     }
   }
 
@@ -334,6 +353,48 @@ export default function AdminSettings() {
             Save Settings
           </button>
         </form>
+      </div>
+
+      {/* Maintenance Mode */}
+      <div className={`bg-white rounded-2xl shadow-card p-5 mb-4 border-2 transition-colors
+                       ${settings.maintenance_mode ? 'border-orange-200' : 'border-transparent'}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0
+                             ${settings.maintenance_mode ? 'bg-orange-100' : 'bg-gray-100'}`}>
+              <svg className={`w-5 h-5 ${settings.maintenance_mode ? 'text-orange-600' : 'text-gray-500'}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-gray-800">Maintenance Mode</h2>
+              <p className="text-xs text-gray-400">Block staff &amp; customer access</p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleToggleMaintenance}
+            disabled={maintenanceToggling}
+            aria-label="Toggle maintenance mode"
+            className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent
+                        transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-60
+                        ${settings.maintenance_mode ? 'bg-orange-500' : 'bg-gray-200'}`}
+          >
+            <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out
+                               ${settings.maintenance_mode ? 'translate-x-5' : 'translate-x-0'}`} />
+          </button>
+        </div>
+
+        {settings.maintenance_mode && (
+          <div className="mt-3 p-3 bg-orange-50 rounded-xl border border-orange-200">
+            <p className="text-xs text-orange-700 font-semibold">
+              Maintenance mode is ON — staff and customers cannot access the system. Only admins can log in.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Change Password */}
