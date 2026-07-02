@@ -1,0 +1,63 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, develop, 'claude/**' ]
+    paths:
+      - 'frontend/**'
+      - 'android/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Set up Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Install Bubblewrap CLI
+      run: npm install --global @bubblewrap/cli
+
+    - name: Build frontend
+      run: cd frontend && npm install && npm run build && cd ..
+
+    - name: Generate APK
+      run: npx @bubblewrap/cli build --config android/bubblewrap.json
+      env:
+        BUBBLEWRAP_ANDROID_STUDIO_PATH: ${{ android.sdkRoot }}
+
+    - name: Upload APK to Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/app-release-signed.apk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Save APK as artifact
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: apk
+        path: dist/app-release-signed.apk
+        retention-days: 30
