@@ -1,6 +1,9 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 export default function MaintenanceScreen() {
+  const [logoLoaded, setLogoLoaded] = useState(false)
+  const [logoError, setLogoError] = useState(false)
+
   return (
     <div className="relative min-h-screen bg-[#0a0f0d] flex items-center justify-center p-6 overflow-hidden">
 
@@ -26,8 +29,22 @@ export default function MaintenanceScreen() {
 
           {/* Logo */}
           <div className="w-16 h-16 mx-auto mb-8 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-700
-                          flex items-center justify-center shadow-lg shadow-green-900/50">
-            <span className="text-white text-2xl font-black tracking-tight">T</span>
+                          flex items-center justify-center shadow-lg shadow-green-900/50 overflow-hidden">
+            {logoError ? (
+              <span className="text-white text-2xl font-black tracking-tight">T</span>
+            ) : (
+              <img
+                src="/logo.png"
+                alt="TriTech Hub"
+                onLoad={() => setLogoLoaded(true)}
+                onError={() => setLogoError(true)}
+                className="w-full h-full object-cover"
+                style={{ opacity: logoLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
+              />
+            )}
+            {!logoLoaded && !logoError && (
+              <span className="text-white text-2xl font-black tracking-tight">T</span>
+            )}
           </div>
 
           {/* Status pill */}
