@@ -73,33 +73,33 @@ export default function CustomerProfile() {
   const cardBackUrl = customer?.ghana_card_back_url || (customer?.photos?.ghana_card_back ? `/uploads/${customer.photos.ghana_card_back}` : null)
 
   return (
-    <div className="pb-24 lg:pb-6 min-h-screen bg-gray-50">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
 
       {/* Mobile Profile Hero */}
-      <div className="lg:hidden bg-gradient-to-br from-green-900 via-green-800 to-green-900 px-5 pt-6 pb-16 text-center">
+      <div className="lg:hidden bg-gradient-to-br from-gray-50 to-emerald-50 px-5 pt-6 pb-16 text-center">
         <div
-          className="w-24 h-24 rounded-full overflow-hidden border-4 border-white/30 mx-auto cursor-pointer"
+          className="w-24 h-24 rounded-full overflow-hidden border-4 border-emerald-100 mx-auto cursor-pointer"
           onClick={() => photoUrl && setViewingPhoto(photoUrl)}
         >
           {photoUrl ? (
             <img src={photoUrl} alt="Profile" className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full bg-white/20 flex items-center justify-center">
-              <span className="text-white font-black text-4xl">
+            <div className="w-full h-full bg-emerald-100 flex items-center justify-center">
+              <span className="text-emerald-700 font-black text-4xl">
                 {(customer?.full_name || user?.full_name || user?.name || 'U').charAt(0).toUpperCase()}
               </span>
             </div>
           )}
         </div>
-        <h1 className="text-white text-xl font-black mt-3">
+        <h1 className="text-gray-900 text-xl font-black mt-3">
           {customer?.full_name || user?.full_name || user?.name}
         </h1>
-        <p className="text-green-300 text-sm mt-0.5">{customer?.phone || user?.phone}</p>
+        <p className="text-gray-600 text-sm mt-0.5">{customer?.phone || user?.phone}</p>
         {acct && (
           <button
             onClick={copyAccountNumber}
             className={`mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all active:scale-95
-              ${copied ? 'bg-white text-green-800' : 'bg-white/15 text-white'}`}
+              ${copied ? 'bg-white text-emerald-700' : 'bg-emerald-50 border border-emerald-200 text-emerald-700'}`}
           >
             {copied ? (
               <>

@@ -58,21 +58,21 @@ export default function CustomerPayments() {
   const paidAmount = (plan?.down_payment || 0) + ((plan?.payments_made || 0) * (plan?.installment_amount || 0))
 
   return (
-    <div className="pb-24 lg:pb-6 min-h-screen bg-gray-50">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
 
       {/* Mobile Hero */}
-      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-green-900 via-green-800 to-green-900">
-        <p className="text-green-300 text-xs font-semibold uppercase tracking-widest">My Account</p>
-        <h1 className="text-white text-2xl font-black mt-1">Payments</h1>
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-emerald-50">
+        <p className="text-emerald-600 text-xs font-semibold uppercase tracking-widest">My Account</p>
+        <h1 className="text-gray-900 text-2xl font-black mt-1">Payments</h1>
         {plan && (
           <div className="grid grid-cols-2 gap-2 mt-3">
-            <div className="bg-white/10 rounded-2xl p-3">
-              <p className="text-green-300 text-[10px] font-semibold uppercase tracking-wide">Total Paid</p>
-              <p className="text-white text-base font-black mt-0.5">GHS {paidAmount.toLocaleString()}</p>
+            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3">
+              <p className="text-emerald-600 text-[10px] font-semibold uppercase tracking-wide">Total Paid</p>
+              <p className="text-emerald-900 text-base font-black mt-0.5">GHS {paidAmount.toLocaleString()}</p>
             </div>
-            <div className="bg-white/10 rounded-2xl p-3">
-              <p className="text-green-300 text-[10px] font-semibold uppercase tracking-wide">Remaining</p>
-              <p className="text-white text-base font-black mt-0.5">GHS {Number(plan.remaining_balance || 0).toLocaleString()}</p>
+            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3">
+              <p className="text-emerald-600 text-[10px] font-semibold uppercase tracking-wide">Remaining</p>
+              <p className="text-emerald-900 text-base font-black mt-0.5">GHS {Number(plan.remaining_balance || 0).toLocaleString()}</p>
             </div>
           </div>
         )}
@@ -87,15 +87,15 @@ export default function CustomerPayments() {
 
       {/* Make Payment CTA */}
       {plan && plan.status !== 'completed' && (
-        <div className="bg-green-800 rounded-3xl p-5 mb-4 text-white">
-          <p className="text-green-200 text-xs font-semibold mb-0.5">
+        <div className="bg-emerald-500 rounded-2xl p-5 mb-4 text-white">
+          <p className="text-emerald-100 text-xs font-semibold mb-0.5">
             {plan.status === 'overdue' || plan.status === 'defaulted' ? 'OVERDUE PAYMENT' : 'Next Installment'}
           </p>
           <p className="text-3xl font-black">
             GHS {Number(plan.installment_amount || 0).toLocaleString('en-GH', { minimumFractionDigits: 2 })}
           </p>
           {plan.next_due_date && (
-            <p className="text-green-300 text-xs mt-1">
+            <p className="text-emerald-100 text-xs mt-1">
               Due {format(new Date(plan.next_due_date), 'EEEE, dd MMM yyyy')}
             </p>
           )}
