@@ -69,29 +69,28 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4 py-8 relative overflow-hidden">
-      {/* Animated gradient orbs */}
-      <div className="absolute -top-40 -right-40 w-80 h-80 bg-emerald-500/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-      <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50 flex items-center justify-center px-4 py-8 relative overflow-hidden">
+      {/* Subtle background elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-100 rounded-full blur-3xl opacity-20" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-50 rounded-full blur-3xl opacity-30" />
 
       {/* Install Banner */}
       {showInstallBanner && (
-        <div className="fixed top-4 left-4 right-4 z-50 rounded-xl px-4 py-3 flex items-center gap-3 shadow-2xl
-                        bg-gradient-to-r from-emerald-500/20 to-blue-500/20 backdrop-blur-xl border border-white/10">
-          <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="fixed top-4 left-4 right-4 z-50 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-lg
+                        bg-white border border-emerald-200">
+          <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18a6 6 0 100-12 6 6 0 000 12z" />
             </svg>
           </div>
           <div className="flex-1">
-            <p className="text-white text-sm font-bold">Install TriTech Hub</p>
-            <p className="text-xs text-gray-300">Quick access from your home screen</p>
+            <p className="text-gray-900 text-sm font-bold">Install TriTech Hub</p>
+            <p className="text-xs text-gray-600">Quick access from your home screen</p>
           </div>
           <div className="flex gap-2 flex-shrink-0">
             <button
               onClick={() => setShowInstallBanner(false)}
-              className="text-xs px-3 py-1.5 rounded-lg text-gray-300 hover:text-white transition-colors"
+              className="text-xs px-3 py-1.5 rounded-lg text-gray-600 hover:text-gray-900 transition-colors"
             >
               Later
             </button>
@@ -105,10 +104,10 @@ export default function Login() {
       {/* Main Content */}
       <div className="w-full max-w-md relative z-10">
         {/* Logo Section */}
-        <div className="text-center mb-10">
-          <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-2xl shadow-emerald-500/50 overflow-hidden">
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg overflow-hidden">
             {logoError ? (
-              <span className="text-white text-5xl font-black">T</span>
+              <span className="text-white text-4xl font-black">T</span>
             ) : (
               <img
                 src="/logo.png"
@@ -120,21 +119,21 @@ export default function Login() {
               />
             )}
             {!logoLoaded && !logoError && (
-              <span className="text-white text-5xl font-black">T</span>
+              <span className="text-white text-4xl font-black">T</span>
             )}
           </div>
 
-          <h1 className="text-4xl font-black text-white mb-2">TriTech Hub iOS</h1>
-          <p className="text-gray-400 text-sm">iPhone Installment Management</p>
+          <h1 className="text-3xl font-black text-gray-900 mb-1">TriTech Hub</h1>
+          <p className="text-gray-600 text-sm">iPhone Installment Management</p>
         </div>
 
         {/* Login Card */}
-        <Card glass padding="p-8 sm:p-10" className="mb-6">
+        <Card padding="p-8 sm:p-10" className="mb-6 shadow-lg">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Error Message */}
             {error && (
-              <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-                <p className="text-red-300 text-sm font-medium">{error}</p>
+              <div className="p-4 rounded-xl bg-red-50 border border-red-200">
+                <p className="text-red-700 text-sm font-medium">{error}</p>
               </div>
             )}
 
@@ -150,9 +149,12 @@ export default function Login() {
 
             {/* Password Input */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-semibold text-gray-800">Password</label>
+                <Link to="/forgot-password" className="text-xs text-emerald-600 hover:text-emerald-700 font-medium">
+                  Forgot?
+                </Link>
+              </div>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -160,9 +162,9 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
-                  className="w-full px-4 py-3 bg-white/5 border border-gray-200 rounded-lg
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
                            focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
-                           text-gray-900 placeholder-gray-500 transition-all duration-200 backdrop-blur-sm"
+                           text-gray-900 placeholder-gray-500 transition-all"
                 />
                 <button
                   type="button"
@@ -172,16 +174,6 @@ export default function Login() {
                   {showPassword ? '🙈' : '👁'}
                 </button>
               </div>
-            </div>
-
-            {/* Forgot Password */}
-            <div className="text-right">
-              <Link
-                to="/forgot-password"
-                className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors font-medium"
-              >
-                Forgot password?
-              </Link>
             </div>
 
             {/* Login Button */}
@@ -197,9 +189,9 @@ export default function Login() {
           </form>
 
           {/* Demo Credentials */}
-          <div className="mt-6 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-            <p className="text-xs font-bold text-blue-300 mb-2">Demo Credentials</p>
-            <div className="space-y-1 text-xs text-gray-300 font-mono">
+          <div className="mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200">
+            <p className="text-xs font-bold text-blue-900 mb-2">Demo Credentials</p>
+            <div className="space-y-1 text-xs text-blue-800 font-mono">
               <p>Admin: admin@tritech.com / admin123</p>
               <p>Staff: staff@tritech.com / staff123</p>
             </div>

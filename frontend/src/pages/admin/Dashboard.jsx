@@ -106,29 +106,29 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="pb-24 lg:pb-6">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
 
       {/* ── Mobile Hero (hidden on desktop) ── */}
-      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-green-900 via-green-800 to-green-900">
-        <p className="text-green-300 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
-        <h1 className="text-white text-2xl font-black mt-1 leading-tight">
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-emerald-50">
+        <p className="text-emerald-600 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
+        <h1 className="text-gray-900 text-2xl font-black mt-1 leading-tight">
           {(user?.full_name || user?.name || 'Admin').split(' ')[0]}
         </h1>
-        <p className="text-green-400 text-xs mt-0.5">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
+        <p className="text-gray-500 text-xs mt-0.5">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
 
         {/* Hero stat pills */}
         <div className="grid grid-cols-3 gap-2 mt-4">
-          <div className="bg-white/10 backdrop-blur rounded-2xl p-3 text-center">
-            <p className="text-white text-xl font-black leading-none">{stats?.totalCustomers ?? 0}</p>
-            <p className="text-green-300 text-[10px] font-semibold mt-0.5">Customers</p>
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3 text-center">
+            <p className="text-emerald-700 text-xl font-black leading-none">{stats?.totalCustomers ?? 0}</p>
+            <p className="text-emerald-600 text-[10px] font-semibold mt-0.5">Customers</p>
           </div>
-          <div className="bg-white/10 backdrop-blur rounded-2xl p-3 text-center">
-            <p className="text-white text-xl font-black leading-none">{stats?.activeInstallmentPlans ?? 0}</p>
-            <p className="text-green-300 text-[10px] font-semibold mt-0.5">Active Plans</p>
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 text-center">
+            <p className="text-blue-700 text-xl font-black leading-none">{stats?.activeInstallmentPlans ?? 0}</p>
+            <p className="text-blue-600 text-[10px] font-semibold mt-0.5">Active Plans</p>
           </div>
-          <div className={`rounded-2xl p-3 text-center ${(stats?.overduePayments ?? 0) > 0 ? 'bg-red-500/40' : 'bg-white/10'}`}>
-            <p className="text-white text-xl font-black leading-none">{stats?.overduePayments ?? 0}</p>
-            <p className={`text-[10px] font-semibold mt-0.5 ${(stats?.overduePayments ?? 0) > 0 ? 'text-red-200' : 'text-green-300'}`}>Overdue</p>
+          <div className={`rounded-2xl p-3 text-center border ${(stats?.overduePayments ?? 0) > 0 ? 'bg-red-50 border-red-100' : 'bg-yellow-50 border-yellow-100'}`}>
+            <p className={`text-xl font-black leading-none ${(stats?.overduePayments ?? 0) > 0 ? 'text-red-700' : 'text-yellow-700'}`}>{stats?.overduePayments ?? 0}</p>
+            <p className={`text-[10px] font-semibold mt-0.5 ${(stats?.overduePayments ?? 0) > 0 ? 'text-red-600' : 'text-yellow-600'}`}>Overdue</p>
           </div>
         </div>
       </div>

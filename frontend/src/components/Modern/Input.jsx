@@ -10,7 +10,7 @@ export default function Input({
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <label className="block text-sm font-semibold text-gray-800 mb-2">
           {label}
         </label>
       )}
@@ -21,10 +21,10 @@ export default function Input({
           </div>
         )}
         <input
-          className={`w-full px-4 ${Icon ? 'pl-12' : ''} py-3 bg-white/5 border border-gray-200 rounded-lg
+          className={`w-full px-4 ${Icon ? 'pl-12' : ''} py-3 bg-white border border-gray-200 rounded-xl
                        focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
                        text-gray-900 placeholder-gray-500 transition-all duration-200
-                       backdrop-blur-sm ${error ? 'border-red-500 focus:ring-red-500' : ''} ${className}`}
+                       ${error ? 'border-red-500 focus:ring-red-500' : ''} ${className}`}
           {...props}
         />
       </div>

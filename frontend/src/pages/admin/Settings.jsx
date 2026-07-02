@@ -126,22 +126,22 @@ export default function AdminSettings() {
   }
 
   return (
-    <div className="pb-24 lg:pb-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen">
+    <div className="pb-24 lg:pb-6 bg-gradient-to-br from-gray-50 via-white to-emerald-50 min-h-screen">
       {/* Header */}
-      <div className="lg:hidden px-6 pt-6 pb-8 bg-gradient-to-br from-emerald-600 to-emerald-700">
-        <h1 className="text-white text-3xl font-black">Settings</h1>
-        <p className="text-emerald-100 text-sm mt-2">Manage your account & app</p>
+      <div className="lg:hidden px-6 pt-6 pb-8 bg-gradient-to-br from-gray-50 to-emerald-50">
+        <h1 className="text-gray-900 text-3xl font-black">Settings</h1>
+        <p className="text-gray-600 text-sm mt-2">Manage your account & app</p>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 lg:px-6 -mt-4 lg:mt-6">
         {/* Desktop Header */}
         <div className="hidden lg:block mb-8">
-          <h1 className="text-4xl font-black text-white mb-2">Settings</h1>
-          <p className="text-gray-400">Configure your account and application</p>
+          <h1 className="text-4xl font-black text-gray-900 mb-2">Settings</h1>
+          <p className="text-gray-600">Configure your account and application</p>
         </div>
 
         {/* My Account Section */}
-        <Card glass padding="p-6 sm:p-8" className="mb-6">
+        <Card padding="p-6 sm:p-8" className="mb-6 shadow-lg">
           <div className="flex items-center gap-4 mb-6">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
               <span className="text-white text-xl font-black">
@@ -149,8 +149,8 @@ export default function AdminSettings() {
               </span>
             </div>
             <div>
-              <h2 className="text-white text-lg font-bold">My Account</h2>
-              <p className="text-gray-400 text-sm">Update your profile information</p>
+              <h2 className="text-gray-900 text-lg font-bold">My Account</h2>
+              <p className="text-gray-600 text-sm">Update your profile information</p>
             </div>
           </div>
 
@@ -169,8 +169,8 @@ export default function AdminSettings() {
               placeholder="admin@example.com"
             />
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Current Password <span className="text-gray-500 font-normal">(to confirm changes)</span>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Current Password <span className="text-gray-600 font-normal">(to confirm changes)</span>
               </label>
               <div className="relative">
                 <input
@@ -178,9 +178,9 @@ export default function AdminSettings() {
                   value={profileForm.current_password}
                   onChange={e => setProfileForm(f => ({ ...f, current_password: e.target.value }))}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-white/5 border border-gray-200 rounded-lg
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
                            focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
-                           text-gray-900 placeholder-gray-500 transition-all backdrop-blur-sm"
+                           text-gray-900 placeholder-gray-500 transition-all"
                 />
                 <button
                   type="button"
@@ -198,8 +198,8 @@ export default function AdminSettings() {
         </Card>
 
         {/* Business Settings */}
-        <Card glass padding="p-6 sm:p-8" className="mb-6">
-          <h2 className="text-white text-lg font-bold mb-6">Business Information</h2>
+        <Card padding="p-6 sm:p-8" className="mb-6 shadow-lg">
+          <h2 className="text-gray-900 text-lg font-bold mb-6">Business Information</h2>
           <form onSubmit={handleSaveSettings} className="space-y-5">
             <Input
               label="Business Name"
@@ -225,15 +225,15 @@ export default function AdminSettings() {
               onChange={(e) => setSettings(s => ({ ...s, whatsapp_number: e.target.value }))}
             />
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Address</label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">Address</label>
               <textarea
                 value={settings.contact_address}
                 onChange={(e) => setSettings(s => ({ ...s, contact_address: e.target.value }))}
                 placeholder="Physical address"
                 rows={3}
-                className="w-full px-4 py-3 bg-white/5 border border-gray-200 rounded-lg
+                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
                          focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900
-                         placeholder-gray-500 transition-all backdrop-blur-sm resize-none"
+                         placeholder-gray-500 transition-all resize-none"
               />
             </div>
             <Button type="submit" disabled={settingsSaving} loading={settingsSaving} className="w-full">
@@ -243,18 +243,18 @@ export default function AdminSettings() {
         </Card>
 
         {/* Maintenance Mode */}
-        <Card glass padding="p-6 sm:p-8" className="mb-6">
+        <Card padding="p-6 sm:p-8" className="mb-6 shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                <svg className="w-5 h-5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
+                <svg className="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-white font-bold">Maintenance Mode</h3>
-                <p className="text-gray-400 text-sm">Block staff & customer access</p>
+                <h3 className="text-gray-900 font-bold">Maintenance Mode</h3>
+                <p className="text-gray-600 text-sm">Block staff & customer access</p>
               </div>
             </div>
             <button
@@ -278,18 +278,18 @@ export default function AdminSettings() {
         </Card>
 
         {/* Change Password */}
-        <Card glass padding="p-6 sm:p-8" className="mb-6">
-          <h2 className="text-white text-lg font-bold mb-6">Change Password</h2>
+        <Card padding="p-6 sm:p-8" className="mb-6 shadow-lg">
+          <h2 className="text-gray-900 text-lg font-bold mb-6">Change Password</h2>
           <form onSubmit={handleChangePassword} className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Current Password</label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">Current Password</label>
               <div className="relative">
                 <input
                   type={showCurrentPw ? 'text' : 'password'}
                   value={passwordForm.current_password}
                   onChange={(e) => setPasswordForm(f => ({ ...f, current_password: e.target.value }))}
-                  className={`w-full px-4 py-3 bg-white/5 border rounded-lg focus:outline-none focus:ring-2
-                            focus:ring-emerald-500 text-gray-900 transition-all backdrop-blur-sm
+                  className={`w-full px-4 py-3 bg-white border rounded-xl focus:outline-none focus:ring-2
+                            focus:ring-emerald-500 text-gray-900 transition-all
                             ${pwErrors.current_password ? 'border-red-400' : 'border-gray-200'}`}
                 />
                 <button type="button" onClick={() => setShowCurrentPw(!showCurrentPw)}
@@ -297,18 +297,18 @@ export default function AdminSettings() {
                   {showCurrentPw ? '🙈' : '👁'}
                 </button>
               </div>
-              {pwErrors.current_password && <p className="text-red-400 text-xs mt-1">{pwErrors.current_password}</p>}
+              {pwErrors.current_password && <p className="text-red-600 text-xs mt-1">{pwErrors.current_password}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">New Password</label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">New Password</label>
               <div className="relative">
                 <input
                   type={showNewPw ? 'text' : 'password'}
                   value={passwordForm.new_password}
                   onChange={(e) => setPasswordForm(f => ({ ...f, new_password: e.target.value }))}
-                  className={`w-full px-4 py-3 bg-white/5 border rounded-lg focus:outline-none focus:ring-2
-                            focus:ring-emerald-500 text-gray-900 transition-all backdrop-blur-sm
+                  className={`w-full px-4 py-3 bg-white border rounded-xl focus:outline-none focus:ring-2
+                            focus:ring-emerald-500 text-gray-900 transition-all
                             ${pwErrors.new_password ? 'border-red-400' : 'border-gray-200'}`}
                 />
                 <button type="button" onClick={() => setShowNewPw(!showNewPw)}
@@ -316,20 +316,20 @@ export default function AdminSettings() {
                   {showNewPw ? '🙈' : '👁'}
                 </button>
               </div>
-              {pwErrors.new_password && <p className="text-red-400 text-xs mt-1">{pwErrors.new_password}</p>}
+              {pwErrors.new_password && <p className="text-red-600 text-xs mt-1">{pwErrors.new_password}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm New Password</label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">Confirm New Password</label>
               <input
                 type="password"
                 value={passwordForm.confirm_password}
                 onChange={(e) => setPasswordForm(f => ({ ...f, confirm_password: e.target.value }))}
-                className={`w-full px-4 py-3 bg-white/5 border rounded-lg focus:outline-none focus:ring-2
-                          focus:ring-emerald-500 text-gray-900 transition-all backdrop-blur-sm
+                className={`w-full px-4 py-3 bg-white border rounded-xl focus:outline-none focus:ring-2
+                          focus:ring-emerald-500 text-gray-900 transition-all
                           ${pwErrors.confirm_password ? 'border-red-400' : 'border-gray-200'}`}
               />
-              {pwErrors.confirm_password && <p className="text-red-400 text-xs mt-1">{pwErrors.confirm_password}</p>}
+              {pwErrors.confirm_password && <p className="text-red-600 text-xs mt-1">{pwErrors.confirm_password}</p>}
             </div>
 
             <Button type="submit" variant="secondary" disabled={pwLoading} loading={pwLoading} className="w-full">
@@ -339,9 +339,9 @@ export default function AdminSettings() {
         </Card>
 
         {/* Danger Zone */}
-        <Card glass padding="p-6 sm:p-8" className="border-red-500/30 mb-6">
-          <h2 className="text-red-400 text-lg font-bold mb-3">Danger Zone</h2>
-          <p className="text-gray-300 text-sm mb-4">
+        <Card padding="p-6 sm:p-8" className="border border-red-200 bg-red-50 mb-6 shadow-lg">
+          <h2 className="text-red-700 text-lg font-bold mb-3">Danger Zone</h2>
+          <p className="text-red-600 text-sm mb-4">
             Permanently delete all customers, devices, and transactions.
           </p>
           <Button variant="danger" onClick={() => { setShowClearModal(true); setClearConfirmText('') }}>
@@ -352,29 +352,29 @@ export default function AdminSettings() {
 
       {/* Clear Modal */}
       {showClearModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <Card glass padding="p-8" className="w-full max-w-sm">
-            <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center mb-4 mx-auto">
-              <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <Card padding="p-8" className="w-full max-w-sm shadow-xl">
+            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4 mx-auto">
+              <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M12 9v2m0 4v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
               </svg>
             </div>
-            <h3 className="text-white text-lg font-bold text-center mb-2">Clear All Data?</h3>
-            <p className="text-gray-300 text-sm text-center mb-6">
+            <h3 className="text-gray-900 text-lg font-bold text-center mb-2">Clear All Data?</h3>
+            <p className="text-gray-600 text-sm text-center mb-6">
               This will permanently delete all customers, devices, and transactions. This cannot be undone.
             </p>
-            <p className="text-xs font-semibold text-gray-400 mb-2">
-              Type <span className="font-mono bg-white/5 px-2 py-1 rounded text-gray-300">DELETE ALL DATA</span> to confirm:
+            <p className="text-xs font-semibold text-gray-700 mb-2">
+              Type <span className="font-mono bg-gray-100 px-2 py-1 rounded text-gray-900">DELETE ALL DATA</span> to confirm:
             </p>
             <input
               type="text"
               value={clearConfirmText}
               onChange={(e) => setClearConfirmText(e.target.value)}
               placeholder="DELETE ALL DATA"
-              className="w-full px-4 py-3 bg-white/5 border border-gray-200 rounded-lg
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
                        focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-900
-                       placeholder-gray-500 transition-all backdrop-blur-sm mb-4 font-mono"
+                       placeholder-gray-500 transition-all mb-4 font-mono"
             />
             <div className="flex gap-3">
               <Button variant="secondary" className="flex-1" onClick={() => setShowClearModal(false)}>

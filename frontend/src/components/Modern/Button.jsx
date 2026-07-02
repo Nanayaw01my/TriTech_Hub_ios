@@ -9,13 +9,13 @@ export default function Button({
   className = '',
   ...props
 }) {
-  const baseStyles = 'font-semibold rounded-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2'
+  const baseStyles = 'font-semibold rounded-full transition-all duration-200 active:scale-95 flex items-center justify-center gap-2'
 
   const variants = {
-    primary: 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/30 disabled:opacity-50',
-    secondary: 'bg-white/10 text-white border border-white/20 hover:bg-white/20 backdrop-blur-sm disabled:opacity-50',
-    danger: 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-lg shadow-red-500/30 disabled:opacity-50',
-    ghost: 'text-gray-700 hover:bg-gray-100 disabled:opacity-50',
+    primary: 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed',
+    secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed',
+    danger: 'bg-red-500 text-white hover:bg-red-600 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed',
+    ghost: 'text-emerald-600 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed',
   }
 
   const sizes = {
