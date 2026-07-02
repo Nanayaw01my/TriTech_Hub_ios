@@ -516,7 +516,7 @@ const sendBackupEmail = async (email, backupJson, filename) => {
       <div class="body">
         <p>Your daily system backup is attached. This backup was generated at ${new Date().toLocaleString('en-GH')}.</p>
         <p><strong>Backup Contents:</strong></p>
-        <div class="stat">Customers, Devices, Installment Plans, Transactions, Audit Logs, and Staff Users</div>
+        <div class="stat">Customers, Devices, Installment Plans, Payments, Audit Logs, and Staff Users</div>
         <p style="font-size:12px;color:#6b7280">Store this backup securely. It contains all system data and should be treated as sensitive.</p>
       </div>
       <div class="footer"><p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p></div>

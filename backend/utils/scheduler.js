@@ -4,7 +4,7 @@ const Device = require('../models/Device');
 const Customer = require('../models/Customer');
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
-const Transaction = require('../models/Transaction');
+const Payment = require('../models/Payment');
 const { sendLockNotificationEmail, sendAdminPaymentReminderEmail, sendAdminOverdueAlertEmail, sendPaymentReminderEmail } = require('./email');
 const { sendPaymentReminderSMS, sendPaymentReminderWhatsApp, sendDeviceLockedSMS, sendDeviceLockedWhatsApp } = require('./sms');
 const logger = require('./logger');
@@ -266,11 +266,11 @@ const dailyBackup = async () => {
   logger.info('[Scheduler] Running daily backup...');
 
   try {
-    const [customers, devices, plans, transactions, auditLogs, staffUsers] = await Promise.all([
+    const [customers, devices, plans, payments, auditLogs, staffUsers] = await Promise.all([
       Customer.find().lean(),
       Device.find().lean(),
       InstallmentPlan.find().lean(),
-      Transaction.find().lean(),
+      Payment.find().lean(),
       AuditLog.find().lean(),
       User.find({ role: { $in: ['staff', 'admin'] } }).lean(),
     ]);
@@ -281,10 +281,10 @@ const dailyBackup = async () => {
         customers: customers.length,
         devices: devices.length,
         plans: plans.length,
-        transactions: transactions.length,
+        payments: payments.length,
         auditLogs: auditLogs.length,
       },
-      data: { customers, devices, plans, transactions, auditLogs, staffUsers },
+      data: { customers, devices, plans, payments, auditLogs, staffUsers },
     };
 
     const backupJson = JSON.stringify(backup, null, 2);
