@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { encrypt, decrypt, isEncrypted } = require('../utils/encryption');
 
 const PasswordResetSchema = new mongoose.Schema(
   {
@@ -36,6 +37,24 @@ const PasswordResetSchema = new mongoose.Schema(
     timestamps: false,
   }
 );
+
+// Auto-encrypt phone on save
+PasswordResetSchema.pre('save', function (next) {
+  if (this.isModified('phone') && this.phone && !isEncrypted(this.phone)) {
+    this.phone = encrypt(this.phone);
+  }
+  next();
+});
+
+// Auto-decrypt phone on retrieval
+PasswordResetSchema.post(/^find/, function (docs) {
+  const docArray = Array.isArray(docs) ? docs : [docs || {}];
+  docArray.forEach(doc => {
+    if (doc && doc.phone && typeof doc.phone === 'string') {
+      doc.phone = decrypt(doc.phone);
+    }
+  });
+});
 
 // TTL index: automatically remove documents after expires_at
 PasswordResetSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });

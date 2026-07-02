@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { encrypt, decrypt, isEncrypted } = require('../utils/encryption');
 
 const CustomerSchema = new mongoose.Schema(
   {
@@ -123,5 +124,41 @@ CustomerSchema.index({ created_by: 1 });
 CustomerSchema.index({ email: 1 });
 CustomerSchema.index({ phone: 1 });
 CustomerSchema.index({ full_name: 'text' });
+
+// Auto-encrypt phone on save
+CustomerSchema.pre('save', function (next) {
+  if (this.isModified('phone') && this.phone && !isEncrypted(this.phone)) {
+    this.phone = encrypt(this.phone);
+  }
+  if (this.isModified('ghana_card_id') && this.ghana_card_id && !isEncrypted(this.ghana_card_id)) {
+    this.ghana_card_id = encrypt(this.ghana_card_id);
+  }
+  if (this.isModified('guarantor.phone') && this.guarantor?.phone && !isEncrypted(this.guarantor.phone)) {
+    this.guarantor.phone = encrypt(this.guarantor.phone);
+  }
+  if (this.isModified('guarantor.ghana_card_id') && this.guarantor?.ghana_card_id && !isEncrypted(this.guarantor.ghana_card_id)) {
+    this.guarantor.ghana_card_id = encrypt(this.guarantor.ghana_card_id);
+  }
+  next();
+});
+
+// Auto-decrypt phone on retrieval
+CustomerSchema.post(/^find/, function () {
+  const docs = Array.isArray(this._doc) ? [this._doc] : [this];
+  docs.forEach(doc => {
+    if (doc && doc.phone && typeof doc.phone === 'string') {
+      doc.phone = decrypt(doc.phone);
+    }
+    if (doc && doc.ghana_card_id && typeof doc.ghana_card_id === 'string') {
+      doc.ghana_card_id = decrypt(doc.ghana_card_id);
+    }
+    if (doc && doc.guarantor?.phone && typeof doc.guarantor.phone === 'string') {
+      doc.guarantor.phone = decrypt(doc.guarantor.phone);
+    }
+    if (doc && doc.guarantor?.ghana_card_id && typeof doc.guarantor.ghana_card_id === 'string') {
+      doc.guarantor.ghana_card_id = decrypt(doc.guarantor.ghana_card_id);
+    }
+  });
+});
 
 module.exports = mongoose.model('Customer', CustomerSchema);

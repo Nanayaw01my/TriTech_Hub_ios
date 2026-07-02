@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { encrypt, decrypt, isEncrypted } = require('../utils/encryption');
 
 const UserSchema = new mongoose.Schema(
   {
@@ -69,14 +70,32 @@ const UserSchema = new mongoose.Schema(
 
 // Hash password before saving
 UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (err) {
-    next(err);
+  // Hash password if modified
+  if (this.isModified('password')) {
+    try {
+      const salt = await bcrypt.genSalt(10);
+      this.password = await bcrypt.hash(this.password, salt);
+    } catch (err) {
+      return next(err);
+    }
   }
+
+  // Encrypt phone if modified
+  if (this.isModified('phone') && this.phone && !isEncrypted(this.phone)) {
+    this.phone = encrypt(this.phone);
+  }
+
+  next();
+});
+
+// Auto-decrypt phone on retrieval
+UserSchema.post(/^find/, function (docs) {
+  const docArray = Array.isArray(docs) ? docs : [docs || {}];
+  docArray.forEach(doc => {
+    if (doc && doc.phone && typeof doc.phone === 'string') {
+      doc.phone = decrypt(doc.phone);
+    }
+  });
 });
 
 // Compare password method
