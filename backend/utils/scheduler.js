@@ -7,6 +7,7 @@ const AuditLog = require('../models/AuditLog');
 const Payment = require('../models/Payment');
 const { sendLockNotificationEmail, sendAdminPaymentReminderEmail, sendAdminOverdueAlertEmail, sendPaymentReminderEmail } = require('./email');
 const { sendPaymentReminderSMS, sendPaymentReminderWhatsApp, sendDeviceLockedSMS, sendDeviceLockedWhatsApp } = require('./sms');
+const { lockDevice: mdmLock } = require('./simpleMDM');
 const logger = require('./logger');
 
 /**
@@ -108,6 +109,20 @@ const checkOverduePayments = async () => {
 
         logger.info('[Scheduler] Marking device %s as locked for overdue plan %s (customer: %s)', device._id, plan._id, customer.full_name);
 
+        // Send the ACTUAL lock command to the physical iPhone via SimpleMDM (Lost Mode).
+        // Requires the device to be supervised and enrolled in SimpleMDM with a stored UDID.
+        let mdmResult = 'skipped (no UDID)';
+        if (device.udid) {
+          try {
+            await mdmLock(device.udid);
+            mdmResult = 'sent';
+            logger.info('[Scheduler][MDM] Lock command sent for UDID %s', device.udid);
+          } catch (mdmErr) {
+            mdmResult = `failed: ${mdmErr.message}`;
+            logger.error('[Scheduler][MDM] Lock failed for UDID %s: %s', device.udid, mdmErr.message);
+          }
+        }
+
         // Mark device as locked in DB and plan as defaulted
         await Device.findByIdAndUpdate(device._id, { lock_status: 'locked' });
         await InstallmentPlan.findByIdAndUpdate(plan._id, { status: 'defaulted' });
@@ -118,7 +133,8 @@ const checkOverduePayments = async () => {
           device_udid: device.udid || null,
           target_user_id: customer.user_id,
           details: {
-            reason: 'Automated: payment overdue by more than 48 hours — lock on iCloud manually',
+            reason: 'Automated: payment overdue by more than 48 hours',
+            mdm: mdmResult,
             installment_plan_id: plan._id,
             next_due_date: plan.next_due_date,
             hours_overdue: Math.round((Date.now() - new Date(plan.next_due_date)) / (1000 * 60 * 60)),
