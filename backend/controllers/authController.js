@@ -176,7 +176,7 @@ const forgotPassword = async (req, res) => {
     await PasswordReset.create({
       email: email.toLowerCase().trim(),
       token: hashedToken,
-      expires_at: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+      expires_at: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
     });
 
     // Build reset URL

@@ -1,0 +1,53 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop, 'claude/**' ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:latest
+        options: >-
+          --health-cmd mongosh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install backend dependencies
+      run: npm ci
+      working-directory: ./backend
+
+    - name: Run backend tests
+      run: npm test
+      working-directory: ./backend
+      env:
+        NODE_ENV: test
+        MONGODB_URI: mongodb://localhost:27017/tritech_test
+        JWT_SECRET: test-secret-key-for-ci
+        MAIL_API_KEY: test-key
+        SMS_API_KEY: test-key
+        PAYSTACK_SECRET_KEY: test-key
+
+    - name: Install frontend dependencies
+      run: npm ci
+      working-directory: ./frontend
+
+    - name: Build frontend
+      run: npm run build
+      working-directory: ./frontend

@@ -46,7 +46,7 @@ const sendPasswordResetEmail = async (email, name, resetUrl) => {
         <div class="body">
           <h2>Hello, ${name}!</h2>
           <p>We received a request to reset the password for your account.</p>
-          <p>Click the button below to reset your password. This link is valid for <strong>1 hour</strong>.</p>
+          <p>Click the button below to reset your password. This link is valid for <strong>30 minutes</strong>.</p>
           <div style="text-align:center"><a href="${resetUrl}" class="button">Reset My Password</a></div>
           <p>If the button doesn't work, copy and paste this URL into your browser:</p>
           <p style="word-break:break-all;background:#f4f4f4;padding:10px;border-radius:4px;font-size:13px">${resetUrl}</p>
@@ -55,7 +55,7 @@ const sendPasswordResetEmail = async (email, name, resetUrl) => {
         <div class="footer"><p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p><p>Contact support if you need help.</p></div>
       </div>
       </body></html>`,
-    text: `Hello, ${name}!\n\nReset your password (valid 1 hour):\n${resetUrl}\n\nIf you did not request this, ignore this email.\n\n© ${new Date().getFullYear()} Tritech Hub iOS`,
+    text: `Hello, ${name}!\n\nReset your password (valid 30 minutes):\n${resetUrl}\n\nIf you did not request this, ignore this email.\n\n© ${new Date().getFullYear()} Tritech Hub iOS`,
   });
 };
 
@@ -487,6 +487,46 @@ const sendAdminLoginOTPEmail = async (email, name, otp) => {
   });
 };
 
+const sendBackupEmail = async (email, backupJson, filename) => {
+  const ms = getClient();
+  const sentFrom = new Sender(FROM_EMAIL, FROM_NAME);
+  const recipients = [new Recipient(email, 'Admin')];
+
+  const attachment = {
+    id: 'backup-file',
+    filename: filename,
+    content: Buffer.from(backupJson).toString('base64'),
+  };
+
+  const params = new EmailParams()
+    .setFrom(sentFrom)
+    .setTo(recipients)
+    .setSubject(`Tritech Hub iOS Daily Backup — ${filename}`)
+    .setHtml(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+      body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb}
+      .wrap{max-width:480px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
+      .header{background:linear-gradient(135deg,#1B5E20,#2E7D32);padding:32px 24px;text-align:center}
+      .header h1{color:#fff;margin:0;font-size:22px;font-weight:900}
+      .body{padding:32px 24px;color:#374151}
+      .stat{background:#f3f4f6;border-left:4px solid #4CAF50;padding:12px 16px;margin:12px 0}
+      .footer{background:#f3f4f6;padding:16px 24px;text-align:center;color:#9ca3af;font-size:12px}
+    </style></head><body>
+    <div class="wrap">
+      <div class="header"><h1>Daily Backup</h1></div>
+      <div class="body">
+        <p>Your daily system backup is attached. This backup was generated at ${new Date().toLocaleString('en-GH')}.</p>
+        <p><strong>Backup Contents:</strong></p>
+        <div class="stat">Customers, Devices, Installment Plans, Transactions, Audit Logs, and Staff Users</div>
+        <p style="font-size:12px;color:#6b7280">Store this backup securely. It contains all system data and should be treated as sensitive.</p>
+      </div>
+      <div class="footer"><p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p></div>
+    </div>
+    </body></html>`)
+    .addAttachment(attachment);
+
+  await ms.email.send(params);
+};
+
 module.exports = {
   sendPasswordResetEmail,
   sendPaymentConfirmationEmail,
@@ -498,4 +538,5 @@ module.exports = {
   sendCustomerWelcomeEmail,
   sendDeviceUnlockedEmail,
   sendAdminLoginOTPEmail,
+  sendBackupEmail,
 };

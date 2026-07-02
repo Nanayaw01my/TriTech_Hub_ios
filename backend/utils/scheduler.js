@@ -4,6 +4,7 @@ const Device = require('../models/Device');
 const Customer = require('../models/Customer');
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
+const Transaction = require('../models/Transaction');
 const { sendLockNotificationEmail, sendAdminPaymentReminderEmail, sendAdminOverdueAlertEmail, sendPaymentReminderEmail } = require('./email');
 const { sendPaymentReminderSMS, sendPaymentReminderWhatsApp, sendDeviceLockedSMS, sendDeviceLockedWhatsApp } = require('./sms');
 const logger = require('./logger');
@@ -259,9 +260,64 @@ const checkUpcomingPayments = async () => {
 };
 
 /**
+ * Create and email a daily backup of all system data.
+ */
+const dailyBackup = async () => {
+  logger.info('[Scheduler] Running daily backup...');
+
+  try {
+    const [customers, devices, plans, transactions, auditLogs, staffUsers] = await Promise.all([
+      Customer.find().lean(),
+      Device.find().lean(),
+      InstallmentPlan.find().lean(),
+      Transaction.find().lean(),
+      AuditLog.find().lean(),
+      User.find({ role: { $in: ['staff', 'admin'] } }).lean(),
+    ]);
+
+    const backup = {
+      timestamp: new Date().toISOString(),
+      counts: {
+        customers: customers.length,
+        devices: devices.length,
+        plans: plans.length,
+        transactions: transactions.length,
+        auditLogs: auditLogs.length,
+      },
+      data: { customers, devices, plans, transactions, auditLogs, staffUsers },
+    };
+
+    const backupJson = JSON.stringify(backup, null, 2);
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `tritech-backup-${date}.json`;
+
+    logger.info('[Scheduler] Backup file: %s (%d bytes)', filename, backupJson.length);
+
+    // Email backup to admin
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.MAIL_FROM;
+    if (adminEmail && process.env.MAIL_API_KEY) {
+      try {
+        const { sendBackupEmail } = require('./email');
+        await sendBackupEmail(adminEmail, backupJson, filename);
+        logger.info('[Scheduler] Backup emailed to %s', adminEmail);
+      } catch (emailErr) {
+        logger.error('[Scheduler] Failed to email backup: %s', emailErr.message);
+      }
+    } else {
+      logger.warn('[Scheduler] No ADMIN_EMAIL or MAIL_API_KEY configured. Backup email not sent.');
+    }
+
+    logger.info('[Scheduler] Daily backup completed.');
+  } catch (error) {
+    logger.error('[Scheduler] Fatal error in dailyBackup: %s', error.message);
+  }
+};
+
+/**
  * Start all cron jobs.
  * - Every hour: check for overdue installment plans and lock devices.
  * - Daily at 8 AM: email admin about payments due in the next 48 hours.
+ * - Daily at 2 AM: create and email a backup of all system data.
  */
 const startScheduler = () => {
   logger.info('[Scheduler] Initializing scheduled jobs...');
@@ -280,10 +336,17 @@ const startScheduler = () => {
 
   logger.info('[Scheduler] Upcoming payment reminder scheduled: daily at 08:00.');
 
+  // Run daily at 2:00 AM to create and email a system backup
+  cron.schedule('0 2 * * *', async () => {
+    await dailyBackup();
+  });
+
+  logger.info('[Scheduler] Daily backup scheduled: daily at 02:00.');
+
   // Run an initial check at startup (delayed by 10 seconds to allow DB connection)
   setTimeout(async () => {
     await checkOverduePayments();
   }, 10000);
 };
 
-module.exports = { startScheduler, checkOverduePayments, checkUpcomingPayments };
+module.exports = { startScheduler, checkOverduePayments, checkUpcomingPayments, dailyBackup };
