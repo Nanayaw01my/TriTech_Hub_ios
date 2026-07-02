@@ -189,22 +189,22 @@ export default function AdminDevices() {
   }
 
   return (
-    <div className="pb-24 lg:pb-6">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
 
       {/* Mobile Hero */}
-      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-green-900 via-green-800 to-green-900">
-        <p className="text-green-300 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-emerald-50">
+        <p className="text-emerald-600 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
         <div className="flex items-start justify-between mt-1">
           <div>
-            <h1 className="text-white text-2xl font-black">Devices</h1>
-            <p className="text-green-300 text-sm mt-1">
+            <h1 className="text-gray-900 text-2xl font-black">Devices</h1>
+            <p className="text-gray-600 text-sm mt-1">
               {tab === 'catalog' ? `${devices.length} in catalog` : `${salesTotal} sales`}
             </p>
           </div>
           {tab === 'catalog' && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-white/15 text-white text-xs font-semibold rounded-xl active:scale-95 transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl active:scale-95 transition-all"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -228,8 +228,8 @@ export default function AdminDevices() {
         {tab === 'catalog' && (
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-green-800 text-white font-semibold text-sm rounded-2xl
-                       hover:bg-green-900 active:scale-95 transition-all shadow-lg shadow-green-900/20"
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white font-semibold text-sm rounded-xl
+                       hover:bg-emerald-600 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

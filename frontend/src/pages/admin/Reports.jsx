@@ -83,16 +83,16 @@ export default function AdminReports() {
   ]
 
   return (
-    <div className="pb-24 lg:pb-6">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
 
       {/* Mobile Hero */}
-      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-green-900 via-green-800 to-green-900">
-        <p className="text-green-300 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
-        <h1 className="text-white text-2xl font-black mt-1">Reports</h1>
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-emerald-50">
+        <p className="text-emerald-600 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
+        <h1 className="text-gray-900 text-2xl font-black mt-1">Reports</h1>
         {summary?.totalRevenue > 0 && (
-          <div className="mt-3 bg-white/10 rounded-2xl px-4 py-2.5 inline-block">
-            <p className="text-green-300 text-[10px] font-semibold uppercase tracking-wide">Total Revenue</p>
-            <p className="text-white text-xl font-black">GHS {Number(summary.totalRevenue).toLocaleString()}</p>
+          <div className="mt-3 bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-2.5 inline-block">
+            <p className="text-emerald-600 text-[10px] font-semibold uppercase tracking-wide">Total Revenue</p>
+            <p className="text-emerald-900 text-xl font-black">GHS {Number(summary.totalRevenue).toLocaleString()}</p>
           </div>
         )}
       </div>
@@ -106,13 +106,13 @@ export default function AdminReports() {
       </div>
 
       {/* Period selector */}
-      <div className="flex bg-gray-100 rounded-2xl p-1 mb-5">
+      <div className="flex bg-gray-100 rounded-xl p-1 mb-5">
         {PERIODS.map((p) => (
           <button
             key={p}
             onClick={() => setPeriod(p)}
-            className={`flex-1 py-2 px-3 rounded-xl text-sm font-semibold capitalize transition-all duration-200
-              ${period === p ? 'bg-white shadow text-green-800' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold capitalize transition-all duration-200
+              ${period === p ? 'bg-white shadow text-emerald-700' : 'text-gray-500 hover:text-gray-700'}`}
           >
             {p}
           </button>

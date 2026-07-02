@@ -65,19 +65,19 @@ export default function AdminTransactions() {
   }
 
   return (
-    <div className="pb-24 lg:pb-6">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
 
       {/* Mobile Hero */}
-      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-green-900 via-green-800 to-green-900">
-        <p className="text-green-300 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-emerald-50">
+        <p className="text-emerald-600 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
         <div className="flex items-start justify-between mt-1">
           <div>
-            <h1 className="text-white text-2xl font-black">Transactions</h1>
-            <p className="text-green-300 text-sm mt-1">{total} payments</p>
+            <h1 className="text-gray-900 text-2xl font-black">Transactions</h1>
+            <p className="text-gray-600 text-sm mt-1">{total} payments</p>
           </div>
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white/15 text-white text-xs font-semibold rounded-xl active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl active:scale-95 transition-all"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -86,9 +86,9 @@ export default function AdminTransactions() {
           </button>
         </div>
         {totalAmount > 0 && (
-          <div className="mt-3 bg-white/10 rounded-2xl px-4 py-2.5 inline-block">
-            <p className="text-green-300 text-[10px] font-semibold uppercase tracking-wide">Total Collected</p>
-            <p className="text-white text-xl font-black">GHS {Number(totalAmount).toLocaleString()}</p>
+          <div className="mt-3 bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-2.5 inline-block">
+            <p className="text-emerald-600 text-[10px] font-semibold uppercase tracking-wide">Total Collected</p>
+            <p className="text-emerald-900 text-xl font-black">GHS {Number(totalAmount).toLocaleString()}</p>
           </div>
         )}
       </div>
@@ -105,8 +105,8 @@ export default function AdminTransactions() {
         </div>
         <button
           onClick={handleExportCSV}
-          className="flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-green-800 text-green-800 font-semibold text-sm rounded-2xl
-                     hover:bg-green-50 active:scale-95 transition-all"
+          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold text-sm rounded-xl
+                     hover:bg-emerald-100 active:scale-95 transition-all"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
