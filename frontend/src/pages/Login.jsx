@@ -69,17 +69,17 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4 py-8 relative overflow-hidden">
+    <div className="min-h-screen bg-black flex items-center justify-center px-4 py-8 relative overflow-hidden">
       {/* Elegant background gradient elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full blur-3xl opacity-10" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-slate-500 rounded-full blur-3xl opacity-10" />
+      <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-600 rounded-full blur-3xl opacity-10" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-700 rounded-full blur-3xl opacity-10" />
 
       {/* Install Banner */}
       {showInstallBanner && (
         <div className="fixed top-4 left-4 right-4 z-50 rounded-xl px-4 py-3 flex items-center gap-3 shadow-2xl
                         bg-white border border-gray-200">
-          <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18a6 6 0 100-12 6 6 0 000 12z" />
             </svg>
           </div>
@@ -105,7 +105,7 @@ export default function Login() {
       <div className="w-full max-w-sm relative z-10">
         {/* Logo Section */}
         <div className="text-center mb-12">
-          <div className="w-16 h-16 mx-auto mb-8 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-2xl overflow-hidden">
+          <div className="w-16 h-16 mx-auto mb-8 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-2xl overflow-hidden">
             {logoError ? (
               <span className="text-white text-3xl font-black">T</span>
             ) : (
@@ -124,39 +124,39 @@ export default function Login() {
           </div>
 
           <h1 className="text-4xl font-black text-white mb-2">TriTech Hub</h1>
-          <p className="text-slate-400 text-sm tracking-wide">iPhone Installment Management</p>
+          <p className="text-gray-400 text-sm tracking-wide">iPhone Installment Management</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-gray-900/50 backdrop-blur border border-gray-800 rounded-2xl p-8 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {error && (
-              <div className="p-4 rounded-lg bg-red-900/20 border border-red-700/30">
-                <p className="text-red-300 text-sm font-medium">{error}</p>
+              <div className="p-4 rounded-lg bg-red-950/30 border border-red-900/50">
+                <p className="text-red-400 text-sm font-medium">{error}</p>
               </div>
             )}
 
             {/* Email Input */}
             <div>
-              <label className="block text-sm font-semibold text-slate-200 mb-2">Email or ID</label>
+              <label className="block text-sm font-semibold text-gray-200 mb-2">Email or ID</label>
               <input
                 type="text"
                 placeholder="your@email.com"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                         text-white placeholder-slate-400 transition-all"
+                className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg
+                         focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
+                         text-white placeholder-gray-500 transition-all"
               />
             </div>
 
             {/* Password Input */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-semibold text-slate-200">Password</label>
-                <Link to="/forgot-password" className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors">
+                <label className="text-sm font-semibold text-gray-200">Password</label>
+                <Link to="/forgot-password" className="text-xs text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
                   Forgot?
                 </Link>
               </div>
@@ -167,14 +167,14 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
-                  className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                           text-white placeholder-slate-400 transition-all"
+                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg
+                           focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
+                           text-white placeholder-gray-500 transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-400 transition-colors"
                 >
                   {showPassword ? '🙈' : '👁'}
                 </button>
@@ -185,8 +185,8 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-8 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-lg
-                       hover:from-blue-600 hover:to-blue-700 active:scale-95 transition-all duration-200
+              className="w-full mt-8 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-lg
+                       hover:from-emerald-600 hover:to-emerald-700 active:scale-95 transition-all duration-200
                        disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading && (
@@ -201,7 +201,7 @@ export default function Login() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-slate-500 mt-8">
+        <p className="text-center text-xs text-gray-500 mt-8">
           © {new Date().getFullYear()} TriTech Hub iOS. All rights reserved.
         </p>
       </div>
