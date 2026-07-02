@@ -1,4 +1,5 @@
-const CACHE = 'tritech-v1';
+const CACHE = 'tritech-v2';
+const STATIC_CACHE = 'tritech-static-v2';
 
 // App shell files to pre-cache on install
 const PRECACHE = [
@@ -6,6 +7,12 @@ const PRECACHE = [
   '/logo.png',
   '/favicon.svg',
   '/manifest.json',
+  '/sw.js',
+];
+
+// Static assets (JS, CSS) — update these when you deploy new builds
+const STATIC_ASSETS = [
+  // Add your built JS/CSS chunks here after build, or rely on cache-first strategy below
 ];
 
 // ── Install: pre-cache the app shell ─────────────────────────────────────────
@@ -21,7 +28,11 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+      Promise.all(
+        keys
+          .filter((k) => k !== CACHE && k !== STATIC_CACHE)
+          .map((k) => caches.delete(k))
+      )
     )
   );
   self.clients.claim();
@@ -34,7 +45,11 @@ self.addEventListener('fetch', (e) => {
 
   // Always go to the network for API calls — never serve stale data
   if (url.pathname.startsWith('/api/')) {
-    e.respondWith(fetch(request));
+    e.respondWith(
+      fetch(request).catch(() =>
+        caches.match(request).then((cached) => cached || new Response('Offline', { status: 503 }))
+      )
+    );
     return;
   }
 
@@ -53,13 +68,36 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Static assets (JS, CSS, images): cache-first, update in background
+  // Logo, favicon, and other images: cache with long expiry
+  if (
+    url.pathname === '/logo.png' ||
+    url.pathname === '/favicon.svg' ||
+    url.pathname.match(/\.(png|svg|jpg|jpeg|gif|webp)$/)
+  ) {
+    e.respondWith(
+      caches.match(request).then((cached) => {
+        return (
+          cached ||
+          fetch(request).then((res) => {
+            if (res.ok) {
+              const clone = res.clone();
+              caches.open(STATIC_CACHE).then((c) => c.put(request, clone));
+            }
+            return res;
+          })
+        );
+      })
+    );
+    return;
+  }
+
+  // Static assets (JS, CSS): cache-first, update in background
   e.respondWith(
     caches.match(request).then((cached) => {
       const networkFetch = fetch(request).then((res) => {
         if (res.ok) {
           const clone = res.clone();
-          caches.open(CACHE).then((c) => c.put(request, clone));
+          caches.open(STATIC_CACHE).then((c) => c.put(request, clone));
         }
         return res;
       });
