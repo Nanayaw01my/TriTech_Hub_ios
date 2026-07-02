@@ -2,35 +2,83 @@ import React from 'react'
 
 export default function MaintenanceScreen() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-green-900 flex items-center justify-center p-6">
-      <div className="text-center max-w-sm w-full">
-        <div className="w-20 h-20 bg-green-700 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-          <span className="text-white text-3xl font-black">T</span>
+    <div className="relative min-h-screen bg-[#0a0f0d] flex items-center justify-center p-6 overflow-hidden">
+
+      {/* Animated gradient orbs */}
+      <div className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] bg-green-600/30 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-emerald-500/20 rounded-full blur-[140px] animate-pulse"
+           style={{ animationDelay: '1.5s' }} />
+      <div className="absolute top-[40%] left-[55%] w-[300px] h-[300px] bg-teal-400/10 rounded-full blur-[100px] animate-pulse"
+           style={{ animationDelay: '0.7s' }} />
+
+      {/* Subtle grid overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
+          backgroundSize: '48px 48px',
+        }}
+      />
+
+      {/* Glass card */}
+      <div className="relative w-full max-w-md">
+        <div className="backdrop-blur-2xl bg-white/[0.06] border border-white/10 rounded-[2rem] p-8 sm:p-10 shadow-2xl shadow-black/40 text-center">
+
+          {/* Logo */}
+          <div className="w-16 h-16 mx-auto mb-8 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-700
+                          flex items-center justify-center shadow-lg shadow-green-900/50">
+            <span className="text-white text-2xl font-black tracking-tight">T</span>
+          </div>
+
+          {/* Status pill */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/20 mb-6">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
+            </span>
+            <span className="text-amber-300 text-xs font-semibold tracking-wide uppercase">Scheduled Maintenance</span>
+          </div>
+
+          <h1 className="text-white text-3xl sm:text-4xl font-black tracking-tight mb-4">
+            We&rsquo;ll be right back
+          </h1>
+          <p className="text-gray-400 text-sm sm:text-base leading-relaxed mb-8">
+            TriTech Hub is getting a quick tune-up. We&rsquo;re working behind the scenes
+            and will be back online shortly.
+          </p>
+
+          {/* Animated progress bar */}
+          <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden mb-8">
+            <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-green-400 to-transparent rounded-full"
+                 style={{ animation: 'mx-slide 1.8s ease-in-out infinite' }} />
+          </div>
+
+          <button
+            onClick={() => window.location.reload()}
+            className="group w-full py-4 rounded-2xl bg-white text-gray-900 font-bold text-sm
+                       hover:bg-green-50 active:scale-[0.98] transition-all duration-150
+                       flex items-center justify-center gap-2"
+          >
+            <svg className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Check Again
+          </button>
         </div>
 
-        <div className="w-16 h-16 bg-yellow-400/20 rounded-full flex items-center justify-center mx-auto mb-5">
-          <svg className="w-8 h-8 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        </div>
-
-        <h1 className="text-white text-2xl font-black mb-3">Under Maintenance</h1>
-        <p className="text-gray-400 text-sm leading-relaxed mb-8">
-          TriTech Hub is temporarily offline for scheduled maintenance. We'll be back shortly. Please try again in a few minutes.
+        <p className="text-gray-600 text-xs text-center mt-6 tracking-wide">
+          TriTech Hub iOS &copy; {new Date().getFullYear()}
         </p>
-
-        <button
-          onClick={() => window.location.reload()}
-          className="px-8 py-3.5 bg-green-700 text-white font-bold rounded-2xl text-sm
-                     hover:bg-green-600 active:scale-95 transition-all shadow-lg"
-        >
-          Try Again
-        </button>
-
-        <p className="text-gray-600 text-xs mt-8">TriTech Hub iOS &copy; {new Date().getFullYear()}</p>
       </div>
+
+      <style>{`
+        @keyframes mx-slide {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(400%); }
+        }
+      `}</style>
     </div>
   )
 }
