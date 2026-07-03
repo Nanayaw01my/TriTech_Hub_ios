@@ -40,7 +40,10 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
           plan_id: plan._id || plan.id,
           is_staff_initiated: true,
         },
-        callback: async (transaction) => {
+        // Paystack v1 rejects async callbacks (constructor is AsyncFunction,
+        // not Function), so keep the callback a plain function and run the
+        // async verification inside it.
+        callback: (transaction) => { (async () => {
           setProcessing(false)
           setVerifying(true)
           try {
@@ -79,7 +82,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
           } finally {
             setVerifying(false)
           }
-        },
+        })() },
         onClose: () => {
           setProcessing(false)
         },
