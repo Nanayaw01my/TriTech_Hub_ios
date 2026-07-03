@@ -316,7 +316,7 @@ export default function StaffCustomerDetail() {
   const sigPhoto  = photoUrl(photos.signature)
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
+    <div className="max-w-3xl mx-auto px-4 pb-32 lg:pb-6 pt-4">
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-1.5 text-emerald-700 font-semibold text-sm mb-4 hover:text-emerald-900"

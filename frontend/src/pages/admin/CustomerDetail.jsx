@@ -146,7 +146,7 @@ export default function AdminCustomerDetail() {
   const locationParts = [loc.town, loc.district, loc.region].filter(Boolean)
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pb-24 lg:pb-6 pt-4">
+    <div className="max-w-3xl mx-auto px-4 pb-32 lg:pb-6 pt-4">
       {/* Back */}
       <button
         onClick={() => navigate(-1)}

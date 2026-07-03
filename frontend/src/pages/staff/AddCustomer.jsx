@@ -243,7 +243,7 @@ export default function StaffAddCustomer() {
   }
 
   return (
-    <div className="px-4 pb-28 lg:pb-8 pt-4 lg:max-w-5xl lg:mx-auto">
+    <div className="px-4 pb-48 lg:pb-8 pt-4 lg:max-w-5xl lg:mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <button
@@ -735,8 +735,11 @@ export default function StaffAddCustomer() {
         </div>
       )}
 
-      {/* Navigation Buttons — fixed on mobile, inline on desktop */}
-      <div className="fixed bottom-0 left-0 right-0 lg:static lg:mt-5 bg-white lg:bg-transparent border-t border-gray-200 lg:border-0 p-4 lg:p-0 pb-safe flex gap-3 lg:max-w-3xl">
+      {/* Navigation Buttons — fixed on mobile (above the tab bar), inline on desktop */}
+      <div
+        className="fixed left-0 right-0 lg:static lg:mt-5 bg-white lg:bg-transparent border-t border-gray-200 lg:border-0 p-4 lg:p-0 flex gap-3 lg:max-w-3xl z-30"
+        style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
+      >
         {step > 1 && (
           <button
             type="button"
