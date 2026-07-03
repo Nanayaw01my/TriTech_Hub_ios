@@ -356,7 +356,7 @@ export default function Layout({ role }) {
       <div className="flex-1 flex flex-col min-w-0 lg:ml-60">
 
         {/* Mobile top bar */}
-        <header className="lg:hidden bg-green-900 text-white sticky top-0 z-40" style={{ boxShadow: '0 1px 0 rgba(255,255,255,0.06), 0 4px 16px rgba(0,0,0,0.18)' }}>
+        <header className="lg:hidden bg-green-900 text-white sticky top-0 z-40" style={{ boxShadow: '0 1px 0 rgba(255,255,255,0.06), 0 4px 16px rgba(0,0,0,0.18)', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
           <div className="flex items-center justify-between px-3 h-14">
             <button
               onClick={() => setSidebarOpen(true)}
