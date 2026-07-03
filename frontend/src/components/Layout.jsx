@@ -232,13 +232,13 @@ function SideNavLink({ item, role, onClick }) {
       onClick={onClick}
       className={`group flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm font-medium transition-all duration-150
         ${isActive
-          ? 'bg-white/15 text-white'
-          : 'text-green-100/70 hover:bg-white/10 hover:text-white'
+          ? 'bg-emerald-500/15 text-emerald-400'
+          : 'text-gray-400 hover:bg-white/5 hover:text-white'
         }`}
     >
       <NavIcon path={item.icon} className="w-5 h-5 flex-shrink-0" />
       <span>{item.label}</span>
-      {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60" />}
+      {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400" />}
     </NavLink>
   )
 }
@@ -248,7 +248,7 @@ function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
   const roleLabel = role === 'admin' ? 'Admin Portal' : role === 'staff' ? 'Staff Portal' : 'My Account'
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-green-900 to-green-950">
+    <div className="flex flex-col h-full bg-black border-r border-gray-800">
       {/* Brand */}
       <div
         className="flex items-center gap-3 px-5 pb-5 border-b border-white/10"
@@ -261,7 +261,7 @@ function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
         />
         <div>
           <p className="text-white font-bold text-sm leading-tight">Tritech Hub iOS</p>
-          <p className="text-green-300 text-xs">{roleLabel}</p>
+          <p className="text-emerald-400 text-xs">{roleLabel}</p>
         </div>
       </div>
 
@@ -278,8 +278,8 @@ function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}
       >
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-sm">
+          <div className="w-9 h-9 rounded-full bg-emerald-900 flex items-center justify-center flex-shrink-0">
+            <span className="text-emerald-400 font-bold text-sm">
               {(user?.full_name || user?.name || 'U').charAt(0).toUpperCase()}
             </span>
           </div>
@@ -287,7 +287,7 @@ function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
             <p className="text-white text-sm font-semibold truncate">
               {user?.full_name || user?.name || 'User'}
             </p>
-            <p className="text-green-300 text-xs truncate">
+            <p className="text-emerald-400 text-xs truncate">
               {user?.staff_id || user?.account_number || user?.email || ''}
             </p>
           </div>
@@ -392,7 +392,7 @@ export default function Layout({ role }) {
       <div className="flex-1 flex flex-col min-w-0 lg:ml-60">
 
         {/* Mobile top bar */}
-        <header className="lg:hidden bg-green-900 text-white sticky top-0 z-40" style={{ boxShadow: '0 1px 0 rgba(255,255,255,0.06), 0 4px 16px rgba(0,0,0,0.18)', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <header className="lg:hidden bg-black text-white sticky top-0 z-40 border-b border-gray-800" style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.4)', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
           <div className="flex items-center justify-between px-3 h-14">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -407,7 +407,7 @@ export default function Layout({ role }) {
                 <p className="text-white font-bold text-sm leading-tight truncate">
                   {getPageTitle(location.pathname)}
                 </p>
-                <p className="text-green-300/70 text-[10px] font-medium leading-tight">Tritech Hub iOS</p>
+                <p className="text-emerald-400/70 text-[10px] font-medium leading-tight">Tritech Hub iOS</p>
               </div>
             </div>
 
@@ -452,7 +452,7 @@ export default function Layout({ role }) {
 
       {/* ── Mobile Bottom Nav (hidden while typing) ── */}
       <nav className={`fixed bottom-0 left-0 right-0 z-40 lg:hidden ${keyboardOpen ? 'hidden' : ''}`}
-           style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderTop: '1px solid rgba(0,0,0,0.08)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+           style={{ background: 'rgba(9,9,11,0.96)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderTop: '1px solid rgba(255,255,255,0.08)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="flex items-stretch h-16">
           {bottomItems.map((item) => {
             const dashboardPath = `/${role}/dashboard`
@@ -468,13 +468,13 @@ export default function Layout({ role }) {
                 className="flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 transition-colors"
               >
                 {/* Active indicator line at top */}
-                <div className={`absolute top-0 h-0.5 w-8 rounded-full transition-all duration-200 ${isActive ? 'bg-green-700' : 'bg-transparent'}`} style={{ position: 'relative', marginBottom: '-2px' }} />
+                <div className={`absolute top-0 h-0.5 w-8 rounded-full transition-all duration-200 ${isActive ? 'bg-emerald-400' : 'bg-transparent'}`} style={{ position: 'relative', marginBottom: '-2px' }} />
 
                 <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-all duration-200
-                  ${isActive ? 'bg-green-100' : ''}`}>
-                  <NavIcon path={item.icon} className={`w-5 h-5 transition-colors ${isActive ? 'text-green-800' : 'text-gray-400'}`} />
+                  ${isActive ? 'bg-emerald-500/20' : ''}`}>
+                  <NavIcon path={item.icon} className={`w-5 h-5 transition-colors ${isActive ? 'text-emerald-400' : 'text-gray-500'}`} />
                 </div>
-                <span className={`text-[10px] font-semibold transition-colors ${isActive ? 'text-green-800' : 'text-gray-400'}`}>
+                <span className={`text-[10px] font-semibold transition-colors ${isActive ? 'text-emerald-400' : 'text-gray-500'}`}>
                   {item.label.split(' ')[0]}
                 </span>
               </NavLink>

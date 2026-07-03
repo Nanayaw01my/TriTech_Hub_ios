@@ -63,7 +63,7 @@ export default function StaffDashboard() {
           <div className="min-w-0">
             <p className="text-emerald-400 text-xs font-semibold uppercase tracking-widest">Staff Portal</p>
             <h1 className="text-white text-3xl font-black mt-1 leading-tight truncate">
-              Hi, {user?.full_name?.split(' ')[0] || 'Staff'} 👋
+              Hi, {(user?.full_name || user?.name)?.split(' ')[0] || 'Staff'} 👋
             </h1>
             <p className="text-gray-500 text-sm mt-1">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
           </div>
