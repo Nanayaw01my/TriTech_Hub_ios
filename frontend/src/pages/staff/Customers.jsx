@@ -39,19 +39,19 @@ export default function StaffCustomers() {
   }, [fetchCustomers])
 
   return (
-    <div className="pb-24 lg:pb-6 min-h-screen bg-black">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
 
       {/* Mobile Hero */}
-      <div className="lg:hidden px-5 pt-6 pb-12 bg-black">
-        <p className="text-emerald-400 text-xs font-semibold uppercase tracking-widest">Staff Portal</p>
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-emerald-50">
+        <p className="text-emerald-600 text-xs font-semibold uppercase tracking-widest">Staff Portal</p>
         <div className="flex items-start justify-between mt-1">
           <div>
-            <h1 className="text-white text-2xl font-black">My Customers</h1>
-            <p className="text-gray-400 text-sm mt-1">{total} registered by you</p>
+            <h1 className="text-gray-900 text-2xl font-black">My Customers</h1>
+            <p className="text-gray-600 text-sm mt-1">{total} registered by you</p>
           </div>
           <button
             onClick={() => navigate('/staff/customers/add')}
-            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold rounded-xl active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl active:scale-95 transition-all"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -66,7 +66,7 @@ export default function StaffCustomers() {
       {/* Desktop Header */}
       <div className="hidden lg:flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-black text-white">My Customers</h1>
+          <h1 className="text-2xl font-black text-gray-900">My Customers</h1>
           <p className="text-sm text-gray-500 mt-0.5">{total} customers registered by you</p>
         </div>
         <button
@@ -83,7 +83,7 @@ export default function StaffCustomers() {
 
       {/* Search */}
       <div className="relative mb-4">
-        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
         <input
@@ -91,15 +91,15 @@ export default function StaffCustomers() {
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1) }}
           placeholder="Search by name or account number..."
-          className="w-full pl-10 pr-4 py-3 border border-gray-700 rounded-2xl text-sm text-white
-                     focus:outline-none focus:border-emerald-600 bg-gray-900"
+          className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-2xl text-sm
+                     focus:outline-none focus:border-emerald-600 bg-white"
         />
       </div>
 
       {loading ? (
         <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
       ) : customers.length === 0 ? (
-        <div className="bg-gray-900 rounded-2xl p-12 text-center shadow-card border border-gray-800">
+        <div className="bg-white rounded-2xl p-12 text-center shadow-card">
           <svg className="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
@@ -117,32 +117,32 @@ export default function StaffCustomers() {
         </div>
       ) : (
         <>
-          <div className="bg-gray-900 rounded-2xl shadow-card border border-gray-800 divide-y divide-gray-800 mb-4">
+          <div className="bg-white rounded-2xl shadow-card divide-y divide-gray-50 mb-4">
             {customers.map((c) => (
               <div
                 key={c.id || c._id}
                 onClick={() => navigate(`/staff/customers/${c.id || c._id}`)}
-                className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-gray-800 active:bg-gray-800 transition-colors"
+                className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
               >
-                <div className="w-10 h-10 rounded-full bg-emerald-900 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
                   {c.photo_url ? (
                     <img src={c.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
                   ) : (
-                    <span className="text-emerald-400 font-bold text-sm">
+                    <span className="text-emerald-800 font-bold text-sm">
                       {(c.full_name || c.name || 'C').charAt(0).toUpperCase()}
                     </span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-white truncate">{c.full_name || c.name}</p>
+                    <p className="text-sm font-semibold text-gray-900 truncate">{c.full_name || c.name}</p>
                     <StatusBadge status={c.plan_status || c.status || 'active'} />
                   </div>
                   <p className="text-xs text-gray-500 truncate">
                     {c.account_number || c.user_id?.account_number} • {c.phone}
                   </p>
                   {(c.device_model || c.device) && (
-                    <p className="text-xs text-gray-500">{c.device_model || c.device}</p>
+                    <p className="text-xs text-gray-400">{c.device_model || c.device}</p>
                   )}
                 </div>
                 <div className="text-right flex-shrink-0">
@@ -164,15 +164,15 @@ export default function StaffCustomers() {
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-4 py-2 rounded-xl bg-gray-900 border border-gray-700 text-sm font-medium disabled:opacity-40 hover:bg-gray-800"
+                className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm font-medium disabled:opacity-40 hover:bg-gray-50"
               >
                 Previous
               </button>
-              <span className="text-sm text-gray-400 font-medium">Page {page} of {totalPages}</span>
+              <span className="text-sm text-gray-600 font-medium">Page {page} of {totalPages}</span>
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-4 py-2 rounded-xl bg-gray-900 border border-gray-700 text-sm font-medium disabled:opacity-40 hover:bg-gray-800"
+                className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm font-medium disabled:opacity-40 hover:bg-gray-50"
               >
                 Next
               </button>

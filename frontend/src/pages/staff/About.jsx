@@ -2,8 +2,8 @@ import React from 'react'
 
 function Section({ title, children }) {
   return (
-    <div className="bg-gray-900 rounded-2xl shadow-card border border-gray-800 p-5 mb-4">
-      <h2 className="text-sm font-black text-white mb-3 uppercase tracking-wide">{title}</h2>
+    <div className="bg-white rounded-2xl shadow-card p-5 mb-4">
+      <h2 className="text-sm font-black text-gray-900 mb-3 uppercase tracking-wide">{title}</h2>
       {children}
     </div>
   )
@@ -11,12 +11,12 @@ function Section({ title, children }) {
 
 function Step({ num, title, desc }) {
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-gray-800 last:border-0">
+    <div className="flex items-start gap-3 py-3 border-b border-gray-50 last:border-0">
       <div className="w-7 h-7 rounded-full bg-emerald-700 text-white text-xs font-black flex items-center justify-center flex-shrink-0 mt-0.5">
         {num}
       </div>
       <div>
-        <p className="text-sm font-bold text-white">{title}</p>
+        <p className="text-sm font-bold text-gray-800">{title}</p>
         <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{desc}</p>
       </div>
     </div>
@@ -25,8 +25,8 @@ function Step({ num, title, desc }) {
 
 function Rule({ color, text }) {
   const colors = {
-    green: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-    red:   'bg-red-500/15 text-red-800 border-red-200',
+    green: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    red:   'bg-red-50 text-red-800 border-red-200',
     amber: 'bg-amber-50 text-amber-800 border-amber-200',
   }
   return (
@@ -52,7 +52,7 @@ export default function StaffAbout() {
 
       {/* Desktop header */}
       <div className="hidden lg:block pt-6 pb-4">
-        <h1 className="text-2xl font-black text-white">About</h1>
+        <h1 className="text-2xl font-black text-gray-900">About</h1>
         <p className="text-gray-500 text-sm mt-1">Staff Portal · Your role, workflows, and guidelines</p>
       </div>
 
@@ -60,7 +60,7 @@ export default function StaffAbout() {
 
         {/* Your Role */}
         <Section title="Your Role">
-          <p className="text-sm text-gray-400 leading-relaxed">
+          <p className="text-sm text-gray-600 leading-relaxed">
             As a staff member, you register customers, set up their installment plans, and collect payments on their behalf.
             You can only see and manage customers you personally registered.
           </p>
@@ -121,7 +121,7 @@ export default function StaffAbout() {
         </Section>
 
         <div className="text-center py-4">
-          <p className="text-xs text-gray-500 font-medium">TriTech Hub iOS · Powered by Ittek Solutions</p>
+          <p className="text-xs text-gray-400 font-medium">TriTech Hub iOS · Powered by Ittek Solutions</p>
         </div>
       </div>
     </div>

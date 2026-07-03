@@ -69,10 +69,10 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4 py-8 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50 flex items-center justify-center px-4 py-8 relative overflow-hidden">
       {/* Elegant background gradient elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-600 rounded-full blur-3xl opacity-10" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-700 rounded-full blur-3xl opacity-10" />
+      <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-100 rounded-full blur-3xl opacity-40" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-100 rounded-full blur-3xl opacity-30" />
 
       {/* Install Banner */}
       {showInstallBanner && (
@@ -123,40 +123,40 @@ export default function Login() {
             )}
           </div>
 
-          <h1 className="text-4xl font-black text-white mb-2">TriTech Hub</h1>
-          <p className="text-gray-400 text-sm tracking-wide">iPhone Installment Management</p>
+          <h1 className="text-4xl font-black text-gray-900 mb-2">TriTech Hub</h1>
+          <p className="text-gray-600 text-sm tracking-wide">iPhone Installment Management</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-gray-900/50 backdrop-blur border border-gray-800 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-white border border-gray-100 rounded-2xl p-8 shadow-lg">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {error && (
-              <div className="p-4 rounded-lg bg-red-950/30 border border-red-900/50">
-                <p className="text-red-400 text-sm font-medium">{error}</p>
+              <div className="p-4 rounded-lg bg-red-50 border border-red-200">
+                <p className="text-red-700 text-sm font-medium">{error}</p>
               </div>
             )}
 
             {/* Email Input */}
             <div>
-              <label className="block text-sm font-semibold text-gray-200 mb-2">Email or ID</label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">Email or ID</label>
               <input
                 type="text"
                 placeholder="your@email.com"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg
+                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg
                          focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
-                         text-white placeholder-gray-500 transition-all"
+                         text-gray-900 placeholder-gray-500 transition-all"
               />
             </div>
 
             {/* Password Input */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-semibold text-gray-200">Password</label>
-                <Link to="/forgot-password" className="text-xs text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
+                <label className="text-sm font-semibold text-gray-800">Password</label>
+                <Link to="/forgot-password" className="text-xs text-emerald-600 hover:text-emerald-700 font-medium transition-colors">
                   Forgot?
                 </Link>
               </div>
@@ -167,14 +167,14 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
-                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg
                            focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
-                           text-white placeholder-gray-500 transition-all"
+                           text-gray-900 placeholder-gray-500 transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-400 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   {showPassword ? '🙈' : '👁'}
                 </button>

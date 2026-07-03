@@ -96,31 +96,31 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50 px-4 pb-4 sm:p-4">
-      <div className="bg-gray-900 rounded-3xl w-full max-w-sm p-6 shadow-xl">
+      <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-xl">
         {receipt ? (
           /* ── Payment Receipt ── */
           <div className="text-center">
-            <div className="w-16 h-16 rounded-full bg-emerald-900 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <p className="text-lg font-black text-white mb-1">Payment Successful</p>
-            <p className="text-xs text-gray-500 mb-5">TriTech Hub iOS · Payment Receipt</p>
+            <p className="text-lg font-black text-gray-900 mb-1">Payment Successful</p>
+            <p className="text-xs text-gray-400 mb-5">TriTech Hub iOS · Payment Receipt</p>
 
-            <div className="bg-gray-800 rounded-2xl p-4 text-left space-y-3 mb-5">
+            <div className="bg-gray-50 rounded-2xl p-4 text-left space-y-3 mb-5">
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-500">Customer</span>
-                <span className="text-xs font-bold text-white">{customer.full_name}</span>
+                <span className="text-xs font-bold text-gray-800">{customer.full_name}</span>
               </div>
-              <div className="border-t border-dashed border-gray-700" />
+              <div className="border-t border-dashed border-gray-200" />
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-500">Amount Paid</span>
-                <span className="text-sm font-black text-emerald-400">GHS {Number(receipt.amount).toLocaleString()}</span>
+                <span className="text-sm font-black text-emerald-700">GHS {Number(receipt.amount).toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-500">Date</span>
-                <span className="text-xs font-semibold text-gray-300">
+                <span className="text-xs font-semibold text-gray-700">
                   {format(receipt.date, 'dd MMM yyyy · h:mm a')}
                 </span>
               </div>
@@ -130,10 +130,10 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
                   {receipt.reference}
                 </span>
               </div>
-              <div className="border-t border-dashed border-gray-700" />
+              <div className="border-t border-dashed border-gray-200" />
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-500">Remaining Balance</span>
-                <span className={`text-xs font-bold ${receipt.newBalance === 0 ? 'text-emerald-400' : 'text-orange-600'}`}>
+                <span className={`text-xs font-bold ${receipt.newBalance === 0 ? 'text-emerald-700' : 'text-orange-600'}`}>
                   {receipt.newBalance === 0 ? 'Fully Paid ✓' : `GHS ${Number(receipt.newBalance).toLocaleString()}`}
                 </span>
               </div>
@@ -166,17 +166,17 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
         ) : verifying ? (
           <div className="text-center py-8">
             <LoadingSpinner size="lg" />
-            <p className="mt-4 font-semibold text-gray-300">Recording payment…</p>
-            <p className="text-sm text-gray-500 mt-1">MoMo confirmations can take up to 30 seconds</p>
-            <p className="text-xs text-gray-500 mt-3 max-w-xs mx-auto">
+            <p className="mt-4 font-semibold text-gray-700">Recording payment…</p>
+            <p className="text-sm text-gray-400 mt-1">MoMo confirmations can take up to 30 seconds</p>
+            <p className="text-xs text-gray-400 mt-3 max-w-xs mx-auto">
               Do not close or refresh this page
             </p>
           </div>
         ) : (
           <>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-black text-white">Make Payment</h3>
-              <button onClick={onClose} className="text-gray-500 hover:text-gray-400">
+              <h3 className="text-lg font-black text-gray-900">Make Payment</h3>
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -184,26 +184,26 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
             </div>
 
             {/* Customer info */}
-            <div className="bg-emerald-500/15 rounded-2xl p-3 mb-4">
+            <div className="bg-emerald-50 rounded-2xl p-3 mb-4">
               <p className="text-xs text-gray-500">Customer</p>
-              <p className="font-bold text-white">{customer.full_name}</p>
+              <p className="font-bold text-gray-900">{customer.full_name}</p>
               <p className="text-xs text-gray-500 mt-0.5">{customer.email}</p>
             </div>
 
             {/* Balance summary */}
             <div className="flex gap-2 mb-4">
-              <div className="flex-1 bg-gray-800 rounded-xl p-2.5 text-center">
+              <div className="flex-1 bg-gray-50 rounded-xl p-2.5 text-center">
                 <p className="text-[10px] text-gray-500">Remaining</p>
-                <p className="text-sm font-bold text-white">GHS {Number(remaining).toLocaleString()}</p>
+                <p className="text-sm font-bold text-gray-800">GHS {Number(remaining).toLocaleString()}</p>
               </div>
-              <div className="flex-1 bg-emerald-500/15 rounded-xl p-2.5 text-center">
+              <div className="flex-1 bg-emerald-50 rounded-xl p-2.5 text-center">
                 <p className="text-[10px] text-gray-500">Installment</p>
-                <p className="text-sm font-bold text-emerald-400">GHS {Number(installmentAmt).toLocaleString()}</p>
+                <p className="text-sm font-bold text-emerald-800">GHS {Number(installmentAmt).toLocaleString()}</p>
               </div>
             </div>
 
             {/* Amount input */}
-            <label className="block text-sm font-semibold text-gray-300 mb-1.5">
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
               Amount to Pay (GHS)
             </label>
             <div className="relative mb-3">
@@ -215,7 +215,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
                 min="1"
                 max={remaining}
                 step="0.01"
-                className="w-full pl-14 pr-4 py-3 border border-gray-700 rounded-xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full pl-14 pr-4 py-3 border border-gray-200 rounded-xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-green-500"
                 placeholder="0.00"
               />
             </div>
@@ -229,7 +229,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
                   className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-colors
                     ${String(amount) === String(v)
                       ? 'bg-emerald-700 text-white border-green-800'
-                      : 'border-gray-700 text-gray-400 hover:border-green-400'}`}
+                      : 'border-gray-200 text-gray-600 hover:border-green-400'}`}
                 >
                   {v === installmentAmt ? 'Installment' : 'Full Balance'}
                   {'\n'}GHS {Number(v).toLocaleString()}
@@ -256,7 +256,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
                 </>
               )}
             </button>
-            <p className="text-center text-xs text-gray-500 mt-2">Powered by Paystack · MoMo & Card accepted</p>
+            <p className="text-center text-xs text-gray-400 mt-2">Powered by Paystack · MoMo & Card accepted</p>
           </>
         )}
       </div>
@@ -322,7 +322,7 @@ export default function StaffCustomerDetail() {
     <div className="max-w-3xl mx-auto px-4 pb-32 lg:pb-6 pt-4">
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-1.5 text-emerald-400 font-semibold text-sm mb-4 hover:text-emerald-900"
+        className="flex items-center gap-1.5 text-emerald-700 font-semibold text-sm mb-4 hover:text-emerald-900"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -331,52 +331,52 @@ export default function StaffCustomerDetail() {
       </button>
 
       {/* Customer Profile */}
-      <div className="bg-gray-900 rounded-2xl shadow-card border border-gray-800 p-5 mb-4">
+      <div className="bg-white rounded-2xl shadow-card p-5 mb-4">
         <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-900 overflow-hidden flex-shrink-0 cursor-pointer"
+          <div className="w-16 h-16 rounded-2xl bg-emerald-100 overflow-hidden flex-shrink-0 cursor-pointer"
                onClick={() => custPhoto && setImageModal(custPhoto)}>
             {custPhoto ? (
               <img src={custPhoto} alt="" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <span className="text-emerald-400 font-black text-2xl">
+                <span className="text-emerald-800 font-black text-2xl">
                   {(customer.full_name || 'C').charAt(0).toUpperCase()}
                 </span>
               </div>
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-black text-white">{customer.full_name}</h2>
-            <p className="text-sm font-bold text-emerald-400">
+            <h2 className="text-xl font-black text-gray-900">{customer.full_name}</h2>
+            <p className="text-sm font-bold text-emerald-700">
               {customer.account_number || customer.user_id?.account_number}
             </p>
             <p className="text-sm text-gray-500 mt-0.5">{customer.phone}</p>
-            <p className="text-xs text-gray-500 truncate">{customer.email}</p>
+            <p className="text-xs text-gray-400 truncate">{customer.email}</p>
           </div>
         </div>
       </div>
 
       {/* Customer Details */}
       {(customer.ghana_card_id || customer.occupation || customer.income?.amount > 0 || customer.location?.region || customer.location?.town) && (
-        <div className="bg-gray-900 rounded-2xl shadow-card border border-gray-800 p-4 mb-4">
-          <h3 className="text-sm font-bold text-white mb-3">Customer Details</h3>
+        <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
+          <h3 className="text-sm font-bold text-gray-800 mb-3">Customer Details</h3>
           <div className="space-y-2">
             {customer.ghana_card_id && (
               <div className="flex justify-between gap-3 text-sm">
                 <span className="text-gray-500 flex-shrink-0">Ghana Card ID</span>
-                <span className="font-semibold text-white font-mono text-right break-all">{customer.ghana_card_id}</span>
+                <span className="font-semibold text-gray-800 font-mono text-right break-all">{customer.ghana_card_id}</span>
               </div>
             )}
             {customer.occupation && (
               <div className="flex justify-between gap-3 text-sm">
                 <span className="text-gray-500 flex-shrink-0">Occupation</span>
-                <span className="font-semibold text-white text-right">{customer.occupation}</span>
+                <span className="font-semibold text-gray-800 text-right">{customer.occupation}</span>
               </div>
             )}
             {customer.income?.amount > 0 && (
               <div className="flex justify-between gap-3 text-sm">
                 <span className="text-gray-500 flex-shrink-0">Income</span>
-                <span className="font-semibold text-white text-right">
+                <span className="font-semibold text-gray-800 text-right">
                   GHS {Number(customer.income.amount).toLocaleString()}{customer.income.source ? ` — ${customer.income.source}` : ''}
                 </span>
               </div>
@@ -384,7 +384,7 @@ export default function StaffCustomerDetail() {
             {(customer.location?.region || customer.location?.town || customer.location?.district || customer.location?.landmark) && (
               <div className="flex justify-between gap-3 text-sm">
                 <span className="text-gray-500 flex-shrink-0">Location</span>
-                <span className="font-semibold text-white text-right">
+                <span className="font-semibold text-gray-800 text-right">
                   {[customer.location?.town, customer.location?.district, customer.location?.region].filter(Boolean).join(', ')}
                   {customer.location?.landmark ? ` (${customer.location.landmark})` : ''}
                 </span>
@@ -396,31 +396,31 @@ export default function StaffCustomerDetail() {
 
       {/* Guarantor */}
       {(customer.guarantor?.full_name || customer.guarantor?.phone) && (
-        <div className="bg-gray-900 rounded-2xl shadow-card border border-gray-800 p-4 mb-4">
-          <h3 className="text-sm font-bold text-white mb-3">Guarantor</h3>
+        <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
+          <h3 className="text-sm font-bold text-gray-800 mb-3">Guarantor</h3>
           <div className="space-y-2">
             {customer.guarantor.full_name && (
               <div className="flex justify-between gap-3 text-sm">
                 <span className="text-gray-500 flex-shrink-0">Name</span>
-                <span className="font-semibold text-white text-right">{customer.guarantor.full_name}</span>
+                <span className="font-semibold text-gray-800 text-right">{customer.guarantor.full_name}</span>
               </div>
             )}
             {customer.guarantor.phone && (
               <div className="flex justify-between gap-3 text-sm">
                 <span className="text-gray-500 flex-shrink-0">Phone</span>
-                <span className="font-semibold text-white text-right">{customer.guarantor.phone}</span>
+                <span className="font-semibold text-gray-800 text-right">{customer.guarantor.phone}</span>
               </div>
             )}
             {customer.guarantor.ghana_card_id && (
               <div className="flex justify-between gap-3 text-sm">
                 <span className="text-gray-500 flex-shrink-0">Ghana Card ID</span>
-                <span className="font-semibold text-white font-mono text-right break-all">{customer.guarantor.ghana_card_id}</span>
+                <span className="font-semibold text-gray-800 font-mono text-right break-all">{customer.guarantor.ghana_card_id}</span>
               </div>
             )}
             {customer.guarantor.relationship && (
               <div className="flex justify-between gap-3 text-sm">
                 <span className="text-gray-500 flex-shrink-0">Relationship</span>
-                <span className="font-semibold text-white text-right">{customer.guarantor.relationship}</span>
+                <span className="font-semibold text-gray-800 text-right">{customer.guarantor.relationship}</span>
               </div>
             )}
           </div>
@@ -429,36 +429,36 @@ export default function StaffCustomerDetail() {
 
       {/* Photos & Documents — Ghana Card ID images are hidden from staff (admin only) */}
       {(custPhoto || guarPhoto || sigPhoto) && (
-        <div className="bg-gray-900 rounded-2xl shadow-card border border-gray-800 p-4 mb-4">
-          <h3 className="text-sm font-bold text-white mb-3">Photos & Documents</h3>
+        <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
+          <h3 className="text-sm font-bold text-gray-800 mb-3">Photos & Documents</h3>
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: 'Customer Photo',     src: custPhoto },
               { label: 'Guarantor Photo',    src: guarPhoto },
             ].map(({ label, src }) => src ? (
               <button key={label} onClick={() => setImageModal(src)}
-                className="relative rounded-2xl overflow-hidden bg-gray-800 aspect-[4/3] w-full border border-gray-700">
+                className="relative rounded-2xl overflow-hidden bg-gray-50 aspect-[4/3] w-full border border-gray-200">
                 <img src={src} alt={label} className="w-full h-full object-cover" />
                 <div className="absolute bottom-0 left-0 right-0 bg-black/40 py-1 px-2">
                   <p className="text-white text-[10px] font-semibold truncate">{label}</p>
                 </div>
               </button>
             ) : (
-              <div key={label} className="rounded-2xl bg-gray-800 aspect-[4/3] border-2 border-dashed border-gray-700 flex items-center justify-center">
+              <div key={label} className="rounded-2xl bg-gray-50 aspect-[4/3] border-2 border-dashed border-gray-200 flex items-center justify-center">
                 <p className="text-gray-300 text-xs text-center px-2">{label}</p>
               </div>
             ))}
           </div>
           {sigPhoto && (
-            <div className="mt-3 pt-3 border-t border-gray-800">
+            <div className="mt-3 pt-3 border-t border-gray-100">
               <p className="text-xs text-gray-500 font-semibold mb-2">Signature</p>
               <button onClick={() => setImageModal(sigPhoto)}
-                className="border border-gray-700 rounded-xl overflow-hidden inline-block">
+                className="border border-gray-200 rounded-xl overflow-hidden inline-block">
                 <img src={sigPhoto} alt="Signature" className="h-16 object-contain block" />
               </button>
             </div>
           )}
-          <p className="mt-3 pt-3 border-t border-gray-800 text-[11px] text-gray-500">
+          <p className="mt-3 pt-3 border-t border-gray-100 text-[11px] text-gray-400">
             🔒 Ghana Card ID images are restricted to admin only.
           </p>
         </div>
@@ -466,11 +466,11 @@ export default function StaffCustomerDetail() {
 
       {/* Device */}
       {(device || plan?.device_id) && (
-        <div className="bg-gray-900 rounded-2xl shadow-card border border-gray-800 p-4 mb-4">
+        <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-500 font-medium">Device</p>
-              <p className="font-bold text-white">
+              <p className="font-bold text-gray-800">
                 {device?.model || plan?.device_id?.model || plan?.device_model}
               </p>
             </div>
@@ -481,9 +481,9 @@ export default function StaffCustomerDetail() {
 
       {/* Payment Plan */}
       {plan && (
-        <div className="bg-gray-900 rounded-2xl shadow-card border border-gray-800 p-4 mb-4">
+        <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-white">Payment Plan</h3>
+            <h3 className="text-sm font-bold text-gray-800">Payment Plan</h3>
             <StatusBadge status={plan.status || 'active'} />
           </div>
 
@@ -494,19 +494,19 @@ export default function StaffCustomerDetail() {
           />
 
           <div className="grid grid-cols-3 gap-1.5 mt-4">
-            <div className="bg-emerald-500/15 rounded-xl p-2.5 text-center">
+            <div className="bg-emerald-50 rounded-xl p-2.5 text-center">
               <p className="text-xs text-gray-500 mb-0.5">Remaining</p>
-              <p className="text-xs font-bold text-emerald-400">
+              <p className="text-xs font-bold text-emerald-800">
                 GHS {Number(plan.remaining_balance || 0).toLocaleString()}
               </p>
             </div>
-            <div className="bg-gray-800 rounded-xl p-2.5 text-center">
+            <div className="bg-gray-50 rounded-xl p-2.5 text-center">
               <p className="text-xs text-gray-500 mb-0.5">Installment</p>
-              <p className="text-xs font-bold text-white">
+              <p className="text-xs font-bold text-gray-800">
                 GHS {Number(plan.installment_amount || 0).toLocaleString()}
               </p>
             </div>
-            <div className="bg-orange-500/15 rounded-xl p-2.5 text-center">
+            <div className="bg-orange-50 rounded-xl p-2.5 text-center">
               <p className="text-xs text-gray-500 mb-0.5">Next Due</p>
               <p className="text-xs font-bold text-orange-700">
                 {plan.next_due_date ? format(new Date(plan.next_due_date), 'dd MMM') : 'N/A'}
@@ -546,29 +546,29 @@ export default function StaffCustomerDetail() {
           )}
 
           {plan.status === 'completed' && (
-            <div className="mt-4 py-3 bg-emerald-500/15 rounded-xl text-center">
-              <p className="text-sm font-bold text-emerald-400">✓ Plan fully paid</p>
+            <div className="mt-4 py-3 bg-emerald-50 rounded-xl text-center">
+              <p className="text-sm font-bold text-emerald-800">✓ Plan fully paid</p>
             </div>
           )}
         </div>
       )}
 
       {/* Payment History */}
-      <div className="bg-gray-900 rounded-2xl shadow-card border border-gray-800 p-4">
-        <h3 className="text-sm font-bold text-white mb-3">
+      <div className="bg-white rounded-2xl shadow-card p-4">
+        <h3 className="text-sm font-bold text-gray-800 mb-3">
           Payment History
           {payments.length > 0 && (
-            <span className="ml-2 text-xs font-medium text-gray-500">({payments.length})</span>
+            <span className="ml-2 text-xs font-medium text-gray-400">({payments.length})</span>
           )}
         </h3>
         {payments.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-6">No payments recorded yet</p>
+          <p className="text-sm text-gray-400 text-center py-6">No payments recorded yet</p>
         ) : (
-          <div className="divide-y divide-gray-800">
+          <div className="divide-y divide-gray-50">
             {payments.map((tx) => (
               <div key={tx._id || tx.id} className="flex items-center justify-between py-3">
                 <div>
-                  <p className="text-sm font-semibold text-white">
+                  <p className="text-sm font-semibold text-gray-800">
                     GHS {Number(tx.amount || 0).toLocaleString()}
                   </p>
                   <p className="text-xs text-gray-500">
@@ -578,7 +578,7 @@ export default function StaffCustomerDetail() {
                     {tx.payment_method && ` · ${tx.payment_method}`}
                   </p>
                   {tx.paystack_reference && (
-                    <p className="text-xs font-mono text-gray-500 mt-0.5">
+                    <p className="text-xs font-mono text-gray-400 mt-0.5">
                       {tx.paystack_reference.slice(0, 24)}
                     </p>
                   )}

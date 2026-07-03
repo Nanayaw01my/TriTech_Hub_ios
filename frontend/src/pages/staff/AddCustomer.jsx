@@ -248,14 +248,14 @@ export default function StaffAddCustomer() {
       <div className="flex items-center gap-3 mb-5">
         <button
           onClick={() => navigate(-1)}
-          className="p-2 rounded-xl hover:bg-gray-800 transition-colors"
+          className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
         >
-          <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
         </button>
         <div>
-          <h1 className="text-xl font-black text-white">Register Customer</h1>
+          <h1 className="text-xl font-black text-gray-900">Register Customer</h1>
           <p className="text-xs text-gray-500">Step {step} of 4: {STEPS[step - 1]}</p>
         </div>
       </div>
@@ -265,7 +265,7 @@ export default function StaffAddCustomer() {
         {STEPS.map((label, idx) => (
           <div key={label} className="flex-1">
             <div className={`h-1.5 rounded-full transition-all duration-300 ${idx + 1 <= step ? 'bg-green-600' : 'bg-gray-200'}`} />
-            <p className={`hidden lg:block text-[10px] font-semibold mt-1 text-center truncate ${idx + 1 <= step ? 'text-emerald-400' : 'text-gray-500'}`}>
+            <p className={`hidden lg:block text-[10px] font-semibold mt-1 text-center truncate ${idx + 1 <= step ? 'text-emerald-700' : 'text-gray-400'}`}>
               {label}
             </p>
           </div>
@@ -274,8 +274,8 @@ export default function StaffAddCustomer() {
 
       {/* STEP 1: Personal Info */}
       {step === 1 && (
-        <div className="bg-gray-900 rounded-2xl shadow-sm border border-gray-800 p-5 lg:p-6">
-          <h2 className="text-base font-bold text-white mb-4">Personal Information</h2>
+        <div className="bg-white rounded-2xl shadow-sm p-5 lg:p-6">
+          <h2 className="text-base font-bold text-gray-800 mb-4">Personal Information</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <FormField label="Full Name" required error={errors.full_name}>
               <input
@@ -332,7 +332,7 @@ export default function StaffAddCustomer() {
                   maxLength={5}
                   className={inputClass(errors.password) + ' pr-16'}
                 />
-                <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold ${form.password.length === 5 ? 'text-emerald-400' : 'text-gray-500'}`}>
+                <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold ${form.password.length === 5 ? 'text-emerald-600' : 'text-gray-400'}`}>
                   {form.password.length}/5
                 </span>
               </div>
@@ -354,8 +354,8 @@ export default function StaffAddCustomer() {
 
       {/* STEP 2: Photos */}
       {step === 2 && (
-        <div className="bg-gray-900 rounded-2xl shadow-sm border border-gray-800 p-5 lg:p-6">
-          <h2 className="text-base font-bold text-white mb-1">Photo Capture</h2>
+        <div className="bg-white rounded-2xl shadow-sm p-5 lg:p-6">
+          <h2 className="text-base font-bold text-gray-800 mb-1">Photo Capture</h2>
           <p className="text-sm text-gray-500 mb-4">Ghana Card photos are required. Please ensure photos are clear and readable.</p>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -400,16 +400,16 @@ export default function StaffAddCustomer() {
           </div>
 
           <div className="lg:col-span-2">
-            <label className="block text-sm font-semibold text-gray-300 mb-1.5">
-              Proof of Income <span className="text-gray-500 font-normal text-xs">(Optional)</span>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Proof of Income <span className="text-gray-400 font-normal text-xs">(Optional)</span>
             </label>
             {form.proof_of_income ? (
-              <div className="flex items-center gap-3 p-3 bg-emerald-500/15 rounded-2xl border border-emerald-500/30">
-                <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-2xl border border-emerald-200">
+                <svg className="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-emerald-400">Document uploaded</p>
+                  <p className="text-sm font-semibold text-emerald-700">Document uploaded</p>
                 </div>
                 <button
                   type="button"
@@ -420,8 +420,8 @@ export default function StaffAddCustomer() {
                 </button>
               </div>
             ) : (
-              <label className="w-full h-24 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-green-500 hover:bg-emerald-500/15 transition-colors">
-                <svg className="w-8 h-8 text-gray-500 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <label className="w-full h-24 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-green-500 hover:bg-emerald-50 transition-colors">
+                <svg className="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
                 <p className="text-xs text-gray-500">Upload payslip or bank statement</p>
@@ -447,8 +447,8 @@ export default function StaffAddCustomer() {
       {/* STEP 3: Address & Income */}
       {step === 3 && (
         <div className="space-y-4">
-          <div className="bg-gray-900 rounded-2xl shadow-sm border border-gray-800 p-5 lg:p-6">
-            <h2 className="text-base font-bold text-white mb-4">Address & Income</h2>
+          <div className="bg-white rounded-2xl shadow-sm p-5 lg:p-6">
+            <h2 className="text-base font-bold text-gray-800 mb-4">Address & Income</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <FormField label="Occupation" required error={errors.occupation}>
                 <input
@@ -543,8 +543,8 @@ export default function StaffAddCustomer() {
             </div>
           </div>
 
-          <div className="bg-gray-900 rounded-2xl shadow-sm border border-gray-800 p-5 lg:p-6">
-            <h3 className="text-sm font-bold text-gray-300 mb-4">Guarantor Information</h3>
+          <div className="bg-white rounded-2xl shadow-sm p-5 lg:p-6">
+            <h3 className="text-sm font-bold text-gray-700 mb-4">Guarantor Information</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <FormField label="Guarantor Full Name">
                 <input
@@ -597,17 +597,17 @@ export default function StaffAddCustomer() {
         <div className="lg:grid lg:grid-cols-5 lg:gap-6 lg:items-start">
           {/* Form col */}
           <div className="lg:col-span-3 space-y-4">
-            <div className="bg-gray-900 rounded-2xl shadow-sm border border-gray-800 p-5 lg:p-6">
-              <h2 className="text-base font-bold text-white mb-4">Device & Payment Plan</h2>
+            <div className="bg-white rounded-2xl shadow-sm p-5 lg:p-6">
+              <h2 className="text-base font-bold text-gray-800 mb-4">Device & Payment Plan</h2>
 
               <div className="space-y-4">
                 <FormField label="iPhone Model" required error={errors.device_model}>
                   {devicesLoading ? (
-                    <div className="flex items-center gap-2 px-4 py-3 border border-gray-700 rounded-2xl text-sm text-gray-500">
+                    <div className="flex items-center gap-2 px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm text-gray-400">
                       <LoadingSpinner size="sm" /> Loading available devices...
                     </div>
                   ) : availableDevices.length === 0 ? (
-                    <div className="px-4 py-3 border-2 border-orange-200 bg-orange-500/15 rounded-2xl text-sm text-orange-700 font-medium">
+                    <div className="px-4 py-3 border-2 border-orange-200 bg-orange-50 rounded-2xl text-sm text-orange-700 font-medium">
                       No available devices in stock. Ask admin to add devices first.
                     </div>
                   ) : (
@@ -632,13 +632,13 @@ export default function StaffAddCustomer() {
                 </FormField>
 
                 {form.device_model && (
-                  <div className="flex items-center gap-3 p-3 bg-emerald-500/15 rounded-2xl border border-emerald-500/30">
-                    <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-2xl border border-emerald-200">
+                    <svg className="w-8 h-8 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
                     <div>
-                      <p className="font-bold text-emerald-400">{form.device_model}</p>
-                      <p className="text-sm text-emerald-400">GHS {Number(form.device_price).toLocaleString()}</p>
+                      <p className="font-bold text-emerald-800">{form.device_model}</p>
+                      <p className="text-sm text-emerald-600">GHS {Number(form.device_price).toLocaleString()}</p>
                     </div>
                   </div>
                 )}
@@ -668,8 +668,8 @@ export default function StaffAddCustomer() {
                         }}
                         className={`py-3 px-2 rounded-2xl border-2 text-sm font-semibold capitalize transition-all
                           ${form.payment_frequency === freq
-                            ? 'border-emerald-600 bg-emerald-500/15 text-emerald-400'
-                            : 'border-gray-700 text-gray-400 hover:border-gray-300'
+                            ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
+                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                       >
                         {freq}
@@ -690,8 +690,8 @@ export default function StaffAddCustomer() {
                           onClick={() => set('duration', d)}
                           className={`px-4 py-2.5 rounded-2xl border-2 text-sm font-semibold transition-all
                             ${form.duration === d
-                              ? 'border-emerald-600 bg-emerald-500/15 text-emerald-400'
-                              : 'border-gray-700 text-gray-400 hover:border-gray-300'
+                              ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
+                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
                             }`}
                         >
                           {d} {unit}
@@ -705,8 +705,8 @@ export default function StaffAddCustomer() {
 
             {/* Mobile-only payment preview */}
             {form.device_model && Number(form.down_payment) > 0 && (
-              <div className="lg:hidden bg-gray-900 rounded-2xl border-2 border-emerald-500/30 p-4 space-y-2.5">
-                <h3 className="text-sm font-bold text-white mb-3">Payment Preview</h3>
+              <div className="lg:hidden bg-white rounded-2xl border-2 border-emerald-200 p-4 space-y-2.5">
+                <h3 className="text-sm font-bold text-gray-800 mb-3">Payment Preview</h3>
                 <PaymentPreviewRows preview={preview} frequency={form.payment_frequency} />
               </div>
             )}
@@ -714,20 +714,20 @@ export default function StaffAddCustomer() {
 
           {/* Desktop sticky preview col */}
           <div className="hidden lg:block lg:col-span-2">
-            <div className="sticky top-4 bg-gray-900 rounded-2xl border-2 border-emerald-500/30 p-5 space-y-3">
+            <div className="sticky top-4 bg-white rounded-2xl border-2 border-emerald-200 p-5 space-y-3">
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-xl bg-emerald-900 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <h3 className="text-sm font-bold text-white">Payment Preview</h3>
+                <h3 className="text-sm font-bold text-gray-800">Payment Preview</h3>
               </div>
               {form.device_model && Number(form.down_payment) > 0 ? (
                 <PaymentPreviewRows preview={preview} frequency={form.payment_frequency} />
               ) : (
                 <div className="py-6 text-center">
-                  <p className="text-sm text-gray-500">Select a device and enter a down payment to see the payment breakdown.</p>
+                  <p className="text-sm text-gray-400">Select a device and enter a down payment to see the payment breakdown.</p>
                 </div>
               )}
             </div>
@@ -736,12 +736,12 @@ export default function StaffAddCustomer() {
       )}
 
       {/* Navigation Buttons — fixed on mobile (above the tab bar), inline on desktop */}
-      <div className="form-action-bar fixed left-0 right-0 lg:static lg:mt-5 bg-gray-900 lg:bg-transparent border-t border-gray-800 lg:border-0 p-4 lg:p-0 flex gap-3 lg:max-w-3xl z-30">
+      <div className="form-action-bar fixed left-0 right-0 lg:static lg:mt-5 bg-white lg:bg-transparent border-t border-gray-200 lg:border-0 p-4 lg:p-0 flex gap-3 lg:max-w-3xl z-30">
         {step > 1 && (
           <button
             type="button"
             onClick={prevStep}
-            className="flex-1 py-3.5 border border-gray-700 rounded-2xl text-gray-300 font-bold text-sm hover:bg-gray-800 transition-colors"
+            className="flex-1 py-3.5 border-2 border-gray-200 rounded-2xl text-gray-700 font-bold text-sm hover:bg-gray-50 transition-colors"
           >
             ← Back
           </button>
@@ -781,7 +781,7 @@ export default function StaffAddCustomer() {
 function FormField({ label, required, error, children }) {
   return (
     <div data-error={error || undefined}>
-      <label className="block text-sm font-semibold text-gray-300 mb-1.5">
+      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {children}
@@ -793,8 +793,8 @@ function FormField({ label, required, error, children }) {
 function PreviewRow({ label, value, highlight, bold }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-gray-400">{label}</span>
-      <span className={`text-sm font-semibold ${highlight ? 'text-red-600' : bold ? 'text-emerald-400 text-base font-bold' : 'text-white'}`}>
+      <span className="text-sm text-gray-600">{label}</span>
+      <span className={`text-sm font-semibold ${highlight ? 'text-red-600' : bold ? 'text-emerald-800 text-base font-bold' : 'text-gray-800'}`}>
         {value}
       </span>
     </div>
@@ -807,7 +807,7 @@ function PaymentPreviewRows({ preview, frequency }) {
       <PreviewRow label="Total Price" value={`GHS ${preview.price.toLocaleString()}`} />
       <PreviewRow label="Down Payment" value={`GHS ${preview.down.toLocaleString()}`} />
       <PreviewRow label="Remaining Balance" value={`GHS ${preview.remaining.toLocaleString()}`} highlight />
-      <div className="border-t border-gray-800 my-1" />
+      <div className="border-t border-gray-100 my-1" />
       <PreviewRow
         label={`Installment per ${frequency.replace('ly', '')}`}
         value={`GHS ${preview.installmentAmount.toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -825,7 +825,7 @@ function PaymentPreviewRows({ preview, frequency }) {
 }
 
 const inputClass = (error) =>
-  `w-full px-4 py-3 border-2 rounded-2xl text-sm text-white focus:outline-none focus:border-emerald-600 bg-gray-900 min-h-[48px] ${error ? 'border-red-400' : 'border-gray-700'}`
+  `w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-white min-h-[48px] ${error ? 'border-red-400' : 'border-gray-200'}`
 
 const selectClass = (error) =>
-  `w-full px-4 py-3 border-2 rounded-2xl text-sm text-white focus:outline-none focus:border-emerald-600 bg-gray-900 min-h-[48px] ${error ? 'border-red-400' : 'border-gray-700'}`
+  `w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-white min-h-[48px] ${error ? 'border-red-400' : 'border-gray-200'}`
