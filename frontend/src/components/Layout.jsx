@@ -250,7 +250,10 @@ function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
   return (
     <div className="flex flex-col h-full bg-gradient-to-b from-green-900 to-green-950">
       {/* Brand */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
+      <div
+        className="flex items-center gap-3 px-5 pb-5 border-b border-white/10"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' }}
+      >
         <img
           src="/logo.png"
           alt="Tritech Hub iOS"
@@ -270,7 +273,10 @@ function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
       </nav>
 
       {/* User + Logout */}
-      <div className="border-t border-white/10 p-4">
+      <div
+        className="border-t border-white/10 p-4"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}
+      >
         <div className="flex items-center gap-3 mb-3">
           <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
             <span className="text-white font-bold text-sm">
