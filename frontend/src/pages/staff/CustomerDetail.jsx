@@ -356,6 +356,77 @@ export default function StaffCustomerDetail() {
         </div>
       </div>
 
+      {/* Customer Details */}
+      {(customer.ghana_card_id || customer.occupation || customer.income?.amount > 0 || customer.location?.region || customer.location?.town) && (
+        <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
+          <h3 className="text-sm font-bold text-gray-800 mb-3">Customer Details</h3>
+          <div className="space-y-2">
+            {customer.ghana_card_id && (
+              <div className="flex justify-between gap-3 text-sm">
+                <span className="text-gray-500 flex-shrink-0">Ghana Card ID</span>
+                <span className="font-semibold text-gray-800 font-mono text-right break-all">{customer.ghana_card_id}</span>
+              </div>
+            )}
+            {customer.occupation && (
+              <div className="flex justify-between gap-3 text-sm">
+                <span className="text-gray-500 flex-shrink-0">Occupation</span>
+                <span className="font-semibold text-gray-800 text-right">{customer.occupation}</span>
+              </div>
+            )}
+            {customer.income?.amount > 0 && (
+              <div className="flex justify-between gap-3 text-sm">
+                <span className="text-gray-500 flex-shrink-0">Income</span>
+                <span className="font-semibold text-gray-800 text-right">
+                  GHS {Number(customer.income.amount).toLocaleString()}{customer.income.source ? ` — ${customer.income.source}` : ''}
+                </span>
+              </div>
+            )}
+            {(customer.location?.region || customer.location?.town || customer.location?.district || customer.location?.landmark) && (
+              <div className="flex justify-between gap-3 text-sm">
+                <span className="text-gray-500 flex-shrink-0">Location</span>
+                <span className="font-semibold text-gray-800 text-right">
+                  {[customer.location?.town, customer.location?.district, customer.location?.region].filter(Boolean).join(', ')}
+                  {customer.location?.landmark ? ` (${customer.location.landmark})` : ''}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Guarantor */}
+      {(customer.guarantor?.full_name || customer.guarantor?.phone) && (
+        <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
+          <h3 className="text-sm font-bold text-gray-800 mb-3">Guarantor</h3>
+          <div className="space-y-2">
+            {customer.guarantor.full_name && (
+              <div className="flex justify-between gap-3 text-sm">
+                <span className="text-gray-500 flex-shrink-0">Name</span>
+                <span className="font-semibold text-gray-800 text-right">{customer.guarantor.full_name}</span>
+              </div>
+            )}
+            {customer.guarantor.phone && (
+              <div className="flex justify-between gap-3 text-sm">
+                <span className="text-gray-500 flex-shrink-0">Phone</span>
+                <span className="font-semibold text-gray-800 text-right">{customer.guarantor.phone}</span>
+              </div>
+            )}
+            {customer.guarantor.ghana_card_id && (
+              <div className="flex justify-between gap-3 text-sm">
+                <span className="text-gray-500 flex-shrink-0">Ghana Card ID</span>
+                <span className="font-semibold text-gray-800 font-mono text-right break-all">{customer.guarantor.ghana_card_id}</span>
+              </div>
+            )}
+            {customer.guarantor.relationship && (
+              <div className="flex justify-between gap-3 text-sm">
+                <span className="text-gray-500 flex-shrink-0">Relationship</span>
+                <span className="font-semibold text-gray-800 text-right">{customer.guarantor.relationship}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Photos & Documents */}
       {(cardFront || cardBack || custPhoto || guarPhoto || sigPhoto) && (
         <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
