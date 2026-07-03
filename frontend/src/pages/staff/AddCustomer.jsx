@@ -736,10 +736,7 @@ export default function StaffAddCustomer() {
       )}
 
       {/* Navigation Buttons — fixed on mobile (above the tab bar), inline on desktop */}
-      <div
-        className="fixed left-0 right-0 lg:static lg:mt-5 bg-white lg:bg-transparent border-t border-gray-200 lg:border-0 p-4 lg:p-0 flex gap-3 lg:max-w-3xl z-30"
-        style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
-      >
+      <div className="form-action-bar fixed left-0 right-0 lg:static lg:mt-5 bg-white lg:bg-transparent border-t border-gray-200 lg:border-0 p-4 lg:p-0 flex gap-3 lg:max-w-3xl z-30">
         {step > 1 && (
           <button
             type="button"

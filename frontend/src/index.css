@@ -242,6 +242,16 @@ button {
   }
 }
 
+/* Form action bar (e.g. Back / Continue) sits just above the bottom tab nav.
+   When the keyboard is open the tab nav is hidden, so the action bar drops
+   to the bottom edge to sit right above the keyboard instead of floating. */
+.form-action-bar {
+  bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+body.keyboard-open .form-action-bar {
+  bottom: 0;
+}
+
 /* Responsive grid adjustments */
 @media (max-width: 375px) {
   .text-base { font-size: 15px; }

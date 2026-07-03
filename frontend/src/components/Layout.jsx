@@ -313,11 +313,41 @@ export default function Layout({ role }) {
   const [logoutModal, setLogoutModal] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [keyboardOpen, setKeyboardOpen] = useState(false)
 
   useEffect(() => {
     const title = getPageTitle(location.pathname)
     document.title = title === 'Tritech Hub iOS' ? 'TriTech Hub iOS' : `${title} · TriTech Hub iOS`
   }, [location.pathname])
+
+  // Hide the bottom tab bar while typing (keyboard open) so it doesn't float
+  // over the keyboard and cover the fields being edited.
+  useEffect(() => {
+    const isTextInput = (el) => {
+      if (!el) return false
+      const tag = el.tagName
+      if (tag === 'TEXTAREA' || tag === 'SELECT') return true
+      if (tag === 'INPUT') {
+        const nonText = ['checkbox', 'radio', 'button', 'submit', 'reset', 'file', 'range', 'color']
+        return !nonText.includes((el.type || 'text').toLowerCase())
+      }
+      return el.isContentEditable === true
+    }
+    let blurTimer
+    const open = () => { clearTimeout(blurTimer); setKeyboardOpen(true); document.body.classList.add('keyboard-open') }
+    const close = () => { setKeyboardOpen(false); document.body.classList.remove('keyboard-open') }
+    const onFocusIn = (e) => { if (isTextInput(e.target)) open() }
+    // Debounce so moving between fields doesn't flash the nav back in
+    const onFocusOut = () => { clearTimeout(blurTimer); blurTimer = setTimeout(close, 120) }
+    document.addEventListener('focusin', onFocusIn)
+    document.addEventListener('focusout', onFocusOut)
+    return () => {
+      clearTimeout(blurTimer)
+      document.removeEventListener('focusin', onFocusIn)
+      document.removeEventListener('focusout', onFocusOut)
+      document.body.classList.remove('keyboard-open')
+    }
+  }, [])
 
   const navItems = role === 'admin' ? ADMIN_NAV : role === 'staff' ? STAFF_NAV : CUSTOMER_NAV
   const bottomItems = role === 'admin' ? ADMIN_BOTTOM : navItems
@@ -420,8 +450,8 @@ export default function Layout({ role }) {
         </main>
       </div>
 
-      {/* ── Mobile Bottom Nav ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden"
+      {/* ── Mobile Bottom Nav (hidden while typing) ── */}
+      <nav className={`fixed bottom-0 left-0 right-0 z-40 lg:hidden ${keyboardOpen ? 'hidden' : ''}`}
            style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderTop: '1px solid rgba(0,0,0,0.08)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="flex items-stretch h-16">
           {bottomItems.map((item) => {
