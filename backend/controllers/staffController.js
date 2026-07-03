@@ -130,6 +130,11 @@ const getMyCustomers = async (req, res) => {
           { customer_id: c._id },
           { status: 1, next_due_date: 1, remaining_balance: 1 }
         ).lean();
+        // Ghana Card ID images are admin-only — never expose them to staff.
+        if (c.photos) {
+          delete c.photos.ghana_card_front;
+          delete c.photos.ghana_card_back;
+        }
         return { ...c, installment_plan: plan };
       })
     );
@@ -503,6 +508,13 @@ const getCustomerDetail = async (req, res) => {
 
     if (!customer) {
       return res.status(404).json({ success: false, message: 'Customer not found or access denied.' });
+    }
+
+    // Ghana Card ID images are sensitive — restrict them to admins.
+    // Staff upload them during registration but cannot view them afterward.
+    if (req.user.role === 'staff' && customer.photos) {
+      delete customer.photos.ghana_card_front;
+      delete customer.photos.ghana_card_back;
     }
 
     const [plan, payments] = await Promise.all([

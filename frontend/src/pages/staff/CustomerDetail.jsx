@@ -427,14 +427,12 @@ export default function StaffCustomerDetail() {
         </div>
       )}
 
-      {/* Photos & Documents */}
-      {(cardFront || cardBack || custPhoto || guarPhoto || sigPhoto) && (
+      {/* Photos & Documents — Ghana Card ID images are hidden from staff (admin only) */}
+      {(custPhoto || guarPhoto || sigPhoto) && (
         <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
           <h3 className="text-sm font-bold text-gray-800 mb-3">Photos & Documents</h3>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: 'Ghana Card — Front', src: cardFront },
-              { label: 'Ghana Card — Back',  src: cardBack  },
               { label: 'Customer Photo',     src: custPhoto },
               { label: 'Guarantor Photo',    src: guarPhoto },
             ].map(({ label, src }) => src ? (
@@ -460,6 +458,9 @@ export default function StaffCustomerDetail() {
               </button>
             </div>
           )}
+          <p className="mt-3 pt-3 border-t border-gray-100 text-[11px] text-gray-400">
+            🔒 Ghana Card ID images are restricted to admin only.
+          </p>
         </div>
       )}
 
