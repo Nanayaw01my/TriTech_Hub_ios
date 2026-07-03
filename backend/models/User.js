@@ -92,7 +92,7 @@ UserSchema.pre('save', async function (next) {
 UserSchema.post(/^find/, function (docs) {
   const docArray = Array.isArray(docs) ? docs : [docs || {}];
   docArray.forEach(doc => {
-    if (doc && doc.phone && typeof doc.phone === 'string') {
+    if (doc && isEncrypted(doc.phone)) {
       doc.phone = decrypt(doc.phone);
     }
   });

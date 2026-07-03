@@ -20,10 +20,12 @@ export default function StaffCustomers() {
     try {
       const params = new URLSearchParams({ page, limit: PER_PAGE, ...(search && { search }) })
       const res = await api.get(`/staff/customers?${params}`)
-      const data = res.data
-      setCustomers(data.customers || data.data?.customers || data.data || [])
-      setTotalPages(data.totalPages || Math.ceil((data.total || data.data?.total || 0) / PER_PAGE))
-      setTotal(data.total || data.data?.total || 0)
+      const body = res.data?.data || res.data
+      const list = body.customers || body || []
+      const totalCount = body.pagination?.total ?? body.total ?? (Array.isArray(list) ? list.length : 0)
+      setCustomers(Array.isArray(list) ? list : [])
+      setTotal(totalCount)
+      setTotalPages(body.pagination?.pages || Math.ceil(totalCount / PER_PAGE) || 1)
     } catch (err) {
       console.error(err)
     } finally {

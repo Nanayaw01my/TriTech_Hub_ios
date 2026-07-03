@@ -142,22 +142,18 @@ CustomerSchema.pre('save', function (next) {
   next();
 });
 
-// Auto-decrypt phone on retrieval
-CustomerSchema.post(/^find/, function () {
-  const docs = Array.isArray(this._doc) ? [this._doc] : [this];
+// Auto-decrypt PII on retrieval.
+// In a post(/^find/) hook Mongoose passes the result docs as the argument
+// (`this` is the Query, not the documents). Works for lean() results too.
+CustomerSchema.post(/^find/, function (result) {
+  if (!result) return;
+  const docs = Array.isArray(result) ? result : [result];
   docs.forEach(doc => {
-    if (doc && doc.phone && typeof doc.phone === 'string') {
-      doc.phone = decrypt(doc.phone);
-    }
-    if (doc && doc.ghana_card_id && typeof doc.ghana_card_id === 'string') {
-      doc.ghana_card_id = decrypt(doc.ghana_card_id);
-    }
-    if (doc && doc.guarantor?.phone && typeof doc.guarantor.phone === 'string') {
-      doc.guarantor.phone = decrypt(doc.guarantor.phone);
-    }
-    if (doc && doc.guarantor?.ghana_card_id && typeof doc.guarantor.ghana_card_id === 'string') {
-      doc.guarantor.ghana_card_id = decrypt(doc.guarantor.ghana_card_id);
-    }
+    if (!doc) return;
+    if (isEncrypted(doc.phone)) doc.phone = decrypt(doc.phone);
+    if (isEncrypted(doc.ghana_card_id)) doc.ghana_card_id = decrypt(doc.ghana_card_id);
+    if (doc.guarantor && isEncrypted(doc.guarantor.phone)) doc.guarantor.phone = decrypt(doc.guarantor.phone);
+    if (doc.guarantor && isEncrypted(doc.guarantor.ghana_card_id)) doc.guarantor.ghana_card_id = decrypt(doc.guarantor.ghana_card_id);
   });
 });
 
