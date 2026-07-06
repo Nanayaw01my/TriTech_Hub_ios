@@ -1,8 +1,16 @@
 const axios = require('axios');
 
 const logger = require('./logger');
+
+// ── Arkesel (used for WhatsApp; kept as an optional SMS fallback) ──────────────
 const ARKESEL_API_KEY = process.env.ARKESEL_API_KEY;
 const SENDER_ID       = process.env.ARKESEL_SENDER_ID || 'Tritech';
+
+// ── NkomoSMS (primary SMS provider) ───────────────────────────────────────────
+const NKOMO_API_TOKEN = process.env.NKOMOSMS_API_TOKEN;
+const NKOMO_SENDER_ID = process.env.NKOMOSMS_SENDER_ID || 'TRITECHHUB';
+const NKOMO_V3_URL    = 'https://app.nkomosms.com/api/v3/sms/send';
+const NKOMO_HTTP_URL  = 'https://app.nkomosms.com/api/http/sms/send';
 
 const formatPhone = (phone) => {
   if (!phone) return null;
@@ -13,39 +21,70 @@ const formatPhone = (phone) => {
   return digits;
 };
 
-const sendSMS = async (to, message) => {
-  if (!ARKESEL_API_KEY) {
-    logger.warn('[SMS] ARKESEL_API_KEY not set — skipping');
-    return;
+// ── Arkesel SMS (fallback only) ───────────────────────────────────────────────
+const sendSMSViaArkesel = async (phone, message) => {
+  if (!ARKESEL_API_KEY) return null;
+  try {
+    const res = await axios.post(
+      'https://sms.arkesel.com/api/v2/sms/send',
+      { sender: SENDER_ID, message, recipients: [phone] },
+      { headers: { 'api-key': ARKESEL_API_KEY }, timeout: 15000 }
+    );
+    logger.info(`[SMS] Arkesel fallback sent to ${phone}:`, JSON.stringify(res.data));
+    return res.data;
+  } catch (err) {
+    logger.error(`[SMS] Arkesel fallback failed for ${phone}:`, err.response?.data ? JSON.stringify(err.response.data) : err.message);
+    return null;
   }
+};
+
+// ── Primary SMS sender: NkomoSMS (v3 Bearer → HTTP API → Arkesel fallback) ─────
+const sendSMS = async (to, message) => {
   const phone = formatPhone(to);
   if (!phone) {
     logger.warn('[SMS] Invalid phone:', to);
     return;
   }
 
-  try {
-    const res = await axios.post(
-      'https://sms.arkesel.com/api/v2/sms/send',
-      { sender: SENDER_ID, message, recipients: [phone] },
-      { headers: { 'api-key': ARKESEL_API_KEY } }
-    );
-    logger.info(`[SMS] v2 sent to ${phone}:`, JSON.stringify(res.data));
-    return res.data;
-  } catch (v2Err) {
-    logger.warn(`[SMS] v2 failed (${v2Err.response?.status}), trying v1...`);
+  if (!NKOMO_API_TOKEN) {
+    logger.warn('[SMS] NKOMOSMS_API_TOKEN not set — falling back to Arkesel');
+    return sendSMSViaArkesel(phone, message);
   }
 
+  // Primary: NkomoSMS v3 (OAuth Bearer token, JSON body)
   try {
-    const res = await axios.get('https://sms.arkesel.com/sms/api', {
-      params: { action: 'send-sms', api_key: ARKESEL_API_KEY, to: phone, from: SENDER_ID, sms: message },
-    });
-    logger.info(`[SMS] v1 sent to ${phone}:`, JSON.stringify(res.data));
+    const res = await axios.post(
+      NKOMO_V3_URL,
+      { recipient: phone, sender_id: NKOMO_SENDER_ID, type: 'plain', message },
+      {
+        headers: {
+          Authorization: `Bearer ${NKOMO_API_TOKEN}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        timeout: 15000,
+      }
+    );
+    logger.info(`[SMS] NkomoSMS v3 sent to ${phone}:`, JSON.stringify(res.data));
     return res.data;
-  } catch (v1Err) {
-    const detail = v1Err.response?.data ? JSON.stringify(v1Err.response.data) : v1Err.message;
-    logger.error(`[SMS] Both v1+v2 failed for ${phone}:`, detail);
+  } catch (v3Err) {
+    logger.warn(`[SMS] NkomoSMS v3 failed (${v3Err.response?.status}): ${v3Err.response?.data ? JSON.stringify(v3Err.response.data) : v3Err.message} — trying HTTP API...`);
   }
+
+  // Fallback 1: NkomoSMS HTTP API (token as query param)
+  try {
+    const res = await axios.get(NKOMO_HTTP_URL, {
+      params: { recipient: phone, sender_id: NKOMO_SENDER_ID, type: 'plain', message, api_token: NKOMO_API_TOKEN },
+      timeout: 15000,
+    });
+    logger.info(`[SMS] NkomoSMS HTTP sent to ${phone}:`, JSON.stringify(res.data));
+    return res.data;
+  } catch (httpErr) {
+    logger.warn(`[SMS] NkomoSMS HTTP failed (${httpErr.response?.status}): ${httpErr.response?.data ? JSON.stringify(httpErr.response.data) : httpErr.message} — trying Arkesel...`);
+  }
+
+  // Fallback 2: Arkesel (so notifications still go out if NkomoSMS is down)
+  return sendSMSViaArkesel(phone, message);
 };
 
 const sendWhatsApp = async (to, message) => {
