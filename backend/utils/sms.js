@@ -9,8 +9,7 @@ const SENDER_ID       = process.env.ARKESEL_SENDER_ID || 'Tritech';
 // ── NkomoSMS (primary SMS provider) ───────────────────────────────────────────
 const NKOMO_API_TOKEN = process.env.NKOMOSMS_API_TOKEN;
 const NKOMO_SENDER_ID = process.env.NKOMOSMS_SENDER_ID || 'TRITECHHUB';
-const NKOMO_V3_URL    = 'https://app.nkomosms.com/api/v3/sms/send';
-const NKOMO_HTTP_URL  = 'https://app.nkomosms.com/api/http/sms/send';
+const NKOMO_SEND_URL  = 'https://app.nkomosms.com/api/http/sms/send';
 
 const formatPhone = (phone) => {
   if (!phone) return null;
@@ -51,40 +50,33 @@ const sendSMS = async (to, message) => {
     return sendSMSViaArkesel(phone, message);
   }
 
-  // Primary: NkomoSMS v3 (OAuth Bearer token, JSON body)
+  // Primary: NkomoSMS — POST with api_token in the JSON body (per their docs)
   try {
     const res = await axios.post(
-      NKOMO_V3_URL,
-      { recipient: phone, sender_id: NKOMO_SENDER_ID, type: 'plain', message },
+      NKOMO_SEND_URL,
       {
-        headers: {
-          Authorization: `Bearer ${NKOMO_API_TOKEN}`,
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
+        api_token: NKOMO_API_TOKEN,
+        recipient: phone,
+        sender_id: NKOMO_SENDER_ID,
+        type: 'plain',
+        message,
+      },
+      {
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         timeout: 15000,
       }
     );
-    logger.info(`[SMS] NkomoSMS v3 sent to ${phone}:`, JSON.stringify(res.data));
+    // NkomoSMS returns { status: 'success' | 'error', ... }
+    if (res.data && res.data.status === 'error') {
+      logger.error(`[SMS] NkomoSMS rejected for ${phone}: ${res.data.message}`);
+      return sendSMSViaArkesel(phone, message);
+    }
+    logger.info(`[SMS] NkomoSMS sent to ${phone}:`, JSON.stringify(res.data));
     return res.data;
-  } catch (v3Err) {
-    logger.warn(`[SMS] NkomoSMS v3 failed (${v3Err.response?.status}): ${v3Err.response?.data ? JSON.stringify(v3Err.response.data) : v3Err.message} — trying HTTP API...`);
+  } catch (err) {
+    logger.warn(`[SMS] NkomoSMS request failed (${err.response?.status}): ${err.response?.data ? JSON.stringify(err.response.data) : err.message} — trying Arkesel...`);
+    return sendSMSViaArkesel(phone, message);
   }
-
-  // Fallback 1: NkomoSMS HTTP API (token as query param)
-  try {
-    const res = await axios.get(NKOMO_HTTP_URL, {
-      params: { recipient: phone, sender_id: NKOMO_SENDER_ID, type: 'plain', message, api_token: NKOMO_API_TOKEN },
-      timeout: 15000,
-    });
-    logger.info(`[SMS] NkomoSMS HTTP sent to ${phone}:`, JSON.stringify(res.data));
-    return res.data;
-  } catch (httpErr) {
-    logger.warn(`[SMS] NkomoSMS HTTP failed (${httpErr.response?.status}): ${httpErr.response?.data ? JSON.stringify(httpErr.response.data) : httpErr.message} — trying Arkesel...`);
-  }
-
-  // Fallback 2: Arkesel (so notifications still go out if NkomoSMS is down)
-  return sendSMSViaArkesel(phone, message);
 };
 
 const sendWhatsApp = async (to, message) => {
