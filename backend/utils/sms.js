@@ -63,18 +63,26 @@ const sendSMS = async (to, message) => {
       },
       {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        timeout: 15000,
+        timeout: 30000,
       }
     );
     // NkomoSMS returns { status: 'success' | 'error', ... }
     if (res.data && res.data.status === 'error') {
-      logger.error(`[SMS] NkomoSMS rejected for ${phone}: ${res.data.message}`);
+      // NkomoSMS explicitly refused the message — safe to fall back to Arkesel.
+      logger.error(`[SMS] NkomoSMS rejected for ${phone}: ${res.data.message} — trying Arkesel...`);
       return sendSMSViaArkesel(phone, message);
     }
     logger.info(`[SMS] NkomoSMS sent to ${phone}:`, JSON.stringify(res.data));
     return res.data;
   } catch (err) {
-    logger.warn(`[SMS] NkomoSMS request failed (${err.response?.status}): ${err.response?.data ? JSON.stringify(err.response.data) : err.message} — trying Arkesel...`);
+    // A timeout does NOT mean the message failed — NkomoSMS may have already
+    // sent it. Falling back here would double-send, so we don't.
+    if (err.code === 'ECONNABORTED' || /timeout/i.test(err.message || '')) {
+      logger.warn(`[SMS] NkomoSMS slow to respond for ${phone} — assuming sent, NOT falling back (avoids double SMS)`);
+      return null;
+    }
+    // Genuine failure (network error or HTTP error status) — fall back to Arkesel.
+    logger.warn(`[SMS] NkomoSMS failed for ${phone} (${err.response?.status}): ${err.response?.data ? JSON.stringify(err.response.data) : err.message} — trying Arkesel...`);
     return sendSMSViaArkesel(phone, message);
   }
 };
