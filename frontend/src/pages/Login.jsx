@@ -192,8 +192,8 @@ export default function Login() {
                 key={swipeKey}
                 onComplete={handleSubmit}
                 loading={loading}
-                label="Swipe to Sign In"
-                loadingLabel="Signing in…"
+                label="Swipe to login"
+                loadingLabel="Logging in…"
               />
             </div>
           </form>
