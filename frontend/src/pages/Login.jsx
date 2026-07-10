@@ -200,9 +200,16 @@ export default function Login() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-gray-500 mt-8">
-          © {new Date().getFullYear()} TriTech Hub iOS. All rights reserved.
-        </p>
+        <div className="text-center mt-8 space-y-2">
+          <p className="text-xs text-gray-500">
+            <Link to="/terms" className="text-emerald-700 font-medium hover:text-emerald-800">Terms &amp; Agreement</Link>
+            <span className="text-gray-400 mx-2">•</span>
+            <Link to="/privacy" className="text-emerald-700 font-medium hover:text-emerald-800">Privacy Policy</Link>
+          </p>
+          <p className="text-xs text-gray-500">
+            © {new Date().getFullYear()} TriTech Hub iOS. All rights reserved.
+          </p>
+        </div>
       </div>
     </div>
   )

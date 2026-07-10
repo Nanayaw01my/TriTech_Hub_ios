@@ -13,6 +13,8 @@ import NotFound from './pages/NotFound'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
+import Terms from './pages/Terms'
+import Privacy from './pages/Privacy'
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -119,6 +121,8 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/privacy" element={<Privacy />} />
 
       {/* Admin routes */}
       <Route
