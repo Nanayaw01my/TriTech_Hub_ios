@@ -382,15 +382,32 @@ const formatPhone = (phone) => {
 const findUserByPhone = async (phone) => {
   const formatted = formatPhone(phone);
   if (!formatted) return null;
-  // Check User model directly (staff/admin)
+
+  // 1. Direct match — works for any legacy/unencrypted phone values.
   let user = await User.findOne({ phone: { $in: [phone, formatted] } });
   if (user) return user;
-  // Check Customer model (customers store phone separately)
   const customer = await Customer.findOne({ phone: { $in: [phone, formatted] } });
   if (customer?.user_id) {
     user = await User.findById(customer.user_id);
-    return user;
+    if (user) return user;
   }
+
+  // 2. Encrypted phones can't be matched by an equality query (each value is
+  //    encrypted with a random IV). Scan and compare the DECRYPTED phone
+  //    (the models' post-find hook decrypts `phone` automatically).
+  const matchesFormatted = (p) => {
+    const f = formatPhone(p);
+    return f && f === formatted;
+  };
+
+  const users = await User.find({ phone: { $exists: true, $ne: null } }).select('_id phone');
+  const uMatch = users.find(u => matchesFormatted(u.phone));
+  if (uMatch) return User.findById(uMatch._id);
+
+  const customers = await Customer.find({ phone: { $exists: true, $ne: null } }).select('_id user_id phone');
+  const cMatch = customers.find(c => matchesFormatted(c.phone));
+  if (cMatch?.user_id) return User.findById(cMatch.user_id);
+
   return null;
 };
 
