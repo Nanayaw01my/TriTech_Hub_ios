@@ -8,6 +8,7 @@ export default function SwipeButton({
   onComplete,
   loading = false,
   disabled = false,
+  dark = false,
   label = 'Swipe to Sign In',
   loadingLabel = 'Signing in…',
 }) {
@@ -88,12 +89,14 @@ export default function SwipeButton({
       ref={trackRef}
       className={`relative w-full h-14 rounded-full overflow-hidden select-none
                   border transition-colors
-                  ${disabled ? 'bg-gray-100 border-gray-200' : 'bg-emerald-50 border-emerald-200'}`}
+                  ${dark
+                    ? (disabled ? 'bg-white/5 border-white/10' : 'bg-white/10 border-white/20')
+                    : (disabled ? 'bg-gray-100 border-gray-200' : 'bg-emerald-50 border-emerald-200')}`}
       style={{ padding: PAD }}
     >
       {/* Progress fill */}
       <div
-        className="absolute inset-y-0 left-0 bg-emerald-500/25"
+        className={dark ? 'absolute inset-y-0 left-0 bg-emerald-500/40' : 'absolute inset-y-0 left-0 bg-emerald-500/25'}
         style={{ width: x + KNOB + PAD, transition: dragging ? 'none' : 'width 0.25s ease' }}
       />
 
@@ -102,7 +105,7 @@ export default function SwipeButton({
         className="absolute inset-0 flex items-center justify-center pointer-events-none"
         style={{ opacity: isBusy ? 1 : 1 - progress * 1.4, transition: dragging ? 'none' : 'opacity 0.2s ease' }}
       >
-        <span className="text-emerald-700 font-bold text-sm tracking-wide flex items-center gap-2">
+        <span className={`${dark ? 'text-white' : 'text-emerald-700'} font-bold text-sm tracking-wide flex items-center gap-2`}>
           {isBusy ? loadingLabel : (
             <>
               {label}
@@ -119,7 +122,9 @@ export default function SwipeButton({
         onMouseDown={(e) => begin(e.clientX)}
         onTouchStart={(e) => e.touches[0] && begin(e.touches[0].clientX)}
         className={`absolute top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full shadow-md
-                    ${disabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-emerald-600 cursor-grab active:cursor-grabbing'}`}
+                    ${disabled
+                      ? (dark ? 'bg-white/20 cursor-not-allowed' : 'bg-gray-300 cursor-not-allowed')
+                      : 'bg-emerald-500 cursor-grab active:cursor-grabbing'}`}
         style={{
           width: KNOB,
           height: KNOB,

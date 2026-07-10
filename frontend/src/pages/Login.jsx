@@ -73,8 +73,13 @@ export default function Login() {
     }
   }
 
+  const CARD_BG = '#0c1f18' // dark green-black card colour (also used to notch the labels)
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-100 via-emerald-200 to-emerald-300 flex items-center justify-center px-4 py-8 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-600 via-emerald-800 to-emerald-950 flex items-center justify-center px-4 py-8 relative overflow-hidden">
+      {/* Soft depth accents */}
+      <div className="absolute -top-24 -left-24 w-96 h-96 bg-emerald-400/20 rounded-full blur-3xl" />
+      <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-emerald-950/50 rounded-full blur-3xl" />
 
       {/* Install Banner */}
       {showInstallBanner && (
@@ -105,108 +110,124 @@ export default function Login() {
 
       {/* Main Content */}
       <div className="w-full max-w-sm relative z-10">
-        {/* Logo Section */}
-        <div className="text-center mb-12">
-          <div className="w-16 h-16 mx-auto mb-8 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-2xl overflow-hidden">
-            {logoError ? (
-              <span className="text-white text-3xl font-black">T</span>
-            ) : (
-              <img
-                src="/logo.png"
-                alt="TriTech Hub"
-                onLoad={() => setLogoLoaded(true)}
-                onError={() => setLogoError(true)}
-                className="w-full h-full object-cover"
-                style={{ opacity: logoLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
-              />
-            )}
-            {!logoLoaded && !logoError && (
-              <span className="text-white text-3xl font-black">T</span>
-            )}
+        {/* Dark Card */}
+        <div className="rounded-3xl p-7 sm:p-8 shadow-2xl border border-white/10" style={{ backgroundColor: CARD_BG }}>
+
+          {/* Brand */}
+          <div className="flex items-center gap-2 justify-center mb-8">
+            <div className="w-8 h-8 rounded-lg overflow-hidden bg-emerald-600 flex items-center justify-center flex-shrink-0">
+              {logoError ? (
+                <span className="text-white text-sm font-black">T</span>
+              ) : (
+                <img
+                  src="/logo.png"
+                  alt="TriTech Hub"
+                  onLoad={() => setLogoLoaded(true)}
+                  onError={() => setLogoError(true)}
+                  className="w-full h-full object-cover"
+                  style={{ opacity: logoLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
+                />
+              )}
+            </div>
+            <span className="text-white font-bold text-sm tracking-wide">TriTech Hub</span>
           </div>
 
-          <h1 className="text-4xl font-black text-gray-900 mb-2">TriTech Hub</h1>
-          <p className="text-gray-600 text-sm tracking-wide">iPhone Installment Management</p>
-        </div>
+          {/* Heading */}
+          <h1 className="text-white text-3xl font-black leading-tight mb-8">
+            Hello,<br />Welcome Back!
+          </h1>
 
-        {/* Login Card */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-8 shadow-lg">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-5 p-3 rounded-lg bg-red-500/15 border border-red-500/30">
+              <p className="text-red-300 text-sm font-medium">{error}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Error Message */}
-            {error && (
-              <div className="p-4 rounded-lg bg-red-50 border border-red-200">
-                <p className="text-red-700 text-sm font-medium">{error}</p>
-              </div>
-            )}
-
-            {/* Email Input */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">Email or ID</label>
+            {/* Email — outlined floating label */}
+            <div className="relative">
               <input
+                id="login-email"
                 type="text"
-                placeholder="your@email.com"
+                placeholder="example@email.com"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg
-                         focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
-                         text-gray-900 placeholder-gray-500 transition-all"
+                className="peer w-full px-4 py-3.5 bg-transparent border border-white/25 rounded-lg
+                         text-white placeholder-white/30 focus:outline-none focus:border-emerald-400 transition-colors"
               />
+              <label
+                htmlFor="login-email"
+                className="absolute left-3 -top-2 px-1.5 text-xs text-white/60 peer-focus:text-emerald-400 transition-colors"
+                style={{ backgroundColor: CARD_BG }}
+              >
+                E-mail or ID
+              </label>
             </div>
 
-            {/* Password Input */}
+            {/* Password — outlined floating label with toggle */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-semibold text-gray-800">Password</label>
-                <Link to="/forgot-password" className="text-xs text-emerald-600 hover:text-emerald-700 font-medium transition-colors">
-                  Forgot?
-                </Link>
-              </div>
               <div className="relative">
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
-                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
-                           text-gray-900 placeholder-gray-500 transition-all"
+                  className="peer w-full px-4 py-3.5 pr-11 bg-transparent border border-white/25 rounded-lg
+                           text-white placeholder-white/30 focus:outline-none focus:border-emerald-400 transition-colors"
                 />
+                <label
+                  htmlFor="login-password"
+                  className="absolute left-3 -top-2 px-1.5 text-xs text-white/60 peer-focus:text-emerald-400 transition-colors"
+                  style={{ backgroundColor: CARD_BG }}
+                >
+                  Password
+                </label>
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors"
                 >
                   {showPassword ? '🙈' : '👁'}
                 </button>
               </div>
+              <div className="text-right mt-2">
+                <Link to="/forgot-password" className="text-xs text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
-            {/* Login — swipe to sign in */}
+            {/* Login — swipe */}
             <div className="pt-2">
               <SwipeButton
                 key={swipeKey}
                 onComplete={handleSubmit}
                 loading={loading}
+                dark
                 label="Swipe to login"
                 loadingLabel="Logging in…"
               />
             </div>
           </form>
+
+          {/* Footer links */}
+          <div className="text-center mt-6">
+            <p className="text-xs text-white/50">
+              <Link to="/terms" className="text-emerald-400 font-medium hover:text-emerald-300">Terms</Link>
+              <span className="text-white/30 mx-2">•</span>
+              <Link to="/privacy" className="text-emerald-400 font-medium hover:text-emerald-300">Privacy Policy</Link>
+            </p>
+          </div>
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-8 space-y-2">
-          <p className="text-xs text-gray-500">
-            <Link to="/terms" className="text-emerald-700 font-medium hover:text-emerald-800">Terms &amp; Agreement</Link>
-            <span className="text-gray-400 mx-2">•</span>
-            <Link to="/privacy" className="text-emerald-700 font-medium hover:text-emerald-800">Privacy Policy</Link>
-          </p>
-          <p className="text-xs text-gray-500">
-            © {new Date().getFullYear()} TriTech Hub iOS. All rights reserved.
-          </p>
-        </div>
+        {/* Copyright */}
+        <p className="text-center text-xs text-white/60 mt-6">
+          © {new Date().getFullYear()} TriTech Hub iOS. All rights reserved.
+        </p>
       </div>
     </div>
   )
