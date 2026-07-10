@@ -498,11 +498,14 @@ const resetPasswordOTP = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid or expired code. Please request a new one.' });
     }
 
-    const user = await findUserByPhone(phone);
-    if (!user) {
+    const foundUser = await findUserByPhone(phone);
+    if (!foundUser) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
+    // Re-load with the password field (it is select:false) so the new password
+    // is reliably tracked and hashed by the pre-save hook.
+    const user = await User.findById(foundUser._id).select('+password');
     user.password = password;
     await user.save();
 
