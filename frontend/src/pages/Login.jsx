@@ -73,14 +73,21 @@ export default function Login() {
     }
   }
 
-  const CARD_BG = '#0c1f18' // dark green-black card colour (also used to notch the labels)
+  const BASE = '#0a1a12' // dark green-black base (also used to notch the input labels)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-600 via-emerald-800 to-emerald-950 flex items-center justify-center px-4 py-8 relative overflow-hidden">
-      {/* Soft depth accents */}
-      <div className="absolute -top-24 -left-24 w-96 h-96 bg-emerald-400/20 rounded-full blur-3xl" />
-      <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-emerald-950/50 rounded-full blur-3xl" />
-
+    <div
+      className="min-h-screen flex flex-col justify-center px-6 py-10 relative overflow-hidden"
+      style={{
+        backgroundColor: BASE,
+        backgroundImage: `
+          radial-gradient(circle at 18% 12%, rgba(16,185,129,0.16), transparent 42%),
+          radial-gradient(circle at 85% 25%, rgba(6,95,70,0.35), transparent 45%),
+          radial-gradient(circle at 70% 78%, rgba(16,185,129,0.12), transparent 42%),
+          radial-gradient(circle at 10% 92%, rgba(4,47,34,0.5), transparent 45%)
+        `,
+      }}
+    >
       {/* Install Banner */}
       {showInstallBanner && (
         <div className="fixed top-4 left-4 right-4 z-50 rounded-xl px-4 py-3 flex items-center gap-3 shadow-2xl
@@ -108,124 +115,121 @@ export default function Login() {
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="w-full max-w-sm relative z-10">
-        {/* Dark Card */}
-        <div className="rounded-3xl p-7 sm:p-8 shadow-2xl border border-white/10" style={{ backgroundColor: CARD_BG }}>
+      {/* Brand */}
+      <div className="flex items-center gap-2 justify-center mb-10 relative z-10" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <div className="w-7 h-7 rounded-md overflow-hidden bg-emerald-600 flex items-center justify-center flex-shrink-0">
+          {logoError ? (
+            <span className="text-white text-xs font-black">T</span>
+          ) : (
+            <img
+              src="/logo.png"
+              alt="TriTech Hub"
+              onLoad={() => setLogoLoaded(true)}
+              onError={() => setLogoError(true)}
+              className="w-full h-full object-cover"
+              style={{ opacity: logoLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
+            />
+          )}
+        </div>
+        <span className="text-white font-bold text-sm tracking-wide">TriTech Hub</span>
+      </div>
 
-          {/* Brand */}
-          <div className="flex items-center gap-2 justify-center mb-8">
-            <div className="w-8 h-8 rounded-lg overflow-hidden bg-emerald-600 flex items-center justify-center flex-shrink-0">
-              {logoError ? (
-                <span className="text-white text-sm font-black">T</span>
-              ) : (
-                <img
-                  src="/logo.png"
-                  alt="TriTech Hub"
-                  onLoad={() => setLogoLoaded(true)}
-                  onError={() => setLogoError(true)}
-                  className="w-full h-full object-cover"
-                  style={{ opacity: logoLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
-                />
-              )}
-            </div>
-            <span className="text-white font-bold text-sm tracking-wide">TriTech Hub</span>
+      {/* Main Content */}
+      <div className="w-full max-w-sm mx-auto relative z-10">
+        {/* Heading */}
+        <h1 className="text-white text-4xl font-black leading-tight text-center mb-10">
+          Hello,<br />Welcome Back!
+        </h1>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-5 p-3 rounded-lg bg-red-500/15 border border-red-500/30">
+            <p className="text-red-300 text-sm font-medium text-center">{error}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Email — outlined floating label */}
+          <div className="relative">
+            <input
+              id="login-email"
+              type="text"
+              placeholder="example@email.com"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              disabled={loading}
+              className="peer w-full px-4 py-4 bg-transparent border border-white/25 rounded-2xl
+                       text-white placeholder-white/30 focus:outline-none focus:border-emerald-400 transition-colors"
+            />
+            <label
+              htmlFor="login-email"
+              className="absolute left-4 -top-2 px-1.5 text-xs text-white/60 peer-focus:text-emerald-400 transition-colors"
+              style={{ backgroundColor: BASE }}
+            >
+              E-mail or ID
+            </label>
           </div>
 
-          {/* Heading */}
-          <h1 className="text-white text-3xl font-black leading-tight mb-8">
-            Hello,<br />Welcome Back!
-          </h1>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-5 p-3 rounded-lg bg-red-500/15 border border-red-500/30">
-              <p className="text-red-300 text-sm font-medium">{error}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email — outlined floating label */}
+          {/* Password — outlined floating label with toggle */}
+          <div>
             <div className="relative">
               <input
-                id="login-email"
-                type="text"
-                placeholder="example@email.com"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                className="peer w-full px-4 py-3.5 bg-transparent border border-white/25 rounded-lg
+                className="peer w-full px-4 py-4 pr-11 bg-transparent border border-white/25 rounded-2xl
                          text-white placeholder-white/30 focus:outline-none focus:border-emerald-400 transition-colors"
               />
               <label
-                htmlFor="login-email"
-                className="absolute left-3 -top-2 px-1.5 text-xs text-white/60 peer-focus:text-emerald-400 transition-colors"
-                style={{ backgroundColor: CARD_BG }}
+                htmlFor="login-password"
+                className="absolute left-4 -top-2 px-1.5 text-xs text-white/60 peer-focus:text-emerald-400 transition-colors"
+                style={{ backgroundColor: BASE }}
               >
-                E-mail or ID
+                Password
               </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors"
+              >
+                {showPassword ? '🙈' : '👁'}
+              </button>
             </div>
-
-            {/* Password — outlined floating label with toggle */}
-            <div>
-              <div className="relative">
-                <input
-                  id="login-password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                  className="peer w-full px-4 py-3.5 pr-11 bg-transparent border border-white/25 rounded-lg
-                           text-white placeholder-white/30 focus:outline-none focus:border-emerald-400 transition-colors"
-                />
-                <label
-                  htmlFor="login-password"
-                  className="absolute left-3 -top-2 px-1.5 text-xs text-white/60 peer-focus:text-emerald-400 transition-colors"
-                  style={{ backgroundColor: CARD_BG }}
-                >
-                  Password
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors"
-                >
-                  {showPassword ? '🙈' : '👁'}
-                </button>
-              </div>
-              <div className="text-right mt-2">
-                <Link to="/forgot-password" className="text-xs text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
-                  Forgot password?
-                </Link>
-              </div>
+            <div className="text-right mt-2">
+              <Link to="/forgot-password" className="text-xs text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
+                Forget password?
+              </Link>
             </div>
-
-            {/* Login — swipe */}
-            <div className="pt-2">
-              <SwipeButton
-                key={swipeKey}
-                onComplete={handleSubmit}
-                loading={loading}
-                dark
-                label="Swipe to login"
-                loadingLabel="Logging in…"
-              />
-            </div>
-          </form>
-
-          {/* Footer links */}
-          <div className="text-center mt-6">
-            <p className="text-xs text-white/50">
-              <Link to="/terms" className="text-emerald-400 font-medium hover:text-emerald-300">Terms</Link>
-              <span className="text-white/30 mx-2">•</span>
-              <Link to="/privacy" className="text-emerald-400 font-medium hover:text-emerald-300">Privacy Policy</Link>
-            </p>
           </div>
-        </div>
 
-        {/* Copyright */}
-        <p className="text-center text-xs text-white/60 mt-6">
+          {/* Login Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-2 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base
+                     active:scale-[0.98] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed
+                     flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/40"
+          >
+            {loading && (
+              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+            )}
+            Login
+          </button>
+        </form>
+
+        {/* Footer links */}
+        <p className="text-center text-xs text-white/50 mt-8">
+          <Link to="/terms" className="text-emerald-400 font-medium hover:text-emerald-300">Terms</Link>
+          <span className="text-white/30 mx-2">•</span>
+          <Link to="/privacy" className="text-emerald-400 font-medium hover:text-emerald-300">Privacy Policy</Link>
+        </p>
+        <p className="text-center text-[11px] text-white/40 mt-3">
           © {new Date().getFullYear()} TriTech Hub iOS. All rights reserved.
         </p>
       </div>
