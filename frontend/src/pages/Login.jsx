@@ -74,10 +74,10 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50 flex items-center justify-center px-4 py-8 relative overflow-hidden">
-      {/* Elegant background gradient elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-100 rounded-full blur-3xl opacity-40" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-100 rounded-full blur-3xl opacity-30" />
+    <div className="min-h-screen bg-emerald-50 flex items-center justify-center px-4 py-8 relative overflow-hidden">
+      {/* Soft depth accents */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-100 rounded-full blur-3xl opacity-50" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-100 rounded-full blur-3xl opacity-40" />
 
       {/* Install Banner */}
       {showInstallBanner && (
