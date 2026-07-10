@@ -74,7 +74,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-emerald-50 to-emerald-100 flex items-center justify-center px-4 py-8 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-100 via-emerald-200 to-emerald-300 flex items-center justify-center px-4 py-8 relative overflow-hidden">
 
       {/* Install Banner */}
       {showInstallBanner && (
