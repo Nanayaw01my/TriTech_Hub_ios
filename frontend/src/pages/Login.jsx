@@ -74,10 +74,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-emerald-50 flex items-center justify-center px-4 py-8 relative overflow-hidden">
-      {/* Soft depth accents */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-100 rounded-full blur-3xl opacity-50" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-100 rounded-full blur-3xl opacity-40" />
+    <div className="min-h-screen bg-gradient-to-b from-white via-emerald-50 to-emerald-100 flex items-center justify-center px-4 py-8 relative overflow-hidden">
 
       {/* Install Banner */}
       {showInstallBanner && (

@@ -41,7 +41,7 @@ const DEFAULT_DURATION = { daily: 90, weekly: 13, monthly: 12 }
 
 const initForm = {
   // Step 1
-  full_name: '', email: '', phone: '', ghana_card_id: '', password: '', confirm_password: '',
+  full_name: '', email: '', phone: '', ghana_card_id: '', password: '', confirm_password: '', agreed: false,
   // Step 2 - photos
   ghana_card_front: null, ghana_card_back: null, customer_photo: null, guarantor_photo: null, proof_of_income: null, signature: null,
   // Step 3
@@ -114,6 +114,7 @@ export default function StaffAddCustomer() {
       if (!form.password) e.password = 'Password is required'
       if (form.password.length > 5) e.password = 'Password must be 5 characters or less'
       if (form.password !== form.confirm_password) e.confirm_password = 'Passwords do not match'
+      if (!form.agreed) e.agreed = 'The customer must accept the Terms & Privacy Policy'
     }
     if (s === 2) {
       if (!form.ghana_card_front) e.ghana_card_front = 'Ghana Card front photo is required'
@@ -348,6 +349,25 @@ export default function StaffAddCustomer() {
                 className={inputClass(errors.confirm_password)}
               />
             </FormField>
+          </div>
+
+          {/* Terms & Privacy agreement */}
+          <div className="mt-5 pt-4 border-t border-gray-100">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.agreed}
+                onChange={(e) => set('agreed', e.target.checked)}
+                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 flex-shrink-0"
+              />
+              <span className="text-sm text-gray-600">
+                The customer has read and agrees to the{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-700 font-semibold underline">Terms &amp; Agreement</a>{' '}
+                and{' '}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-700 font-semibold underline">Privacy Policy</a>.
+              </span>
+            </label>
+            {errors.agreed && <p className="text-xs text-red-500 mt-1.5">{errors.agreed}</p>}
           </div>
         </div>
       )}
