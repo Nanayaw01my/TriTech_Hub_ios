@@ -115,23 +115,25 @@ export default function Login() {
         </div>
       )}
 
-      {/* Brand */}
-      <div className="flex items-center gap-2 justify-center mb-10 relative z-10" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <div className="w-7 h-7 rounded-md overflow-hidden bg-emerald-600 flex items-center justify-center flex-shrink-0">
+      {/* Brand — big logo */}
+      <div className="flex justify-center mb-8 relative z-10" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <div
+          className="w-44 h-44 rounded-3xl overflow-hidden flex items-center justify-center border border-white/10 shadow-2xl"
+          style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}
+        >
           {logoError ? (
-            <span className="text-white text-xs font-black">T</span>
+            <span className="text-white text-6xl font-black">T</span>
           ) : (
             <img
               src="/logo.png"
               alt="TriTech Hub"
               onLoad={() => setLogoLoaded(true)}
               onError={() => setLogoError(true)}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain p-2"
               style={{ opacity: logoLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
             />
           )}
         </div>
-        <span className="text-white font-bold text-sm tracking-wide">TriTech Hub</span>
       </div>
 
       {/* Main Content */}
