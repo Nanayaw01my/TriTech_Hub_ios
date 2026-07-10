@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import Button from '../components/Modern/Button'
 import Card from '../components/Modern/Card'
 import Input from '../components/Modern/Input'
+import SwipeButton from '../components/SwipeButton'
 
 export default function Login() {
   const [identifier, setIdentifier] = useState('')
@@ -16,6 +17,7 @@ export default function Login() {
   const [logoError, setLogoError] = useState(false)
   const [installPrompt, setInstallPrompt] = useState(null)
   const [showInstallBanner, setShowInstallBanner] = useState(false)
+  const [swipeKey, setSwipeKey] = useState(0)
 
   useEffect(() => {
     const handler = (e) => {
@@ -42,14 +44,16 @@ export default function Login() {
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e?.preventDefault()
     setError('')
     if (!identifier.trim()) {
       setError('Please enter your email')
+      setSwipeKey(k => k + 1) // reset the swipe knob
       return
     }
     if (!password) {
       setError('Please enter your password')
+      setSwipeKey(k => k + 1)
       return
     }
     setLoading(true)
@@ -63,6 +67,7 @@ export default function Login() {
       const msg = err?.response?.data?.error || err?.response?.data?.message || 'Invalid credentials.'
       setError(msg)
       toast.error(msg)
+      setSwipeKey(k => k + 1) // reset the swipe knob so they can retry
     } finally {
       setLoading(false)
     }
@@ -181,22 +186,16 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Login Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full mt-8 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-lg
-                       hover:from-emerald-600 hover:to-emerald-700 active:scale-95 transition-all duration-200
-                       disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading && (
-                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                </svg>
-              )}
-              Sign In
-            </button>
+            {/* Login — swipe to sign in */}
+            <div className="pt-2">
+              <SwipeButton
+                key={swipeKey}
+                onComplete={handleSubmit}
+                loading={loading}
+                label="Swipe to Sign In"
+                loadingLabel="Signing in…"
+              />
+            </div>
           </form>
         </div>
 
