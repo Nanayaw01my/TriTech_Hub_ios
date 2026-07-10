@@ -7,7 +7,8 @@
     "dev": "nodemon server.js",
     "seed": "node scripts/seed.js",
     "test": "jest --testTimeout=10000 --forceExit",
-    "migrate:encrypt-pii": "node scripts/migrate-encrypt-pii.js"
+    "migrate:encrypt-pii": "node scripts/migrate-encrypt-pii.js",
+    "set-password": "node scripts/set-password.js"
   },
   "jest": {
     "testEnvironment": "node",
