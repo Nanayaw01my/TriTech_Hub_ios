@@ -59,7 +59,6 @@ export default function Login() {
     setLoading(true)
     try {
       const userData = await login({ identifier: identifier.trim(), password })
-      toast.success(`Welcome back, ${userData.full_name || userData.name}!`)
       if (userData.role === 'admin') navigate('/admin/dashboard')
       else if (userData.role === 'staff') navigate('/staff/dashboard')
       else navigate('/customer/dashboard')

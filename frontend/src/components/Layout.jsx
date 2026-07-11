@@ -45,17 +45,17 @@ const ADMIN_NAV = [
 ]
 
 const STAFF_NAV = [
-  { to: '/staff/dashboard', label: 'Dashboard', icon: Icon.home },
-  { to: '/staff/customers', label: 'My Customers', icon: Icon.customers },
-  { to: '/staff/customers/add', label: 'Add Customer', icon: Icon.addCustomer },
-  { to: '/staff/about', label: 'About', icon: Icon_info },
+  { to: '/staff/dashboard', label: 'Dashboard', short: 'Home', icon: Icon.home },
+  { to: '/staff/customers', label: 'My Customers', short: 'Customers', icon: Icon.customers },
+  { to: '/staff/customers/add', label: 'Add Customer', short: 'Add', icon: Icon.addCustomer },
+  { to: '/staff/about', label: 'About', short: 'About', icon: Icon_info },
 ]
 
 const CUSTOMER_NAV = [
-  { to: '/customer/dashboard', label: 'Dashboard', icon: Icon.home },
-  { to: '/customer/payments', label: 'Payments', icon: Icon.payments },
-  { to: '/customer/profile', label: 'My Profile', icon: Icon.profile },
-  { to: '/customer/about', label: 'Help', icon: Icon_info },
+  { to: '/customer/dashboard', label: 'Dashboard', short: 'Home', icon: Icon.home },
+  { to: '/customer/payments', label: 'Payments', short: 'Payments', icon: Icon.payments },
+  { to: '/customer/profile', label: 'My Profile', short: 'Profile', icon: Icon.profile },
+  { to: '/customer/about', label: 'Help', short: 'Help', icon: Icon_info },
 ]
 
 // Bottom nav items (mobile only — fewer items)
@@ -401,8 +401,10 @@ export default function Layout({ role }) {
               <NavIcon path={Icon.menu} className="w-5 h-5" />
             </button>
 
-            <div className="flex-1 flex items-center justify-center gap-2 min-w-0 px-2">
-              <img src="/logo.png" alt="Tritech Hub iOS" className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
+            <div className="flex-1 flex items-center justify-center gap-2.5 min-w-0 px-2">
+              <div className="w-9 h-9 rounded-xl overflow-hidden bg-black flex-shrink-0 shadow-sm">
+                <img src="/logo.png" alt="Tritech Hub iOS" className="w-full h-full object-cover" />
+              </div>
               <div className="flex flex-col items-start min-w-0">
                 <p className="text-white font-bold text-sm leading-tight truncate">
                   {getPageTitle(location.pathname)}
@@ -475,7 +477,7 @@ export default function Layout({ role }) {
                   <NavIcon path={item.icon} className={`w-5 h-5 transition-colors ${isActive ? 'text-green-800' : 'text-gray-400'}`} />
                 </div>
                 <span className={`text-[10px] font-semibold transition-colors ${isActive ? 'text-green-800' : 'text-gray-400'}`}>
-                  {item.label.split(' ')[0]}
+                  {item.short || item.label.split(' ')[0]}
                 </span>
               </NavLink>
             )

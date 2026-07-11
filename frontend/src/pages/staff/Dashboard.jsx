@@ -84,7 +84,7 @@ export default function StaffDashboard() {
     <div className="pb-24 lg:pb-6 lg:px-0 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
 
       {/* ── Mobile Hero (hidden on desktop) ── */}
-      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-emerald-50">
+      <div className="lg:hidden px-5 pt-8 pb-14 bg-gradient-to-br from-gray-50 to-emerald-50">
         <p className="text-emerald-600 text-xs font-semibold uppercase tracking-widest">Staff Portal</p>
         <h1 className="text-gray-900 text-2xl font-black mt-1 leading-tight">
           {(user?.full_name || user?.name)?.split(' ')[0] || 'Staff'}
@@ -96,16 +96,25 @@ export default function StaffDashboard() {
         )}
 
         {/* Hero stat pills */}
-        <div className="grid grid-cols-3 gap-2 mt-4">
+        <div className="grid grid-cols-3 gap-2 mt-5">
           <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3 text-center">
+            <svg className="w-5 h-5 text-emerald-600 mx-auto mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
             <p className="text-emerald-700 text-xl font-black leading-none">{stats?.my_customers ?? 0}</p>
             <p className="text-emerald-600 text-[10px] font-semibold mt-0.5">Customers</p>
           </div>
           <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 text-center">
+            <svg className="w-5 h-5 text-blue-600 mx-auto mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
             <p className="text-blue-700 text-xl font-black leading-none">{stats?.payments_today ?? 0}</p>
             <p className="text-blue-600 text-[10px] font-semibold mt-0.5">Paid Today</p>
           </div>
           <div className={`rounded-2xl p-3 text-center border ${(stats?.overdue ?? 0) > 0 ? 'bg-red-50 border-red-100' : 'bg-yellow-50 border-yellow-100'}`}>
+            <svg className={`w-5 h-5 mx-auto mb-1.5 ${(stats?.overdue ?? 0) > 0 ? 'text-red-600' : 'text-yellow-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5.07 19H19a2 2 0 001.75-2.98l-6.93-12a2 2 0 00-3.5 0l-6.93 12A2 2 0 005.07 19z" />
+            </svg>
             <p className={`text-xl font-black leading-none ${(stats?.overdue ?? 0) > 0 ? 'text-red-700' : 'text-yellow-700'}`}>{stats?.overdue ?? 0}</p>
             <p className={`text-[10px] font-semibold mt-0.5 ${(stats?.overdue ?? 0) > 0 ? 'text-red-600' : 'text-yellow-600'}`}>Overdue</p>
           </div>
@@ -205,9 +214,15 @@ export default function StaffDashboard() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900">{c.full_name || c.name}</p>
+                      <p className="text-sm font-semibold text-gray-900 truncate">{c.full_name || c.name}</p>
                       <p className="text-xs text-gray-500 truncate">
-                        {c.account_number} · {c.device_model}
+                        {[
+                          c.phone,
+                          (c.installment_plan?.remaining_balance ?? c.remaining_balance) > 0
+                            ? `GHS ${Number(c.installment_plan?.remaining_balance ?? c.remaining_balance).toLocaleString()} left`
+                            : null,
+                        ].filter(Boolean).join(' · ')
+                          || c.account_number || c.user_id?.account_number || 'No details yet'}
                       </p>
                     </div>
                     <StatusBadge status={c.plan_status || c.status || 'active'} />
