@@ -115,21 +115,21 @@ export default function Login() {
         </div>
       )}
 
-      {/* Brand — big logo */}
-      <div className="flex justify-center mb-8 relative z-10" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+      {/* Brand — full-width logo banner */}
+      <div className="w-full max-w-sm mx-auto mb-8 relative z-10" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div
-          className="w-44 h-44 rounded-3xl overflow-hidden flex items-center justify-center border border-white/10 shadow-2xl"
+          className="w-full rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center"
           style={{ backgroundColor: '#000000' }}
         >
           {logoError ? (
-            <span className="text-white text-6xl font-black">T</span>
+            <span className="text-white text-5xl font-black py-10">TriTech Hub</span>
           ) : (
             <img
               src="/logo.png"
               alt="TriTech Hub"
               onLoad={() => setLogoLoaded(true)}
               onError={() => setLogoError(true)}
-              className="w-full h-full object-cover"
+              className="w-full h-auto object-contain"
               style={{ opacity: logoLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
             />
           )}
