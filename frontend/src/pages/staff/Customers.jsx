@@ -136,7 +136,7 @@ export default function StaffCustomers() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-gray-900 truncate">{c.full_name || c.name}</p>
-                    <StatusBadge status={c.plan_status || c.status || 'active'} />
+                    <StatusBadge status={c.installment_plan?.status || c.plan_status || c.status || 'active'} />
                   </div>
                   <p className="text-xs text-gray-500 truncate">
                     {c.account_number || c.user_id?.account_number} • {c.phone}

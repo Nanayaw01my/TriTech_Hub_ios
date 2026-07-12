@@ -225,7 +225,7 @@ export default function StaffDashboard() {
                           || c.account_number || c.user_id?.account_number || 'No details yet'}
                       </p>
                     </div>
-                    <StatusBadge status={c.plan_status || c.status || 'active'} />
+                    <StatusBadge status={c.installment_plan?.status || c.plan_status || c.status || 'active'} />
                   </div>
                 ))}
               </div>
