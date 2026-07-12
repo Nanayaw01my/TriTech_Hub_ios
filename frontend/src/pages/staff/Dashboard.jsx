@@ -72,14 +72,6 @@ export default function StaffDashboard() {
     },
   ]
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="xl" />
-      </div>
-    )
-  }
-
   return (
     <div className="pb-24 lg:pb-6 lg:px-0 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
 
@@ -186,7 +178,11 @@ export default function StaffDashboard() {
               </button>
             </div>
 
-            {recentCustomers.length === 0 ? (
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <LoadingSpinner size="md" />
+              </div>
+            ) : recentCustomers.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
                   <svg className="w-7 h-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
