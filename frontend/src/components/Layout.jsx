@@ -469,9 +469,6 @@ export default function Layout({ role }) {
                 to={item.to}
                 className="flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 transition-colors"
               >
-                {/* Active indicator line at top */}
-                <div className={`absolute top-0 h-0.5 w-8 rounded-full transition-all duration-200 ${isActive ? 'bg-green-700' : 'bg-transparent'}`} style={{ position: 'relative', marginBottom: '-2px' }} />
-
                 <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-all duration-200
                   ${isActive ? 'bg-green-100' : ''}`}>
                   <NavIcon path={item.icon} className={`w-5 h-5 transition-colors ${isActive ? 'text-green-800' : 'text-gray-400'}`} />
