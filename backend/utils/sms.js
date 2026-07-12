@@ -87,7 +87,16 @@ const sendSMS = async (to, message) => {
   }
 };
 
+// WhatsApp is opt-in. It's OFF by default because Arkesel delivers it as a
+// plain SMS when WhatsApp isn't fully configured, which duplicates the SMS
+// already sent via NkomoSMS. Set ENABLE_WHATSAPP=true once WhatsApp templates
+// are approved on Arkesel to turn it back on.
+const WHATSAPP_ENABLED = process.env.ENABLE_WHATSAPP === 'true';
+
 const sendWhatsApp = async (to, message) => {
+  if (!WHATSAPP_ENABLED) {
+    return; // disabled — prevents duplicate messages alongside the NkomoSMS SMS
+  }
   if (!ARKESEL_API_KEY) {
     logger.warn('[WhatsApp] ARKESEL_API_KEY not set — skipping');
     return;
