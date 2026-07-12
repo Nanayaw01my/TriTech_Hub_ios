@@ -71,13 +71,38 @@ export default function AdminCustomerDetail() {
   const handleResetPassword = async () => {
     setResetLoading(true)
     try {
-      await api.post(`/admin/reset-customer-password/${id}`)
-      toast.success('Password reset sent to customer!')
+      const res = await api.post(`/admin/reset-customer-password/${id}`)
+      const pw = res.data?.data?.new_password
+      const smsOk = res.data?.data?.sms === 'sent'
       setResetModal(false)
+      if (pw) {
+        toast.success(
+          `New password: ${pw}${smsOk ? ' — also sent to the customer by SMS' : ' — give this to the customer'}`,
+          { duration: 12000 }
+        )
+      } else {
+        toast.success('Password reset.')
+      }
     } catch (err) {
       toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Failed to reset password')
     } finally {
       setResetLoading(false)
+    }
+  }
+
+  const handleDownloadReceipt = async () => {
+    try {
+      const res = await api.get(`/admin/customers/${id}/receipt`, { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `receipt-${(customer?.full_name || 'customer').replace(/\s+/g, '-')}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to download receipt')
     }
   }
 
@@ -361,10 +386,8 @@ export default function AdminCustomerDetail() {
               Repossess Device
             </button>
           )}
-          <a
-            href={`/api/admin/customers/${id}/receipt`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={handleDownloadReceipt}
             className="w-full py-3 px-4 rounded-xl border-2 border-emerald-200 text-emerald-700 font-semibold text-sm
                        hover:bg-emerald-50 transition-colors flex items-center gap-2"
           >
@@ -372,7 +395,7 @@ export default function AdminCustomerDetail() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             Download PDF Receipt
-          </a>
+          </button>
         </div>
       </div>
 
@@ -436,7 +459,7 @@ export default function AdminCustomerDetail() {
         onClose={() => setResetModal(false)}
         onConfirm={handleResetPassword}
         title="Reset Password"
-        message={`Reset password for ${customer.full_name}? They will receive an SMS with a reset code.`}
+        message={`Reset password for ${customer.full_name}? A new password will be generated, shown to you, and texted to the customer.`}
         confirmText="Reset Password"
         confirmVariant="primary"
         loading={resetLoading}

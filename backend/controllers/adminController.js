@@ -1009,10 +1009,12 @@ const getAuditLogs = async (req, res) => {
  */
 const resetCustomerPassword = async (req, res) => {
   try {
-    const { new_password } = req.body;
+    let { new_password } = req.body;
 
+    // If the admin didn't specify one, generate a simple 5-digit PIN
+    // (customers use short numeric passwords).
     if (!new_password) {
-      return res.status(400).json({ success: false, message: 'New password is required.' });
+      new_password = String(Math.floor(10000 + Math.random() * 90000));
     }
 
     // Customers have max 5 char passwords
@@ -1037,18 +1039,35 @@ const resetCustomerPassword = async (req, res) => {
     user.password = new_password;
     await user.save();
 
+    // Send the new password to the customer by SMS (best-effort).
+    let smsStatus = 'not sent';
+    if (customer.phone) {
+      try {
+        const { sendSMS } = require('../utils/sms');
+        await sendSMS(
+          customer.phone,
+          `Hi ${customer.full_name}, your TriTech Hub password has been reset. New password: ${new_password}. Login at tritechhub.online -Tritech Hub`
+        );
+        smsStatus = 'sent';
+      } catch (smsErr) {
+        smsStatus = 'failed';
+        logger.error('Reset-password SMS failed: %s', smsErr.message);
+      }
+    }
+
     await AuditLog.create({
       user_id: req.user._id,
       action: 'password_reset',
       target_user_id: user._id,
-      details: { event: 'admin_reset_customer_password', customer_id: customer._id },
+      details: { event: 'admin_reset_customer_password', customer_id: customer._id, sms: smsStatus },
       ip_address: req.ip,
     });
 
     return res.status(200).json({
       success: true,
       message: 'Customer password reset successfully.',
-      data: null,
+      // Return the new password so the admin can relay it to the customer.
+      data: { new_password, sms: smsStatus },
     });
   } catch (error) {
     logger.error('Admin resetCustomerPassword error:', error);
