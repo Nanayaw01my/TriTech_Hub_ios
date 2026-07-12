@@ -1847,8 +1847,15 @@ const repossessDevice = async (req, res) => {
     const plan = await InstallmentPlan.findOne({ customer_id: customer._id });
     if (!plan) return res.status(404).json({ success: false, message: 'No installment plan found for this customer.' });
 
-    if (plan.status !== 'defaulted') {
-      return res.status(400).json({ success: false, message: 'Device can only be repossessed from a defaulted plan.' });
+    // Repossession is an admin action guarded by a confirmation. Block it only
+    // for plans that are already finished — otherwise let the admin repossess
+    // any account that is behind (active/overdue/defaulted or a locked device),
+    // since the scheduler that sets 'defaulted' may not have run.
+    if (plan.status === 'completed') {
+      return res.status(400).json({ success: false, message: 'This plan is fully paid — the device cannot be repossessed.' });
+    }
+    if (plan.status === 'repossessed') {
+      return res.status(400).json({ success: false, message: 'This device has already been repossessed.' });
     }
 
     const device = await Device.findById(plan.device_id);
