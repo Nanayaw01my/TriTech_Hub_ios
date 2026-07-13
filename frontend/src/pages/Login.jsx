@@ -76,28 +76,16 @@ export default function Login() {
 
   return (
     <div
-      className="min-h-screen flex flex-col justify-center px-6 py-10 relative overflow-hidden"
+      className="min-h-screen flex items-center justify-center px-5 py-10 relative overflow-hidden"
       style={{
         backgroundColor: BASE,
-        backgroundImage: `
-          radial-gradient(circle at 18% 12%, rgba(16,185,129,0.16), transparent 42%),
-          radial-gradient(circle at 85% 25%, rgba(6,95,70,0.35), transparent 45%),
-          radial-gradient(circle at 70% 78%, rgba(16,185,129,0.12), transparent 42%),
-          radial-gradient(circle at 10% 92%, rgba(4,47,34,0.5), transparent 45%)
-        `,
+        // Uses /login-bg.jpg if present; the dark-green gradient overlay keeps
+        // the form readable and also serves as the fallback if no image exists.
+        backgroundImage: `linear-gradient(160deg, rgba(10,26,18,0.66), rgba(5,18,12,0.86)), url('/login-bg.jpg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
       }}
     >
-      {/* iPhone pattern layer */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        aria-hidden="true"
-        style={{
-          backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='110' height='150' viewBox='0 0 110 150'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round'%3E%3Crect x='38' y='34' width='34' height='68' rx='8'/%3E%3Cline x1='49' y1='41' x2='61' y2='41'/%3E%3Cline x1='48' y1='95' x2='62' y2='95'/%3E%3C/g%3E%3C/svg%3E\")",
-          backgroundSize: '110px 150px',
-          opacity: 0.06,
-        }}
-      />
-
       {/* Install Banner */}
       {showInstallBanner && (
         <div className="fixed top-4 left-4 right-4 z-50 rounded-xl px-4 py-3 flex items-center gap-3 shadow-2xl
@@ -125,85 +113,74 @@ export default function Login() {
         </div>
       )}
 
-      {/* Brand — logo banner (reduced size) */}
-      <div className="w-full max-w-[280px] mx-auto mb-8 relative z-10" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+      {/* Glass card */}
+      <div className="w-full max-w-sm relative z-10" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div
-          className="w-full rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center"
-          style={{ backgroundColor: '#000000' }}
+          className="rounded-3xl border border-white/25 shadow-2xl p-7 sm:p-8"
+          style={{ background: 'rgba(255,255,255,0.10)', backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)' }}
         >
-          {logoError ? (
-            <span className="text-white text-4xl font-black py-8">TriTech Hub</span>
-          ) : (
-            <img
-              src="/logo.png"
-              alt="TriTech Hub"
-              onLoad={() => setLogoLoaded(true)}
-              onError={() => setLogoError(true)}
-              className="w-full h-auto object-contain"
-              style={{ opacity: logoLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="w-full max-w-sm mx-auto relative z-10">
-        {/* Heading */}
-        <h1 className="text-white text-4xl font-black leading-tight text-center mb-10">
-          Hello,<br />Welcome Back!
-        </h1>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-5 p-3 rounded-lg bg-red-500/15 border border-red-500/30">
-            <p className="text-red-300 text-sm font-medium text-center">{error}</p>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email — label above field */}
-          <div>
-            <label htmlFor="login-email" className="block text-xs font-semibold text-white/70 uppercase tracking-wide mb-2">
-              E-mail or ID
-            </label>
-            <input
-              id="login-email"
-              type="text"
-              placeholder="example@email.com"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              disabled={loading}
-              className="w-full px-4 py-4 bg-white/5 border border-white/20 rounded-2xl
-                       text-white placeholder-white/30 focus:outline-none focus:border-emerald-400 focus:bg-white/[0.07] transition-colors"
-            />
-          </div>
-
-          {/* Password — label above field with toggle */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label htmlFor="login-password" className="text-xs font-semibold text-white/70 uppercase tracking-wide">
-                Password
-              </label>
-              <Link to="/forgot-password" className="text-xs text-emerald-400 hover:text-emerald-300 font-medium transition-colors normal-case">
-                Forgot password?
-              </Link>
+          {/* Logo */}
+          <div className="flex justify-center mb-5">
+            <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/25 bg-black/40 flex items-center justify-center shadow-lg">
+              {logoError ? (
+                <span className="text-white text-3xl font-black">T</span>
+              ) : (
+                <img
+                  src="/logo.png"
+                  alt="TriTech Hub"
+                  onLoad={() => setLogoLoaded(true)}
+                  onError={() => setLogoError(true)}
+                  className="w-full h-full object-cover"
+                  style={{ opacity: logoLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
+                />
+              )}
             </div>
+          </div>
+
+          {/* Heading */}
+          <h1 className="text-white text-3xl font-black text-center">Welcome Back</h1>
+          <p className="text-white/70 text-sm text-center mt-1.5 mb-6">Sign in to your account</p>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 rounded-xl bg-red-500/20 border border-red-400/40">
+              <p className="text-red-100 text-sm font-medium text-center">{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email */}
             <div className="relative">
               <input
-                id="login-password"
+                type="text"
+                placeholder="Email or ID"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                disabled={loading}
+                className="w-full pl-4 pr-11 py-3.5 bg-white/10 border border-white/30 rounded-2xl
+                         text-white placeholder-white/60 focus:outline-none focus:border-emerald-300 focus:bg-white/[0.14] transition-colors"
+              />
+              <svg className="w-5 h-5 text-white/60 absolute right-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+
+            {/* Password */}
+            <div className="relative">
+              <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
+                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-4 pr-12 bg-white/5 border border-white/20 rounded-2xl
-                         text-white placeholder-white/30 focus:outline-none focus:border-emerald-400 focus:bg-white/[0.07] transition-colors"
+                className="w-full pl-4 pr-11 py-3.5 bg-white/10 border border-white/30 rounded-2xl
+                         text-white placeholder-white/60 focus:outline-none focus:border-emerald-300 focus:bg-white/[0.14] transition-colors"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
               >
                 {showPassword ? (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -217,28 +194,36 @@ export default function Login() {
                 )}
               </button>
             </div>
-          </div>
 
-          {/* Login — swipe */}
-          <div className="pt-1">
-            <SwipeButton
-              key={swipeKey}
-              onComplete={handleSubmit}
-              loading={loading}
-              dark
-              label="Swipe to login"
-              loadingLabel="Logging in…"
-            />
-          </div>
-        </form>
+            {/* Forgot */}
+            <div className="text-right -mt-1">
+              <Link to="/forgot-password" className="text-xs text-emerald-200 hover:text-white font-medium transition-colors">
+                Forgot password?
+              </Link>
+            </div>
 
-        {/* Footer links */}
-        <p className="text-center text-xs text-white/70 mt-8">
-          <Link to="/terms" className="text-emerald-400 font-medium hover:text-emerald-300">Terms</Link>
-          <span className="text-white/40 mx-2">•</span>
-          <Link to="/privacy" className="text-emerald-400 font-medium hover:text-emerald-300">Privacy Policy</Link>
-        </p>
-        <p className="text-center text-xs text-white/60 mt-3">
+            {/* Swipe */}
+            <div className="pt-1">
+              <SwipeButton
+                key={swipeKey}
+                onComplete={handleSubmit}
+                loading={loading}
+                dark
+                label="Swipe to login"
+                loadingLabel="Logging in…"
+              />
+            </div>
+          </form>
+
+          {/* Footer links */}
+          <p className="text-center text-xs text-white/70 mt-5">
+            <Link to="/terms" className="text-emerald-200 font-medium hover:text-white">Terms</Link>
+            <span className="text-white/40 mx-2">•</span>
+            <Link to="/privacy" className="text-emerald-200 font-medium hover:text-white">Privacy Policy</Link>
+          </p>
+        </div>
+
+        <p className="text-center text-xs text-white/60 mt-5">
           © {new Date().getFullYear()} TriTech Hub iOS. All rights reserved.
         </p>
       </div>
