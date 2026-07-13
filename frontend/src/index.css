@@ -242,6 +242,16 @@ button {
   }
 }
 
+/* Swipe button hint — the knob nudges right and back to invite a swipe */
+@keyframes swipeHint {
+  0%   { transform: translateX(0) translateY(-50%); }
+  40%  { transform: translateX(24px) translateY(-50%); }
+  100% { transform: translateX(0) translateY(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .swipe-hint { animation: none !important; }
+}
+
 /* Form action bar (e.g. Back / Continue) sits just above the bottom tab nav.
    When the keyboard is open the tab nav is hidden, so the action bar drops
    to the bottom edge to sit right above the keyboard instead of floating. */

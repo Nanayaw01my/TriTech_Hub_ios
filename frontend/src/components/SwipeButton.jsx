@@ -121,7 +121,7 @@ export default function SwipeButton({
       <div
         onMouseDown={(e) => begin(e.clientX)}
         onTouchStart={(e) => e.touches[0] && begin(e.touches[0].clientX)}
-        className={`absolute top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full shadow-md
+        className={`swipe-hint absolute top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full shadow-md
                     ${disabled
                       ? (dark ? 'bg-white/20 cursor-not-allowed' : 'bg-gray-300 cursor-not-allowed')
                       : 'bg-emerald-500 cursor-grab active:cursor-grabbing'}`}
@@ -131,6 +131,10 @@ export default function SwipeButton({
           left: PAD,
           transform: `translateX(${x}px) translateY(-50%)`,
           transition: dragging ? 'none' : 'transform 0.25s ease',
+          // Nudge back and forth a few times on load to hint "swipe me"
+          animation: (!dragging && x === 0 && !isBusy && !disabled)
+            ? 'swipeHint 1.7s ease-in-out 0.7s 3'
+            : 'none',
           touchAction: 'none',
         }}
       >

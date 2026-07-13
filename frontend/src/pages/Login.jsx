@@ -79,7 +79,7 @@ export default function Login() {
       className="min-h-screen flex items-center justify-center px-5 py-10 relative overflow-hidden"
       style={{ backgroundColor: BASE }}
     >
-      {/* Background photo — zoomed in & softly blurred */}
+      {/* Background photo — zoomed in */}
       <div
         className="absolute inset-0"
         aria-hidden="true"
@@ -87,9 +87,8 @@ export default function Login() {
           backgroundImage: "url('/IMG_6245.jpeg')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          transform: 'scale(1.4)',
+          transform: 'scale(1.35)',
           transformOrigin: 'center',
-          filter: 'blur(4px)',
         }}
       />
       {/* Readability overlay */}
