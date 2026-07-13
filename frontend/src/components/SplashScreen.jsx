@@ -68,6 +68,25 @@ export default function SplashScreen({ onDone }) {
         }
       `}</style>
 
+      {/* Background photo (the green iPhone) — slowly drifts for a cinematic feel */}
+      <div
+        className="absolute inset-0"
+        aria-hidden="true"
+        style={{
+          backgroundImage: "url('/IMG_6245.jpeg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          transform: 'scale(1.15)',
+          animation: 'sp-breathe 9s ease-in-out infinite',
+        }}
+      />
+      {/* Dark overlay for readability */}
+      <div
+        className="absolute inset-0"
+        aria-hidden="true"
+        style={{ background: 'linear-gradient(165deg, rgba(8,14,11,0.62) 0%, rgba(5,11,8,0.82) 55%, rgba(3,8,6,0.94) 100%)' }}
+      />
+
       {/* Ambient gradient orbs */}
       <div className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] bg-green-600/25 rounded-full blur-[120px]"
            style={{ animation: 'sp-orbPulse 7s ease-in-out infinite' }} />
