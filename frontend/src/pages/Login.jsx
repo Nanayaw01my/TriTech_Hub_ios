@@ -79,9 +79,9 @@ export default function Login() {
       className="min-h-screen flex items-center justify-center px-5 py-10 relative overflow-hidden"
       style={{
         backgroundColor: BASE,
-        // Uses /login-bg.jpg if present; the dark-green gradient overlay keeps
-        // the form readable and also serves as the fallback if no image exists.
-        backgroundImage: `linear-gradient(160deg, rgba(10,26,18,0.66), rgba(5,18,12,0.86)), url('/login-bg.jpg')`,
+        // Uses the login background photo if present; the dark-green gradient
+        // overlay keeps the form readable and is also the fallback if missing.
+        backgroundImage: `linear-gradient(160deg, rgba(10,26,18,0.66), rgba(5,18,12,0.86)), url('/IMG_6245.jpeg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
