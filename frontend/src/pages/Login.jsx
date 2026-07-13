@@ -79,7 +79,7 @@ export default function Login() {
       className="min-h-screen flex items-center justify-center px-5 py-10 relative overflow-hidden"
       style={{ backgroundColor: BASE }}
     >
-      {/* Background photo — zoomed in */}
+      {/* Background photo — zoomed in & softly blurred */}
       <div
         className="absolute inset-0"
         aria-hidden="true"
@@ -87,8 +87,9 @@ export default function Login() {
           backgroundImage: "url('/IMG_6245.jpeg')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          transform: 'scale(1.35)',
+          transform: 'scale(1.4)',
           transformOrigin: 'center',
+          filter: 'blur(4px)',
         }}
       />
       {/* Readability overlay */}
@@ -96,6 +97,12 @@ export default function Login() {
         className="absolute inset-0"
         aria-hidden="true"
         style={{ background: 'linear-gradient(160deg, rgba(10,26,18,0.55), rgba(5,18,12,0.78))' }}
+      />
+      {/* Vignette — darkens edges so the card pops */}
+      <div
+        className="absolute inset-0"
+        aria-hidden="true"
+        style={{ background: 'radial-gradient(ellipse 70% 60% at center, transparent 35%, rgba(3,10,7,0.72) 100%)' }}
       />
 
       {/* Install Banner */}
@@ -131,18 +138,18 @@ export default function Login() {
           className="rounded-3xl border border-white/20 shadow-2xl p-7 sm:p-8"
           style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}
         >
-          {/* Logo */}
+          {/* Logo — full, uncropped */}
           <div className="flex justify-center mb-5">
-            <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/25 bg-black/40 flex items-center justify-center shadow-lg">
+            <div className="w-full max-w-[200px] rounded-2xl overflow-hidden border border-white/15 bg-black shadow-lg">
               {logoError ? (
-                <span className="text-white text-3xl font-black">T</span>
+                <span className="block text-white text-2xl font-black text-center py-7">TriTech Hub</span>
               ) : (
                 <img
                   src="/logo.png"
-                  alt="TriTech Hub"
+                  alt="TriTech Hub iOS"
                   onLoad={() => setLogoLoaded(true)}
                   onError={() => setLogoError(true)}
-                  className="w-full h-full object-cover"
+                  className="w-full h-auto object-contain"
                   style={{ opacity: logoLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
                 />
               )}
@@ -209,7 +216,7 @@ export default function Login() {
 
             {/* Forgot */}
             <div className="text-right -mt-1">
-              <Link to="/forgot-password" className="text-xs text-emerald-200 hover:text-white font-medium transition-colors">
+              <Link to="/forgot-password" className="text-xs text-emerald-300 hover:text-white font-semibold transition-colors">
                 Forgot password?
               </Link>
             </div>
@@ -229,9 +236,9 @@ export default function Login() {
 
           {/* Footer links */}
           <p className="text-center text-xs text-white/70 mt-5">
-            <Link to="/terms" className="text-emerald-200 font-medium hover:text-white">Terms</Link>
+            <Link to="/terms" className="text-emerald-300 font-semibold underline underline-offset-2 hover:text-white">Terms</Link>
             <span className="text-white/40 mx-2">•</span>
-            <Link to="/privacy" className="text-emerald-200 font-medium hover:text-white">Privacy Policy</Link>
+            <Link to="/privacy" className="text-emerald-300 font-semibold underline underline-offset-2 hover:text-white">Privacy Policy</Link>
           </p>
         </div>
 
