@@ -77,15 +77,27 @@ export default function Login() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-5 py-10 relative overflow-hidden"
-      style={{
-        backgroundColor: BASE,
-        // Uses the login background photo if present; the dark-green gradient
-        // overlay keeps the form readable and is also the fallback if missing.
-        backgroundImage: `linear-gradient(160deg, rgba(10,26,18,0.66), rgba(5,18,12,0.86)), url('/IMG_6245.jpeg')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
+      style={{ backgroundColor: BASE }}
     >
+      {/* Background photo — zoomed in */}
+      <div
+        className="absolute inset-0"
+        aria-hidden="true"
+        style={{
+          backgroundImage: "url('/IMG_6245.jpeg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          transform: 'scale(1.35)',
+          transformOrigin: 'center',
+        }}
+      />
+      {/* Readability overlay */}
+      <div
+        className="absolute inset-0"
+        aria-hidden="true"
+        style={{ background: 'linear-gradient(160deg, rgba(10,26,18,0.55), rgba(5,18,12,0.78))' }}
+      />
+
       {/* Install Banner */}
       {showInstallBanner && (
         <div className="fixed top-4 left-4 right-4 z-50 rounded-xl px-4 py-3 flex items-center gap-3 shadow-2xl
@@ -116,8 +128,8 @@ export default function Login() {
       {/* Glass card */}
       <div className="w-full max-w-sm relative z-10" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div
-          className="rounded-3xl border border-white/25 shadow-2xl p-7 sm:p-8"
-          style={{ background: 'rgba(255,255,255,0.10)', backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)' }}
+          className="rounded-3xl border border-white/20 shadow-2xl p-7 sm:p-8"
+          style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}
         >
           {/* Logo */}
           <div className="flex justify-center mb-5">
