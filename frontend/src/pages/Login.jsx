@@ -87,6 +87,17 @@ export default function Login() {
         `,
       }}
     >
+      {/* iPhone pattern layer */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        aria-hidden="true"
+        style={{
+          backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='110' height='150' viewBox='0 0 110 150'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round'%3E%3Crect x='38' y='34' width='34' height='68' rx='8'/%3E%3Cline x1='49' y1='41' x2='61' y2='41'/%3E%3Cline x1='48' y1='95' x2='62' y2='95'/%3E%3C/g%3E%3C/svg%3E\")",
+          backgroundSize: '110px 150px',
+          opacity: 0.06,
+        }}
+      />
+
       {/* Install Banner */}
       {showInstallBanner && (
         <div className="fixed top-4 left-4 right-4 z-50 rounded-xl px-4 py-3 flex items-center gap-3 shadow-2xl
