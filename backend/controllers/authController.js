@@ -44,6 +44,7 @@ const login = async (req, res) => {
     const query = {
       $or: [
         { email: { $regex: new RegExp(`^${escaped}$`, 'i') } },
+        { username: { $regex: new RegExp(`^${escaped}$`, 'i') } },
         { account_number: loginIdentifier.trim() },
         { staff_id: loginIdentifier.trim() },
       ],

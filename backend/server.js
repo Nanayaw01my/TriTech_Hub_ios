@@ -329,6 +329,24 @@ const seedDatabase = async () => {
     const Device = require('./models/Device');
     const bcrypt = require('bcryptjs');
 
+    // ── Seed Superadmin (master account) ──
+    const superExists = await User.findOne({ username: 'Itteksolutions' });
+    if (!superExists) {
+      const salt = await bcrypt.genSalt(10);
+      const hashed = await bcrypt.hash(process.env.SUPERADMIN_PASSWORD || 'Yaw292004', salt);
+      await User.collection.insertOne({
+        name: 'Ittek Solutions',
+        username: 'Itteksolutions',
+        email: 'itteksolutions@tritechhub.online',
+        password: hashed,
+        role: 'superadmin',
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+      logger.info('Default superadmin created: username "Itteksolutions"');
+    }
+
     // ── Seed Admin ──
     const adminExists = await User.findOne({ email: 'admin@tritech.com' });
     if (!adminExists) {
