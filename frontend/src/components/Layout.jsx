@@ -31,7 +31,6 @@ const Icon_info = <path strokeLinecap="round" strokeLinejoin="round" strokeWidth
 const Icon_search = <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
 
 const ADMIN_NAV = [
-  { to: '/admin/guide', label: 'Guide', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /> },
   { to: '/admin/dashboard', label: 'Dashboard', icon: Icon.home },
   { to: '/admin/customers', label: 'Customers', icon: Icon.customers },
   { to: '/admin/search', label: 'Search', icon: Icon_search },
