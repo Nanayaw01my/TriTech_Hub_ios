@@ -29,6 +29,7 @@ import AdminAuditLogs from './pages/admin/AuditLogs'
 import AdminSettings from './pages/admin/Settings'
 import AdminAbout from './pages/admin/About'
 import AdminSearch from './pages/admin/Search'
+import AdminGuide from './pages/admin/Guide'
 
 // Staff pages
 import StaffDashboard from './pages/staff/Dashboard'
@@ -63,6 +64,7 @@ function ProtectedRoute({ children, allowedRoles }) {
 
   if (allowedRoles && !allowedRoles.includes(userRole)) {
     // Redirect to appropriate dashboard
+    if (userRole === 'superadmin') return <Navigate to="/admin/guide" replace />
     if (userRole === 'admin') return <Navigate to="/admin/dashboard" replace />
     if (userRole === 'staff') return <Navigate to="/staff/dashboard" replace />
     if (userRole === 'customer') return <Navigate to="/customer/dashboard" replace />
@@ -84,6 +86,7 @@ function RoleRedirect() {
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (userRole === 'superadmin') return <Navigate to="/admin/guide" replace />
   if (userRole === 'admin') return <Navigate to="/admin/dashboard" replace />
   if (userRole === 'staff') return <Navigate to="/staff/dashboard" replace />
   if (userRole === 'customer') return <Navigate to="/customer/dashboard" replace />
@@ -124,16 +127,17 @@ function AppRoutes() {
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
 
-      {/* Admin routes */}
+      {/* Admin routes (superadmin has full admin access too) */}
       <Route
         path="/admin"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
             <Layout role="admin" />
           </ProtectedRoute>
         }
       >
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="guide" element={<AdminGuide />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="customers" element={<AdminCustomers />} />
         <Route path="customers/:id" element={<AdminCustomerDetail />} />

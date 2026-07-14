@@ -59,7 +59,8 @@ export default function Login() {
     setLoading(true)
     try {
       const userData = await login({ identifier: identifier.trim(), password })
-      if (userData.role === 'admin') navigate('/admin/dashboard')
+      if (userData.role === 'superadmin') navigate('/admin/guide')
+      else if (userData.role === 'admin') navigate('/admin/dashboard')
       else if (userData.role === 'staff') navigate('/staff/dashboard')
       else navigate('/customer/dashboard')
     } catch (err) {

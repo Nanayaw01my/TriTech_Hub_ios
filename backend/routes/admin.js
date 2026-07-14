@@ -43,7 +43,7 @@ const {
 } = require('../controllers/adminController');
 
 // Apply authentication and admin authorization to all routes
-router.use(authenticate, authorize('admin'));
+router.use(authenticate, authorize('admin', 'superadmin'));
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
 router.get('/dashboard', getDashboard);
