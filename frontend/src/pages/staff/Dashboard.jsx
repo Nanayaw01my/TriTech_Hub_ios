@@ -41,34 +41,34 @@ export default function StaffDashboard() {
       label: 'My Customers',
       value: stats?.my_customers ?? 0,
       icon: (
-        <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       ),
-      bg: 'bg-emerald-50',
-      border: 'border-emerald-100',
+      bg: 'bg-emerald-500',
+      border: 'border-transparent',
     },
     {
       label: 'Payments Today',
       value: stats?.payments_today ?? 0,
       icon: (
-        <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
         </svg>
       ),
-      bg: 'bg-blue-50',
-      border: 'border-blue-100',
+      bg: 'bg-emerald-500',
+      border: 'border-transparent',
     },
     {
       label: 'Overdue',
       value: stats?.overdue ?? 0,
       icon: (
-        <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
-      bg: 'bg-red-50',
-      border: 'border-red-100',
+      bg: 'bg-emerald-500',
+      border: 'border-transparent',
     },
   ]
 
@@ -89,26 +89,26 @@ export default function StaffDashboard() {
 
         {/* Hero stat pills */}
         <div className="grid grid-cols-3 gap-2 mt-5">
-          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3 text-center">
-            <svg className="w-5 h-5 text-emerald-600 mx-auto mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-emerald-500 border border-transparent rounded-2xl p-3 text-center">
+            <svg className="w-5 h-5 text-white mx-auto mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <p className="text-emerald-700 text-xl font-black leading-none">{stats?.my_customers ?? 0}</p>
-            <p className="text-emerald-600 text-[10px] font-semibold mt-0.5">Customers</p>
+            <p className="text-white text-xl font-black leading-none">{stats?.my_customers ?? 0}</p>
+            <p className="text-white/90 text-[10px] font-semibold mt-0.5">Customers</p>
           </div>
-          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3 text-center">
-            <svg className="w-5 h-5 text-blue-600 mx-auto mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-emerald-500 border border-transparent rounded-2xl p-3 text-center">
+            <svg className="w-5 h-5 text-white mx-auto mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
-            <p className="text-blue-700 text-xl font-black leading-none">{stats?.payments_today ?? 0}</p>
-            <p className="text-blue-600 text-[10px] font-semibold mt-0.5">Paid Today</p>
+            <p className="text-white text-xl font-black leading-none">{stats?.payments_today ?? 0}</p>
+            <p className="text-white/90 text-[10px] font-semibold mt-0.5">Paid Today</p>
           </div>
-          <div className={`rounded-2xl p-3 text-center border ${(stats?.overdue ?? 0) > 0 ? 'bg-red-50 border-red-100' : 'bg-yellow-50 border-yellow-100'}`}>
-            <svg className={`w-5 h-5 mx-auto mb-1.5 ${(stats?.overdue ?? 0) > 0 ? 'text-red-600' : 'text-yellow-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-emerald-500 border border-transparent rounded-2xl p-3 text-center">
+            <svg className="w-5 h-5 text-white mx-auto mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5.07 19H19a2 2 0 001.75-2.98l-6.93-12a2 2 0 00-3.5 0l-6.93 12A2 2 0 005.07 19z" />
             </svg>
-            <p className={`text-xl font-black leading-none ${(stats?.overdue ?? 0) > 0 ? 'text-red-700' : 'text-yellow-700'}`}>{stats?.overdue ?? 0}</p>
-            <p className={`text-[10px] font-semibold mt-0.5 ${(stats?.overdue ?? 0) > 0 ? 'text-red-600' : 'text-yellow-600'}`}>Overdue</p>
+            <p className="text-white text-xl font-black leading-none">{stats?.overdue ?? 0}</p>
+            <p className="text-white/90 text-[10px] font-semibold mt-0.5">Overdue</p>
           </div>
         </div>
       </div>
@@ -138,12 +138,12 @@ export default function StaffDashboard() {
                 key={card.label}
                 className={`${card.bg} border ${card.border} rounded-2xl p-4 flex items-center gap-4`}
               >
-                <div className="w-10 h-10 rounded-xl bg-white/70 flex items-center justify-center flex-shrink-0 shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0 shadow-sm">
                   {card.icon}
                 </div>
                 <div>
-                  <p className="text-2xl font-black text-gray-900 leading-none">{card.value}</p>
-                  <p className="text-xs font-semibold text-gray-500 mt-0.5">{card.label}</p>
+                  <p className="text-2xl font-black text-white leading-none">{card.value}</p>
+                  <p className="text-xs font-semibold text-white/90 mt-0.5">{card.label}</p>
                 </div>
               </div>
             ))}

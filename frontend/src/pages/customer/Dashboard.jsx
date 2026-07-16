@@ -139,21 +139,21 @@ export default function CustomerDashboard() {
 
                 {/* Stats grid */}
                 <div className="grid grid-cols-3 gap-1.5 mb-4">
-                  <div className="bg-emerald-50 rounded-2xl p-3 text-center">
-                    <p className="text-xs text-gray-500 mb-0.5">Paid</p>
-                    <p className="text-xs font-bold text-emerald-700">
+                  <div className="bg-emerald-500 rounded-2xl p-3 text-center">
+                    <p className="text-xs text-white/90 mb-0.5">Paid</p>
+                    <p className="text-xs font-bold text-white">
                       GHS {paidAmount.toLocaleString()}
                     </p>
                   </div>
-                  <div className="bg-orange-50 rounded-2xl p-3 text-center">
-                    <p className="text-xs text-gray-500 mb-0.5">Remaining</p>
-                    <p className="text-xs font-bold text-orange-600">
+                  <div className="bg-emerald-500 rounded-2xl p-3 text-center">
+                    <p className="text-xs text-white/90 mb-0.5">Remaining</p>
+                    <p className="text-xs font-bold text-white">
                       GHS {Number(plan.remaining_balance || 0).toLocaleString()}
                     </p>
                   </div>
-                  <div className={`rounded-2xl p-3 text-center ${isOverdue ? 'bg-red-50' : 'bg-blue-50'}`}>
-                    <p className="text-xs text-gray-500 mb-0.5">Next Due</p>
-                    <p className={`text-xs font-bold ${isOverdue ? 'text-red-600' : 'text-blue-600'}`}>
+                  <div className="bg-emerald-500 rounded-2xl p-3 text-center">
+                    <p className="text-xs text-white/90 mb-0.5">Next Due</p>
+                    <p className="text-xs font-bold text-white">
                       {plan.next_due_date
                         ? format(new Date(plan.next_due_date), 'dd MMM')
                         : isCompleted ? 'Done!' : 'N/A'}

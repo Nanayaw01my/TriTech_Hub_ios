@@ -312,11 +312,7 @@ export default function StaffCustomerDetail() {
     return `/uploads/${p.replace(/\\/g, '/').split('/').pop()}`
   }
   const photos = customer.photos || {}
-  const cardFront = photoUrl(photos.ghana_card_front)
-  const cardBack  = photoUrl(photos.ghana_card_back)
   const custPhoto = photoUrl(photos.customer_photo)
-  const guarPhoto = photoUrl(photos.guarantor_photo)
-  const sigPhoto  = photoUrl(photos.signature)
 
   return (
     <div className="max-w-3xl mx-auto px-4 pb-32 lg:pb-6 pt-4">
@@ -347,131 +343,22 @@ export default function StaffCustomerDetail() {
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-black text-gray-900">{customer.full_name}</h2>
-            <p className="text-sm font-bold text-emerald-700">
-              {customer.account_number || customer.user_id?.account_number}
-            </p>
-            <p className="text-sm text-gray-500 mt-0.5">{customer.phone}</p>
-            <p className="text-xs text-gray-400 truncate">{customer.email}</p>
+            <p className="text-sm text-gray-500 mt-1">{customer.phone}</p>
           </div>
         </div>
       </div>
-
-      {/* Customer Details */}
-      {(customer.ghana_card_id || customer.occupation || customer.income?.amount > 0 || customer.location?.region || customer.location?.town) && (
-        <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
-          <h3 className="text-sm font-bold text-gray-800 mb-3">Customer Details</h3>
-          <div className="space-y-2">
-            {customer.ghana_card_id && (
-              <div className="flex justify-between gap-3 text-sm">
-                <span className="text-gray-500 flex-shrink-0">Ghana Card ID</span>
-                <span className="font-semibold text-gray-800 font-mono text-right break-all">{customer.ghana_card_id}</span>
-              </div>
-            )}
-            {customer.occupation && (
-              <div className="flex justify-between gap-3 text-sm">
-                <span className="text-gray-500 flex-shrink-0">Occupation</span>
-                <span className="font-semibold text-gray-800 text-right">{customer.occupation}</span>
-              </div>
-            )}
-            {customer.income?.amount > 0 && (
-              <div className="flex justify-between gap-3 text-sm">
-                <span className="text-gray-500 flex-shrink-0">Income</span>
-                <span className="font-semibold text-gray-800 text-right">
-                  GHS {Number(customer.income.amount).toLocaleString()}{customer.income.source ? ` — ${customer.income.source}` : ''}
-                </span>
-              </div>
-            )}
-            {(customer.location?.region || customer.location?.town || customer.location?.district || customer.location?.landmark) && (
-              <div className="flex justify-between gap-3 text-sm">
-                <span className="text-gray-500 flex-shrink-0">Location</span>
-                <span className="font-semibold text-gray-800 text-right">
-                  {[customer.location?.town, customer.location?.district, customer.location?.region].filter(Boolean).join(', ')}
-                  {customer.location?.landmark ? ` (${customer.location.landmark})` : ''}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Guarantor */}
-      {(customer.guarantor?.full_name || customer.guarantor?.phone) && (
-        <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
-          <h3 className="text-sm font-bold text-gray-800 mb-3">Guarantor</h3>
-          <div className="space-y-2">
-            {customer.guarantor.full_name && (
-              <div className="flex justify-between gap-3 text-sm">
-                <span className="text-gray-500 flex-shrink-0">Name</span>
-                <span className="font-semibold text-gray-800 text-right">{customer.guarantor.full_name}</span>
-              </div>
-            )}
-            {customer.guarantor.phone && (
-              <div className="flex justify-between gap-3 text-sm">
-                <span className="text-gray-500 flex-shrink-0">Phone</span>
-                <span className="font-semibold text-gray-800 text-right">{customer.guarantor.phone}</span>
-              </div>
-            )}
-            {customer.guarantor.ghana_card_id && (
-              <div className="flex justify-between gap-3 text-sm">
-                <span className="text-gray-500 flex-shrink-0">Ghana Card ID</span>
-                <span className="font-semibold text-gray-800 font-mono text-right break-all">{customer.guarantor.ghana_card_id}</span>
-              </div>
-            )}
-            {customer.guarantor.relationship && (
-              <div className="flex justify-between gap-3 text-sm">
-                <span className="text-gray-500 flex-shrink-0">Relationship</span>
-                <span className="font-semibold text-gray-800 text-right">{customer.guarantor.relationship}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Photos & Documents — Ghana Card ID images are hidden from staff (admin only) */}
-      {(custPhoto || guarPhoto || sigPhoto) && (
-        <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
-          <h3 className="text-sm font-bold text-gray-800 mb-3">Photos & Documents</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Customer Photo',     src: custPhoto },
-              { label: 'Guarantor Photo',    src: guarPhoto },
-            ].map(({ label, src }) => src ? (
-              <button key={label} onClick={() => setImageModal(src)}
-                className="relative rounded-2xl overflow-hidden bg-gray-50 aspect-[4/3] w-full border border-gray-200">
-                <img src={src} alt={label} className="w-full h-full object-cover" />
-                <div className="absolute bottom-0 left-0 right-0 bg-black/40 py-1 px-2">
-                  <p className="text-white text-[10px] font-semibold truncate">{label}</p>
-                </div>
-              </button>
-            ) : (
-              <div key={label} className="rounded-2xl bg-gray-50 aspect-[4/3] border-2 border-dashed border-gray-200 flex items-center justify-center">
-                <p className="text-gray-300 text-xs text-center px-2">{label}</p>
-              </div>
-            ))}
-          </div>
-          {sigPhoto && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <p className="text-xs text-gray-500 font-semibold mb-2">Signature</p>
-              <button onClick={() => setImageModal(sigPhoto)}
-                className="border border-gray-200 rounded-xl overflow-hidden inline-block">
-                <img src={sigPhoto} alt="Signature" className="h-16 object-contain block" />
-              </button>
-            </div>
-          )}
-          <p className="mt-3 pt-3 border-t border-gray-100 text-[11px] text-gray-400">
-            🔒 Ghana Card ID images are restricted to admin only.
-          </p>
-        </div>
-      )}
 
       {/* Device */}
       {(device || plan?.device_id) && (
         <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-500 font-medium">Device</p>
+              <p className="text-xs text-gray-500 font-medium">Phone Bought</p>
               <p className="font-bold text-gray-800">
                 {device?.model || plan?.device_id?.model || plan?.device_model}
+              </p>
+              <p className="text-sm font-bold text-emerald-700 mt-0.5">
+                GHS {Number(plan?.total_price || plan?.device_price || device?.price || 0).toLocaleString()}
               </p>
             </div>
             <StatusBadge status={device?.lock_status === 'locked' ? 'locked' : 'active'} />
@@ -495,15 +382,15 @@ export default function StaffCustomerDetail() {
 
           <div className="grid grid-cols-3 gap-1.5 mt-4">
             <div className="bg-emerald-50 rounded-xl p-2.5 text-center">
-              <p className="text-xs text-gray-500 mb-0.5">Remaining</p>
+              <p className="text-xs text-gray-500 mb-0.5">Amount Paid</p>
               <p className="text-xs font-bold text-emerald-800">
-                GHS {Number(plan.remaining_balance || 0).toLocaleString()}
+                GHS {Number(plan.amount_paid ?? ((plan.total_price || 0) - (plan.remaining_balance || 0))).toLocaleString()}
               </p>
             </div>
             <div className="bg-gray-50 rounded-xl p-2.5 text-center">
-              <p className="text-xs text-gray-500 mb-0.5">Installment</p>
+              <p className="text-xs text-gray-500 mb-0.5">Amount Left</p>
               <p className="text-xs font-bold text-gray-800">
-                GHS {Number(plan.installment_amount || 0).toLocaleString()}
+                GHS {Number(plan.remaining_balance || 0).toLocaleString()}
               </p>
             </div>
             <div className="bg-orange-50 rounded-xl p-2.5 text-center">
