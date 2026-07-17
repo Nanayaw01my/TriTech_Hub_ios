@@ -68,9 +68,16 @@ export default function CustomerProfile() {
   const customer = profile?.customer || profile
   const acct = user?.account_number || profile?.user?.account_number || profile?.account_number
 
-  const photoUrl = customer?.photo_url || (customer?.photos?.customer_photo ? `/uploads/${customer.photos.customer_photo}` : null)
-  const cardFrontUrl = customer?.ghana_card_front_url || (customer?.photos?.ghana_card_front ? `/uploads/${customer.photos.ghana_card_front}` : null)
-  const cardBackUrl = customer?.ghana_card_back_url || (customer?.photos?.ghana_card_back ? `/uploads/${customer.photos.ghana_card_back}` : null)
+  // Photos are stored as full Cloudinary URLs (https://…) or, for older records, a
+  // bare filename served from /uploads. Only prefix /uploads/ when it's NOT already a URL.
+  const resolvePhoto = (val) => {
+    if (!val) return null
+    if (/^https?:\/\//i.test(val) || val.startsWith('data:')) return val
+    return `/uploads/${String(val).replace(/\\/g, '/').split('/').pop()}`
+  }
+  const photoUrl = customer?.photo_url || resolvePhoto(customer?.photos?.customer_photo)
+  const cardFrontUrl = customer?.ghana_card_front_url || resolvePhoto(customer?.photos?.ghana_card_front)
+  const cardBackUrl = customer?.ghana_card_back_url || resolvePhoto(customer?.photos?.ghana_card_back)
 
   return (
     <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">

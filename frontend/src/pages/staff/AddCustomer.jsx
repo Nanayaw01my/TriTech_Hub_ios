@@ -179,12 +179,22 @@ export default function StaffAddCustomer() {
     down_payment_reference: paystackRef || undefined,
   })
 
-  const saveCustomer = async (paystackRef = null) => {
+  // Register the customer FIRST (no money is taken here). The down payment — if any —
+  // is collected AFTER the record exists, from the customer's detail page. This makes
+  // it impossible to charge a customer without a saved registration.
+  const handleSubmit = async () => {
+    if (!validateStep(4)) return
+    const downAmt = Number(form.down_payment) || 0
+
     setSubmitting(true)
     try {
-      const res = await api.post('/staff/customers', buildPayload(paystackRef))
-      toast.success('Customer registered successfully!')
+      const res = await api.post('/staff/customers', buildPayload())
       const customerId = res.data?.data?.customer?._id || res.data?.customer?._id
+      if (downAmt > 0) {
+        toast.success('Customer registered ✓ Now tap “Collect Down Payment” on their page.', { duration: 6000 })
+      } else {
+        toast.success('Customer registered successfully!')
+      }
       navigate(`/staff/customers/${customerId}`)
     } catch (err) {
       const d = err?.response?.data
@@ -194,57 +204,8 @@ export default function StaffAddCustomer() {
     }
   }
 
-  const handleSubmit = async () => {
-    if (!validateStep(4)) return
-    const downAmt = Number(form.down_payment) || 0
-
-    // No down payment — save directly
-    if (downAmt === 0) {
-      saveCustomer()
-      return
-    }
-
-    // Down payment required — open Paystack first
-    if (!PAYSTACK_PUBLIC_KEY) {
-      toast.error('Payment system not configured. Contact admin.')
-      return
-    }
-
-    if (!window.PaystackPop) {
-      toast.error('Payment system still loading. Wait a moment and try again.')
-      return
-    }
-
-    const loadingToast = toast.loading('Opening payment…')
-
-    try {
-      const handler = window.PaystackPop.setup({
-        key: PAYSTACK_PUBLIC_KEY,
-        email: form.email,
-        amount: Math.round(downAmt * 100),
-        currency: 'GHS',
-        channels: ['mobile_money', 'card'],
-        label: form.full_name,
-        metadata: { type: 'down_payment', device_model: form.device_model },
-        callback: (transaction) => {
-          toast.dismiss(loadingToast)
-          toast.success('Down payment confirmed! Saving customer…')
-          saveCustomer(transaction.reference)
-        },
-        onClose: () => {
-          toast.dismiss(loadingToast)
-          toast.error('Payment cancelled — customer not registered.')
-        },
-      })
-      handler.openIframe()
-    } catch (err) {
-      toast.dismiss(loadingToast)
-      toast.error('Could not open payment window. Try again.')
-    }
-  }
-
   return (
-    <div className="px-4 pb-48 lg:pb-8 pt-4 lg:max-w-5xl lg:mx-auto">
+    <div className="px-4 pb-24 lg:pb-8 pt-4 lg:max-w-5xl lg:mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <button
@@ -755,8 +716,8 @@ export default function StaffAddCustomer() {
         </div>
       )}
 
-      {/* Navigation Buttons — fixed on mobile (above the tab bar), inline on desktop */}
-      <div className="form-action-bar fixed left-0 right-0 lg:static lg:mt-5 bg-white lg:bg-transparent border-t border-gray-200 lg:border-0 p-4 lg:p-0 flex gap-3 lg:max-w-3xl z-30">
+      {/* Navigation Buttons — inline at the end of the form (never overlaps content) */}
+      <div className="mt-6 pt-4 border-t border-gray-100 lg:border-0 lg:pt-0 lg:mt-5 flex gap-3 lg:max-w-3xl">
         {step > 1 && (
           <button
             type="button"
