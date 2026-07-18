@@ -57,6 +57,8 @@ const corsOptions = {
       // Capacitor mobile (iOS / Android WebView)
       'capacitor://localhost',
       'ionic://localhost',
+      // Capacitor Android with androidScheme:'https' serves from https://localhost
+      'https://localhost',
       // Capacitor Electron desktop
       'http://localhost',
     ].filter(Boolean);
