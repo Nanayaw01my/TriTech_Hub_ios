@@ -260,6 +260,7 @@ app.use('/api/staff', maintenanceGuard, require('./routes/staff'));
 app.use('/api/customer', maintenanceGuard, require('./routes/customer'));
 app.use('/api/payment', require('./routes/payment'));
 app.use('/api/webhooks', require('./routes/webhook'));
+app.use('/api/app', require('./routes/app'));
 
 // ─── SERVE REACT FRONTEND ─────────────────────────────────────────────────────
 

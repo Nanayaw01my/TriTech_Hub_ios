@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@capacitor-community/electron": "^5.0.1",
+    "@capgo/capacitor-updater": "^8.51.2",
     "@capacitor/android": "^8.4.0",
     "@capacitor/cli": "^8.4.0",
     "@capacitor/core": "^8.4.0",

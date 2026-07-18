@@ -4,6 +4,12 @@ import { Toaster } from 'react-hot-toast'
 import App from './App.jsx'
 import './index.css'
 
+// OTA live updates (Capgo). Confirm this bundle booted OK so the updater keeps
+// it; if a bad update ever fails to boot, the plugin auto-rolls back to the
+// last good bundle. No-op on the web (plugin isn't implemented there).
+import { CapacitorUpdater } from '@capgo/capacitor-updater'
+CapacitorUpdater.notifyAppReady().catch(() => {})
+
 // Register service worker for PWA (offline support + auto-updates)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

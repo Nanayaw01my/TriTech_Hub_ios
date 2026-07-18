@@ -1,0 +1,48 @@
+name: Publish OTA Update
+
+# Builds the web UI and publishes it as a GitHub Release bundle. Installed
+# Android apps then download it automatically (via /api/app/updates) and apply
+# it on next launch — no reinstall, no Play Store update needed.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Bundle version, e.g. 1.0.1 (blank = 1.0.<run number>)'
+        required: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # needed to create the release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install --no-audit --no-fund
+
+      - name: Build web bundle (production API URL)
+        working-directory: frontend
+        run: npm run build:cap
+
+      - name: Determine version
+        id: ver
+        run: echo "version=${{ github.event.inputs.version || format('1.0.{0}', github.run_number) }}" >> "$GITHUB_OUTPUT"
+
+      - name: Zip the bundle
+        working-directory: frontend/dist
+        run: zip -r ../bundle.zip .
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.version }}
+          name: OTA ${{ steps.ver.outputs.version }}
+          files: frontend/bundle.zip

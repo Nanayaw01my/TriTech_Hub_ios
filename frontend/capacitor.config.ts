@@ -14,6 +14,18 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
   },
+  plugins: {
+    // OTA live updates — the app asks our own server if a newer UI bundle
+    // exists, downloads it, and applies it on next launch. Publish a new
+    // bundle with the "Publish OTA Update" GitHub Action.
+    CapacitorUpdater: {
+      autoUpdate: true,
+      updateUrl: 'https://tritechhub.online/api/app/updates',
+      resetWhenUpdate: true,
+      autoDeleteFailed: true,
+      autoDeletePrevious: true,
+    },
+  },
 };
 
 export default config;
