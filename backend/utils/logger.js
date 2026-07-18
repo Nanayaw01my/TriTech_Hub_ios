@@ -1,5 +1,5 @@
 const { createLogger, format, transports, addColors } = require('winston');
-const { combine, timestamp, printf, colorize, errors } = format;
+const { combine, timestamp, printf, colorize, errors, splat } = format;
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -20,6 +20,7 @@ const logger = createLogger({
   format: combine(
     timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     errors({ stack: true }),
+    splat(), // interpolate printf-style %s / %d placeholders
     isProduction ? format.uncolorize() : colorize({ all: true }),
     logFormat
   ),

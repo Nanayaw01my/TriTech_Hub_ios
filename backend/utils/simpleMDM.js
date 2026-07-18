@@ -76,8 +76,9 @@ const lockDevice = async (udid) => {
     return { success: true, supervised: true, mode: 'lost_mode', data: response.data, message: `Lost Mode enabled on device ${deviceId}` };
   } catch (error) {
     const errData = error.response?.data?.errors?.[0];
-    const msg = (errData && (errData.title || errData.detail)) || error.message;
-    logger.warn('SimpleMDM Lost Mode unavailable for UDID %s (%s); falling back to basic lock', udid, msg);
+    const reason = (errData && (errData.title || errData.detail)) || error.message;
+    const status = error.response?.status ? ` [HTTP ${error.response.status}]` : '';
+    logger.warn(`SimpleMDM Lost Mode unavailable for UDID ${udid}: ${reason}${status}; falling back to basic lock`);
     // fall through to basic lock
   }
 
@@ -99,7 +100,7 @@ const lockDevice = async (udid) => {
   } catch (fallbackError) {
     const errData = fallbackError.response?.data?.errors?.[0];
     const msg = (errData && (errData.title || errData.detail)) || fallbackError.message || 'Failed to lock device';
-    logger.error('SimpleMDM lockDevice error for UDID %s: %s', udid, msg);
+    logger.error(`SimpleMDM lockDevice error for UDID ${udid}: ${msg}`);
     throw new Error(msg);
   }
 };
