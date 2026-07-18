@@ -107,7 +107,7 @@ export default function CustomerPayments() {
               label="Pay Now"
               onSuccess={handlePaymentSuccess}
               onClose={() => {}}
-              className="bg-white text-emerald-800 hover:bg-emerald-50"
+              colorClass="bg-white text-emerald-700 hover:bg-emerald-50 shadow-sm"
             />
           </div>
         </div>

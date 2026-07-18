@@ -12,6 +12,10 @@ export default function PaystackButton({
   label = 'Make Payment',
   disabled = false,
   className = '',
+  // Color classes are kept separate from layout so callers can fully override
+  // them without Tailwind conflict-ordering issues (e.g. a white button on a
+  // green card). Defaults to the standard green button.
+  colorClass = 'bg-emerald-700 text-white hover:bg-emerald-800',
   metadata = {},
 }) {
 
@@ -58,11 +62,11 @@ export default function PaystackButton({
     }
   }
 
-  const defaultClassName = `w-full py-4 px-6 rounded-2xl bg-green-800 text-white font-bold text-base
+  const defaultClassName = `w-full py-4 px-6 rounded-2xl font-bold text-base
     min-h-[56px] flex items-center justify-center gap-3
     active:scale-95 transition-all duration-150
     disabled:opacity-50 disabled:cursor-not-allowed
-    hover:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${className}`
+    focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${colorClass} ${className}`
 
   return (
     <button
