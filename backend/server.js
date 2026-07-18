@@ -28,6 +28,12 @@ const logger = require('./utils/logger');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Behind Render's (and most cloud hosts') load balancer, the real client IP
+// arrives in the X-Forwarded-For header. Trust the first proxy hop so
+// express-rate-limit can identify users by their real IP instead of treating
+// every request as coming from the proxy (which would rate-limit all users as one).
+app.set('trust proxy', 1);
+
 // ─── SECURITY MIDDLEWARE ──────────────────────────────────────────────────────
 
 // Helmet: sets various HTTP security headers

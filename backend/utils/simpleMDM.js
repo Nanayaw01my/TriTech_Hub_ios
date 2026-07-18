@@ -42,52 +42,62 @@ const findDeviceByUDID = async (udid) => {
 };
 
 /**
- * Lock a device via SimpleMDM Lost Mode.
- * Lost Mode shows a custom message with your business phone number on the lock screen.
- * The customer cannot use the phone or remove the MDM profile while in Lost Mode.
+ * Lock a device via SimpleMDM.
+ *
+ * - SUPERVISED devices use Lost Mode — a persistent, full lock the customer
+ *   cannot dismiss or remove, showing your business phone number on the screen.
+ * - NON-SUPERVISED devices only support a basic screen lock (the customer can
+ *   still unlock with their own passcode). We send it anyway so *something*
+ *   happens, but the returned `supervised: false` tells the caller it is not a
+ *   true lock-out.
+ *
+ * Returns { success, supervised, data, message }. Throws only if the device
+ * cannot be reached at all (bad UDID, auth failure, network).
  */
 const lockDevice = async (udid) => {
   const device = await findDeviceByUDID(udid);
   if (!device) throw new Error(`Device with UDID ${udid} not found in SimpleMDM`);
 
   const deviceId = device.id;
+  const isSupervised = device.attributes?.is_supervised === true;
   const businessPhone = process.env.BUSINESS_PHONE || '';
   const businessName = process.env.BUSINESS_NAME || 'Tritech Hub iOS';
+  const message = `This iPhone is locked due to a missed payment. Please call ${businessName} to resolve your account.`;
 
-  try {
-    const response = await axios.post(
-      `${SIMPLEMDM_BASE_URL}/devices/${deviceId}/lost_mode`,
-      {
-        message: `This iPhone is locked due to a missed payment. Please call ${businessName} to resolve your account.`,
-        phone_number: businessPhone,
-        footnote: businessName,
-      },
-      getAuthConfig()
-    );
-
-    return {
-      success: true,
-      data: response.data,
-      message: `Lost Mode enabled on device ${deviceId}`,
-    };
-  } catch (error) {
-    // Fallback: try basic MDM lock if lost mode fails (e.g. device not supervised)
+  // Supervised → Lost Mode (the real, non-dismissible lock).
+  if (isSupervised) {
     try {
-      const fallback = await axios.post(
-        `${SIMPLEMDM_BASE_URL}/devices/${deviceId}/lock`,
-        {},
+      const response = await axios.post(
+        `${SIMPLEMDM_BASE_URL}/devices/${deviceId}/lost_mode`,
+        { message, phone_number: businessPhone, footnote: businessName },
         getAuthConfig()
       );
-      return {
-        success: true,
-        data: fallback.data,
-        message: `Basic lock sent to device ${deviceId} (Lost Mode unavailable)`,
-      };
-    } catch (fallbackError) {
-      const msg = fallbackError.response?.data?.errors?.[0] || fallbackError.message || 'Failed to lock device';
-      logger.error('SimpleMDM lockDevice error for UDID %s: %s', udid, msg);
-      throw new Error(msg);
+      return { success: true, supervised: true, data: response.data, message: `Lost Mode enabled on device ${deviceId}` };
+    } catch (error) {
+      const msg = error.response?.data?.errors?.[0] || error.message;
+      logger.warn('SimpleMDM Lost Mode failed for UDID %s (%s); falling back to basic lock', udid, msg);
+      // fall through to basic lock
     }
+  }
+
+  // Non-supervised (or Lost Mode failed) → basic DeviceLock. Still shows the
+  // message + phone number, but the customer can unlock with their passcode.
+  try {
+    const fallback = await axios.post(
+      `${SIMPLEMDM_BASE_URL}/devices/${deviceId}/lock`,
+      { message, phone_number: businessPhone },
+      getAuthConfig()
+    );
+    return {
+      success: true,
+      supervised: false,
+      data: fallback.data,
+      message: `Basic lock sent to device ${deviceId} (device is not supervised — customer can dismiss it)`,
+    };
+  } catch (fallbackError) {
+    const msg = fallbackError.response?.data?.errors?.[0] || fallbackError.message || 'Failed to lock device';
+    logger.error('SimpleMDM lockDevice error for UDID %s: %s', udid, msg);
+    throw new Error(msg);
   }
 };
 

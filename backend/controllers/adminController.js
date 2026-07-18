@@ -720,6 +720,26 @@ const lockDeviceHandler = async (req, res) => {
     if (device.lock_status === 'locked') {
       return res.status(400).json({ success: false, message: 'Device is already marked as locked.' });
     }
+    if (!device.udid) {
+      return res.status(400).json({
+        success: false,
+        message: 'This device has no UDID saved, so it cannot be locked remotely. Add the UDID from SimpleMDM to the device record first.',
+      });
+    }
+
+    // Actually send the lock command to the phone via SimpleMDM.
+    let supervised = null;
+    try {
+      const r = await mdmLock(device.udid);
+      supervised = r?.supervised;
+      logger.info(`[MDM] Lock command sent for UDID ${device.udid} (supervised: ${supervised})`);
+    } catch (mdmErr) {
+      logger.error(`[MDM] Lock failed for UDID ${device.udid}:`, mdmErr.message);
+      return res.status(502).json({
+        success: false,
+        message: `Could not lock the device: ${mdmErr.message}. Check the UDID matches SimpleMDM and that SIMPLEMDM_API_KEY is set on the server.`,
+      });
+    }
 
     device.lock_status = 'locked';
     await device.save();
@@ -727,18 +747,22 @@ const lockDeviceHandler = async (req, res) => {
     await AuditLog.create({
       user_id: req.user._id,
       action: 'device_lock',
-      device_udid: device.udid || null,
+      device_udid: device.udid,
       details: {
         device_id: device._id,
         model: device.model,
         reason: req.body.reason || 'Manual lock by admin',
+        supervised,
       },
       ip_address: req.ip,
     });
 
+    const note = supervised === false
+      ? ' Note: this iPhone is not supervised, so this is a basic screen lock the customer can dismiss with their passcode. Supervise the device for a lock they cannot remove.'
+      : '';
     return res.status(200).json({
       success: true,
-      message: 'Device marked as locked. Remember to remove iCloud access on icloud.com.',
+      message: 'Lock command sent to the device.' + note,
       data: { device },
     });
   } catch (error) {
@@ -757,6 +781,24 @@ const unlockDeviceHandler = async (req, res) => {
     if (device.lock_status === 'unlocked') {
       return res.status(400).json({ success: false, message: 'Device is already marked as unlocked.' });
     }
+    if (!device.udid) {
+      return res.status(400).json({
+        success: false,
+        message: 'This device has no UDID saved, so it cannot be unlocked remotely. Add the UDID from SimpleMDM to the device record first.',
+      });
+    }
+
+    // Actually send the unlock command to the phone via SimpleMDM.
+    try {
+      await mdmUnlock(device.udid);
+      logger.info(`[MDM] Unlock command sent for UDID ${device.udid}`);
+    } catch (mdmErr) {
+      logger.error(`[MDM] Unlock failed for UDID ${device.udid}:`, mdmErr.message);
+      return res.status(502).json({
+        success: false,
+        message: `Could not unlock the device: ${mdmErr.message}. Check the UDID matches SimpleMDM and that SIMPLEMDM_API_KEY is set on the server.`,
+      });
+    }
 
     device.lock_status = 'unlocked';
     await device.save();
@@ -764,7 +806,7 @@ const unlockDeviceHandler = async (req, res) => {
     await AuditLog.create({
       user_id: req.user._id,
       action: 'device_unlock',
-      device_udid: device.udid || null,
+      device_udid: device.udid,
       details: {
         device_id: device._id,
         model: device.model,
@@ -775,7 +817,7 @@ const unlockDeviceHandler = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Device marked as unlocked. Remember to restore iCloud access on icloud.com.',
+      message: 'Unlock command sent to the device.',
       data: { device },
     });
   } catch (error) {
@@ -1518,28 +1560,38 @@ const lockCustomerDevice = async (req, res) => {
     const device = await Device.findById(plan.device_id);
     if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
 
+    // A remote lock is only real if the device has a UDID linked to SimpleMDM.
+    if (!device.udid) {
+      return res.status(400).json({
+        success: false,
+        message: 'This device has no UDID saved, so it cannot be locked remotely. Add the UDID from SimpleMDM to the device record first.',
+      });
+    }
+
+    // Send the actual lock command FIRST — only mark it locked if it went out.
+    let supervised = null;
+    try {
+      const r = await mdmLock(device.udid);
+      supervised = r?.supervised;
+      logger.info(`[MDM] Lock command sent for UDID ${device.udid} (supervised: ${supervised})`);
+    } catch (mdmErr) {
+      logger.error(`[MDM] Lock failed for UDID ${device.udid}:`, mdmErr.message);
+      return res.status(502).json({
+        success: false,
+        message: `Could not lock the device: ${mdmErr.message}. Check the UDID matches SimpleMDM and that SIMPLEMDM_API_KEY is set on the server.`,
+      });
+    }
+
     device.lock_status = 'locked';
     await device.save();
 
-    // Send actual lock command to the physical device via SimpleMDM
-    let mdmResult = 'skipped (no UDID)';
-    if (device.udid) {
-      try {
-        await mdmLock(device.udid);
-        mdmResult = 'sent';
-        logger.info(`[MDM] Lock command sent for UDID ${device.udid}`);
-      } catch (mdmErr) {
-        mdmResult = `failed: ${mdmErr.message}`;
-        logger.error(`[MDM] Lock failed for UDID ${device.udid}:`, mdmErr.message);
-      }
-    }
-
+    const mdmResult = 'sent';
     await AuditLog.create({
       user_id: req.user._id,
       action: 'device_lock',
       device_udid: device.udid,
       target_user_id: customer.user_id,
-      details: { device_id: device._id, customer_id: customer._id, reason: req.body.reason || 'Manual lock by admin', mdm: mdmResult },
+      details: { device_id: device._id, customer_id: customer._id, reason: req.body.reason || 'Manual lock by admin', mdm: mdmResult, supervised },
     });
 
     if (customer.phone) {
@@ -1556,7 +1608,10 @@ const lockCustomerDevice = async (req, res) => {
       );
     }
 
-    return res.status(200).json({ success: true, message: 'Device locked successfully.', mdm: mdmResult });
+    const note = supervised === false
+      ? ' Note: this iPhone is not supervised, so this is a basic screen lock the customer can dismiss with their passcode. Supervise the device for a lock they cannot remove.'
+      : '';
+    return res.status(200).json({ success: true, message: 'Lock command sent to the device.' + note, mdm: mdmResult, supervised });
   } catch (error) {
     logger.error('lockCustomerDevice error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
@@ -1574,22 +1629,29 @@ const unlockCustomerDevice = async (req, res) => {
     const device = await Device.findById(plan.device_id);
     if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
 
+    if (!device.udid) {
+      return res.status(400).json({
+        success: false,
+        message: 'This device has no UDID saved, so it cannot be unlocked remotely. Add the UDID from SimpleMDM to the device record first.',
+      });
+    }
+
+    // Send the actual unlock command FIRST — only mark it unlocked if it went out.
+    try {
+      await mdmUnlock(device.udid);
+      logger.info(`[MDM] Unlock command sent for UDID ${device.udid}`);
+    } catch (mdmErr) {
+      logger.error(`[MDM] Unlock failed for UDID ${device.udid}:`, mdmErr.message);
+      return res.status(502).json({
+        success: false,
+        message: `Could not unlock the device: ${mdmErr.message}. Check the UDID matches SimpleMDM and that SIMPLEMDM_API_KEY is set on the server.`,
+      });
+    }
+
     device.lock_status = 'unlocked';
     await device.save();
 
-    // Send actual unlock command to the physical device via SimpleMDM
-    let mdmResult = 'skipped (no UDID)';
-    if (device.udid) {
-      try {
-        await mdmUnlock(device.udid);
-        mdmResult = 'sent';
-        logger.info(`[MDM] Unlock command sent for UDID ${device.udid}`);
-      } catch (mdmErr) {
-        mdmResult = `failed: ${mdmErr.message}`;
-        logger.error(`[MDM] Unlock failed for UDID ${device.udid}:`, mdmErr.message);
-      }
-    }
-
+    const mdmResult = 'sent';
     await AuditLog.create({
       user_id: req.user._id,
       action: 'device_unlock',
@@ -1612,7 +1674,7 @@ const unlockCustomerDevice = async (req, res) => {
       );
     }
 
-    return res.status(200).json({ success: true, message: 'Device unlocked successfully.', mdm: mdmResult });
+    return res.status(200).json({ success: true, message: 'Unlock command sent to the device.', mdm: mdmResult });
   } catch (error) {
     logger.error('unlockCustomerDevice error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
