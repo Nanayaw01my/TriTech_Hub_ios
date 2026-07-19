@@ -18,7 +18,7 @@
     "@capacitor/cli": "^8.4.0",
     "@capacitor/core": "^8.4.0",
     "@capacitor/ios": "^8.4.0",
-    "@paystack/inline-js": "^2.22.9",
+    "@paystack/inline-js": "^2.23.1",
     "axios": "^1.6.2",
     "date-fns": "^2.30.0",
     "react": "^18.2.0",
