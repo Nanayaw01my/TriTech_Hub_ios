@@ -314,15 +314,13 @@ export default function AdminStaff() {
               <p className="text-gray-500 font-medium">No staff data found</p>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl shadow-card overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-50">
-                <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
-                  Staff Sales — {PERIODS.find(p => p.value === period)?.label}
-                </p>
-              </div>
-              <div className="divide-y divide-gray-50">
+            <div>
+              <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-3 px-1">
+                Staff Sales — {PERIODS.find(p => p.value === period)?.label}
+              </p>
+              <div className="space-y-3">
                 {salesData.map((s) => (
-                  <div key={s._id} className="px-4 py-4">
+                  <div key={s._id} className="bg-white rounded-2xl border-2 border-gray-100 shadow-sm p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">

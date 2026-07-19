@@ -1190,7 +1190,7 @@ const getStaffSales = async (req, res) => {
           Customer.countDocuments({ created_by: s._id }),
           Customer.countDocuments({ created_by: s._id, createdAt: { $gte: periodStart } }),
         ]);
-        const rate = s.commission_per_sale || 0;
+        const rate = s.commission_per_sale || 100;
         return {
           _id: s._id,
           name: s.name,
