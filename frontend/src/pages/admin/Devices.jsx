@@ -66,7 +66,7 @@ const COLOR_DOTS = {
   Ultramarine: '#3730a3', Teal: '#14b8a6',
 }
 
-const initForm = { model: '', color: '', storage: '', price: '', serial_number: '', udid: '' }
+const initForm = { model: '', color: '', storage: '', price: '' }
 
 export default function AdminDevices() {
   const navigate = useNavigate()
@@ -144,7 +144,6 @@ export default function AdminDevices() {
   const validateForm = () => {
     const e = {}
     if (!form.model.trim()) e.model = 'Model name is required'
-    if (!form.serial_number.trim()) e.serial_number = 'Serial number required'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -330,7 +329,7 @@ export default function AdminDevices() {
                       <span className="text-xs bg-gray-100 text-gray-600 font-semibold px-2 py-0.5 rounded-lg">{d.storage}</span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400 font-mono mt-0.5 truncate">SN: {d.serial_number || '—'}</p>
+                  {d.serial_number && <p className="text-xs text-gray-400 font-mono mt-0.5 truncate">SN: {d.serial_number}</p>}
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     <StatusBadge status={d.sold_status || d.status || 'available'} />
                     {isLocked && <StatusBadge status="locked" />}
@@ -597,31 +596,7 @@ export default function AdminDevices() {
                   />
                 </div>
 
-                {/* Serial Number */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Serial Number *</label>
-                  <input
-                    type="text"
-                    value={form.serial_number}
-                    onChange={(e) => setForm(f => ({ ...f, serial_number: e.target.value }))}
-                    placeholder="e.g. F2LW2ABCDEF"
-                    className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 font-mono bg-gray-50
-                      ${errors.serial_number ? 'border-red-400' : 'border-gray-100'}`}
-                  />
-                  {errors.serial_number && <p className="text-xs text-red-500 mt-1">{errors.serial_number}</p>}
-                </div>
-
-                {/* UDID */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">UDID / IMEI <span className="normal-case font-normal text-gray-400">(optional)</span></label>
-                  <input
-                    type="text"
-                    value={form.udid}
-                    onChange={(e) => setForm(f => ({ ...f, udid: e.target.value }))}
-                    placeholder="Device UDID or IMEI"
-                    className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 font-mono bg-gray-50"
-                  />
-                </div>
+                {/* Serial number & UDID are entered by staff per phone at customer registration, not here. */}
 
                 <div className="flex gap-3 pt-1">
                   <button
