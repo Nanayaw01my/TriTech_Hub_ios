@@ -110,7 +110,7 @@ export default function CustomerDashboard() {
 
         {/* ── Hero card ── */}
         <div className="rounded-3xl p-5 sm:p-6 shadow-lg text-white relative overflow-hidden
-                        bg-gradient-to-br from-emerald-500 via-emerald-600 to-green-700">
+                        bg-gradient-to-br from-green-900 via-green-800 to-green-900">
           {/* subtle sheen */}
           <div className="absolute -top-16 -right-10 w-52 h-52 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
 

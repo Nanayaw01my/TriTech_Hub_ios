@@ -452,10 +452,11 @@ export default function Layout({ role }) {
         </main>
       </div>
 
-      {/* ── Mobile Bottom Nav (hidden while typing) ── */}
-      <nav className={`fixed bottom-0 left-0 right-0 z-40 lg:hidden ${keyboardOpen ? 'hidden' : ''}`}
-           style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderTop: '1px solid rgba(0,0,0,0.08)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-        <div className="flex items-stretch h-16">
+      {/* ── Mobile Bottom Nav — floating pill; active tab expands to a label ── */}
+      <nav className={`fixed bottom-0 left-0 right-0 z-40 lg:hidden pointer-events-none ${keyboardOpen ? 'hidden' : ''}`}
+           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)', paddingLeft: '12px', paddingRight: '12px' }}>
+        <div className="pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-1 rounded-full px-2 py-2 shadow-2xl"
+             style={{ background: 'rgba(23,23,23,0.94)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)' }}>
           {bottomItems.map((item) => {
             const dashboardPath = `/${role}/dashboard`
             const isActive =
@@ -467,15 +468,19 @@ export default function Layout({ role }) {
               <NavLink
                 key={item.to}
                 to={item.to}
-                className="flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 transition-colors"
+                aria-label={item.label}
+                className={`flex items-center rounded-full transition-all duration-300 ${
+                  isActive
+                    ? 'bg-white text-green-900 gap-2 pl-3.5 pr-4 py-2.5'
+                    : 'text-white/70 w-11 h-11 justify-center active:scale-90'
+                }`}
               >
-                <div className={`w-10 h-7 flex items-center justify-center rounded-xl transition-all duration-200
-                  ${isActive ? 'bg-green-100' : ''}`}>
-                  <NavIcon path={item.icon} className={`w-5 h-5 transition-colors ${isActive ? 'text-green-800' : 'text-gray-400'}`} />
-                </div>
-                <span className={`text-[10px] font-semibold transition-colors ${isActive ? 'text-green-800' : 'text-gray-400'}`}>
-                  {item.short || item.label.split(' ')[0]}
-                </span>
+                <NavIcon path={item.icon} className="w-5 h-5 flex-shrink-0" />
+                {isActive && (
+                  <span className="text-sm font-bold whitespace-nowrap">
+                    {item.short || item.label.split(' ')[0]}
+                  </span>
+                )}
               </NavLink>
             )
           })}
