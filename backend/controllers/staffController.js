@@ -161,7 +161,7 @@ const getMyCustomers = async (req, res) => {
  */
 const precheckCustomer = async (req, res) => {
   try {
-    const { email, device_id, device_model, device_price, password, down_payment } = req.body;
+    const { email, device_id, device_model, device_price, password, down_payment, serial_number, udid } = req.body;
 
     if (!password || String(password).length > 5) {
       return res.status(400).json({ success: false, message: 'Customer password must be between 1 and 5 characters.' });
@@ -170,6 +170,18 @@ const precheckCustomer = async (req, res) => {
       const existingEmail = await User.findOne({ email: String(email).toLowerCase().trim() });
       if (existingEmail) {
         return res.status(409).json({ success: false, message: 'An account with this email already exists.' });
+      }
+    }
+    if (serial_number && String(serial_number).trim()) {
+      const dup = await Device.findOne({ serial_number: String(serial_number).trim() });
+      if (dup) {
+        return res.status(409).json({ success: false, message: 'A device with this serial number already exists.' });
+      }
+    }
+    if (udid && String(udid).trim()) {
+      const dup = await Device.findOne({ udid: String(udid).trim() });
+      if (dup) {
+        return res.status(409).json({ success: false, message: 'A device with this UDID already exists.' });
       }
     }
     if (device_id) {
@@ -235,6 +247,8 @@ const addCustomer = async (req, res) => {
       device_id: device_id_param,
       device_model,
       device_price,
+      serial_number,
+      udid,
       down_payment,
       down_payment_reference,
       // accept payment_frequency (frontend) or frequency
@@ -269,13 +283,17 @@ const addCustomer = async (req, res) => {
       }
     }
 
-    // Create a fresh device record for this specific customer
+    // Create a fresh device record for this specific customer. The serial number
+    // and UDID belong to the physical phone handed to THIS customer (each is
+    // unique), so they're taken from the form — not copied from the catalog.
     const device = await Device.create({
       model: catalogDevice.model,
       color: catalogDevice.color,
       storage: catalogDevice.storage,
       price: Number(device_price) || catalogDevice.price,
       imei: catalogDevice.imei || null,
+      serial_number: (serial_number && String(serial_number).trim()) || undefined,
+      udid: (udid && String(udid).trim()) || undefined,
       sold_status: 'sold',
     });
 

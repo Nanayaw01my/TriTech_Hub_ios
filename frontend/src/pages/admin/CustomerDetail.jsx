@@ -25,6 +25,29 @@ export default function AdminCustomerDetail() {
   const [imageModal, setImageModal] = useState(null)
   const [repossessModal, setRepossessModal] = useState(false)
   const [repossessLoading, setRepossessLoading] = useState(false)
+  const [editIds, setEditIds] = useState(false)
+  const [idForm, setIdForm] = useState({ serial_number: '', udid: '' })
+  const [savingIds, setSavingIds] = useState(false)
+
+  const saveDeviceIds = async () => {
+    const dev = plan?.device_id || customer?.device
+    const deviceId = dev?._id || dev
+    if (!deviceId) { toast.error('No device is linked to this customer.'); return }
+    setSavingIds(true)
+    try {
+      await api.put(`/admin/devices/${deviceId}`, {
+        serial_number: idForm.serial_number.trim() || undefined,
+        udid: idForm.udid.trim() || undefined,
+      })
+      toast.success('Device serial / UDID saved. You can now lock this phone from the customer.')
+      setEditIds(false)
+      fetchCustomer()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not save — that serial or UDID may already be in use.')
+    } finally {
+      setSavingIds(false)
+    }
+  }
 
   const fetchCustomer = async () => {
     try {
@@ -315,6 +338,52 @@ export default function AdminCustomerDetail() {
               <span className="text-gray-500">Lock Status</span>
               <StatusBadge status={device.is_locked ? 'locked' : 'unlocked'} />
             </div>
+
+            {/* Serial / UDID editor — the UDID is what makes the customer-side lock work */}
+            {!editIds ? (
+              <button
+                onClick={() => { setIdForm({ serial_number: device.serial_number || '', udid: device.udid || '' }); setEditIds(true) }}
+                className="mt-2 text-xs font-semibold text-emerald-700 hover:text-emerald-900"
+              >
+                {device.udid ? 'Edit Serial / UDID' : '+ Add Serial / UDID (needed to lock this phone)'}
+              </button>
+            ) : (
+              <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Serial Number</label>
+                  <input
+                    value={idForm.serial_number}
+                    onChange={e => setIdForm(f => ({ ...f, serial_number: e.target.value.trim() }))}
+                    placeholder="C39XKT1JQ1GH"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Device UDID</label>
+                  <input
+                    value={idForm.udid}
+                    onChange={e => setIdForm(f => ({ ...f, udid: e.target.value.trim() }))}
+                    placeholder="00008110-001A38A62209801E"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white font-mono"
+                  />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={saveDeviceIds}
+                    disabled={savingIds}
+                    className="flex-1 py-2 bg-emerald-700 text-white rounded-xl text-sm font-semibold disabled:opacity-60 active:scale-95 transition"
+                  >
+                    {savingIds ? 'Saving…' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => setEditIds(false)}
+                    className="px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

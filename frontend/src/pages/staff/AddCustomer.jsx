@@ -49,7 +49,7 @@ const initForm = {
   region: '', district: '', location: '', landmark: '', gps_address: '',
   guarantor_name: '', guarantor_phone: '', guarantor_ghana_card_id: '', guarantor_relationship: '',
   // Step 4
-  device_id: '', device_model: '', device_price: '', down_payment: '', payment_frequency: 'monthly', duration: 12,
+  device_id: '', device_model: '', device_price: '', serial_number: '', udid: '', down_payment: '', payment_frequency: 'monthly', duration: 12,
 }
 
 export default function StaffAddCustomer() {
@@ -173,6 +173,8 @@ export default function StaffAddCustomer() {
     device_id: form.device_id || undefined,
     device_model: form.device_model,
     device_price: Number(form.device_price),
+    serial_number: form.serial_number?.trim() || undefined,
+    udid: form.udid?.trim() || undefined,
     down_payment: Number(form.down_payment),
     payment_frequency: form.payment_frequency,
     duration: Number(form.duration),
@@ -221,6 +223,8 @@ export default function StaffAddCustomer() {
         device_id: form.device_id || undefined,
         device_model: form.device_model,
         device_price: Number(form.device_price),
+        serial_number: form.serial_number?.trim() || undefined,
+        udid: form.udid?.trim() || undefined,
         password: form.password,
         down_payment: Number(form.down_payment),
       })
@@ -697,6 +701,29 @@ export default function StaffAddCustomer() {
                     min="0"
                     max={form.device_price}
                   />
+                </FormField>
+
+                <FormField label="Phone Serial Number" error={errors.serial_number}>
+                  <input
+                    type="text"
+                    value={form.serial_number}
+                    onChange={(e) => set('serial_number', e.target.value.trim())}
+                    placeholder="e.g. C39XKT1JQ1GH"
+                    className={inputClass(errors.serial_number)}
+                    autoCapitalize="characters"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">From the iPhone: Settings → General → About → Serial Number.</p>
+                </FormField>
+
+                <FormField label="Device UDID" error={errors.udid}>
+                  <input
+                    type="text"
+                    value={form.udid}
+                    onChange={(e) => set('udid', e.target.value.trim())}
+                    placeholder="e.g. 00008110-001A38A62209801E"
+                    className={inputClass(errors.udid)}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">From SimpleMDM (this device). Required to lock this phone from the customer's account.</p>
                 </FormField>
 
                 <FormField label="Payment Frequency">
