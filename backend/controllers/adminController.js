@@ -7,6 +7,8 @@ const InstallmentPlan = require('../models/InstallmentPlan');
 const Payment = require('../models/Payment');
 const AuditLog = require('../models/AuditLog');
 const Settings = require('../models/Settings');
+const CommissionPayout = require('../models/CommissionPayout');
+const { createTransferRecipient, initiateTransfer } = require('../utils/paystack');
 const { generateStaffId } = require('../utils/accountGenerator');
 const { sendPaymentReminderSMS, sendDeviceLockedSMS, sendDeviceUnlockedSMS, sendDeviceLockedWhatsApp, sendDeviceUnlockedWhatsApp } = require('../utils/sms');
 const { sendLockNotificationEmail, sendDeviceUnlockedEmail } = require('../utils/email');
@@ -1956,6 +1958,137 @@ const repossessDevice = async (req, res) => {
   }
 };
 
+// ─── STAFF COMMISSIONS ───────────────────────────────────────────────────────
+// Commission = (phones a staff sold − phones already paid for) × rate per phone.
+
+const getCommissions = async (req, res) => {
+  try {
+    const staff = await User.find({ role: 'staff' })
+      .select('name staff_id phone email commission_per_sale').lean();
+
+    const rows = await Promise.all(staff.map(async (s) => {
+      const rate = Number(s.commission_per_sale) || 100;
+      const totalSales = await Customer.countDocuments({ created_by: s._id });
+      const paidAgg = await CommissionPayout.aggregate([
+        { $match: { staff_id: s._id, status: 'success' } },
+        { $group: { _id: null, paidCount: { $sum: '$sales_count' }, paidAmount: { $sum: '$amount' } } },
+      ]);
+      const paidCount = paidAgg[0]?.paidCount || 0;
+      const paidAmount = paidAgg[0]?.paidAmount || 0;
+      const owedCount = Math.max(0, totalSales - paidCount);
+      return {
+        staff_id: s._id,
+        name: s.name,
+        staff_code: s.staff_id,
+        phone: s.phone || '',
+        rate,
+        total_sales: totalSales,
+        paid_count: paidCount,
+        paid_amount: paidAmount,
+        owed_count: owedCount,
+        owed_amount: owedCount * rate,
+      };
+    }));
+
+    return res.status(200).json({ success: true, data: { commissions: rows } });
+  } catch (error) {
+    logger.error('getCommissions error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+const payCommission = async (req, res) => {
+  try {
+    const { staffId } = req.params;
+    const { momo_number, network } = req.body;
+
+    if (!momo_number || !network) {
+      return res.status(400).json({ success: false, message: 'MoMo number and network are required.' });
+    }
+
+    const staff = await User.findOne({ _id: staffId, role: 'staff' }).select('name staff_id commission_per_sale');
+    if (!staff) return res.status(404).json({ success: false, message: 'Staff member not found.' });
+
+    const rate = Number(staff.commission_per_sale) || 100;
+
+    const totalSales = await Customer.countDocuments({ created_by: staff._id });
+    const paidAgg = await CommissionPayout.aggregate([
+      { $match: { staff_id: staff._id, status: 'success' } },
+      { $group: { _id: null, paidCount: { $sum: '$sales_count' } } },
+    ]);
+    const paidCount = paidAgg[0]?.paidCount || 0;
+    const owedCount = Math.max(0, totalSales - paidCount);
+    const amount = owedCount * rate;
+
+    if (owedCount <= 0 || amount <= 0) {
+      return res.status(400).json({ success: false, message: 'No commission is owed to this staff member.' });
+    }
+
+    const reference = `COMM-${staff._id}-${Date.now()}`;
+
+    // Send the payout to the staff's MoMo via Paystack Transfers.
+    let recipientCode, transfer;
+    try {
+      recipientCode = await createTransferRecipient({
+        name: staff.name,
+        account_number: String(momo_number).trim(),
+        bank_code: String(network).trim(),
+      });
+      transfer = await initiateTransfer({ amount, recipient: recipientCode, reason: `Commission: ${owedCount} phone(s)`, reference });
+    } catch (err) {
+      const pmsg = err?.response?.data?.message || err.message;
+      logger.error('payCommission transfer error for staff %s: %s', staff._id, pmsg);
+      // Nothing is recorded, so the commission stays owed and can be retried.
+      return res.status(502).json({
+        success: false,
+        message: `Payout failed: ${pmsg}. Check that Paystack Transfers are enabled, OTP for transfers is turned off, and your Paystack balance is funded.`,
+      });
+    }
+
+    const status = transfer?.data?.status;
+    // Paystack returns 'success'/'pending'/'otp'. 'otp' means OTP is still required — treat as not sent.
+    if (status === 'otp') {
+      return res.status(400).json({
+        success: false,
+        message: 'Your Paystack account requires OTP for transfers. Disable "OTP for transfers" in Paystack settings to auto-send, then try again.',
+      });
+    }
+
+    const payout = await CommissionPayout.create({
+      staff_id: staff._id,
+      amount,
+      sales_count: owedCount,
+      rate,
+      status: status === 'failed' ? 'failed' : (status === 'success' ? 'success' : 'pending'),
+      momo_number: String(momo_number).trim(),
+      network: String(network).trim(),
+      paystack_transfer_code: transfer?.data?.transfer_code,
+      paystack_reference: reference,
+      recipient_code: recipientCode,
+      paid_by: req.user._id,
+    });
+
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'commission_paid',
+      target_user_id: staff._id,
+      details: { amount, sales_count: owedCount, rate, status: payout.status, reference },
+      ip_address: req.ip,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: payout.status === 'success'
+        ? `Sent GHS ${amount.toLocaleString()} to ${staff.name}.`
+        : `Payout of GHS ${amount.toLocaleString()} is processing (${payout.status}).`,
+      data: { payout },
+    });
+  } catch (error) {
+    logger.error('payCommission error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 module.exports = {
   getPublicSettings,
   getDashboard,
@@ -1969,6 +2102,8 @@ module.exports = {
   deleteStaff,
   getStaffSales,
   updateStaffCommissionRate,
+  getCommissions,
+  payCommission,
   getDevices,
   getDeviceSales,
   addDevice,

@@ -65,4 +65,39 @@ const listTransactions = async (params = {}) => {
   return response.data;
 };
 
-module.exports = { initializePayment, verifyPayment, listTransactions };
+/**
+ * Create a transfer recipient for a Ghana mobile money account.
+ * @param {Object} p
+ * @param {string} p.name - Recipient name
+ * @param {string} p.account_number - MoMo phone number
+ * @param {string} p.bank_code - Network code (MTN / VOD / ATL)
+ * @returns {string} recipient_code
+ */
+const createTransferRecipient = async ({ name, account_number, bank_code }) => {
+  const response = await axios.post(
+    `${PAYSTACK_BASE_URL}/transferrecipient`,
+    { type: 'mobile_money', name, account_number, bank_code, currency: 'GHS' },
+    { headers: getHeaders(), timeout: 20000 }
+  );
+  return response.data?.data?.recipient_code;
+};
+
+/**
+ * Initiate a transfer (payout) from your Paystack balance.
+ * @param {Object} p
+ * @param {number} p.amount - Amount in GHS
+ * @param {string} p.recipient - recipient_code
+ * @param {string} p.reason
+ * @param {string} p.reference
+ * @returns {Object} Paystack transfer response data
+ */
+const initiateTransfer = async ({ amount, recipient, reason, reference }) => {
+  const response = await axios.post(
+    `${PAYSTACK_BASE_URL}/transfer`,
+    { source: 'balance', amount: Math.round(amount * 100), recipient, reason, reference, currency: 'GHS' },
+    { headers: getHeaders(), timeout: 30000 }
+  );
+  return response.data;
+};
+
+module.exports = { initializePayment, verifyPayment, listTransactions, createTransferRecipient, initiateTransfer };

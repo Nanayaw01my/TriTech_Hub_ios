@@ -65,7 +65,7 @@ const UserSchema = new mongoose.Schema(
     },
     commission_per_sale: {
       type: Number,
-      default: 0,
+      default: 100,
       min: 0,
     },
   },

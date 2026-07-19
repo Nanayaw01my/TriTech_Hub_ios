@@ -27,6 +27,8 @@ const {
   updateSettings,
   getStaffSales,
   updateStaffCommissionRate,
+  getCommissions,
+  payCommission,
   clearAllData,
   getNotifications,
   getOverdueAccounts,
@@ -109,6 +111,12 @@ router.patch(
   '/staff/:id/commission',
   [param('id').isMongoId().withMessage('Invalid staff ID.')],
   updateStaffCommissionRate
+);
+router.get('/commissions', getCommissions);
+router.post(
+  '/commissions/:staffId/pay',
+  [param('staffId').isMongoId().withMessage('Invalid staff ID.')],
+  payCommission
 );
 
 // ─── DEVICES ──────────────────────────────────────────────────────────────────
