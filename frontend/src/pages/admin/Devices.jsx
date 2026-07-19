@@ -81,6 +81,8 @@ export default function AdminDevices() {
   const [lockFilter, setLockFilter] = useState('')
   const [lockModal, setLockModal] = useState(null)
   const [lockLoading, setLockLoading] = useState(false)
+  const [deleteModal, setDeleteModal] = useState(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [form, setForm] = useState(initForm)
   const [errors, setErrors] = useState({})
 
@@ -185,6 +187,22 @@ export default function AdminDevices() {
       toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Action failed')
     } finally {
       setLockLoading(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteModal) return
+    setDeleteLoading(true)
+    try {
+      const deviceId = deleteModal._id || deleteModal.id
+      await api.delete(`/admin/devices/${deviceId}`)
+      toast.success('Device deleted.')
+      setDeleteModal(null)
+      fetchDevices()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Could not delete device.')
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -330,6 +348,12 @@ export default function AdminDevices() {
                       }`}
                   >
                     {isLocked ? 'Unlock' : 'Lock'}
+                  </button>
+                  <button
+                    onClick={() => setDeleteModal(d)}
+                    className="mt-1.5 ml-1.5 text-xs px-3 py-1.5 rounded-xl font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
+                  >
+                    Delete
                   </button>
                 </div>
               </div>
@@ -637,6 +661,17 @@ export default function AdminDevices() {
         confirmText={lockModal?.lock_status === 'locked' ? 'Mark Unlocked' : 'Mark Locked'}
         confirmVariant={lockModal?.lock_status === 'locked' ? 'primary' : 'danger'}
         loading={lockLoading}
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteModal}
+        onClose={() => setDeleteModal(null)}
+        onConfirm={handleDelete}
+        title="Delete Device"
+        message={`Permanently delete ${deleteModal?.model || 'this device'}${deleteModal?.color ? ` (${deleteModal.color})` : ''} from the catalog? This cannot be undone.`}
+        confirmText="Delete"
+        confirmVariant="danger"
+        loading={deleteLoading}
       />
       </div>{/* end max-w-5xl */}
     </div>
