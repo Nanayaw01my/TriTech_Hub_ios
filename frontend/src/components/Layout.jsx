@@ -457,13 +457,17 @@ export default function Layout({ role }) {
            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)', paddingLeft: '12px', paddingRight: '12px' }}>
         <div className="pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-1 rounded-full px-2 py-2 shadow-2xl"
              style={{ background: 'rgba(23,23,23,0.94)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          {bottomItems.map((item) => {
-            const dashboardPath = `/${role}/dashboard`
-            const isActive =
-              location.pathname === item.to ||
-              (item.to !== dashboardPath &&
-                item.to !== `/${role}/customers/add` &&
-                location.pathname.startsWith(item.to))
+          {(() => {
+            // Pick the single most-specific matching tab so only one lights up
+            // (e.g. on /customers/add, "Add" wins over "Customers").
+            const activeTo = bottomItems.reduce((best, item) => {
+              const match = location.pathname === item.to ||
+                location.pathname.startsWith(item.to + '/')
+              if (match && (!best || item.to.length > best.length)) return item.to
+              return best
+            }, null)
+            return bottomItems.map((item) => {
+            const isActive = item.to === activeTo
             return (
               <NavLink
                 key={item.to}
@@ -483,7 +487,8 @@ export default function Layout({ role }) {
                 )}
               </NavLink>
             )
-          })}
+            })
+          })()}
         </div>
       </nav>
 
