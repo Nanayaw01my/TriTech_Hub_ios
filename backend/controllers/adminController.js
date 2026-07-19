@@ -2026,32 +2026,40 @@ const payCommission = async (req, res) => {
 
     const reference = `COMM-${staff._id}-${Date.now()}`;
 
-    // Send the payout to the staff's MoMo via Paystack Transfers.
-    let recipientCode, transfer;
-    try {
-      recipientCode = await createTransferRecipient({
-        name: staff.name,
-        account_number: String(momo_number).trim(),
-        bank_code: String(network).trim(),
-      });
-      transfer = await initiateTransfer({ amount, recipient: recipientCode, reason: `Commission: ${owedCount} phone(s)`, reference });
-    } catch (err) {
-      const pmsg = err?.response?.data?.message || err.message;
-      logger.error('payCommission transfer error for staff %s: %s', staff._id, pmsg);
-      // Nothing is recorded, so the commission stays owed and can be retried.
-      return res.status(502).json({
-        success: false,
-        message: `Payout failed: ${pmsg}. Check that Paystack Transfers are enabled, OTP for transfers is turned off, and your Paystack balance is funded.`,
-      });
-    }
+    // Auto-send via Paystack Transfers only works on a REGISTERED Paystack
+    // business (starter accounts can't do third-party payouts). Enable it with
+    // ENABLE_PAYSTACK_PAYOUTS=true once your Paystack business is verified.
+    // Otherwise this records the commission as paid and you send it via MoMo.
+    const autoSend = process.env.ENABLE_PAYSTACK_PAYOUTS === 'true';
+    let recipientCode = null, transferCode = null, payoutStatus = 'success';
 
-    const status = transfer?.data?.status;
-    // Paystack returns 'success'/'pending'/'otp'. 'otp' means OTP is still required — treat as not sent.
-    if (status === 'otp') {
-      return res.status(400).json({
-        success: false,
-        message: 'Your Paystack account requires OTP for transfers. Disable "OTP for transfers" in Paystack settings to auto-send, then try again.',
-      });
+    if (autoSend) {
+      let transfer;
+      try {
+        recipientCode = await createTransferRecipient({
+          name: staff.name,
+          account_number: String(momo_number).trim(),
+          bank_code: String(network).trim(),
+        });
+        transfer = await initiateTransfer({ amount, recipient: recipientCode, reason: `Commission: ${owedCount} phone(s)`, reference });
+      } catch (err) {
+        const pmsg = err?.response?.data?.message || err.message;
+        logger.error('payCommission transfer error for staff %s: %s', staff._id, pmsg);
+        // Nothing is recorded, so the commission stays owed and can be retried.
+        return res.status(502).json({
+          success: false,
+          message: `Payout failed: ${pmsg}. Your Paystack account may need to be a registered business with Transfers enabled and OTP off.`,
+        });
+      }
+      const st = transfer?.data?.status;
+      if (st === 'otp') {
+        return res.status(400).json({
+          success: false,
+          message: 'Your Paystack account requires OTP for transfers. Disable "OTP for transfers" in Paystack settings to auto-send, then try again.',
+        });
+      }
+      transferCode = transfer?.data?.transfer_code;
+      payoutStatus = st === 'failed' ? 'failed' : (st === 'success' ? 'success' : 'pending');
     }
 
     const payout = await CommissionPayout.create({
@@ -2059,13 +2067,14 @@ const payCommission = async (req, res) => {
       amount,
       sales_count: owedCount,
       rate,
-      status: status === 'failed' ? 'failed' : (status === 'success' ? 'success' : 'pending'),
+      status: payoutStatus,
       momo_number: String(momo_number).trim(),
       network: String(network).trim(),
-      paystack_transfer_code: transfer?.data?.transfer_code,
+      paystack_transfer_code: transferCode,
       paystack_reference: reference,
       recipient_code: recipientCode,
       paid_by: req.user._id,
+      notes: autoSend ? undefined : 'Recorded as paid — sent manually via MoMo',
     });
 
     await AuditLog.create({
@@ -2078,9 +2087,11 @@ const payCommission = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: payout.status === 'success'
-        ? `Sent GHS ${amount.toLocaleString()} to ${staff.name}.`
-        : `Payout of GHS ${amount.toLocaleString()} is processing (${payout.status}).`,
+      message: autoSend
+        ? (payout.status === 'success'
+            ? `Sent GHS ${amount.toLocaleString()} to ${staff.name}.`
+            : `Payout of GHS ${amount.toLocaleString()} is processing (${payout.status}).`)
+        : `Recorded GHS ${amount.toLocaleString()} as paid to ${staff.name}. Send it to ${String(momo_number).trim()} via MoMo.`,
       data: { payout },
     });
   } catch (error) {

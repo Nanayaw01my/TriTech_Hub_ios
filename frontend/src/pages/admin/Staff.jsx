@@ -583,11 +583,11 @@ export default function AdminStaff() {
                 className="flex-1 py-3 bg-emerald-700 text-white font-semibold text-sm rounded-2xl
                            hover:bg-green-900 disabled:opacity-60 flex items-center justify-center gap-2">
                 {payLoading && <LoadingSpinner size="sm" color="white" />}
-                Send to MoMo
+                Mark as Paid
               </button>
             </div>
             <p className="text-[11px] text-gray-400 mt-3 text-center">
-              Sends via Paystack Transfers. Requires Transfers enabled + funded balance on your Paystack account.
+              Send this amount to the MoMo number above via your MoMo (*170#), then tap Mark as Paid to record it.
             </p>
           </div>
         </div>
