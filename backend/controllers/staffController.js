@@ -154,6 +154,48 @@ const getMyCustomers = async (req, res) => {
 };
 
 /**
+ * POST /api/staff/customers/precheck
+ * Validates that a customer can be registered BEFORE any down payment is taken,
+ * so the pay-first flow never charges for a registration that would then fail.
+ * Creates nothing.
+ */
+const precheckCustomer = async (req, res) => {
+  try {
+    const { email, device_id, device_model, device_price, password, down_payment } = req.body;
+
+    if (!password || String(password).length > 5) {
+      return res.status(400).json({ success: false, message: 'Customer password must be between 1 and 5 characters.' });
+    }
+    if (email) {
+      const existingEmail = await User.findOne({ email: String(email).toLowerCase().trim() });
+      if (existingEmail) {
+        return res.status(409).json({ success: false, message: 'An account with this email already exists.' });
+      }
+    }
+    if (device_id) {
+      const d = await Device.findById(device_id);
+      if (!d) {
+        return res.status(400).json({ success: false, message: 'Selected device not found. Please choose another.' });
+      }
+    } else if (!device_model) {
+      return res.status(400).json({ success: false, message: 'Please select a device.' });
+    }
+    const dp = Number(down_payment) || 0;
+    if (dp < 0) {
+      return res.status(400).json({ success: false, message: 'Down payment cannot be negative.' });
+    }
+    if (dp > 0 && dp >= Number(device_price)) {
+      return res.status(400).json({ success: false, message: 'Down payment must be less than the device price.' });
+    }
+
+    return res.status(200).json({ success: true, ok: true });
+  } catch (err) {
+    logger.error('Staff precheckCustomer error: %s', err.message);
+    return res.status(500).json({ success: false, message: 'Could not verify details. Please try again.' });
+  }
+};
+
+/**
  * POST /api/staff/customers
  * Full customer registration flow.
  */
@@ -703,6 +745,7 @@ const getStaffStats = async (req, res) => {
 
 module.exports = {
   getMyCustomers,
+  precheckCustomer,
   addCustomer,
   getCustomerDetail,
   getCustomerPayments,

@@ -5,6 +5,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 const { uploadMultiplePhotos, handleUploadError } = require('../middleware/upload');
 const {
   getMyCustomers,
+  precheckCustomer,
   addCustomer,
   getCustomerDetail,
   getCustomerPayments,
@@ -33,6 +34,12 @@ router.get('/stats', getStaffStats);
  * List customers created by this staff member.
  */
 router.get('/customers', getMyCustomers);
+
+/**
+ * POST /api/staff/customers/precheck
+ * Validate a customer can be registered before taking a down payment.
+ */
+router.post('/customers/precheck', precheckCustomer);
 
 /**
  * POST /api/staff/customers

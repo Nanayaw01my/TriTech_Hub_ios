@@ -179,28 +179,90 @@ export default function StaffAddCustomer() {
     down_payment_reference: paystackRef || undefined,
   })
 
-  // Register the customer FIRST (no money is taken here). The down payment — if any —
-  // is collected AFTER the record exists, from the customer's detail page. This makes
-  // it impossible to charge a customer without a saved registration.
+  // Create the customer record. When called with a Paystack reference the backend
+  // also records the down payment against the new plan.
+  const saveCustomer = async (paystackRef = null) => {
+    setSubmitting(true)
+    try {
+      const res = await api.post('/staff/customers', buildPayload(paystackRef))
+      toast.success('Customer registered successfully!')
+      const customerId = res.data?.data?.customer?._id || res.data?.customer?._id
+      navigate(`/staff/customers/${customerId}`)
+    } catch (err) {
+      const d = err?.response?.data
+      if (paystackRef) {
+        // Payment already went through but registration failed — surface the
+        // reference so the money is never lost. Staff can retry or refund with it.
+        toast.error(
+          `Payment succeeded (Ref: ${paystackRef}) but registration failed: ${d?.message || 'error'}. Save this reference and contact admin — do NOT collect again.`,
+          { duration: 15000 }
+        )
+      } else {
+        toast.error(d?.message || d?.errors?.[0]?.msg || 'Registration failed. Please check all fields and try again.')
+      }
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  // Flow: click Register → (pre-check) → Paystack → on successful payment → register.
+  // The pre-check verifies the details are registrable (unique email, device, etc.)
+  // BEFORE any money is taken, so we never charge for a registration that would fail.
   const handleSubmit = async () => {
     if (!validateStep(4)) return
     const downAmt = Number(form.down_payment) || 0
 
+    // 1. Pre-check before charging.
     setSubmitting(true)
     try {
-      const res = await api.post('/staff/customers', buildPayload())
-      const customerId = res.data?.data?.customer?._id || res.data?.customer?._id
-      if (downAmt > 0) {
-        toast.success('Customer registered ✓ Now tap “Collect Down Payment” on their page.', { duration: 6000 })
-      } else {
-        toast.success('Customer registered successfully!')
-      }
-      navigate(`/staff/customers/${customerId}`)
+      await api.post('/staff/customers/precheck', {
+        email: form.email,
+        phone: form.phone,
+        device_id: form.device_id || undefined,
+        device_model: form.device_model,
+        device_price: Number(form.device_price),
+        password: form.password,
+        down_payment: Number(form.down_payment),
+      })
     } catch (err) {
-      const d = err?.response?.data
-      toast.error(d?.message || d?.errors?.[0]?.msg || 'Registration failed. Please check all fields and try again.')
-    } finally {
       setSubmitting(false)
+      const d = err?.response?.data
+      toast.error(d?.message || 'Please fix the details before payment.')
+      return
+    }
+    setSubmitting(false)
+
+    // 2. No down payment → register directly (nothing to collect).
+    if (downAmt === 0) { saveCustomer(); return }
+
+    // 3. Down payment → open Paystack, then register on success.
+    if (!PAYSTACK_PUBLIC_KEY) { toast.error('Payment system not configured. Contact admin.'); return }
+    if (!window.PaystackPop) { toast.error('Payment system still loading. Wait a moment and try again.'); return }
+
+    const loadingToast = toast.loading('Opening payment…')
+    try {
+      const handler = window.PaystackPop.setup({
+        key: PAYSTACK_PUBLIC_KEY,
+        email: form.email,
+        amount: Math.round(downAmt * 100),
+        currency: 'GHS',
+        channels: ['mobile_money', 'card'],
+        label: form.full_name,
+        metadata: { type: 'down_payment', device_model: form.device_model },
+        callback: (transaction) => {
+          toast.dismiss(loadingToast)
+          toast.success('Payment received! Registering customer…')
+          saveCustomer(transaction.reference)
+        },
+        onClose: () => {
+          toast.dismiss(loadingToast)
+          toast.error('Payment cancelled — customer not registered.')
+        },
+      })
+      handler.openIframe()
+    } catch (err) {
+      toast.dismiss(loadingToast)
+      toast.error('Could not open payment window. Try again.')
     }
   }
 
