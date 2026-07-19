@@ -28,11 +28,6 @@ export default function AdminStaff() {
   const [rateModal, setRateModal] = useState(null) // { _id, name, commission_per_sale }
   const [rateValue, setRateValue] = useState('')
   const [rateLoading, setRateLoading] = useState(false)
-  // Commission payout (all-time owed) state
-  const [owedMap, setOwedMap] = useState({}) // staff_id -> { owed_amount, owed_count, paid_amount }
-  const [payModal, setPayModal] = useState(null) // staff row being paid
-  const [payForm, setPayForm] = useState({ momo_number: '', network: 'MTN' })
-  const [payLoading, setPayLoading] = useState(false)
 
   const fetchStaff = useCallback(async () => {
     setLoading(true)
@@ -58,39 +53,7 @@ export default function AdminStaff() {
     } finally {
       setSalesLoading(false)
     }
-    // All-time owed (payout-aware) for the Pay button
-    try {
-      const cr = await api.get('/admin/commissions')
-      const list = cr.data?.data?.commissions || []
-      const map = {}
-      list.forEach(c => { map[c.staff_id] = c })
-      setOwedMap(map)
-    } catch { /* non-fatal */ }
   }, [period])
-
-  const openPay = (s) => {
-    setPayForm({ momo_number: s.phone || '', network: 'MTN' })
-    setPayModal(s)
-  }
-
-  const handlePayCommission = async () => {
-    if (!payModal) return
-    if (!payForm.momo_number.trim()) { toast.error('Enter the staff MoMo number'); return }
-    setPayLoading(true)
-    try {
-      const res = await api.post(`/admin/commissions/${payModal._id}/pay`, {
-        momo_number: payForm.momo_number.trim(),
-        network: payForm.network,
-      })
-      toast.success(res.data?.message || 'Commission sent.', { duration: 7000 })
-      setPayModal(null)
-      fetchSales()
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Payout failed.', { duration: 9000 })
-    } finally {
-      setPayLoading(false)
-    }
-  }
 
   useEffect(() => { fetchStaff() }, [fetchStaff])
   useEffect(() => { if (tab === 'commission') fetchSales() }, [tab, fetchSales])
@@ -368,31 +331,6 @@ export default function AdminStaff() {
                     </div>
 
                     <p className="text-xs text-gray-400 mt-2">{s.total_sales} total customers registered (all time)</p>
-
-                    {/* All-time owed + Pay to MoMo */}
-                    {(() => {
-                      const o = owedMap[s._id]
-                      const owed = o?.owed_amount || 0
-                      return (
-                        <div className="mt-3 flex items-center justify-between gap-3 border-t border-gray-50 pt-3">
-                          <div>
-                            <p className="text-xs text-gray-500">Owed (all-time)</p>
-                            <p className="text-lg font-black text-gray-900">GHS {owed.toLocaleString()}</p>
-                            {o?.paid_amount > 0 && (
-                              <p className="text-[11px] text-gray-400">GHS {o.paid_amount.toLocaleString()} paid so far</p>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => openPay(s)}
-                            disabled={owed <= 0}
-                            className="px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-800
-                                       disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition flex-shrink-0"
-                          >
-                            {owed > 0 ? `Pay GHS ${owed.toLocaleString()}` : 'Nothing owed'}
-                          </button>
-                        </div>
-                      )
-                    })()}
                   </div>
                 ))}
               </div>
@@ -521,74 +459,6 @@ export default function AdminStaff() {
                 Save
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Pay Commission Modal */}
-      {payModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setPayModal(null)} />
-          <div className="relative bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Pay Commission</h2>
-              <button onClick={() => setPayModal(null)} className="p-2 text-gray-400 hover:text-gray-600 rounded-xl">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="bg-emerald-50 rounded-2xl p-4 mb-4">
-              <p className="text-sm text-gray-600">Send to <span className="font-bold text-gray-900">{payModal.name}</span></p>
-              <p className="text-3xl font-black text-emerald-700 mt-1">
-                GHS {(owedMap[payModal._id]?.owed_amount || 0).toLocaleString()}
-              </p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {owedMap[payModal._id]?.owed_count || 0} phone(s) × GHS {(payModal.commission_per_sale || 100).toLocaleString()}
-              </p>
-            </div>
-
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Staff MoMo Number</label>
-            <input
-              type="tel"
-              value={payForm.momo_number}
-              onChange={e => setPayForm(f => ({ ...f, momo_number: e.target.value }))}
-              placeholder="0244000000"
-              className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 mb-3"
-              inputMode="tel"
-            />
-
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Network</label>
-            <div className="grid grid-cols-3 gap-2 mb-5">
-              {[{ v: 'MTN', l: 'MTN' }, { v: 'VOD', l: 'Telecel' }, { v: 'ATL', l: 'AirtelTigo' }].map(n => (
-                <button
-                  key={n.v}
-                  type="button"
-                  onClick={() => setPayForm(f => ({ ...f, network: n.v }))}
-                  className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all
-                    ${payForm.network === n.v ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-gray-600'}`}
-                >
-                  {n.l}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setPayModal(null)}
-                className="flex-1 py-3 border-2 border-gray-200 rounded-2xl text-gray-700 font-semibold text-sm hover:bg-gray-50">
-                Cancel
-              </button>
-              <button onClick={handlePayCommission} disabled={payLoading}
-                className="flex-1 py-3 bg-emerald-700 text-white font-semibold text-sm rounded-2xl
-                           hover:bg-green-900 disabled:opacity-60 flex items-center justify-center gap-2">
-                {payLoading && <LoadingSpinner size="sm" color="white" />}
-                Mark as Paid
-              </button>
-            </div>
-            <p className="text-[11px] text-gray-400 mt-3 text-center">
-              Send this amount to the MoMo number above via your MoMo (*170#), then tap Mark as Paid to record it.
-            </p>
           </div>
         </div>
       )}
