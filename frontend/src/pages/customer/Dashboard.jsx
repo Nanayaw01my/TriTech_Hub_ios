@@ -288,15 +288,15 @@ export default function CustomerDashboard() {
             <ProgressBar current={plan.payments_made || 0} total={plan.total_payments || 1} height="lg" />
 
             <div className="grid grid-cols-3 gap-1.5 mt-4">
-              <div className="bg-emerald-500 rounded-2xl p-3 text-center">
+              <div className="bg-green-900 rounded-2xl p-3 text-center">
                 <p className="text-xs text-white/90 mb-0.5">Paid</p>
                 <p className="text-xs font-bold text-white">GHS {paidAmount.toLocaleString()}</p>
               </div>
-              <div className="bg-emerald-500 rounded-2xl p-3 text-center">
+              <div className="bg-green-900 rounded-2xl p-3 text-center">
                 <p className="text-xs text-white/90 mb-0.5">Remaining</p>
                 <p className="text-xs font-bold text-white">GHS {remaining.toLocaleString()}</p>
               </div>
-              <div className="bg-emerald-500 rounded-2xl p-3 text-center">
+              <div className="bg-green-900 rounded-2xl p-3 text-center">
                 <p className="text-xs text-white/90 mb-0.5">Next Due</p>
                 <p className="text-xs font-bold text-white">
                   {plan.next_due_date ? format(new Date(plan.next_due_date), 'dd MMM') : isCompleted ? 'Done!' : 'N/A'}
@@ -307,7 +307,7 @@ export default function CustomerDashboard() {
             {!isCompleted && (
               <button
                 onClick={openPayment}
-                className="w-full mt-4 py-4 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-black
+                className="w-full mt-4 py-4 rounded-2xl bg-green-900 hover:bg-green-800 text-white font-black
                            flex items-center justify-center gap-2 active:scale-95 transition"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -87,7 +87,7 @@ export default function CustomerPayments() {
 
       {/* Make Payment CTA */}
       {plan && plan.status !== 'completed' && (
-        <div className="bg-emerald-500 rounded-2xl p-5 mb-4 text-white">
+        <div className="bg-green-900 rounded-2xl p-5 mb-4 text-white">
           <p className="text-emerald-100 text-xs font-semibold mb-0.5">
             {plan.status === 'overdue' || plan.status === 'defaulted' ? 'OVERDUE PAYMENT' : 'Next Installment'}
           </p>
