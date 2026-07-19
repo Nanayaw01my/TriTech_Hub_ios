@@ -128,8 +128,10 @@ export default function StaffAddCustomer() {
     }
     if (s === 4) {
       if (!form.device_model) e.device_model = 'Select a device model'
-      if (!form.down_payment || Number(form.down_payment) <= 0) e.down_payment = 'Down payment required'
-      if (Number(form.down_payment) >= Number(form.device_price)) {
+      // Down payment is optional — 0 registers a free customer (no Paystack).
+      const dp = Number(form.down_payment) || 0
+      if (dp < 0) e.down_payment = 'Down payment cannot be negative'
+      else if (dp > 0 && dp >= Number(form.device_price)) {
         e.down_payment = 'Down payment must be less than device price'
       }
     }
@@ -690,7 +692,7 @@ export default function StaffAddCustomer() {
                   </div>
                 )}
 
-                <FormField label="Down Payment (GHS)" required error={errors.down_payment}>
+                <FormField label="Down Payment (GHS) — optional" error={errors.down_payment}>
                   <input
                     type="number"
                     value={form.down_payment}
