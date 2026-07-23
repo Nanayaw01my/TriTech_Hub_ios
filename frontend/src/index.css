@@ -266,3 +266,31 @@ body.keyboard-open .form-action-bar {
 @media (max-width: 375px) {
   .text-base { font-size: 15px; }
 }
+
+/* ── Skeleton loading (shimmer) ── */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #e6ebee;
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+/* Darker variant for placeholders sitting on a dark/green surface */
+.skeleton-dark {
+  background: rgba(255, 255, 255, 0.14);
+}
+.skeleton-dark::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+}
+@keyframes skeleton-shimmer {
+  100% { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { animation: none; }
+}

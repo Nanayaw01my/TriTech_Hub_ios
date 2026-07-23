@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import api from '../../api/axios'
 import toast from 'react-hot-toast'
 import LoadingSpinner from '../../components/LoadingSpinner'
+import Skeleton from '../../components/Skeleton'
 import StatusBadge from '../../components/StatusBadge'
 import PaystackButton from '../../components/PaystackButton'
 import { useAuth } from '../../context/AuthContext'
@@ -49,8 +50,31 @@ export default function CustomerPayments() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="xl" />
+      <div className="pb-24 lg:pb-6 min-h-screen bg-gray-50">
+        <div className="max-w-2xl mx-auto px-4 pt-6 space-y-4">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-7 w-40" />
+          <div className="grid grid-cols-2 gap-3">
+            <Skeleton rounded="rounded-2xl" className="h-20" />
+            <Skeleton rounded="rounded-2xl" className="h-20" />
+          </div>
+          <div className="rounded-2xl p-5 bg-green-900 space-y-3">
+            <Skeleton dark className="h-3 w-28" />
+            <Skeleton dark className="h-9 w-44" />
+            <Skeleton dark className="h-3 w-40" />
+            <Skeleton dark rounded="rounded-2xl" className="h-12 mt-2" />
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
+            <Skeleton className="h-4 w-36" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton rounded="rounded-full" className="w-10 h-10" />
+                <div className="flex-1 space-y-2"><Skeleton className="h-3 w-28" /><Skeleton className="h-3 w-20" /></div>
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }

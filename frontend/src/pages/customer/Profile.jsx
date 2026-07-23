@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import api from '../../api/axios'
 import toast from 'react-hot-toast'
 import LoadingSpinner from '../../components/LoadingSpinner'
+import Skeleton from '../../components/Skeleton'
 import ConfirmModal from '../../components/ConfirmModal'
 import { useAuth } from '../../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -59,8 +60,27 @@ export default function CustomerProfile() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="xl" />
+      <div className="pb-24 lg:pb-6 min-h-screen bg-gray-50">
+        <div className="px-5 pt-8 flex flex-col items-center gap-3">
+          <Skeleton rounded="rounded-full" className="w-24 h-24" />
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-3 w-28" />
+          <Skeleton rounded="rounded-full" className="h-9 w-40" />
+        </div>
+        <div className="max-w-3xl mx-auto px-4 mt-6 space-y-4">
+          <Skeleton rounded="rounded-2xl" className="h-20" />
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
+            <Skeleton className="h-4 w-40" />
+            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-3 w-full" />)}
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
+            <Skeleton className="h-4 w-28" />
+            <div className="grid grid-cols-2 gap-3">
+              <Skeleton rounded="rounded-xl" className="h-28" />
+              <Skeleton rounded="rounded-xl" className="h-28" />
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
