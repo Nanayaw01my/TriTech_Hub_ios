@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
 import LoadingSpinner from '../../components/LoadingSpinner'
+import Skeleton from '../../components/Skeleton'
 import StatusBadge from '../../components/StatusBadge'
 import { format } from 'date-fns'
 
@@ -93,21 +94,21 @@ export default function StaffDashboard() {
             <svg className="w-5 h-5 text-white mx-auto mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <p className="text-white text-xl font-black leading-none">{stats?.my_customers ?? 0}</p>
+            <p className="text-white text-xl font-black leading-none flex justify-center">{loading ? <Skeleton dark rounded="rounded-md" className="h-5 w-8" /> : (stats?.my_customers ?? 0)}</p>
             <p className="text-white/90 text-[10px] font-semibold mt-0.5">Customers</p>
           </div>
           <div className="bg-emerald-500 border border-transparent rounded-2xl p-3 text-center">
             <svg className="w-5 h-5 text-white mx-auto mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
-            <p className="text-white text-xl font-black leading-none">{stats?.payments_today ?? 0}</p>
+            <p className="text-white text-xl font-black leading-none flex justify-center">{loading ? <Skeleton dark rounded="rounded-md" className="h-5 w-8" /> : (stats?.payments_today ?? 0)}</p>
             <p className="text-white/90 text-[10px] font-semibold mt-0.5">Paid Today</p>
           </div>
           <div className="bg-emerald-500 border border-transparent rounded-2xl p-3 text-center">
             <svg className="w-5 h-5 text-white mx-auto mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5.07 19H19a2 2 0 001.75-2.98l-6.93-12a2 2 0 00-3.5 0l-6.93 12A2 2 0 005.07 19z" />
             </svg>
-            <p className="text-white text-xl font-black leading-none">{stats?.overdue ?? 0}</p>
+            <p className="text-white text-xl font-black leading-none flex justify-center">{loading ? <Skeleton dark rounded="rounded-md" className="h-5 w-8" /> : (stats?.overdue ?? 0)}</p>
             <p className="text-white/90 text-[10px] font-semibold mt-0.5">Overdue</p>
           </div>
         </div>
@@ -179,8 +180,14 @@ export default function StaffDashboard() {
             </div>
 
             {loading ? (
-              <div className="flex justify-center py-12">
-                <LoadingSpinner size="md" />
+              <div className="space-y-3 py-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Skeleton rounded="rounded-full" className="w-10 h-10" />
+                    <div className="flex-1 space-y-2"><Skeleton className="h-3 w-32" /><Skeleton className="h-3 w-24" /></div>
+                    <Skeleton rounded="rounded-full" className="h-6 w-16" />
+                  </div>
+                ))}
               </div>
             ) : recentCustomers.length === 0 ? (
               <div className="text-center py-12">
