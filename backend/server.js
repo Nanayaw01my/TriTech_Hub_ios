@@ -264,6 +264,13 @@ process.on('uncaughtException', (error) => { console.error('Uncaught Exception:'
 process.on('SIGTERM', () => process.exit(0));
 process.on('SIGINT', () => process.exit(0));
 
-startServer();
+// Only start the HTTP server when run directly (node server.js / Render).
+// Vercel imports this file as a module — it handles the port itself.
+if (require.main === module) {
+  startServer();
+} else {
+  // Serverless (Vercel): connect DB on cold start, no app.listen()
+  connectDB().catch(err => console.error('DB connect error:', err.message));
+}
 
 module.exports = app;

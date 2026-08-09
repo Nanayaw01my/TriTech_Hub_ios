@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
+// Cache connection across serverless invocations
+let _conn = null;
+
 const connectDB = async () => {
+  if (_conn && mongoose.connection.readyState === 1) return _conn;
   const uri = process.env.MONGODB_URI;
 
   if (!uri) {
@@ -25,6 +29,7 @@ const connectDB = async () => {
         family: 4,
       });
 
+      _conn = conn;
       console.log(`MongoDB Connected: ${conn.connection.host}`);
 
       mongoose.connection.on('disconnected', () => {
