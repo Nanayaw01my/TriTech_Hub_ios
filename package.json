@@ -1,8 +1,17 @@
 {
-  "name": "ittek-solution",
+  "name": "tritech-hub-ios",
   "version": "1.0.0",
   "scripts": {
-    "build": "npm --prefix frontend install && npm --prefix frontend run build && npm --prefix backend install",
-    "start": "node backend/server.js"
+    "install:all": "cd frontend && npm install && cd ../backend && npm install",
+    "dev": "concurrently -n \"backend,frontend\" -c \"blue,green\" \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "build": "cd frontend && npm install --include=dev && npm run build && cd ../backend && npm install",
+    "start": "cd backend && node server.js",
+    "seed": "cd backend && npm run seed",
+    "build:apk": "npx @bubblewrap/cli build --config android/bubblewrap.json",
+    "build:apk:init": "npx @bubblewrap/cli init --manifest https://tritechhub.online/manifest.json --package-id com.tritechhub.ios"
+  },
+  "devDependencies": {
+    "@bubblewrap/cli": "^1.25.0",
+    "concurrently": "^8.2.2"
   }
 }
