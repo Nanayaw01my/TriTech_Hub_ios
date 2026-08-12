@@ -539,7 +539,7 @@ const getDeviceSales = async (req, res) => {
 
     let plans = await InstallmentPlan.find(filter)
       .populate({ path: 'customer_id', select: 'full_name phone email photos' })
-      .populate({ path: 'device_id', select: 'model color storage price serial_number' })
+      .populate({ path: 'device_id', select: 'model color storage price serial_number udid lock_status' })
       .populate({ path: 'created_by', select: 'name full_name staff_id' })
       .sort({ createdAt: -1 })
       .lean();
@@ -565,6 +565,9 @@ const getDeviceSales = async (req, res) => {
         customer_name: p.customer_id?.full_name || 'Unknown',
         customer_phone: p.customer_id?.phone || '',
         customer_photo: p.customer_id?.photos?.customer_photo || null,
+        device_id: p.device_id?._id,
+        lock_status: p.device_id?.lock_status || 'unlocked',
+        has_udid: !!p.device_id?.udid,
         device_model: p.device_id?.model || 'Unknown',
         device_color: p.device_id?.color || '',
         device_storage: p.device_id?.storage || '',

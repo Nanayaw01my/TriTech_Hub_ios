@@ -256,21 +256,8 @@ export default function AdminDevices() {
         )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl mb-5">
-        {[{ id: 'catalog', label: 'Catalog' }, { id: 'sales', label: 'Sales' }].map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all
-              ${tab === t.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── CATALOG TAB ── */}
+      {/* Catalog — phones the admin adds for staff to sell. Sold devices now
+          live on the dedicated "Devices Sold" page. */}
       {tab === 'catalog' && (<>
       {/* Filter — lock status only (all catalog items are unassigned) */}
       <div className="flex gap-2 mb-4">
