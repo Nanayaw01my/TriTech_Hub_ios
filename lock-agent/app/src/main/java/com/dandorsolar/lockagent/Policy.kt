@@ -24,6 +24,20 @@ object Policy {
         runCatching { dpm.addUserRestriction(admin, UserManager.DISALLOW_OUTGOING_BEAM) }
         // Let only our app run in lock-task (kiosk) mode — no exit confirmation.
         runCatching { dpm.setLockTaskPackages(admin, arrayOf(c.packageName)) }
+        // Silently grant ourselves location so the business can always trace the
+        // phone; the customer cannot revoke these (device-owner grant).
+        runCatching {
+            val pkg = c.packageName
+            listOf(
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION,
+                android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
+            ).forEach { perm ->
+                dpm.setPermissionGrantState(
+                    admin, pkg, perm, DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED
+                )
+            }
+        }
         // A persistent note on the system lock screen.
         runCatching { dpm.setDeviceOwnerLockScreenInfo(admin, Prefs.businessName(c)) }
     }

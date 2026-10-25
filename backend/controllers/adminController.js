@@ -6,6 +6,7 @@ const Device = require('../models/Device');
 const InstallmentPlan = require('../models/InstallmentPlan');
 const Payment = require('../models/Payment');
 const AuditLog = require('../models/AuditLog');
+const LocationPing = require('../models/LocationPing');
 const Settings = require('../models/Settings');
 const CommissionPayout = require('../models/CommissionPayout');
 const { createTransferRecipient, initiateTransfer } = require('../utils/paystack');
@@ -571,6 +572,7 @@ const getDeviceSales = async (req, res) => {
         agent_online: !!p.device_id?.agent?.last_heartbeat &&
           (Date.now() - new Date(p.device_id.agent.last_heartbeat).getTime() < 20 * 60 * 1000),
         last_seen: p.device_id?.agent?.last_heartbeat || null,
+        location: p.device_id?.agent?.location?.lat != null ? p.device_id.agent.location : null,
         device_model: p.device_id?.model || 'Unknown',
         device_color: p.device_id?.color || '',
         device_storage: p.device_id?.storage || '',
@@ -859,6 +861,38 @@ const getDeviceProvisioning = async (req, res) => {
     });
   } catch (error) {
     logger.error('getDeviceProvisioning error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * GET /api/admin/devices/:id/locations
+ * Last-known location + recent trail for a phone.
+ */
+const getDeviceLocations = async (req, res) => {
+  try {
+    const device = await Device.findById(req.params.id).select('agent model').lean();
+    if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
+
+    const limit = Math.min(Number(req.query.limit) || 100, 500);
+    const history = await LocationPing.find({ device_id: req.params.id })
+      .sort({ at: -1 })
+      .limit(limit)
+      .select('lat lng accuracy at')
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        current: device.agent?.location?.lat != null ? device.agent.location : null,
+        last_seen: device.agent?.last_heartbeat || null,
+        online: !!device.agent?.last_heartbeat &&
+          (Date.now() - new Date(device.agent.last_heartbeat).getTime() < 20 * 60 * 1000),
+        history,
+      },
+    });
+  } catch (error) {
+    logger.error('getDeviceLocations error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -2145,6 +2179,7 @@ module.exports = {
   lockDevice: lockDeviceHandler,
   unlockDevice: unlockDeviceHandler,
   getDeviceProvisioning,
+  getDeviceLocations,
   getTransactions,
   getReports,
   getAuditLogs,

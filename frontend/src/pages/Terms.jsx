@@ -35,6 +35,13 @@ export default function Terms() {
           overdue</strong>, and unlock it once the outstanding amount is paid. You agree not to
           remove, disable, or tamper with the device management profile while any balance is owed.
         </p>
+        <p>
+          You also acknowledge and consent that, while any balance is owed, the device management
+          software may <strong>record and report the device's location</strong> to Dan Dorsolar
+          Company Limited to help protect and recover the device. Location data is used only for
+          account and device-protection purposes and stops being collected once the device is fully
+          paid off.
+        </p>
       </Section>
 
       <Section heading="4. Default, Late Payment &amp; Repossession">

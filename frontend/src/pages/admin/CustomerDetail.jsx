@@ -6,6 +6,7 @@ import StatusBadge from '../../components/StatusBadge'
 import ProgressBar from '../../components/ProgressBar'
 import ConfirmModal from '../../components/ConfirmModal'
 import EnrollDeviceModal from '../../components/EnrollDeviceModal'
+import LocationModal from '../../components/LocationModal'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
@@ -27,6 +28,7 @@ export default function AdminCustomerDetail() {
   const [repossessModal, setRepossessModal] = useState(false)
   const [repossessLoading, setRepossessLoading] = useState(false)
   const [enrollOpen, setEnrollOpen] = useState(false)
+  const [trackOpen, setTrackOpen] = useState(false)
 
   const fetchCustomer = async () => {
     try {
@@ -325,13 +327,23 @@ export default function AdminCustomerDetail() {
               )}
             </div>
 
-            {/* Enroll the phone with the lock agent (point of sale). */}
-            <button
-              onClick={() => setEnrollOpen(true)}
-              className="mt-2 text-xs font-semibold text-orange-600 hover:text-orange-700"
-            >
-              {device.agent?.enrolled ? 'View enrollment QR' : '+ Enroll phone (needed to lock this phone)'}
-            </button>
+            {/* Enroll / track the phone. */}
+            <div className="mt-2 flex items-center gap-4">
+              <button
+                onClick={() => setEnrollOpen(true)}
+                className="text-xs font-semibold text-orange-600 hover:text-orange-700"
+              >
+                {device.agent?.enrolled ? 'View enrollment QR' : '+ Enroll phone (needed to lock this phone)'}
+              </button>
+              {device.agent?.enrolled && (
+                <button
+                  onClick={() => setTrackOpen(true)}
+                  className="text-xs font-semibold text-gray-600 hover:text-gray-800"
+                >
+                  📍 Track phone
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -475,6 +487,13 @@ export default function AdminCustomerDetail() {
         deviceId={device?._id || device}
         deviceLabel={device ? `${customer?.full_name} · ${device.model || device.device_model || 'Device'}` : ''}
         onClose={() => { setEnrollOpen(false); fetchCustomer() }}
+      />
+
+      <LocationModal
+        isOpen={trackOpen}
+        deviceId={device?._id || device}
+        deviceLabel={device ? `${customer?.full_name} · ${device.model || device.device_model || 'Device'}` : ''}
+        onClose={() => setTrackOpen(false)}
       />
 
       {/* Reset Password Modal */}

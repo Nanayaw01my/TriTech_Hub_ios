@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import StatusBadge from '../../components/StatusBadge'
 import ConfirmModal from '../../components/ConfirmModal'
 import EnrollDeviceModal from '../../components/EnrollDeviceModal'
+import LocationModal from '../../components/LocationModal'
 import Skeleton from '../../components/Skeleton'
 import { format } from 'date-fns'
 
@@ -20,6 +21,7 @@ export default function SoldDevices() {
   const [lockModal, setLockModal] = useState(null) // { sale, action }
   const [lockLoading, setLockLoading] = useState(false)
   const [enrollModal, setEnrollModal] = useState(null) // sale
+  const [trackModal, setTrackModal] = useState(null) // sale
   const PER = 25
 
   const fetchSales = useCallback(async () => {
@@ -161,10 +163,16 @@ export default function SoldDevices() {
                       </button>
                     ) : (
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${s.agent_online ? 'text-green-600' : 'text-gray-400'}`}>
+                        <span className={`hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold ${s.agent_online ? 'text-green-600' : 'text-gray-400'}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${s.agent_online ? 'bg-green-500' : 'bg-gray-300'}`} />
                           {s.agent_online ? 'Online' : 'Offline'}
                         </span>
+                        <button
+                          onClick={() => setTrackModal(s)}
+                          className="text-sm px-3 py-2 rounded-xl font-bold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                        >
+                          Track
+                        </button>
                         <button
                           onClick={() => setLockModal({ sale: s, action: isLocked ? 'unlock' : 'lock' })}
                           className={`text-sm px-4 py-2 rounded-xl font-bold transition-colors
@@ -215,6 +223,13 @@ export default function SoldDevices() {
         deviceId={enrollModal?.device_id}
         deviceLabel={enrollModal ? `${enrollModal.customer_name} · ${enrollModal.device_model}` : ''}
         onClose={() => { setEnrollModal(null); fetchSales() }}
+      />
+
+      <LocationModal
+        isOpen={!!trackModal}
+        deviceId={trackModal?.device_id}
+        deviceLabel={trackModal ? `${trackModal.customer_name} · ${trackModal.device_model}` : ''}
+        onClose={() => setTrackModal(null)}
       />
     </div>
   )

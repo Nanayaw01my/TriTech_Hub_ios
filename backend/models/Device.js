@@ -66,6 +66,13 @@ const DeviceSchema = new mongoose.Schema(
       app_version: { type: String, default: null },
       android_version: { type: String, default: null },
       model_reported: { type: String, default: null },
+      // Last-known GPS location reported by the phone.
+      location: {
+        lat: { type: Number, default: null },
+        lng: { type: Number, default: null },
+        accuracy: { type: Number, default: null },
+        at: { type: Date, default: null },
+      },
     },
     sold_status: {
       type: String,

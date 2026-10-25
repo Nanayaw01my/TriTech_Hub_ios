@@ -49,7 +49,8 @@ object SyncManager {
         val secret = Prefs.deviceSecret(c)
         if (backend.isEmpty() || id.isEmpty() || secret.isEmpty()) return
 
-        val res = Api.heartbeat(backend, id, secret, Prefs.appliedLockState(c))
+        val fix = LocationHelper.lastKnown(c)
+        val res = Api.heartbeat(backend, id, secret, Prefs.appliedLockState(c), fix)
         val j = res.json ?: return
         if (!res.ok) return
         applyServerInfo(c, j)

@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const Device = require('../models/Device');
 const Customer = require('../models/Customer');
 const AuditLog = require('../models/AuditLog');
+const LocationPing = require('../models/LocationPing');
 const logger = require('../utils/logger');
 const agent = require('../utils/androidAgent');
 
@@ -111,13 +112,26 @@ const heartbeat = async (req, res) => {
   try {
     const device = await authDevice(req, res);
     if (!device) return;
-    const { fcm_token, lock_state, android_version, app_version } = req.body || {};
+    const { fcm_token, lock_state, android_version, app_version, lat, lng, accuracy, loc_at } = req.body || {};
     device.agent.last_heartbeat = new Date();
     if (fcm_token && fcm_token !== device.agent.fcm_token) device.agent.fcm_token = fcm_token;
     if (android_version) device.agent.android_version = android_version;
     if (app_version) device.agent.app_version = app_version;
     // Trust the agent's report of what it actually applied.
     if (lock_state === 'locked' || lock_state === 'unlocked') device.lock_status = lock_state;
+
+    // Store the phone's location (last-known on the device + a history ping).
+    const latN = Number(lat);
+    const lngN = Number(lng);
+    if (Number.isFinite(latN) && Number.isFinite(lngN) && Math.abs(latN) <= 90 && Math.abs(lngN) <= 180) {
+      const at = loc_at ? new Date(Number(loc_at)) : new Date();
+      device.agent.location = { lat: latN, lng: lngN, accuracy: Number(accuracy) || null, at };
+      LocationPing.create({
+        device_id: device._id,
+        customer_id: device.assigned_to || null,
+        lat: latN, lng: lngN, accuracy: Number(accuracy) || null, at,
+      }).catch(() => {});
+    }
     await device.save();
     const info = await lockInfoFor(device);
     return res.status(200).json({ success: true, ...info });

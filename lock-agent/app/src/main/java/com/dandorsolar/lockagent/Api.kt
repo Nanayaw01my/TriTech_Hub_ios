@@ -56,12 +56,21 @@ object Api {
         return request("POST", "$backend/api/agent/enroll", body, emptyMap())
     }
 
-    /** POST /api/agent/heartbeat — report applied state, receive desired state. */
-    fun heartbeat(backend: String, deviceId: String, secret: String, appliedState: String): Result {
+    /** POST /api/agent/heartbeat — report applied state + location, receive desired state. */
+    fun heartbeat(
+        backend: String, deviceId: String, secret: String, appliedState: String,
+        fix: LocationHelper.Fix? = null
+    ): Result {
         val body = JSONObject()
             .put("lock_state", appliedState)
             .put("android_version", android.os.Build.VERSION.RELEASE)
             .put("app_version", BuildConfig.VERSION_NAME)
+        if (fix != null) {
+            body.put("lat", fix.lat)
+                .put("lng", fix.lng)
+                .put("accuracy", fix.accuracy.toDouble())
+                .put("loc_at", fix.time)
+        }
         return request("POST", "$backend/api/agent/heartbeat", body, authHeaders(deviceId, secret))
     }
 
