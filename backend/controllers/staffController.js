@@ -412,19 +412,22 @@ const addCustomer = async (req, res) => {
     // --- 10. Link device to customer ---
     await Device.findByIdAndUpdate(device._id, { assigned_to: newCustomer._id });
 
-    // --- 11. Record down payment if paid via Paystack ---
-    if (downPaymentAmount > 0 && down_payment_reference) {
+    // --- 11. Record the down payment (Paystack if a reference was supplied,
+    //         otherwise as cash collected at the counter) ---
+    if (downPaymentAmount > 0) {
       await Payment.create({
         installment_plan_id: plan._id,
         customer_id: newCustomer._id,
         amount: downPaymentAmount,
         payment_date: new Date(),
-        payment_method: 'paystack',
-        paystack_reference: down_payment_reference,
-        paystack_status: 'success',
+        payment_method: down_payment_reference ? 'paystack' : 'manual_cash',
+        paystack_reference: down_payment_reference || undefined,
+        paystack_status: down_payment_reference ? 'success' : undefined,
         paid_by: newUser._id,
         recorded_by: req.user._id,
-        notes: 'Down payment collected at registration',
+        notes: down_payment_reference
+          ? 'Down payment collected at registration'
+          : 'Down payment (cash) collected at registration',
       });
     }
 

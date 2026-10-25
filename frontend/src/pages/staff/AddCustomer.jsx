@@ -209,14 +209,12 @@ export default function StaffAddCustomer() {
     }
   }
 
-  // Flow: click Register → (pre-check) → Paystack → on successful payment → register.
-  // The pre-check verifies the details are registrable (unique email, device, etc.)
-  // BEFORE any money is taken, so we never charge for a registration that would fail.
+  // Flow: click Register → (pre-check) → register. No online payment is taken
+  // here; any down payment entered is recorded as cash collected at the counter.
   const handleSubmit = async () => {
     if (!validateStep(4)) return
-    const downAmt = Number(form.down_payment) || 0
 
-    // 1. Pre-check before charging.
+    // 1. Pre-check (unique email, device, etc.) so we fail fast on bad details.
     setSubmitting(true)
     try {
       await api.post('/staff/customers/precheck', {
@@ -233,43 +231,13 @@ export default function StaffAddCustomer() {
     } catch (err) {
       setSubmitting(false)
       const d = err?.response?.data
-      toast.error(d?.message || 'Please fix the details before payment.')
+      toast.error(d?.message || 'Please fix the details and try again.')
       return
     }
     setSubmitting(false)
 
-    // 2. No down payment → register directly (nothing to collect).
-    if (downAmt === 0) { saveCustomer(); return }
-
-    // 3. Down payment → open Paystack, then register on success.
-    if (!PAYSTACK_PUBLIC_KEY) { toast.error('Payment system not configured. Contact admin.'); return }
-    if (!window.PaystackPop) { toast.error('Payment system still loading. Wait a moment and try again.'); return }
-
-    const loadingToast = toast.loading('Opening payment…')
-    try {
-      const handler = window.PaystackPop.setup({
-        key: PAYSTACK_PUBLIC_KEY,
-        email: form.email,
-        amount: Math.round(downAmt * 100),
-        currency: 'GHS',
-        channels: ['mobile_money', 'card'],
-        label: form.full_name,
-        metadata: { type: 'down_payment', device_model: form.device_model },
-        callback: (transaction) => {
-          toast.dismiss(loadingToast)
-          toast.success('Payment received! Registering customer…')
-          saveCustomer(transaction.reference)
-        },
-        onClose: () => {
-          toast.dismiss(loadingToast)
-          toast.error('Payment cancelled — customer not registered.')
-        },
-      })
-      handler.openIframe()
-    } catch (err) {
-      toast.dismiss(loadingToast)
-      toast.error('Could not open payment window. Try again.')
-    }
+    // 2. Register directly — down payment (if any) is recorded as cash.
+    saveCustomer()
   }
 
   return (
