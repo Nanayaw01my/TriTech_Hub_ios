@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const SettingsSchema = new mongoose.Schema(
   {
-    business_name: { type: String, trim: true, default: 'Tritech Hub iOS' },
+    business_name: { type: String, trim: true, default: 'Dan Dorsolar Company Limited' },
     contact_email: { type: String, trim: true, lowercase: true, default: 'support@tritech.com' },
     contact_phone: { type: String, trim: true, default: '' },
     contact_address: { type: String, trim: true, default: '' },

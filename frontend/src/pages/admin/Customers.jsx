@@ -69,11 +69,11 @@ export default function AdminCustomers() {
   }
 
   return (
-    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50">
 
       {/* Mobile Hero */}
-      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-emerald-50">
-        <p className="text-emerald-600 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-orange-50">
+        <p className="text-orange-500 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
         <div className="flex items-start justify-between mt-1">
           <div>
             <h1 className="text-gray-900 text-2xl font-black">Customers</h1>
@@ -81,7 +81,7 @@ export default function AdminCustomers() {
           </div>
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 bg-orange-50 border border-orange-200 text-orange-600 text-xs font-semibold rounded-xl active:scale-95 transition-all"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -101,8 +101,8 @@ export default function AdminCustomers() {
         </div>
         <button
           onClick={handleExportCSV}
-          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold text-sm rounded-xl
-                     hover:bg-emerald-100 active:scale-95 transition-all"
+          className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 border border-orange-200 text-orange-600 font-semibold text-sm rounded-xl
+                     hover:bg-orange-100 active:scale-95 transition-all"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -123,13 +123,13 @@ export default function AdminCustomers() {
             onChange={handleSearch}
             placeholder="Search by name, email, account..."
             className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm
-                       focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                       focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
           />
         </div>
         <select
           value={statusFilter}
           onChange={handleStatusFilter}
-          className="px-3 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+          className="px-3 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
         >
           <option value="">All Status</option>
           <option value="active">Active</option>
@@ -172,11 +172,11 @@ export default function AdminCustomers() {
                   className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-gray-50 transition-colors active:bg-gray-100"
                 >
                   {/* Avatar */}
-                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                     {c.photo_url ? (
                       <img src={c.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
                     ) : (
-                      <span className="text-emerald-700 font-bold text-sm">
+                      <span className="text-orange-600 font-bold text-sm">
                         {(c.full_name || c.name || 'C').charAt(0).toUpperCase()}
                       </span>
                     )}

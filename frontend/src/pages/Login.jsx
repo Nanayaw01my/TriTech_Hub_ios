@@ -72,49 +72,48 @@ export default function Login() {
     }
   }
 
-  const BASE = '#0a1a12' // dark green-black base (also used to notch the input labels)
+  const BASE = '#120a05' // warm dark base (also used to notch the input labels)
 
   return (
     <div
       className="min-h-screen flex items-center justify-center px-5 py-10 relative overflow-hidden"
       style={{ backgroundColor: BASE }}
     >
-      {/* Background photo — zoomed in */}
+      {/* Brand backdrop — warm orange glow fading to dark */}
       <div
         className="absolute inset-0"
         aria-hidden="true"
         style={{
-          backgroundImage: "url('/IMG_6245.jpeg')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          transform: 'scale(1.35)',
-          transformOrigin: 'center',
+          background:
+            'radial-gradient(ellipse 85% 65% at 50% 18%, rgba(249,115,22,0.42), transparent 60%),' +
+            'radial-gradient(ellipse 70% 50% at 85% 100%, rgba(234,88,12,0.30), transparent 55%),' +
+            'linear-gradient(160deg, #2a1206 0%, #1a0d06 55%, #0a0603 100%)',
         }}
       />
       {/* Readability overlay */}
       <div
         className="absolute inset-0"
         aria-hidden="true"
-        style={{ background: 'linear-gradient(160deg, rgba(10,26,18,0.55), rgba(5,18,12,0.78))' }}
+        style={{ background: 'linear-gradient(160deg, rgba(26,13,6,0.30), rgba(10,6,3,0.70))' }}
       />
       {/* Vignette — darkens edges so the card pops */}
       <div
         className="absolute inset-0"
         aria-hidden="true"
-        style={{ background: 'radial-gradient(ellipse 70% 60% at center, transparent 35%, rgba(3,10,7,0.72) 100%)' }}
+        style={{ background: 'radial-gradient(ellipse 70% 60% at center, transparent 35%, rgba(10,6,3,0.72) 100%)' }}
       />
 
       {/* Install Banner */}
       {showInstallBanner && (
         <div className="fixed top-4 left-4 right-4 z-50 rounded-xl px-4 py-3 flex items-center gap-3 shadow-2xl
                         bg-white border border-gray-200">
-          <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18a6 6 0 100-12 6 6 0 000 12z" />
             </svg>
           </div>
           <div className="flex-1">
-            <p className="text-gray-900 text-sm font-bold">Install TriTech Hub</p>
+            <p className="text-gray-900 text-sm font-bold">Install Dan Dorsolar</p>
             <p className="text-xs text-gray-600">Quick access from your home screen</p>
           </div>
           <div className="flex gap-2 flex-shrink-0">
@@ -141,11 +140,11 @@ export default function Login() {
           <div className="flex justify-center mb-5">
             <div className="w-full max-w-[200px] rounded-2xl overflow-hidden border border-white/15 bg-black shadow-lg">
               {logoError ? (
-                <span className="block text-white text-2xl font-black text-center py-7">TriTech Hub</span>
+                <span className="block text-white text-2xl font-black text-center py-7">Dan Dorsolar</span>
               ) : (
                 <img
                   src="/logo.png"
-                  alt="TriTech Hub iOS"
+                  alt="Dan Dorsolar Company Limited"
                   onLoad={() => setLogoLoaded(true)}
                   onError={() => setLogoError(true)}
                   className="w-full h-auto object-contain"
@@ -176,7 +175,7 @@ export default function Login() {
                 onChange={(e) => setIdentifier(e.target.value)}
                 disabled={loading}
                 className="w-full pl-4 pr-11 py-3.5 bg-white/10 border border-white/30 rounded-2xl
-                         text-white placeholder-white/60 focus:outline-none focus:border-emerald-300 focus:bg-white/[0.14] transition-colors"
+                         text-white placeholder-white/60 focus:outline-none focus:border-orange-300 focus:bg-white/[0.14] transition-colors"
               />
               <svg className="w-5 h-5 text-white/60 absolute right-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -192,7 +191,7 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
                 className="w-full pl-4 pr-11 py-3.5 bg-white/10 border border-white/30 rounded-2xl
-                         text-white placeholder-white/60 focus:outline-none focus:border-emerald-300 focus:bg-white/[0.14] transition-colors"
+                         text-white placeholder-white/60 focus:outline-none focus:border-orange-300 focus:bg-white/[0.14] transition-colors"
               />
               <button
                 type="button"
@@ -215,7 +214,7 @@ export default function Login() {
 
             {/* Forgot */}
             <div className="text-right -mt-1">
-              <Link to="/forgot-password" className="text-xs text-emerald-300 hover:text-white font-semibold transition-colors">
+              <Link to="/forgot-password" className="text-xs text-orange-300 hover:text-white font-semibold transition-colors">
                 Forgot password?
               </Link>
             </div>
@@ -235,14 +234,14 @@ export default function Login() {
 
           {/* Footer links */}
           <p className="text-center text-xs text-white/70 mt-5">
-            <Link to="/terms" className="text-emerald-300 font-semibold underline underline-offset-2 hover:text-white">Terms</Link>
+            <Link to="/terms" className="text-orange-300 font-semibold underline underline-offset-2 hover:text-white">Terms</Link>
             <span className="text-white/40 mx-2">•</span>
-            <Link to="/privacy" className="text-emerald-300 font-semibold underline underline-offset-2 hover:text-white">Privacy Policy</Link>
+            <Link to="/privacy" className="text-orange-300 font-semibold underline underline-offset-2 hover:text-white">Privacy Policy</Link>
           </p>
         </div>
 
         <p className="text-center text-xs text-white/60 mt-5">
-          © {new Date().getFullYear()} TriTech Hub iOS. All rights reserved.
+          © {new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.
         </p>
       </div>
     </div>

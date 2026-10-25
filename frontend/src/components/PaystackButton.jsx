@@ -15,7 +15,7 @@ export default function PaystackButton({
   // Color classes are kept separate from layout so callers can fully override
   // them without Tailwind conflict-ordering issues (e.g. a white button on a
   // green card). Defaults to the standard green button.
-  colorClass = 'bg-emerald-700 text-white hover:bg-emerald-800',
+  colorClass = 'bg-orange-600 text-white hover:bg-orange-500',
   metadata = {},
 }) {
 
@@ -66,7 +66,7 @@ export default function PaystackButton({
     min-h-[56px] flex items-center justify-center gap-3
     active:scale-95 transition-all duration-150
     disabled:opacity-50 disabled:cursor-not-allowed
-    focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${colorClass} ${className}`
+    focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${colorClass} ${className}`
 
   return (
     <button

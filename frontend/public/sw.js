@@ -110,10 +110,10 @@ self.addEventListener('fetch', (e) => {
 self.addEventListener('push', (e) => {
   if (!e.data) return;
   let data = {};
-  try { data = e.data.json(); } catch { data = { title: 'TriTech Hub', body: e.data.text() }; }
+  try { data = e.data.json(); } catch { data = { title: 'Dan Dorsolar', body: e.data.text() }; }
 
   e.waitUntil(
-    self.registration.showNotification(data.title || 'TriTech Hub iOS', {
+    self.registration.showNotification(data.title || 'Dan Dorsolar Company Limited', {
       body: data.body || '',
       icon: '/logo.png',
       badge: '/logo.png',

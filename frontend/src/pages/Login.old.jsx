@@ -80,7 +80,7 @@ export default function Login() {
           style={{ background: 'rgba(30,51,35,0.97)', border: '1px solid rgba(76,175,80,0.35)', backdropFilter: 'blur(12px)' }}>
           <img src="/logo.png" alt="" className="w-10 h-10 rounded-xl flex-shrink-0 object-cover" />
           <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-bold leading-tight">Install TriTech Hub</p>
+            <p className="text-white text-sm font-bold leading-tight">Install Dan Dorsolar</p>
             <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Add to home screen for quick access</p>
           </div>
           <div className="flex gap-2 flex-shrink-0">
@@ -91,7 +91,7 @@ export default function Login() {
             </button>
             <button onClick={handleInstall}
               className="text-xs px-3 py-1.5 rounded-xl font-bold"
-              style={{ background: '#2E7D32', color: 'white' }}>
+              style={{ background: '#EA580C', color: 'white' }}>
               Install
             </button>
           </div>
@@ -112,7 +112,7 @@ export default function Login() {
           {!logoError ? (
             <img
               src="/logo.png"
-              alt="TriTech Hub"
+              alt="Dan Dorsolar"
               onError={() => setLogoError(true)}
               className="w-full h-full object-cover"
             />
@@ -121,15 +121,15 @@ export default function Login() {
               className="w-full h-full flex flex-col items-center justify-center gap-0.5"
               style={{ background: 'linear-gradient(150deg, #182a1c, #1e3323)' }}
             >
-              <span style={{ color: '#4CAF50', fontSize: '26px', fontWeight: 900, letterSpacing: '-1px', lineHeight: 1 }}>TH</span>
+              <span style={{ color: '#F97316', fontSize: '26px', fontWeight: 900, letterSpacing: '-1px', lineHeight: 1 }}>TH</span>
               <span style={{ color: 'rgba(76,175,80,0.5)', fontSize: '8px', fontWeight: 700, letterSpacing: '2px' }}>iOS</span>
             </div>
           )}
         </div>
 
         <h1 className="text-white font-black tracking-tight" style={{ fontSize: '1.75rem', letterSpacing: '-0.02em' }}>
-          TriTech Hub <span style={{
-            background: 'linear-gradient(135deg, #4CAF50, #81C784)',
+          Dan Dorsolar <span style={{
+            background: 'linear-gradient(135deg, #F97316, #FDBA74)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
           }}>iOS</span>
         </h1>
@@ -143,7 +143,7 @@ export default function Login() {
         style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)' }}>
 
         {/* Top accent bar */}
-        <div className="h-1" style={{ background: 'linear-gradient(90deg, #1B5E20, #2E7D32, #4CAF50, #81C784)' }} />
+        <div className="h-1" style={{ background: 'linear-gradient(90deg, #C2410C, #EA580C, #F97316, #FDBA74)' }} />
 
         <div className="px-7 pt-7 pb-8">
           <h2 className="text-xl font-black text-white">Welcome back</h2>
@@ -187,7 +187,7 @@ export default function Login() {
                     border: '1.5px solid rgba(255,255,255,0.1)',
                     color: 'white',
                   }}
-                  onFocus={e => e.target.style.borderColor = '#4CAF50'}
+                  onFocus={e => e.target.style.borderColor = '#F97316'}
                   onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
                 />
               </div>
@@ -202,7 +202,7 @@ export default function Login() {
                 </label>
                 <Link to="/forgot-password"
                   className="text-xs font-semibold transition-opacity hover:opacity-80"
-                  style={{ color: '#81C784' }}>
+                  style={{ color: '#FDBA74' }}>
                   Forgot password?
                 </Link>
               </div>
@@ -224,7 +224,7 @@ export default function Login() {
                     border: '1.5px solid rgba(255,255,255,0.1)',
                     color: 'white',
                   }}
-                  onFocus={e => e.target.style.borderColor = '#4CAF50'}
+                  onFocus={e => e.target.style.borderColor = '#F97316'}
                   onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
                 />
                 <button
@@ -255,7 +255,7 @@ export default function Login() {
               className="w-full py-4 font-black text-sm rounded-2xl flex items-center justify-center gap-2
                          active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 mt-2"
               style={{
-                background: 'linear-gradient(135deg, #2E7D32, #4CAF50)',
+                background: 'linear-gradient(135deg, #EA580C, #F97316)',
                 color: 'white',
                 boxShadow: '0 8px 24px rgba(46,125,50,0.4)',
               }}
@@ -277,7 +277,7 @@ export default function Login() {
 
       {/* Footer */}
       <p className="text-xs mt-8 text-center" style={{ color: 'rgba(255,255,255,0.2)' }}>
-        © {new Date().getFullYear()} Tritech Hub iOS · Powered by Ittek Solutions
+        © {new Date().getFullYear()} Dan Dorsolar Company Limited · Powered by Ittek Solutions
       </p>
     </div>
   )

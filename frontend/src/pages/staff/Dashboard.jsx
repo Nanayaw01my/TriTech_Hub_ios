@@ -46,7 +46,7 @@ export default function StaffDashboard() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       ),
-      bg: 'bg-emerald-500',
+      bg: 'bg-orange-500',
       border: 'border-transparent',
     },
     {
@@ -57,7 +57,7 @@ export default function StaffDashboard() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
         </svg>
       ),
-      bg: 'bg-emerald-500',
+      bg: 'bg-orange-500',
       border: 'border-transparent',
     },
     {
@@ -68,43 +68,43 @@ export default function StaffDashboard() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
-      bg: 'bg-emerald-500',
+      bg: 'bg-orange-500',
       border: 'border-transparent',
     },
   ]
 
   return (
-    <div className="pb-24 lg:pb-6 lg:px-0 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
+    <div className="pb-24 lg:pb-6 lg:px-0 min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50">
 
       {/* ── Mobile Hero (hidden on desktop) ── */}
-      <div className="lg:hidden px-5 pt-8 pb-14 bg-gradient-to-br from-gray-50 to-emerald-50">
-        <p className="text-emerald-600 text-xs font-semibold uppercase tracking-widest">Staff Portal</p>
+      <div className="lg:hidden px-5 pt-8 pb-14 bg-gradient-to-br from-gray-50 to-orange-50">
+        <p className="text-orange-500 text-xs font-semibold uppercase tracking-widest">Staff Portal</p>
         <h1 className="text-gray-900 text-2xl font-black mt-1 leading-tight">
           {(user?.full_name || user?.name)?.split(' ')[0] || 'Staff'}
         </h1>
         {user?.staff_id && (
-          <span className="inline-block bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold px-3 py-1 rounded-full mt-2">
+          <span className="inline-block bg-orange-50 border border-orange-200 text-orange-600 text-xs font-semibold px-3 py-1 rounded-full mt-2">
             ID: {user.staff_id}
           </span>
         )}
 
         {/* Hero stat pills */}
         <div className="grid grid-cols-3 gap-2 mt-5">
-          <div className="bg-emerald-500 border border-transparent rounded-2xl p-3 text-center">
+          <div className="bg-orange-500 border border-transparent rounded-2xl p-3 text-center">
             <svg className="w-5 h-5 text-white mx-auto mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             <p className="text-white text-xl font-black leading-none flex justify-center">{loading ? <Skeleton dark rounded="rounded-md" className="h-5 w-8" /> : (stats?.my_customers ?? 0)}</p>
             <p className="text-white/90 text-[10px] font-semibold mt-0.5">Customers</p>
           </div>
-          <div className="bg-emerald-500 border border-transparent rounded-2xl p-3 text-center">
+          <div className="bg-orange-500 border border-transparent rounded-2xl p-3 text-center">
             <svg className="w-5 h-5 text-white mx-auto mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
             <p className="text-white text-xl font-black leading-none flex justify-center">{loading ? <Skeleton dark rounded="rounded-md" className="h-5 w-8" /> : (stats?.payments_today ?? 0)}</p>
             <p className="text-white/90 text-[10px] font-semibold mt-0.5">Paid Today</p>
           </div>
-          <div className="bg-emerald-500 border border-transparent rounded-2xl p-3 text-center">
+          <div className="bg-orange-500 border border-transparent rounded-2xl p-3 text-center">
             <svg className="w-5 h-5 text-white mx-auto mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5.07 19H19a2 2 0 001.75-2.98l-6.93-12a2 2 0 00-3.5 0l-6.93 12A2 2 0 005.07 19z" />
             </svg>
@@ -118,11 +118,11 @@ export default function StaffDashboard() {
 
         {/* ── Desktop Header (hidden on mobile) ── */}
         <div className="hidden lg:block mb-6">
-          <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1">Staff Portal</p>
+          <p className="text-xs font-semibold text-orange-500 uppercase tracking-wider mb-1">Staff Portal</p>
           <h1 className="text-2xl font-black text-gray-900 leading-tight">
             Welcome back, {(user?.full_name || user?.name)?.split(' ')[0] || 'Staff'}!
           </h1>
-          {user?.staff_id && <p className="text-sm font-bold text-emerald-600 mt-0.5">ID: {user.staff_id}</p>}
+          {user?.staff_id && <p className="text-sm font-bold text-orange-500 mt-0.5">ID: {user.staff_id}</p>}
           <p className="text-xs text-gray-400 mt-0.5">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
         </div>
 
@@ -153,9 +153,9 @@ export default function StaffDashboard() {
           {/* Register CTA */}
           <button
             onClick={() => navigate('/staff/customers/add')}
-            className="w-full py-4 bg-emerald-700 text-white font-black text-base rounded-2xl
+            className="w-full py-4 bg-orange-600 text-white font-black text-base rounded-2xl
                        flex items-center justify-center gap-3 shadow-lg
-                       active:scale-95 transition-all duration-150 hover:bg-green-900"
+                       active:scale-95 transition-all duration-150 hover:bg-orange-600"
           >
             <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -173,7 +173,7 @@ export default function StaffDashboard() {
               <h3 className="text-base font-bold text-gray-800">Recent Customers</h3>
               <button
                 onClick={() => navigate('/staff/customers')}
-                className="text-sm text-emerald-700 font-semibold hover:text-emerald-900"
+                className="text-sm text-orange-600 font-semibold hover:text-orange-600"
               >
                 View All →
               </button>
@@ -207,11 +207,11 @@ export default function StaffDashboard() {
                     onClick={() => navigate(`/staff/customers/${c._id || c.id}`)}
                     className="flex items-center gap-3 py-3 cursor-pointer hover:bg-gray-50 -mx-1 px-1 rounded-xl transition-colors"
                   >
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                       {c.photo_url ? (
                         <img src={c.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
                       ) : (
-                        <span className="text-emerald-800 font-bold text-sm">
+                        <span className="text-orange-500 font-bold text-sm">
                           {(c.full_name || c.name || 'C').charAt(0).toUpperCase()}
                         </span>
                       )}

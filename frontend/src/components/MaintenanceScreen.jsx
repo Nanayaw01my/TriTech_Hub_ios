@@ -8,8 +8,8 @@ export default function MaintenanceScreen() {
     <div className="relative min-h-screen bg-[#0a0f0d] flex items-center justify-center p-6 overflow-hidden">
 
       {/* Animated gradient orbs */}
-      <div className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] bg-green-600/30 rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-emerald-500/20 rounded-full blur-[140px] animate-pulse"
+      <div className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] bg-orange-500/30 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-orange-500/20 rounded-full blur-[140px] animate-pulse"
            style={{ animationDelay: '1.5s' }} />
       <div className="absolute top-[40%] left-[55%] w-[300px] h-[300px] bg-teal-400/10 rounded-full blur-[100px] animate-pulse"
            style={{ animationDelay: '0.7s' }} />
@@ -28,14 +28,14 @@ export default function MaintenanceScreen() {
         <div className="backdrop-blur-2xl bg-white/[0.06] border border-white/10 rounded-[2rem] p-8 sm:p-10 shadow-2xl shadow-black/40 text-center">
 
           {/* Logo */}
-          <div className="w-16 h-16 mx-auto mb-8 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-700
-                          flex items-center justify-center shadow-lg shadow-green-900/50 overflow-hidden">
+          <div className="w-16 h-16 mx-auto mb-8 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600
+                          flex items-center justify-center shadow-lg shadow-orange-600/50 overflow-hidden">
             {logoError ? (
               <span className="text-white text-2xl font-black tracking-tight">T</span>
             ) : (
               <img
                 src="/logo.png"
-                alt="TriTech Hub"
+                alt="Dan Dorsolar"
                 onLoad={() => setLogoLoaded(true)}
                 onError={() => setLogoError(true)}
                 className="w-full h-full object-cover"
@@ -60,20 +60,20 @@ export default function MaintenanceScreen() {
             We&rsquo;ll be right back
           </h1>
           <p className="text-gray-400 text-sm sm:text-base leading-relaxed mb-8">
-            TriTech Hub is getting a quick tune-up. We&rsquo;re working behind the scenes
+            Dan Dorsolar is getting a quick tune-up. We&rsquo;re working behind the scenes
             and will be back online shortly.
           </p>
 
           {/* Animated progress bar */}
           <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden mb-8">
-            <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-green-400 to-transparent rounded-full"
+            <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-orange-400 to-transparent rounded-full"
                  style={{ animation: 'mx-slide 1.8s ease-in-out infinite' }} />
           </div>
 
           <button
             onClick={() => window.location.reload()}
             className="group w-full py-4 rounded-2xl bg-white text-gray-900 font-bold text-sm
-                       hover:bg-green-50 active:scale-[0.98] transition-all duration-150
+                       hover:bg-orange-50 active:scale-[0.98] transition-all duration-150
                        flex items-center justify-center gap-2"
           >
             <svg className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500"
@@ -86,7 +86,7 @@ export default function MaintenanceScreen() {
         </div>
 
         <p className="text-gray-600 text-xs text-center mt-6 tracking-wide">
-          TriTech Hub iOS &copy; {new Date().getFullYear()}
+          Dan Dorsolar Company Limited &copy; {new Date().getFullYear()}
         </p>
       </div>
 

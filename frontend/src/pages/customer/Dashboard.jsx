@@ -82,7 +82,7 @@ export default function CustomerDashboard() {
       <div className="pb-24 lg:pb-6 min-h-screen bg-gray-50">
         <div className="max-w-2xl mx-auto px-4 pt-4 space-y-4">
           {/* Hero */}
-          <div className="rounded-3xl p-5 sm:p-6 bg-green-900">
+          <div className="rounded-3xl p-5 sm:p-6 bg-orange-600">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Skeleton dark rounded="rounded-full" className="w-11 h-11" />
@@ -164,7 +164,7 @@ export default function CustomerDashboard() {
 
         {/* ── Hero card ── */}
         <div className="rounded-3xl p-5 sm:p-6 shadow-lg text-white relative overflow-hidden
-                        bg-gradient-to-br from-green-900 via-green-800 to-green-900">
+                        bg-gradient-to-br from-orange-600 via-orange-500 to-orange-600">
           {/* subtle sheen */}
           <div className="absolute -top-16 -right-10 w-52 h-52 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
 
@@ -220,7 +220,7 @@ export default function CustomerDashboard() {
             <button
               onClick={openPayment}
               disabled={isCompleted}
-              className="py-3.5 rounded-2xl bg-white text-emerald-700 font-bold flex items-center justify-center gap-2
+              className="py-3.5 rounded-2xl bg-white text-orange-600 font-bold flex items-center justify-center gap-2
                          active:scale-95 transition disabled:opacity-60"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -252,7 +252,7 @@ export default function CustomerDashboard() {
               </div>
               <div>
                 <p className="font-bold text-red-700">Device Locked</p>
-                <p className="text-sm text-red-600">Make a payment to unlock your iPhone automatically.</p>
+                <p className="text-sm text-red-600">Make a payment to unlock your device automatically.</p>
               </div>
             </div>
           ) : isOverdue ? (
@@ -270,20 +270,20 @@ export default function CustomerDashboard() {
               </div>
             </div>
           ) : isCompleted ? (
-            <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+            <div className="rounded-2xl bg-orange-50 border border-orange-200 p-4 flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
                 <span className="text-lg">🎉</span>
               </div>
               <div>
-                <p className="font-bold text-emerald-700">Fully Paid!</p>
-                <p className="text-sm text-emerald-600">Your {device?.model || 'iPhone'} is completely yours.</p>
+                <p className="font-bold text-orange-600">Fully Paid!</p>
+                <p className="text-sm text-orange-500">Your {device?.model || 'device'} is completely yours.</p>
               </div>
             </div>
           ) : (
             <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 flex items-center justify-between">
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
@@ -294,7 +294,7 @@ export default function CustomerDashboard() {
                   </p>
                 </div>
               </div>
-              <p className="font-black text-emerald-700 text-right">{money(plan.installment_amount)}</p>
+              <p className="font-black text-orange-600 text-right">{money(plan.installment_amount)}</p>
             </div>
           )
         )}
@@ -307,13 +307,13 @@ export default function CustomerDashboard() {
               <button
                 key={a.label}
                 onClick={a.onClick}
-                className="bg-emerald-50 rounded-2xl py-4 flex flex-col items-center gap-2 active:scale-95 transition
-                           border border-emerald-100 hover:bg-emerald-100"
+                className="bg-orange-50 rounded-2xl py-4 flex flex-col items-center gap-2 active:scale-95 transition
+                           border border-orange-100 hover:bg-orange-100"
               >
-                <svg className="w-6 h-6 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   {a.icon}
                 </svg>
-                <span className="text-xs font-semibold text-emerald-800">{a.label}</span>
+                <span className="text-xs font-semibold text-orange-500">{a.label}</span>
               </button>
             ))}
           </div>
@@ -323,8 +323,8 @@ export default function CustomerDashboard() {
         {device && plan ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
             <div className="flex items-start gap-3 mb-4">
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${isLocked ? 'bg-red-100' : 'bg-emerald-100'}`}>
-                <svg className={`w-6 h-6 ${isLocked ? 'text-red-600' : 'text-emerald-700'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${isLocked ? 'bg-red-100' : 'bg-orange-100'}`}>
+                <svg className={`w-6 h-6 ${isLocked ? 'text-red-600' : 'text-orange-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
               </div>
@@ -342,15 +342,15 @@ export default function CustomerDashboard() {
             <ProgressBar current={plan.payments_made || 0} total={plan.total_payments || 1} height="lg" />
 
             <div className="grid grid-cols-3 gap-1.5 mt-4">
-              <div className="bg-green-900 rounded-2xl p-3 text-center">
+              <div className="bg-orange-600 rounded-2xl p-3 text-center">
                 <p className="text-xs text-white/90 mb-0.5">Paid</p>
                 <p className="text-xs font-bold text-white">GHS {paidAmount.toLocaleString()}</p>
               </div>
-              <div className="bg-green-900 rounded-2xl p-3 text-center">
+              <div className="bg-orange-600 rounded-2xl p-3 text-center">
                 <p className="text-xs text-white/90 mb-0.5">Remaining</p>
                 <p className="text-xs font-bold text-white">GHS {remaining.toLocaleString()}</p>
               </div>
-              <div className="bg-green-900 rounded-2xl p-3 text-center">
+              <div className="bg-orange-600 rounded-2xl p-3 text-center">
                 <p className="text-xs text-white/90 mb-0.5">Next Due</p>
                 <p className="text-xs font-bold text-white">
                   {plan.next_due_date ? format(new Date(plan.next_due_date), 'dd MMM') : isCompleted ? 'Done!' : 'N/A'}
@@ -361,7 +361,7 @@ export default function CustomerDashboard() {
             {!isCompleted && (
               <button
                 onClick={openPayment}
-                className="w-full mt-4 py-4 rounded-2xl bg-green-900 hover:bg-green-800 text-white font-black
+                className="w-full mt-4 py-4 rounded-2xl bg-orange-600 hover:bg-orange-500 text-white font-black
                            flex items-center justify-center gap-2 active:scale-95 transition"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -379,7 +379,7 @@ export default function CustomerDashboard() {
               </svg>
             </div>
             <p className="text-gray-600 font-semibold">No active installment plan</p>
-            <p className="text-sm text-gray-400 mt-1">Contact Tritech Hub iOS to get started</p>
+            <p className="text-sm text-gray-400 mt-1">Contact Dan Dorsolar Company Limited to get started</p>
           </div>
         )}
 
@@ -389,7 +389,7 @@ export default function CustomerDashboard() {
             <h3 className="text-base font-bold text-gray-900">Recent Transactions</h3>
             <button
               onClick={() => navigate('/customer/payments')}
-              className="text-sm text-emerald-700 font-semibold hover:text-emerald-900"
+              className="text-sm text-orange-600 font-semibold hover:text-orange-600"
             >
               View All →
             </button>
@@ -407,8 +407,8 @@ export default function CustomerDashboard() {
             <div className="divide-y divide-gray-50">
               {recentPayments.slice(0, 6).map((p) => (
                 <div key={p.id || p._id} className="flex items-center gap-3 py-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 7l-10 10m0 0h7m-7 0V10" />
                     </svg>
                   </div>
@@ -421,7 +421,7 @@ export default function CustomerDashboard() {
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-black text-emerald-600">+ GHS {Number(p.amount || 0).toLocaleString()}</p>
+                    <p className="text-sm font-black text-orange-500">+ GHS {Number(p.amount || 0).toLocaleString()}</p>
                     <p className="text-xs text-gray-400">
                       {p.payment_method === 'paystack' ? 'MoMo / Card' : p.payment_method || 'Mobile Money'}
                     </p>
@@ -442,10 +442,10 @@ export default function CustomerDashboard() {
                 return (
                   <div key={item._id || idx}
                     className={`flex items-center justify-between py-2 px-3 rounded-xl text-sm
-                      ${item.paid ? 'bg-emerald-50' : isPast ? 'bg-red-50' : 'bg-gray-50'}`}>
+                      ${item.paid ? 'bg-orange-50' : isPast ? 'bg-red-50' : 'bg-gray-50'}`}>
                     <div className="flex items-center gap-2">
                       <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0
-                        ${item.paid ? 'bg-emerald-500' : isPast ? 'bg-red-400' : 'bg-gray-300'}`}>
+                        ${item.paid ? 'bg-orange-500' : isPast ? 'bg-red-400' : 'bg-gray-300'}`}>
                         {item.paid ? (
                           <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -454,15 +454,15 @@ export default function CustomerDashboard() {
                           <span className="text-white text-[9px] font-bold">{idx + 1}</span>
                         )}
                       </div>
-                      <span className={`text-xs font-medium ${item.paid ? 'text-emerald-700' : isPast ? 'text-red-600' : 'text-gray-600'}`}>
+                      <span className={`text-xs font-medium ${item.paid ? 'text-orange-600' : isPast ? 'text-red-600' : 'text-gray-600'}`}>
                         {format(new Date(item.due_date), 'dd MMM yyyy')}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className={`text-xs font-bold ${item.paid ? 'text-emerald-700' : isPast ? 'text-red-600' : 'text-gray-700'}`}>
+                      <span className={`text-xs font-bold ${item.paid ? 'text-orange-600' : isPast ? 'text-red-600' : 'text-gray-700'}`}>
                         GHS {Number(item.amount).toLocaleString()}
                       </span>
-                      <p className={`text-[10px] ${item.paid ? 'text-green-500' : isPast ? 'text-red-400' : 'text-gray-400'}`}>
+                      <p className={`text-[10px] ${item.paid ? 'text-orange-500' : isPast ? 'text-red-400' : 'text-gray-400'}`}>
                         {item.paid ? 'Paid' : isPast ? 'Overdue' : 'Upcoming'}
                       </p>
                     </div>

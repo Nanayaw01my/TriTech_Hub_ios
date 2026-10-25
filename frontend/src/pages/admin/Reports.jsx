@@ -56,8 +56,8 @@ export default function AdminReports() {
       label: 'Total Revenue',
       value: `GHS ${Number(summary?.totalRevenue || 0).toLocaleString()}`,
       icon: '💰',
-      bg: 'bg-emerald-50',
-      text: 'text-emerald-800',
+      bg: 'bg-orange-50',
+      text: 'text-orange-500',
     },
     {
       label: 'Transactions',
@@ -77,22 +77,22 @@ export default function AdminReports() {
       label: 'Period',
       value: period.charAt(0).toUpperCase() + period.slice(1),
       icon: '📅',
-      bg: 'bg-emerald-50',
-      text: 'text-emerald-700',
+      bg: 'bg-orange-50',
+      text: 'text-orange-600',
     },
   ]
 
   return (
-    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50">
 
       {/* Mobile Hero */}
-      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-emerald-50">
-        <p className="text-emerald-600 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-orange-50">
+        <p className="text-orange-500 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
         <h1 className="text-gray-900 text-2xl font-black mt-1">Reports</h1>
         {summary?.totalRevenue > 0 && (
-          <div className="mt-3 bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-2.5 inline-block">
-            <p className="text-emerald-600 text-[10px] font-semibold uppercase tracking-wide">Total Revenue</p>
-            <p className="text-emerald-900 text-xl font-black">GHS {Number(summary.totalRevenue).toLocaleString()}</p>
+          <div className="mt-3 bg-orange-50 border border-orange-100 rounded-2xl px-4 py-2.5 inline-block">
+            <p className="text-orange-500 text-[10px] font-semibold uppercase tracking-wide">Total Revenue</p>
+            <p className="text-orange-600 text-xl font-black">GHS {Number(summary.totalRevenue).toLocaleString()}</p>
           </div>
         )}
       </div>
@@ -112,7 +112,7 @@ export default function AdminReports() {
             key={p}
             onClick={() => setPeriod(p)}
             className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold capitalize transition-all duration-200
-              ${period === p ? 'bg-white shadow text-emerald-700' : 'text-gray-500 hover:text-gray-700'}`}
+              ${period === p ? 'bg-white shadow text-orange-600' : 'text-gray-500 hover:text-gray-700'}`}
           >
             {p}
           </button>
@@ -149,7 +149,7 @@ export default function AdminReports() {
                     formatter={(value) => [`GHS ${Number(value).toLocaleString()}`, 'Revenue']}
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
                   />
-                  <Bar dataKey="total_revenue" fill="#2E7D32" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="total_revenue" fill="#EA580C" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -163,7 +163,7 @@ export default function AdminReports() {
           <div className="bg-white rounded-2xl shadow-card p-4 mb-5">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-base font-bold text-gray-800">6-Month Revenue Forecast</h3>
-              <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg">
+              <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded-lg">
                 Projected
               </span>
             </div>

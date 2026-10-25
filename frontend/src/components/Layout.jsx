@@ -95,7 +95,7 @@ function getPageTitle(pathname) {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname]
   // Detail pages
   if (/\/customers\/[^/]+$/.test(pathname)) return 'Customer Detail'
-  return 'Tritech Hub iOS'
+  return 'Dan Dorsolar Company Limited'
 }
 
 // ─── Notification Bell ────────────────────────────────────────────────────────
@@ -172,7 +172,7 @@ function NotificationBell() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <p className="font-bold text-gray-900 text-sm">New Registrations</p>
             {count > 0 && (
-              <button onClick={markRead} className="text-xs text-green-700 font-semibold hover:underline">
+              <button onClick={markRead} className="text-xs text-orange-600 font-semibold hover:underline">
                 Mark all read
               </button>
             )}
@@ -184,8 +184,8 @@ function NotificationBell() {
               items.map((n, i) => (
                 <div key={n.id || i} className="px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <svg className="w-4 h-4 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-4 h-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
@@ -207,7 +207,7 @@ function NotificationBell() {
           {items.length > 0 && (
             <div className="px-4 py-2.5 bg-gray-50 text-center">
               <NavLink to="/admin/audit-logs" onClick={() => { markRead(); setOpen(false) }}
-                className="text-xs text-green-700 font-semibold hover:underline">
+                className="text-xs text-orange-600 font-semibold hover:underline">
                 View all in Audit Logs →
               </NavLink>
             </div>
@@ -235,7 +235,7 @@ function SideNavLink({ item, role, onClick }) {
       className={`group flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm font-medium transition-all duration-150
         ${isActive
           ? 'bg-white/15 text-white'
-          : 'text-green-100/70 hover:bg-white/10 hover:text-white'
+          : 'text-orange-100/70 hover:bg-white/10 hover:text-white'
         }`}
     >
       <NavIcon path={item.icon} className="w-5 h-5 flex-shrink-0" />
@@ -250,7 +250,7 @@ function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
   const roleLabel = role === 'admin' ? 'Admin Portal' : role === 'staff' ? 'Staff Portal' : 'My Account'
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-green-900 to-green-950">
+    <div className="flex flex-col h-full bg-gradient-to-b from-orange-600 to-green-950">
       {/* Brand */}
       <div
         className="flex items-center gap-3 px-5 pb-5 border-b border-white/10"
@@ -258,12 +258,12 @@ function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
       >
         <img
           src="/logo.png"
-          alt="Tritech Hub iOS"
+          alt="Dan Dorsolar Company Limited"
           className="w-9 h-9 rounded-xl object-cover flex-shrink-0 shadow-sm"
         />
         <div>
-          <p className="text-white font-bold text-sm leading-tight">Tritech Hub iOS</p>
-          <p className="text-green-300 text-xs">{roleLabel}</p>
+          <p className="text-white font-bold text-sm leading-tight">Dan Dorsolar Company Limited</p>
+          <p className="text-orange-300 text-xs">{roleLabel}</p>
         </div>
       </div>
 
@@ -289,7 +289,7 @@ function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
             <p className="text-white text-sm font-semibold truncate">
               {user?.full_name || user?.name || 'User'}
             </p>
-            <p className="text-green-300 text-xs truncate">
+            <p className="text-orange-300 text-xs truncate">
               {user?.staff_id || user?.account_number || user?.email || ''}
             </p>
           </div>
@@ -319,7 +319,7 @@ export default function Layout({ role }) {
 
   useEffect(() => {
     const title = getPageTitle(location.pathname)
-    document.title = title === 'Tritech Hub iOS' ? 'TriTech Hub iOS' : `${title} · TriTech Hub iOS`
+    document.title = title === 'Dan Dorsolar Company Limited' ? 'Dan Dorsolar Company Limited' : `${title} · Dan Dorsolar Company Limited`
   }, [location.pathname])
 
   // Hide the bottom tab bar while typing (keyboard open) so it doesn't float
@@ -394,7 +394,7 @@ export default function Layout({ role }) {
       <div className="flex-1 flex flex-col min-w-0 lg:ml-60">
 
         {/* Mobile top bar */}
-        <header className="lg:hidden bg-green-900 text-white sticky top-0 z-40" style={{ boxShadow: '0 1px 0 rgba(255,255,255,0.06), 0 4px 16px rgba(0,0,0,0.18)', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <header className="lg:hidden bg-orange-600 text-white sticky top-0 z-40" style={{ boxShadow: '0 1px 0 rgba(255,255,255,0.06), 0 4px 16px rgba(0,0,0,0.18)', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
           <div className="flex items-center justify-between px-3 h-14">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -405,13 +405,13 @@ export default function Layout({ role }) {
 
             <div className="flex-1 flex items-center justify-center gap-2.5 min-w-0 px-2">
               <div className="w-9 h-9 rounded-xl overflow-hidden bg-black flex-shrink-0 shadow-sm">
-                <img src="/logo.png" alt="Tritech Hub iOS" className="w-full h-full object-cover" />
+                <img src="/logo.png" alt="Dan Dorsolar Company Limited" className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-col items-start min-w-0">
                 <p className="text-white font-bold text-sm leading-tight truncate">
                   {getPageTitle(location.pathname)}
                 </p>
-                <p className="text-green-300/70 text-[10px] font-medium leading-tight">Tritech Hub iOS</p>
+                <p className="text-orange-300/70 text-[10px] font-medium leading-tight">Dan Dorsolar Company Limited</p>
               </div>
             </div>
 
@@ -438,8 +438,8 @@ export default function Layout({ role }) {
               </p>
               <p className="text-xs text-gray-400 capitalize">{role}</p>
             </div>
-            <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center">
-              <span className="text-green-800 font-bold text-sm">
+            <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center">
+              <span className="text-orange-500 font-bold text-sm">
                 {(user?.full_name || user?.name || 'U').charAt(0).toUpperCase()}
               </span>
             </div>
@@ -477,7 +477,7 @@ export default function Layout({ role }) {
                 aria-label={item.label}
                 className={`flex items-center rounded-full transition-all duration-300 ${
                   isActive
-                    ? 'bg-white text-green-900 gap-2 pl-3.5 pr-4 py-2.5'
+                    ? 'bg-white text-orange-600 gap-2 pl-3.5 pr-4 py-2.5'
                     : 'text-white/70 w-11 h-11 justify-center active:scale-90'
                 }`}
               >
@@ -499,7 +499,7 @@ export default function Layout({ role }) {
         onClose={() => setLogoutModal(false)}
         onConfirm={handleLogout}
         title="Sign Out"
-        message="Are you sure you want to sign out of Tritech Hub iOS?"
+        message="Are you sure you want to sign out of Dan Dorsolar Company Limited?"
         confirmText="Sign Out"
         cancelText="Cancel"
         confirmVariant="danger"

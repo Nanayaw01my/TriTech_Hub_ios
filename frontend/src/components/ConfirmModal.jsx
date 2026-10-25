@@ -16,7 +16,7 @@ export default function ConfirmModal({
 
   const confirmClasses = {
     danger: 'bg-red-600 hover:bg-red-700 text-white',
-    primary: 'bg-green-800 hover:bg-green-900 text-white',
+    primary: 'bg-orange-500 hover:bg-orange-600 text-white',
     warning: 'bg-orange-500 hover:bg-orange-600 text-white',
   }
 
@@ -36,8 +36,8 @@ export default function ConfirmModal({
             </div>
           )}
           {confirmVariant === 'primary' && (
-            <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-7 h-7 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>

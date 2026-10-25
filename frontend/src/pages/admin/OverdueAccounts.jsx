@@ -60,7 +60,7 @@ export default function OverdueAccounts() {
               {accounts.length} account{accounts.length !== 1 ? 's' : ''} overdue
             </span>
           ) : (
-            <span className="inline-block bg-emerald-100 text-emerald-700 text-sm font-semibold px-3 py-1 rounded-full">
+            <span className="inline-block bg-orange-100 text-orange-600 text-sm font-semibold px-3 py-1 rounded-full">
               All accounts current
             </span>
           )}
@@ -81,8 +81,8 @@ export default function OverdueAccounts() {
         <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
       ) : accounts.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-card p-12 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto mb-3">
-            <svg className="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center mx-auto mb-3">
+            <svg className="w-8 h-8 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
@@ -108,7 +108,7 @@ export default function OverdueAccounts() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
                       onClick={() => navigate(`/admin/customers/${acct.customer_id}`)}
-                      className="font-semibold text-gray-900 hover:text-emerald-700 transition-colors truncate"
+                      className="font-semibold text-gray-900 hover:text-orange-600 transition-colors truncate"
                     >
                       {acct.customer_name}
                     </button>
@@ -128,7 +128,7 @@ export default function OverdueAccounts() {
                 {isLocked ? (
                   <button
                     onClick={() => setLockModal({ customerId: acct.customer_id, customerName: acct.customer_name, action: 'unlock' })}
-                    className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 px-3 py-1.5 rounded-lg hover:bg-emerald-50 transition-colors flex-shrink-0"
+                    className="text-sm font-semibold text-orange-600 hover:text-orange-500 px-3 py-1.5 rounded-lg hover:bg-orange-50 transition-colors flex-shrink-0"
                   >
                     Unlock
                   </button>

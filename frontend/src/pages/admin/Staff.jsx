@@ -120,11 +120,11 @@ export default function AdminStaff() {
   const totalSales = salesData.reduce((s, d) => s + (d.period_sales || 0), 0)
 
   return (
-    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50">
 
       {/* Mobile Hero */}
-      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-emerald-50">
-        <p className="text-emerald-600 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-orange-50">
+        <p className="text-orange-500 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
         <div className="flex items-start justify-between mt-1">
           <div>
             <h1 className="text-gray-900 text-2xl font-black">Staff</h1>
@@ -133,7 +133,7 @@ export default function AdminStaff() {
           {tab === 'team' && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl active:scale-95 transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 bg-orange-50 border border-orange-200 text-orange-600 text-xs font-semibold rounded-xl active:scale-95 transition-all"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -155,8 +155,8 @@ export default function AdminStaff() {
         {tab === 'team' && (
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-700 text-white font-semibold text-sm rounded-2xl
-                       hover:bg-green-900 active:scale-95 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 bg-orange-600 text-white font-semibold text-sm rounded-2xl
+                       hover:bg-orange-600 active:scale-95 transition-all"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -246,8 +246,8 @@ export default function AdminStaff() {
                 onClick={() => setPeriod(p.value)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all
                   ${period === p.value
-                    ? 'bg-emerald-700 text-white'
-                    : 'bg-white text-gray-600 border border-gray-200 hover:border-green-400'}`}
+                    ? 'bg-orange-600 text-white'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-400'}`}
               >
                 {p.label}
               </button>
@@ -260,11 +260,11 @@ export default function AdminStaff() {
               <div className="bg-white rounded-2xl p-4 shadow-card">
                 <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total Sales</p>
                 <p className="text-3xl font-black text-gray-900 mt-1">{totalSales}</p>
-                <p className="text-xs text-gray-400 mt-0.5">iPhones sold</p>
+                <p className="text-xs text-gray-400 mt-0.5">phones sold</p>
               </div>
               <div className="bg-white rounded-2xl p-4 shadow-card">
                 <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Commission Due</p>
-                <p className="text-3xl font-black text-emerald-700 mt-1">GHS {totalCommission.toLocaleString()}</p>
+                <p className="text-3xl font-black text-orange-600 mt-1">GHS {totalCommission.toLocaleString()}</p>
                 <p className="text-xs text-gray-400 mt-0.5">Total owed to staff</p>
               </div>
             </div>
@@ -305,8 +305,8 @@ export default function AdminStaff() {
                       </div>
                       <button
                         onClick={() => { setRateModal(s); setRateValue(String(s.commission_per_sale || 0)) }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700
-                                   bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors flex-shrink-0"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-orange-600
+                                   bg-orange-50 hover:bg-orange-100 rounded-xl transition-colors flex-shrink-0"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -324,9 +324,9 @@ export default function AdminStaff() {
                         <p className="text-xs font-bold text-gray-700">GHS {(s.commission_per_sale || 0).toLocaleString()}</p>
                         <p className="text-[10px] text-gray-400 font-medium uppercase mt-0.5">Per Sale</p>
                       </div>
-                      <div className="bg-emerald-50 rounded-xl px-2 py-2 text-center">
-                        <p className="text-xs font-black text-emerald-700">GHS {(s.commission_owed || 0).toLocaleString()}</p>
-                        <p className="text-[10px] text-green-500 font-medium uppercase mt-0.5">Owed</p>
+                      <div className="bg-orange-50 rounded-xl px-2 py-2 text-center">
+                        <p className="text-xs font-black text-orange-600">GHS {(s.commission_owed || 0).toLocaleString()}</p>
+                        <p className="text-[10px] text-orange-500 font-medium uppercase mt-0.5">Owed</p>
                       </div>
                     </div>
 
@@ -369,7 +369,7 @@ export default function AdminStaff() {
                     value={form[key]}
                     onChange={(e) => setForm(f => ({ ...f, [key]: e.target.value }))}
                     placeholder={placeholder}
-                    className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-emerald-600
+                    className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-orange-500
                       ${errors[key] ? 'border-red-400' : 'border-gray-200'}`}
                   />
                   {errors[key] && <p className="text-xs text-red-500 mt-1">{errors[key]}</p>}
@@ -385,7 +385,7 @@ export default function AdminStaff() {
                   value={form.password}
                   onChange={(e) => setForm(f => ({ ...f, password: e.target.value.slice(0, 20) }))}
                   placeholder="Set password"
-                  className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-emerald-600
+                  className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-orange-500
                     ${errors.password ? 'border-red-400' : 'border-gray-200'}`}
                 />
                 {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
@@ -397,8 +397,8 @@ export default function AdminStaff() {
                   Cancel
                 </button>
                 <button type="submit" disabled={addLoading}
-                  className="flex-1 py-3 bg-emerald-700 text-white font-semibold text-sm rounded-2xl
-                             hover:bg-green-900 disabled:opacity-60 flex items-center justify-center gap-2">
+                  className="flex-1 py-3 bg-orange-600 text-white font-semibold text-sm rounded-2xl
+                             hover:bg-orange-600 disabled:opacity-60 flex items-center justify-center gap-2">
                   {addLoading && <LoadingSpinner size="sm" color="white" />}
                   Add Staff
                 </button>
@@ -423,7 +423,7 @@ export default function AdminStaff() {
             </div>
 
             <p className="text-sm text-gray-500 mb-4">
-              Set how much <span className="font-semibold text-gray-700">{rateModal.name}</span> earns per iPhone sold (in GHS).
+              Set how much <span className="font-semibold text-gray-700">{rateModal.name}</span> earns per phone sold (in GHS).
             </p>
 
             <div className="relative mb-4">
@@ -435,14 +435,14 @@ export default function AdminStaff() {
                 value={rateValue}
                 onChange={(e) => setRateValue(e.target.value)}
                 className="w-full pl-14 pr-4 py-3.5 border-2 border-gray-200 rounded-2xl text-sm
-                           focus:outline-none focus:border-emerald-600 font-semibold"
+                           focus:outline-none focus:border-orange-500 font-semibold"
                 placeholder="0.00"
                 autoFocus
               />
             </div>
 
             {Number(rateValue) > 0 && (
-              <p className="text-xs text-emerald-700 bg-emerald-50 rounded-xl px-3 py-2 mb-4">
+              <p className="text-xs text-orange-600 bg-orange-50 rounded-xl px-3 py-2 mb-4">
                 At {rateModal.period_sales} sales this period → <strong>GHS {(rateModal.period_sales * Number(rateValue)).toLocaleString()}</strong> commission owed
               </p>
             )}
@@ -453,8 +453,8 @@ export default function AdminStaff() {
                 Cancel
               </button>
               <button onClick={handleSaveRate} disabled={rateLoading}
-                className="flex-1 py-3 bg-emerald-700 text-white font-semibold text-sm rounded-2xl
-                           hover:bg-green-900 disabled:opacity-60 flex items-center justify-center gap-2">
+                className="flex-1 py-3 bg-orange-600 text-white font-semibold text-sm rounded-2xl
+                           hover:bg-orange-600 disabled:opacity-60 flex items-center justify-center gap-2">
                 {rateLoading && <LoadingSpinner size="sm" color="white" />}
                 Save
               </button>

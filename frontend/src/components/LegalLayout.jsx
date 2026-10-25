@@ -7,12 +7,12 @@ import { Link } from 'react-router-dom'
  */
 export default function LegalLayout({ title, lastUpdated, children }) {
   return (
-    <div className="min-h-screen bg-emerald-50 py-8 px-4">
+    <div className="min-h-screen bg-orange-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg overflow-hidden">
-            <img src="/logo.png" alt="TriTech Hub" className="w-full h-full object-cover"
+          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center shadow-lg overflow-hidden">
+            <img src="/logo.png" alt="Dan Dorsolar" className="w-full h-full object-cover"
                  onError={(e) => { e.currentTarget.style.display = 'none' }} />
           </div>
           <h1 className="text-2xl font-black text-gray-900">{title}</h1>
@@ -26,7 +26,7 @@ export default function LegalLayout({ title, lastUpdated, children }) {
 
         {/* Footer nav */}
         <div className="flex items-center justify-center gap-4 mt-6 text-sm">
-          <Link to="/login" className="text-emerald-700 font-semibold hover:text-emerald-800">← Back to login</Link>
+          <Link to="/login" className="text-orange-600 font-semibold hover:text-orange-500">← Back to login</Link>
           <span className="text-gray-300">•</span>
           <Link to="/terms" className="text-gray-500 hover:text-gray-700">Terms</Link>
           <span className="text-gray-300">•</span>
@@ -34,7 +34,7 @@ export default function LegalLayout({ title, lastUpdated, children }) {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          © {new Date().getFullYear()} TriTech Hub iOS. All rights reserved.
+          © {new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.
         </p>
       </div>
     </div>

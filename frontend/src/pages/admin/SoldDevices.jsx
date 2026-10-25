@@ -59,9 +59,9 @@ export default function SoldDevices() {
   }
 
   return (
-    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50">
       <div className="max-w-4xl mx-auto px-4 pt-6">
-        <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1">Admin</p>
+        <p className="text-xs font-semibold text-orange-500 uppercase tracking-wider mb-1">Admin</p>
         <h1 className="text-2xl font-black text-gray-900 mb-4">Devices Sold</h1>
 
         {/* Search + filter */}
@@ -75,13 +75,13 @@ export default function SoldDevices() {
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1) }}
               placeholder="Search by customer, device…"
-              className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-white"
+              className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-orange-500 bg-white"
             />
           </div>
           <select
             value={status}
             onChange={(e) => { setStatus(e.target.value); setPage(1) }}
-            className="px-3 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-white"
+            className="px-3 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-orange-500 bg-white"
           >
             <option value="">All Status</option>
             <option value="active">Active</option>
@@ -112,7 +112,7 @@ export default function SoldDevices() {
                 <div key={s._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
                   {/* Customer + device */}
                   <div className="flex items-start gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0 font-black text-emerald-800 text-lg">
+                    <div className="w-11 h-11 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0 font-black text-orange-500 text-lg">
                       {(s.customer_name || 'U').charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -125,7 +125,7 @@ export default function SoldDevices() {
                     </div>
                     <button
                       onClick={() => navigate(`/admin/customers/${s.customer_id}`)}
-                      className="text-xs text-emerald-700 font-semibold hover:text-emerald-900 flex-shrink-0"
+                      className="text-xs text-orange-600 font-semibold hover:text-orange-600 flex-shrink-0"
                     >
                       View →
                     </button>
@@ -145,7 +145,7 @@ export default function SoldDevices() {
                   <div className="flex items-center justify-between gap-3 mt-3">
                     <div className="text-sm">
                       <span className="text-gray-400 text-xs">Balance </span>
-                      <span className={`font-black ${s.remaining_balance > 0 ? 'text-orange-600' : 'text-emerald-700'}`}>
+                      <span className={`font-black ${s.remaining_balance > 0 ? 'text-orange-600' : 'text-orange-600'}`}>
                         GHS {Number(s.remaining_balance || 0).toLocaleString()}
                       </span>
                       <span className="text-gray-400 text-xs"> of {Number(s.total_price || 0).toLocaleString()}</span>
@@ -157,7 +157,7 @@ export default function SoldDevices() {
                         onClick={() => setLockModal({ sale: s, action: isLocked ? 'unlock' : 'lock' })}
                         className={`text-sm px-4 py-2 rounded-xl font-bold transition-colors flex-shrink-0
                           ${isLocked
-                            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                            ? 'bg-orange-100 text-orange-600 hover:bg-orange-200'
                             : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
                       >
                         {isLocked ? 'Unlock' : 'Lock'}

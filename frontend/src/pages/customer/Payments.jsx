@@ -58,7 +58,7 @@ export default function CustomerPayments() {
             <Skeleton rounded="rounded-2xl" className="h-20" />
             <Skeleton rounded="rounded-2xl" className="h-20" />
           </div>
-          <div className="rounded-2xl p-5 bg-green-900 space-y-3">
+          <div className="rounded-2xl p-5 bg-orange-600 space-y-3">
             <Skeleton dark className="h-3 w-28" />
             <Skeleton dark className="h-9 w-44" />
             <Skeleton dark className="h-3 w-40" />
@@ -82,21 +82,21 @@ export default function CustomerPayments() {
   const paidAmount = (plan?.down_payment || 0) + ((plan?.payments_made || 0) * (plan?.installment_amount || 0))
 
   return (
-    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50">
 
       {/* Mobile Hero */}
-      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-emerald-50">
-        <p className="text-emerald-600 text-xs font-semibold uppercase tracking-widest">My Account</p>
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-orange-50">
+        <p className="text-orange-500 text-xs font-semibold uppercase tracking-widest">My Account</p>
         <h1 className="text-gray-900 text-2xl font-black mt-1">Payments</h1>
         {plan && (
           <div className="grid grid-cols-2 gap-2 mt-3">
-            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3">
-              <p className="text-emerald-600 text-[10px] font-semibold uppercase tracking-wide">Total Paid</p>
-              <p className="text-emerald-900 text-base font-black mt-0.5">GHS {paidAmount.toLocaleString()}</p>
+            <div className="bg-orange-50 border border-orange-100 rounded-2xl p-3">
+              <p className="text-orange-500 text-[10px] font-semibold uppercase tracking-wide">Total Paid</p>
+              <p className="text-orange-600 text-base font-black mt-0.5">GHS {paidAmount.toLocaleString()}</p>
             </div>
-            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3">
-              <p className="text-emerald-600 text-[10px] font-semibold uppercase tracking-wide">Remaining</p>
-              <p className="text-emerald-900 text-base font-black mt-0.5">GHS {Number(plan.remaining_balance || 0).toLocaleString()}</p>
+            <div className="bg-orange-50 border border-orange-100 rounded-2xl p-3">
+              <p className="text-orange-500 text-[10px] font-semibold uppercase tracking-wide">Remaining</p>
+              <p className="text-orange-600 text-base font-black mt-0.5">GHS {Number(plan.remaining_balance || 0).toLocaleString()}</p>
             </div>
           </div>
         )}
@@ -111,15 +111,15 @@ export default function CustomerPayments() {
 
       {/* Make Payment CTA */}
       {plan && plan.status !== 'completed' && (
-        <div className="bg-green-900 rounded-2xl p-5 mb-4 text-white">
-          <p className="text-emerald-100 text-xs font-semibold mb-0.5">
+        <div className="bg-orange-600 rounded-2xl p-5 mb-4 text-white">
+          <p className="text-orange-100 text-xs font-semibold mb-0.5">
             {plan.status === 'overdue' || plan.status === 'defaulted' ? 'OVERDUE PAYMENT' : 'Next Installment'}
           </p>
           <p className="text-3xl font-black">
             GHS {Number(plan.installment_amount || 0).toLocaleString('en-GH', { minimumFractionDigits: 2 })}
           </p>
           {plan.next_due_date && (
-            <p className="text-emerald-100 text-xs mt-1">
+            <p className="text-orange-100 text-xs mt-1">
               Due {format(new Date(plan.next_due_date), 'EEEE, dd MMM yyyy')}
             </p>
           )}
@@ -131,7 +131,7 @@ export default function CustomerPayments() {
               label="Pay Now"
               onSuccess={handlePaymentSuccess}
               onClose={() => {}}
-              colorClass="bg-white text-emerald-700 hover:bg-emerald-50 shadow-sm"
+              colorClass="bg-white text-orange-600 hover:bg-orange-50 shadow-sm"
             />
           </div>
         </div>
@@ -142,7 +142,7 @@ export default function CustomerPayments() {
         <div className="hidden lg:grid grid-cols-2 gap-3 mb-5">
           <div className="bg-white rounded-2xl shadow-card p-4 text-center">
             <p className="text-xs text-gray-500 mb-1">Total Paid</p>
-            <p className="text-lg font-black text-emerald-700">
+            <p className="text-lg font-black text-orange-600">
               GHS {paidAmount.toLocaleString()}
             </p>
           </div>
@@ -171,14 +171,14 @@ export default function CustomerPayments() {
           <div className="divide-y divide-gray-50">
             {payments.map((p) => (
               <div key={p.id || p._id} className="flex items-start gap-3 py-3.5">
-                <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <svg className="w-4 h-4 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-4 h-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <p className="text-base font-bold text-emerald-700">
+                    <p className="text-base font-bold text-orange-600">
                       GHS {Number(p.amount || 0).toLocaleString()}
                     </p>
                     <StatusBadge status={p.status || 'paid'} />

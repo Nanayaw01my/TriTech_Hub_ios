@@ -5,7 +5,7 @@ export default function Privacy() {
   return (
     <LegalLayout title="Privacy Policy" lastUpdated="July 2026">
       <p>
-        This Privacy Policy explains how TriTech Hub iOS collects, uses, stores, and protects
+        This Privacy Policy explains how Dan Dorsolar Company Limited collects, uses, stores, and protects
         your personal information when you use our platform and hire-purchase services. We are
         committed to handling your data responsibly and in line with the Ghana Data Protection
         Act, 2012 (Act 843).
@@ -78,7 +78,7 @@ export default function Privacy() {
 
       <Section heading="8. Contact">
         <p>
-          For privacy questions or data requests, contact TriTech Hub iOS at{' '}
+          For privacy questions or data requests, contact Dan Dorsolar Company Limited at{' '}
           <span className="font-semibold text-gray-900">support@tritechhub.online</span>.
         </p>
       </Section>

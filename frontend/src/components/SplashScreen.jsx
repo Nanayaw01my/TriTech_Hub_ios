@@ -68,14 +68,14 @@ export default function SplashScreen({ onDone }) {
         }
       `}</style>
 
-      {/* Background photo (the green iPhone) — slowly drifts for a cinematic feel */}
+      {/* Brand backdrop — warm orange glow fading to dark */}
       <div
         className="absolute inset-0"
         aria-hidden="true"
         style={{
-          backgroundImage: "url('/IMG_6245.jpeg')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          background:
+            'radial-gradient(ellipse 90% 60% at 50% 15%, rgba(249,115,22,0.38), transparent 60%),' +
+            'linear-gradient(165deg, #2a1206 0%, #180c05 55%, #0a0603 100%)',
           transform: 'scale(1.15)',
           animation: 'sp-breathe 9s ease-in-out infinite',
         }}
@@ -84,15 +84,15 @@ export default function SplashScreen({ onDone }) {
       <div
         className="absolute inset-0"
         aria-hidden="true"
-        style={{ background: 'linear-gradient(165deg, rgba(8,14,11,0.62) 0%, rgba(5,11,8,0.82) 55%, rgba(3,8,6,0.94) 100%)' }}
+        style={{ background: 'linear-gradient(165deg, rgba(26,12,5,0.45) 0%, rgba(14,7,3,0.72) 55%, rgba(8,4,2,0.90) 100%)' }}
       />
 
       {/* Ambient gradient orbs */}
-      <div className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] bg-green-600/25 rounded-full blur-[120px]"
+      <div className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] bg-orange-500/25 rounded-full blur-[120px]"
            style={{ animation: 'sp-orbPulse 7s ease-in-out infinite' }} />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-emerald-500/15 rounded-full blur-[140px]"
+      <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-orange-500/15 rounded-full blur-[140px]"
            style={{ animation: 'sp-orbPulse 7s 2.5s ease-in-out infinite' }} />
-      <div className="absolute top-[45%] left-[55%] w-[300px] h-[300px] bg-teal-400/10 rounded-full blur-[100px]"
+      <div className="absolute top-[45%] left-[55%] w-[300px] h-[300px] bg-amber-400/10 rounded-full blur-[100px]"
            style={{ animation: 'sp-orbPulse 9s 1.2s ease-in-out infinite' }} />
 
       {/* Subtle grid overlay */}
@@ -113,7 +113,7 @@ export default function SplashScreen({ onDone }) {
         <div
           className="absolute -inset-6 rounded-[2.5rem] pointer-events-none"
           style={{
-            background: 'conic-gradient(from 0deg, transparent 0%, rgba(76,175,80,0.5) 12%, transparent 25%)',
+            background: 'conic-gradient(from 0deg, transparent 0%, rgba(234,88,12,0.5) 12%, transparent 25%)',
             animation: 'sp-spin 3.5s linear infinite',
             maskImage: 'radial-gradient(closest-side, transparent 88%, black 92%)',
             WebkitMaskImage: 'radial-gradient(closest-side, transparent 88%, black 92%)',
@@ -122,7 +122,7 @@ export default function SplashScreen({ onDone }) {
 
         {/* Soft glow halo */}
         <div className="absolute -inset-10 rounded-full pointer-events-none"
-             style={{ background: 'radial-gradient(ellipse, rgba(76,175,80,0.22) 0%, transparent 65%)', filter: 'blur(14px)' }} />
+             style={{ background: 'radial-gradient(ellipse, rgba(234,88,12,0.22) 0%, transparent 65%)', filter: 'blur(14px)' }} />
 
         {/* Glass logo card */}
         <div
@@ -130,18 +130,18 @@ export default function SplashScreen({ onDone }) {
                      backdrop-blur-2xl bg-white/[0.05] border border-white/10"
           style={{
             animation: 'sp-logoIn 1.1s cubic-bezier(0.22,1,0.36,1) both',
-            boxShadow: '0 40px 90px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 60px rgba(76,175,80,0.15)',
+            boxShadow: '0 40px 90px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 60px rgba(234,88,12,0.15)',
           }}
         >
           {logoError ? (
             <div className="flex flex-col items-center justify-center h-full gap-0.5">
-              <span className="text-green-400 text-4xl font-black tracking-tight leading-none">TH</span>
-              <span className="text-green-400/50 text-[9px] font-bold tracking-[0.2em]">iOS</span>
+              <span className="text-orange-400 text-4xl font-black tracking-tight leading-none">DD</span>
+              <span className="text-orange-400/50 text-[9px] font-bold tracking-[0.2em]">Android</span>
             </div>
           ) : (
             <img
               src="/logo.png"
-              alt="TriTech Hub"
+              alt="Dan Dorsolar"
               onLoad={() => setLogoLoaded(true)}
               onError={() => setLogoError(true)}
               className="absolute inset-0 w-full h-full object-cover"
@@ -150,8 +150,8 @@ export default function SplashScreen({ onDone }) {
           )}
           {!logoLoaded && !logoError && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-              <span className="text-green-400 text-4xl font-black tracking-tight leading-none">TH</span>
-              <span className="text-green-400/50 text-[9px] font-bold tracking-[0.2em]">iOS</span>
+              <span className="text-orange-400 text-4xl font-black tracking-tight leading-none">DD</span>
+              <span className="text-orange-400/50 text-[9px] font-bold tracking-[0.2em]">Android</span>
             </div>
           )}
         </div>
@@ -162,25 +162,25 @@ export default function SplashScreen({ onDone }) {
         <h1 className="font-black tracking-tight leading-none">
           <span className="block text-white text-[clamp(1.7rem,7vw,2.6rem)]"
                 style={{ textShadow: '0 2px 30px rgba(0,0,0,0.6)' }}>
-            TriTech Hub
+            Dan Dorsolar
           </span>
           <span
             className="block text-[clamp(1.9rem,8vw,3rem)] mt-1"
             style={{
-              background: 'linear-gradient(135deg, #34d399 0%, #a7f3d0 45%, #10b981 70%, #059669 100%)',
+              background: 'linear-gradient(135deg, #FB923C 0%, #FED7AA 45%, #F97316 70%, #EA580C 100%)',
               backgroundSize: '250% 100%',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
               animation: 'sp-shimmerText 4s 1.6s ease-in-out infinite',
-              filter: 'drop-shadow(0 0 24px rgba(52,211,153,0.4))',
+              filter: 'drop-shadow(0 0 24px rgba(249,115,22,0.4))',
             }}
           >
-            iOS
+            Company Ltd
           </span>
         </h1>
         <p className="mt-3 text-white/30 text-[0.68rem] font-semibold tracking-[0.18em] uppercase">
-          iPhone Installment Management
+          Android Installment Management
         </p>
       </div>
 
@@ -191,11 +191,11 @@ export default function SplashScreen({ onDone }) {
         style={{ animation: 'sp-rise 0.8s 0.9s cubic-bezier(0.22,1,0.36,1) both' }}
       >
         <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full rounded-full bg-green-400"
+          <span className="absolute inline-flex h-full w-full rounded-full bg-orange-400"
                 style={{ animation: 'sp-dotPing 1.8s ease-out infinite' }} />
-          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-400" />
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-orange-400" />
         </span>
-        <span className="text-green-300/80 text-[11px] font-bold tracking-wide">
+        <span className="text-orange-300/80 text-[11px] font-bold tracking-wide">
           Powered by Ittek Solutions
         </span>
       </div>
@@ -208,13 +208,13 @@ export default function SplashScreen({ onDone }) {
             className="h-full rounded-full"
             style={{
               width: `${progress}%`,
-              background: 'linear-gradient(90deg, #059669, #34d399, #a7f3d0)',
+              background: 'linear-gradient(90deg, #EA580C, #FB923C, #FED7AA)',
               transition: 'width 0.05s linear',
-              boxShadow: '0 0 12px rgba(52,211,153,0.8)',
+              boxShadow: '0 0 12px rgba(249,115,22,0.8)',
             }}
           />
         </div>
-        <span className="font-mono text-[10px] font-bold tracking-[0.15em] text-green-400/60 select-none">
+        <span className="font-mono text-[10px] font-bold tracking-[0.15em] text-orange-400/60 select-none">
           LOADING {String(pct).padStart(3, '0')}%
         </span>
       </div>

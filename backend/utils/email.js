@@ -3,7 +3,7 @@ const { MailerSend, EmailParams, Sender, Recipient } = require('mailersend');
 const getClient = () => new MailerSend({ apiKey: process.env.MAILERSEND_API_KEY });
 
 const FROM_EMAIL = process.env.EMAIL_FROM_ADDRESS || 'noreply@tritechhub.online';
-const FROM_NAME  = process.env.EMAIL_FROM_NAME    || 'Tritech Hub iOS';
+const FROM_NAME  = process.env.EMAIL_FROM_NAME    || 'Dan Dorsolar Company Limited';
 
 const send = async ({ to, toName, subject, html, text }) => {
   const ms         = getClient();
@@ -24,7 +24,7 @@ const sendPasswordResetEmail = async (email, name, resetUrl) => {
   await send({
     to: email,
     toName: name,
-    subject: 'Your Tritech Hub iOS password reset link',
+    subject: 'Your Dan Dorsolar Company Limited password reset link',
     html: `
       <!DOCTYPE html><html><head>
       <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -42,7 +42,7 @@ const sendPasswordResetEmail = async (email, name, resetUrl) => {
       </style>
       </head><body>
       <div class="container">
-        <div class="header"><h1>Tritech Hub iOS</h1></div>
+        <div class="header"><h1>Dan Dorsolar Company Limited</h1></div>
         <div class="body">
           <h2>Hello, ${name}!</h2>
           <p>We received a request to reset the password for your account.</p>
@@ -52,10 +52,10 @@ const sendPasswordResetEmail = async (email, name, resetUrl) => {
           <p style="word-break:break-all;background:#f4f4f4;padding:10px;border-radius:4px;font-size:13px">${resetUrl}</p>
           <div class="warning"><strong>Security Notice:</strong> If you did not request a password reset, please ignore this email.</div>
         </div>
-        <div class="footer"><p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p><p>Contact support if you need help.</p></div>
+        <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.</p><p>Contact support if you need help.</p></div>
       </div>
       </body></html>`,
-    text: `Hello, ${name}!\n\nReset your password (valid 30 minutes):\n${resetUrl}\n\nIf you did not request this, ignore this email.\n\n© ${new Date().getFullYear()} Tritech Hub iOS`,
+    text: `Hello, ${name}!\n\nReset your password (valid 30 minutes):\n${resetUrl}\n\nIf you did not request this, ignore this email.\n\n© ${new Date().getFullYear()} Dan Dorsolar Company Limited`,
   });
 };
 
@@ -117,10 +117,10 @@ const sendPaymentConfirmationEmail = async (email, name, amount, planDetails) =>
             : `<p>Your next payment of <strong>${fmtAmount}</strong> is due on <strong>${fmtNextDue}</strong>.</p>`
           }
         </div>
-        <div class="footer"><p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p><p>Keep this email as your payment receipt.</p></div>
+        <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.</p><p>Keep this email as your payment receipt.</p></div>
       </div>
       </body></html>`,
-    text: `Hello, ${name}!\n\nPayment of ${fmtAmount} received.\n\nReference: ${reference}\nDevice: ${deviceModel}\nAmount Paid: ${fmtAmount}\nRemaining Balance: ${fmtBalance}\n${!isPaidOff ? `Payments Left: ${paymentsLeft}\nNext Due: ${fmtNextDue}` : 'Your device is fully paid off!'}\n\n© ${new Date().getFullYear()} Tritech Hub iOS`,
+    text: `Hello, ${name}!\n\nPayment of ${fmtAmount} received.\n\nReference: ${reference}\nDevice: ${deviceModel}\nAmount Paid: ${fmtAmount}\nRemaining Balance: ${fmtBalance}\n${!isPaidOff ? `Payments Left: ${paymentsLeft}\nNext Due: ${fmtNextDue}` : 'Your device is fully paid off!'}\n\n© ${new Date().getFullYear()} Dan Dorsolar Company Limited`,
   });
 };
 
@@ -128,7 +128,7 @@ const sendLockNotificationEmail = async (email, name, deviceModel) => {
   await send({
     to: email,
     toName: name,
-    subject: `Your ${deviceModel} has been locked — Tritech Hub iOS`,
+    subject: `Your ${deviceModel} has been locked — Dan Dorsolar Company Limited`,
     html: `
       <!DOCTYPE html><html><head>
       <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -152,17 +152,17 @@ const sendLockNotificationEmail = async (email, name, deviceModel) => {
           <p>Your payment was due more than <strong>48 hours ago</strong>. As per your installment agreement, we have remotely locked your device.</p>
           <div class="action">
             <strong>How to Unlock:</strong>
-            <p style="margin:8px 0 0">Make your overdue installment payment through the Tritech Hub iOS app. Once confirmed, your device will be unlocked within minutes.</p>
+            <p style="margin:8px 0 0">Make your overdue installment payment through the Dan Dorsolar Company Limited app. Once confirmed, your device will be unlocked within minutes.</p>
           </div>
           <div class="contact">
             <strong>Need Help?</strong>
             <p style="margin:8px 0 0">Contact our support team if you believe this is an error or need assistance.</p>
           </div>
         </div>
-        <div class="footer"><p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p><p>Contact our support team if you need help.</p></div>
+        <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.</p><p>Contact our support team if you need help.</p></div>
       </div>
       </body></html>`,
-    text: `Hello, ${name}!\n\nYour ${deviceModel} has been locked due to an overdue installment payment.\n\nTo unlock, make your payment through the Tritech Hub iOS app. Contact support if you need help.\n\n© ${new Date().getFullYear()} Tritech Hub iOS`,
+    text: `Hello, ${name}!\n\nYour ${deviceModel} has been locked due to an overdue installment payment.\n\nTo unlock, make your payment through the Dan Dorsolar Company Limited app. Contact support if you need help.\n\n© ${new Date().getFullYear()} Dan Dorsolar Company Limited`,
   });
 };
 
@@ -195,7 +195,7 @@ const sendPaymentReminderEmail = async (email, name, details) => {
       </head><body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0">
         <div style="max-width:580px;margin:40px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.1)">
           <div style="background:${headerColor};padding:28px 30px;text-align:center">
-            <h1 style="color:#fff;margin:0;font-size:22px">Tritech Hub iOS</h1>
+            <h1 style="color:#fff;margin:0;font-size:22px">Dan Dorsolar Company Limited</h1>
             <p style="color:#fff;opacity:.85;margin:6px 0 0;font-size:15px">
               ${isOverdue ? 'Overdue Payment Reminder' : 'Payment Reminder'}
             </p>
@@ -209,9 +209,9 @@ const sendPaymentReminderEmail = async (email, name, details) => {
               }
             </p>
             <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px">
-              <tr style="background:#f0fdf4">
-                <td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7;width:45%">Device</td>
-                <td style="padding:10px 14px;border-bottom:1px solid #dcfce7;font-weight:600">${deviceModel}</td>
+              <tr style="background:#fff7ed">
+                <td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #ffedd5;width:45%">Device</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #ffedd5;font-weight:600">${deviceModel}</td>
               </tr>
               <tr>
                 <td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #f3f4f6">Amount Due</td>
@@ -226,25 +226,25 @@ const sendPaymentReminderEmail = async (email, name, details) => {
                 <td style="padding:10px 14px;font-weight:600">${fmtBalance}</td>
               </tr>
             </table>
-            <div style="background:${isOverdue ? '#fef2f2' : '#f0fdf4'};border:1px solid ${isOverdue ? '#fecaca' : '#bbf7d0'};border-radius:8px;padding:14px;font-size:14px;color:${isOverdue ? '#991b1b' : '#166534'}">
+            <div style="background:${isOverdue ? '#fef2f2' : '#fff7ed'};border:1px solid ${isOverdue ? '#fecaca' : '#fed7aa'};border-radius:8px;padding:14px;font-size:14px;color:${isOverdue ? '#991b1b' : '#166534'}">
               <strong>${isOverdue ? 'Action Required:' : 'How to Pay:'}</strong>
               ${isOverdue
-                ? ' Log in to the Tritech Hub iOS app and make your payment immediately to prevent your device from being locked.'
-                : ' Log in to the Tritech Hub iOS app and tap "Make Payment" to complete your installment.'
+                ? ' Log in to the Dan Dorsolar Company Limited app and make your payment immediately to prevent your device from being locked.'
+                : ' Log in to the Dan Dorsolar Company Limited app and tap "Make Payment" to complete your installment.'
               }
             </div>
           </div>
           <div style="background:#f9fafb;padding:14px 30px;text-align:center;font-size:12px;color:#9ca3af;border-top:1px solid #eee">
-            &copy; ${new Date().getFullYear()} Tritech Hub iOS · Powered by Ittek Solutions
+            &copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited · Powered by Ittek Solutions
           </div>
         </div>
       </body></html>`,
-    text: `Hello, ${name}!\n\nPayment reminder for your ${deviceModel}.\n\nAmount Due: ${fmtAmount}\nDue Date: ${fmtDue}\nRemaining Balance: ${fmtBalance}\n\nLog in to the app to make your payment.\n\n© ${new Date().getFullYear()} Tritech Hub iOS`,
+    text: `Hello, ${name}!\n\nPayment reminder for your ${deviceModel}.\n\nAmount Due: ${fmtAmount}\nDue Date: ${fmtDue}\nRemaining Balance: ${fmtBalance}\n\nLog in to the app to make your payment.\n\n© ${new Date().getFullYear()} Dan Dorsolar Company Limited`,
   });
 };
 
 async function sendAdminSaleNotificationEmail(adminEmail, sale) {
-  const businessName = process.env.BUSINESS_NAME || 'Tritech Hub iOS';
+  const businessName = process.env.BUSINESS_NAME || 'Dan Dorsolar Company Limited';
   const freqLabel    = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' }[sale.frequency] || sale.frequency;
   const now = new Date().toLocaleString('en-GH', {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
@@ -259,23 +259,23 @@ async function sendAdminSaleNotificationEmail(adminEmail, sale) {
       <!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
       <body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0">
         <div style="max-width:580px;margin:40px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.1)">
-          <div style="background:linear-gradient(135deg,#166534,#15803d);padding:28px 30px">
+          <div style="background:linear-gradient(135deg,#166534,#C2410C);padding:28px 30px">
             <h1 style="color:#fff;margin:0;font-size:20px">${businessName}</h1>
-            <p style="color:#bbf7d0;margin:6px 0 0;font-size:15px">New iPhone Sale Recorded</p>
+            <p style="color:#fed7aa;margin:6px 0 0;font-size:15px">New iPhone Sale Recorded</p>
           </div>
           <div style="padding:28px 30px">
             <p style="color:#374151;font-size:15px;margin:0 0 20px">A new sale was registered on <strong>${now}</strong>.</p>
             <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px">
-              <tr style="background:#f0fdf4"><td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7;width:40%">Staff</td><td style="padding:10px 14px;border-bottom:1px solid #dcfce7;font-weight:600">${sale.staffName}</td></tr>
-              ${sale.branch ? `<tr><td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7">Branch</td><td style="padding:10px 14px;border-bottom:1px solid #dcfce7">${sale.branch}</td></tr>` : ''}
-              <tr><td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7">Customer</td><td style="padding:10px 14px;border-bottom:1px solid #dcfce7">${sale.customerName}</td></tr>
-              <tr style="background:#f0fdf4"><td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7">Phone</td><td style="padding:10px 14px;border-bottom:1px solid #dcfce7">${sale.customerPhone || '—'}</td></tr>
-              <tr><td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7">Device</td><td style="padding:10px 14px;border-bottom:1px solid #dcfce7;font-weight:700">${sale.deviceModel}</td></tr>
-              <tr style="background:#f0fdf4"><td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7">Device Price</td><td style="padding:10px 14px;border-bottom:1px solid #dcfce7">GHS ${Number(sale.totalPrice).toLocaleString()}</td></tr>
-              <tr><td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #dcfce7">Down Payment</td><td style="padding:10px 14px;border-bottom:1px solid #dcfce7;font-weight:700;color:#166534">GHS ${Number(sale.downPayment).toLocaleString()}</td></tr>
-              <tr style="background:#f0fdf4"><td style="padding:10px 14px;color:#166534;font-weight:700">Installment Plan</td><td style="padding:10px 14px">GHS ${Number(sale.installmentAmount).toLocaleString()} × ${sale.totalPayments} payments (${freqLabel})</td></tr>
+              <tr style="background:#fff7ed"><td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #ffedd5;width:40%">Staff</td><td style="padding:10px 14px;border-bottom:1px solid #ffedd5;font-weight:600">${sale.staffName}</td></tr>
+              ${sale.branch ? `<tr><td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #ffedd5">Branch</td><td style="padding:10px 14px;border-bottom:1px solid #ffedd5">${sale.branch}</td></tr>` : ''}
+              <tr><td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #ffedd5">Customer</td><td style="padding:10px 14px;border-bottom:1px solid #ffedd5">${sale.customerName}</td></tr>
+              <tr style="background:#fff7ed"><td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #ffedd5">Phone</td><td style="padding:10px 14px;border-bottom:1px solid #ffedd5">${sale.customerPhone || '—'}</td></tr>
+              <tr><td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #ffedd5">Device</td><td style="padding:10px 14px;border-bottom:1px solid #ffedd5;font-weight:700">${sale.deviceModel}</td></tr>
+              <tr style="background:#fff7ed"><td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #ffedd5">Device Price</td><td style="padding:10px 14px;border-bottom:1px solid #ffedd5">GHS ${Number(sale.totalPrice).toLocaleString()}</td></tr>
+              <tr><td style="padding:10px 14px;color:#166534;font-weight:700;border-bottom:1px solid #ffedd5">Down Payment</td><td style="padding:10px 14px;border-bottom:1px solid #ffedd5;font-weight:700;color:#166534">GHS ${Number(sale.downPayment).toLocaleString()}</td></tr>
+              <tr style="background:#fff7ed"><td style="padding:10px 14px;color:#166534;font-weight:700">Installment Plan</td><td style="padding:10px 14px">GHS ${Number(sale.installmentAmount).toLocaleString()} × ${sale.totalPayments} payments (${freqLabel})</td></tr>
             </table>
-            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 16px;font-size:13px;color:#166534">
+            <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 16px;font-size:13px;color:#166534">
               Log in to <strong>${businessName}</strong> to view the full customer record.
             </div>
           </div>
@@ -288,7 +288,7 @@ async function sendAdminSaleNotificationEmail(adminEmail, sale) {
 }
 
 async function sendAdminPaymentReminderEmail(adminEmail, customers) {
-  const businessName = process.env.BUSINESS_NAME || 'Tritech Hub iOS';
+  const businessName = process.env.BUSINESS_NAME || 'Dan Dorsolar Company Limited';
 
   const rows = customers.map(c => `
     <tr>
@@ -310,18 +310,18 @@ async function sendAdminPaymentReminderEmail(adminEmail, customers) {
         <div style="max-width:620px;margin:40px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.1)">
           <div style="background:#166534;padding:28px 30px;text-align:center">
             <h1 style="color:#fff;margin:0;font-size:22px">${businessName}</h1>
-            <p style="color:#bbf7d0;margin:6px 0 0;font-size:15px">Payment Due Reminder</p>
+            <p style="color:#fed7aa;margin:6px 0 0;font-size:15px">Payment Due Reminder</p>
           </div>
           <div style="padding:28px 30px">
             <p style="color:#374151;font-size:15px;margin:0 0 16px">The following customer(s) have a payment due in <strong>2 days</strong>.</p>
             <table style="width:100%;border-collapse:collapse;font-size:14px">
               <thead>
-                <tr style="background:#f0fdf4">
-                  <th style="padding:10px 12px;text-align:left;color:#166534;border-bottom:2px solid #dcfce7">Customer</th>
-                  <th style="padding:10px 12px;text-align:left;color:#166534;border-bottom:2px solid #dcfce7">Phone</th>
-                  <th style="padding:10px 12px;text-align:left;color:#166534;border-bottom:2px solid #dcfce7">Device</th>
-                  <th style="padding:10px 12px;text-align:left;color:#166534;border-bottom:2px solid #dcfce7">Amount</th>
-                  <th style="padding:10px 12px;text-align:left;color:#166534;border-bottom:2px solid #dcfce7">Due Date</th>
+                <tr style="background:#fff7ed">
+                  <th style="padding:10px 12px;text-align:left;color:#166534;border-bottom:2px solid #ffedd5">Customer</th>
+                  <th style="padding:10px 12px;text-align:left;color:#166534;border-bottom:2px solid #ffedd5">Phone</th>
+                  <th style="padding:10px 12px;text-align:left;color:#166534;border-bottom:2px solid #ffedd5">Device</th>
+                  <th style="padding:10px 12px;text-align:left;color:#166534;border-bottom:2px solid #ffedd5">Amount</th>
+                  <th style="padding:10px 12px;text-align:left;color:#166534;border-bottom:2px solid #ffedd5">Due Date</th>
                 </tr>
               </thead>
               <tbody>${rows}</tbody>
@@ -336,7 +336,7 @@ async function sendAdminPaymentReminderEmail(adminEmail, customers) {
 }
 
 async function sendAdminOverdueAlertEmail(adminEmail, customers) {
-  const businessName = process.env.BUSINESS_NAME || 'Tritech Hub iOS';
+  const businessName = process.env.BUSINESS_NAME || 'Dan Dorsolar Company Limited';
 
   const rows = customers.map(c => `
     <tr>
@@ -388,7 +388,7 @@ const sendCustomerWelcomeEmail = async (email, name, accountNumber) => {
   await send({
     to: email,
     toName: name,
-    subject: `Welcome to Tritech Hub iOS — Your account is ready`,
+    subject: `Welcome to Dan Dorsolar Company Limited — Your account is ready`,
     html: `
       <!DOCTYPE html><html><head>
       <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -399,12 +399,12 @@ const sendCustomerWelcomeEmail = async (email, name, accountNumber) => {
         .header h1{margin:0;font-size:24px}
         .body{padding:30px;color:#333}
         .body p{line-height:1.6;margin-bottom:16px}
-        .info-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:16px;margin:20px 0}
+        .info-box{background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:16px;margin:20px 0}
         .footer{background:#f8f8f8;padding:20px 30px;text-align:center;font-size:12px;color:#888;border-top:1px solid #eee}
       </style>
       </head><body>
       <div class="container">
-        <div class="header"><h1>Welcome to Tritech Hub iOS</h1></div>
+        <div class="header"><h1>Welcome to Dan Dorsolar Company Limited</h1></div>
         <div class="body">
           <h2>Hello, ${name}!</h2>
           <p>Your installment account has been created. Here are your account details:</p>
@@ -416,10 +416,10 @@ const sendCustomerWelcomeEmail = async (email, name, accountNumber) => {
           <p>You can log in to track your installment balance, make payments, and view your payment history.</p>
           <p>If you have any questions, contact our support team.</p>
         </div>
-        <div class="footer"><p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p></div>
+        <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.</p></div>
       </div>
       </body></html>`,
-    text: `Welcome to Tritech Hub iOS!\n\nHello, ${name}!\n\nYour account has been created.\nAccount Number: ${accountNumber}\nLogin at: tritechhub.online\n\nUse your email and password provided by our staff to log in.\n\n© ${new Date().getFullYear()} Tritech Hub iOS`,
+    text: `Welcome to Dan Dorsolar Company Limited!\n\nHello, ${name}!\n\nYour account has been created.\nAccount Number: ${accountNumber}\nLogin at: tritechhub.online\n\nUse your email and password provided by our staff to log in.\n\n© ${new Date().getFullYear()} Dan Dorsolar Company Limited`,
   });
 };
 
@@ -427,7 +427,7 @@ const sendDeviceUnlockedEmail = async (email, name, deviceModel) => {
   await send({
     to: email,
     toName: name,
-    subject: `Your ${deviceModel} has been unlocked — Tritech Hub iOS`,
+    subject: `Your ${deviceModel} has been unlocked — Dan Dorsolar Company Limited`,
     html: `
       <!DOCTYPE html><html><head>
       <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -449,10 +449,10 @@ const sendDeviceUnlockedEmail = async (email, name, deviceModel) => {
           <p>Your device is now fully functional. Keep up with your installment schedule to avoid future interruptions.</p>
           <p>Log in at <a href="https://tritechhub.online">tritechhub.online</a> to view your remaining balance and payment history.</p>
         </div>
-        <div class="footer"><p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p></div>
+        <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.</p></div>
       </div>
       </body></html>`,
-    text: `Hello, ${name}!\n\nYour ${deviceModel} has been unlocked. Thank you for your payment!\n\nLog in at tritechhub.online to track your remaining balance.\n\n© ${new Date().getFullYear()} Tritech Hub iOS`,
+    text: `Hello, ${name}!\n\nYour ${deviceModel} has been unlocked. Thank you for your payment!\n\nLog in at tritechhub.online to track your remaining balance.\n\n© ${new Date().getFullYear()} Dan Dorsolar Company Limited`,
   });
 };
 
@@ -460,19 +460,19 @@ const sendAdminLoginOTPEmail = async (email, name, otp) => {
   return send({
     to: email,
     toName: name || 'Admin',
-    subject: 'Your Tritech Hub Login Code',
+    subject: 'Your Dan Dorsolar Login Code',
     html: `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
       body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb}
       .wrap{max-width:480px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
-      .header{background:linear-gradient(135deg,#1B5E20,#2E7D32);padding:32px 24px;text-align:center}
+      .header{background:linear-gradient(135deg,#C2410C,#EA580C);padding:32px 24px;text-align:center}
       .header h1{color:#fff;margin:0;font-size:22px;font-weight:900}
       .body{padding:32px 24px}
-      .otp-box{background:#f0fdf4;border:2px solid #4CAF50;border-radius:12px;padding:24px;text-align:center;margin:24px 0}
-      .otp-code{font-size:40px;font-weight:900;letter-spacing:10px;color:#1B5E20;font-family:monospace}
+      .otp-box{background:#fff7ed;border:2px solid #F97316;border-radius:12px;padding:24px;text-align:center;margin:24px 0}
+      .otp-code{font-size:40px;font-weight:900;letter-spacing:10px;color:#C2410C;font-family:monospace}
       .footer{background:#f3f4f6;padding:16px 24px;text-align:center;color:#9ca3af;font-size:12px}
     </style></head><body>
     <div class="wrap">
-      <div class="header"><h1>Tritech Hub iOS</h1></div>
+      <div class="header"><h1>Dan Dorsolar Company Limited</h1></div>
       <div class="body">
         <p style="color:#374151">Hello <strong>${name || 'Admin'}</strong>,</p>
         <p style="color:#6b7280">Your login verification code is:</p>
@@ -480,10 +480,10 @@ const sendAdminLoginOTPEmail = async (email, name, otp) => {
         <p style="color:#6b7280;font-size:14px">This code expires in <strong>10 minutes</strong>. Never share it with anyone.</p>
         <p style="color:#6b7280;font-size:14px">If you did not attempt to log in, please change your password immediately.</p>
       </div>
-      <div class="footer"><p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p></div>
+      <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.</p></div>
     </div>
     </body></html>`,
-    text: `Hello ${name || 'Admin'},\n\nYour Tritech Hub login code is: ${otp}\n\nThis code expires in 10 minutes. Do not share it.\n\n© ${new Date().getFullYear()} Tritech Hub iOS`,
+    text: `Hello ${name || 'Admin'},\n\nYour Dan Dorsolar login code is: ${otp}\n\nThis code expires in 10 minutes. Do not share it.\n\n© ${new Date().getFullYear()} Dan Dorsolar Company Limited`,
   });
 };
 
@@ -501,14 +501,14 @@ const sendBackupEmail = async (email, backupJson, filename) => {
   const params = new EmailParams()
     .setFrom(sentFrom)
     .setTo(recipients)
-    .setSubject(`Tritech Hub iOS Daily Backup — ${filename}`)
+    .setSubject(`Dan Dorsolar Company Limited Daily Backup — ${filename}`)
     .setHtml(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
       body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb}
       .wrap{max-width:480px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
-      .header{background:linear-gradient(135deg,#1B5E20,#2E7D32);padding:32px 24px;text-align:center}
+      .header{background:linear-gradient(135deg,#C2410C,#EA580C);padding:32px 24px;text-align:center}
       .header h1{color:#fff;margin:0;font-size:22px;font-weight:900}
       .body{padding:32px 24px;color:#374151}
-      .stat{background:#f3f4f6;border-left:4px solid #4CAF50;padding:12px 16px;margin:12px 0}
+      .stat{background:#f3f4f6;border-left:4px solid #F97316;padding:12px 16px;margin:12px 0}
       .footer{background:#f3f4f6;padding:16px 24px;text-align:center;color:#9ca3af;font-size:12px}
     </style></head><body>
     <div class="wrap">
@@ -519,7 +519,7 @@ const sendBackupEmail = async (email, backupJson, filename) => {
         <div class="stat">Customers, Devices, Installment Plans, Payments, Audit Logs, and Staff Users</div>
         <p style="font-size:12px;color:#6b7280">Store this backup securely. It contains all system data and should be treated as sensitive.</p>
       </div>
-      <div class="footer"><p>&copy; ${new Date().getFullYear()} Tritech Hub iOS. All rights reserved.</p></div>
+      <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.</p></div>
     </div>
     </body></html>`)
     .addAttachment(attachment);

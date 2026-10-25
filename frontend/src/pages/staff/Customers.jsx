@@ -39,11 +39,11 @@ export default function StaffCustomers() {
   }, [fetchCustomers])
 
   return (
-    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50">
 
       {/* Mobile Hero */}
-      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-emerald-50">
-        <p className="text-emerald-600 text-xs font-semibold uppercase tracking-widest">Staff Portal</p>
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-orange-50">
+        <p className="text-orange-500 text-xs font-semibold uppercase tracking-widest">Staff Portal</p>
         <div className="flex items-start justify-between mt-1">
           <div>
             <h1 className="text-gray-900 text-2xl font-black">My Customers</h1>
@@ -51,7 +51,7 @@ export default function StaffCustomers() {
           </div>
           <button
             onClick={() => navigate('/staff/customers/add')}
-            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 bg-orange-50 border border-orange-200 text-orange-600 text-xs font-semibold rounded-xl active:scale-95 transition-all"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -71,8 +71,8 @@ export default function StaffCustomers() {
         </div>
         <button
           onClick={() => navigate('/staff/customers/add')}
-          className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 text-white font-semibold text-sm rounded-xl
-                     hover:bg-emerald-600 active:scale-95 transition-all"
+          className="flex items-center gap-1.5 px-4 py-2.5 bg-orange-500 text-white font-semibold text-sm rounded-xl
+                     hover:bg-orange-500 active:scale-95 transition-all"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -92,7 +92,7 @@ export default function StaffCustomers() {
           onChange={(e) => { setSearch(e.target.value); setPage(1) }}
           placeholder="Search by name or account number..."
           className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-2xl text-sm
-                     focus:outline-none focus:border-emerald-600 bg-white"
+                     focus:outline-none focus:border-orange-500 bg-white"
         />
       </div>
 
@@ -109,7 +109,7 @@ export default function StaffCustomers() {
           {!search && (
             <button
               onClick={() => navigate('/staff/customers/add')}
-              className="mt-3 px-5 py-2.5 bg-emerald-700 text-white font-semibold text-sm rounded-xl"
+              className="mt-3 px-5 py-2.5 bg-orange-600 text-white font-semibold text-sm rounded-xl"
             >
               Register First Customer
             </button>
@@ -124,11 +124,11 @@ export default function StaffCustomers() {
                 onClick={() => navigate(`/staff/customers/${c.id || c._id}`)}
                 className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
               >
-                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                   {c.photo_url ? (
                     <img src={c.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
                   ) : (
-                    <span className="text-emerald-800 font-bold text-sm">
+                    <span className="text-orange-500 font-bold text-sm">
                       {(c.full_name || c.name || 'C').charAt(0).toUpperCase()}
                     </span>
                   )}

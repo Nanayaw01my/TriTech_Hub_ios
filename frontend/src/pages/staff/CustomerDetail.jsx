@@ -100,13 +100,13 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
         {receipt ? (
           /* ── Payment Receipt ── */
           <div className="text-center">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <p className="text-lg font-black text-gray-900 mb-1">Payment Successful</p>
-            <p className="text-xs text-gray-400 mb-5">TriTech Hub iOS · Payment Receipt</p>
+            <p className="text-xs text-gray-400 mb-5">Dan Dorsolar Company Limited · Payment Receipt</p>
 
             <div className="bg-gray-50 rounded-2xl p-4 text-left space-y-3 mb-5">
               <div className="flex justify-between items-center">
@@ -116,7 +116,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
               <div className="border-t border-dashed border-gray-200" />
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-500">Amount Paid</span>
-                <span className="text-sm font-black text-emerald-700">GHS {Number(receipt.amount).toLocaleString()}</span>
+                <span className="text-sm font-black text-orange-600">GHS {Number(receipt.amount).toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-500">Date</span>
@@ -133,7 +133,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
               <div className="border-t border-dashed border-gray-200" />
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-500">Remaining Balance</span>
-                <span className={`text-xs font-bold ${receipt.newBalance === 0 ? 'text-emerald-700' : 'text-orange-600'}`}>
+                <span className={`text-xs font-bold ${receipt.newBalance === 0 ? 'text-orange-600' : 'text-orange-600'}`}>
                   {receipt.newBalance === 0 ? 'Fully Paid ✓' : `GHS ${Number(receipt.newBalance).toLocaleString()}`}
                 </span>
               </div>
@@ -143,7 +143,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
               {customer.phone && (
                 <a
                   href={`https://wa.me/${customer.phone.replace(/\D/g, '').replace(/^0/, '233')}?text=${encodeURIComponent(
-                    `*Tritech Hub iOS — Payment Receipt*\n\nCustomer: ${customer.full_name}\nAmount Paid: GHS ${Number(receipt.amount).toLocaleString()}\nDate: ${format(receipt.date, 'dd MMM yyyy · h:mm a')}\nRef: ${receipt.reference}\nBalance: ${receipt.newBalance === 0 ? 'Fully Paid ✓' : 'GHS ' + Number(receipt.newBalance).toLocaleString()}`
+                    `*Dan Dorsolar Company Limited — Payment Receipt*\n\nCustomer: ${customer.full_name}\nAmount Paid: GHS ${Number(receipt.amount).toLocaleString()}\nDate: ${format(receipt.date, 'dd MMM yyyy · h:mm a')}\nRef: ${receipt.reference}\nBalance: ${receipt.newBalance === 0 ? 'Fully Paid ✓' : 'GHS ' + Number(receipt.newBalance).toLocaleString()}`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -157,7 +157,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
               )}
               <button
                 onClick={onClose}
-                className="w-full py-3.5 bg-emerald-700 text-white font-black rounded-2xl active:scale-95 transition-all"
+                className="w-full py-3.5 bg-orange-600 text-white font-black rounded-2xl active:scale-95 transition-all"
               >
                 Done
               </button>
@@ -184,7 +184,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
             </div>
 
             {/* Customer info */}
-            <div className="bg-emerald-50 rounded-2xl p-3 mb-4">
+            <div className="bg-orange-50 rounded-2xl p-3 mb-4">
               <p className="text-xs text-gray-500">Customer</p>
               <p className="font-bold text-gray-900">{customer.full_name}</p>
               <p className="text-xs text-gray-500 mt-0.5">{customer.email}</p>
@@ -196,9 +196,9 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
                 <p className="text-[10px] text-gray-500">Remaining</p>
                 <p className="text-sm font-bold text-gray-800">GHS {Number(remaining).toLocaleString()}</p>
               </div>
-              <div className="flex-1 bg-emerald-50 rounded-xl p-2.5 text-center">
+              <div className="flex-1 bg-orange-50 rounded-xl p-2.5 text-center">
                 <p className="text-[10px] text-gray-500">Installment</p>
-                <p className="text-sm font-bold text-emerald-800">GHS {Number(installmentAmt).toLocaleString()}</p>
+                <p className="text-sm font-bold text-orange-500">GHS {Number(installmentAmt).toLocaleString()}</p>
               </div>
             </div>
 
@@ -215,7 +215,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
                 min="1"
                 max={remaining}
                 step="0.01"
-                className="w-full pl-14 pr-4 py-3 border border-gray-200 rounded-xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full pl-14 pr-4 py-3 border border-gray-200 rounded-xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-orange-500"
                 placeholder="0.00"
               />
             </div>
@@ -228,8 +228,8 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
                   onClick={() => setAmount(String(v))}
                   className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-colors
                     ${String(amount) === String(v)
-                      ? 'bg-emerald-700 text-white border-green-800'
-                      : 'border-gray-200 text-gray-600 hover:border-green-400'}`}
+                      ? 'bg-orange-600 text-white border-orange-500'
+                      : 'border-gray-200 text-gray-600 hover:border-orange-400'}`}
                 >
                   {v === installmentAmt ? 'Installment' : 'Full Balance'}
                   {'\n'}GHS {Number(v).toLocaleString()}
@@ -241,7 +241,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
             <button
               onClick={handlePay}
               disabled={processing || !amount}
-              className="w-full py-4 bg-emerald-700 text-white font-black text-base rounded-2xl
+              className="w-full py-4 bg-orange-600 text-white font-black text-base rounded-2xl
                          flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-all"
             >
               {processing ? (
@@ -318,7 +318,7 @@ export default function StaffCustomerDetail() {
     <div className="max-w-3xl mx-auto px-4 pb-32 lg:pb-6 pt-4">
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-1.5 text-emerald-700 font-semibold text-sm mb-4 hover:text-emerald-900"
+        className="flex items-center gap-1.5 text-orange-600 font-semibold text-sm mb-4 hover:text-orange-600"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -329,13 +329,13 @@ export default function StaffCustomerDetail() {
       {/* Customer Profile */}
       <div className="bg-white rounded-2xl shadow-card p-5 mb-4">
         <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-100 overflow-hidden flex-shrink-0 cursor-pointer"
+          <div className="w-16 h-16 rounded-2xl bg-orange-100 overflow-hidden flex-shrink-0 cursor-pointer"
                onClick={() => custPhoto && setImageModal(custPhoto)}>
             {custPhoto ? (
               <img src={custPhoto} alt="" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <span className="text-emerald-800 font-black text-2xl">
+                <span className="text-orange-500 font-black text-2xl">
                   {(customer.full_name || 'C').charAt(0).toUpperCase()}
                 </span>
               </div>
@@ -357,7 +357,7 @@ export default function StaffCustomerDetail() {
               <p className="font-bold text-gray-800">
                 {device?.model || plan?.device_id?.model || plan?.device_model}
               </p>
-              <p className="text-sm font-bold text-emerald-700 mt-0.5">
+              <p className="text-sm font-bold text-orange-600 mt-0.5">
                 GHS {Number(plan?.total_price || plan?.device_price || device?.price || 0).toLocaleString()}
               </p>
             </div>
@@ -381,9 +381,9 @@ export default function StaffCustomerDetail() {
           />
 
           <div className="grid grid-cols-3 gap-1.5 mt-4">
-            <div className="bg-emerald-50 rounded-xl p-2.5 text-center">
+            <div className="bg-orange-50 rounded-xl p-2.5 text-center">
               <p className="text-xs text-gray-500 mb-0.5">Amount Paid</p>
-              <p className="text-xs font-bold text-emerald-800">
+              <p className="text-xs font-bold text-orange-500">
                 GHS {Number(plan.amount_paid ?? ((plan.total_price || 0) - (plan.remaining_balance || 0))).toLocaleString()}
               </p>
             </div>
@@ -420,8 +420,8 @@ export default function StaffCustomerDetail() {
           {canPay && (
             <button
               onClick={() => { setDefaultPayAmount(null); setShowPayModal(true) }}
-              className={`w-full py-4 bg-emerald-700 text-white font-black text-base rounded-2xl
-                         flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-green-900
+              className={`w-full py-4 bg-orange-600 text-white font-black text-base rounded-2xl
+                         flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-orange-600
                          ${downPaymentDue ? 'mt-2' : 'mt-4'}`}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -433,8 +433,8 @@ export default function StaffCustomerDetail() {
           )}
 
           {plan.status === 'completed' && (
-            <div className="mt-4 py-3 bg-emerald-50 rounded-xl text-center">
-              <p className="text-sm font-bold text-emerald-800">✓ Plan fully paid</p>
+            <div className="mt-4 py-3 bg-orange-50 rounded-xl text-center">
+              <p className="text-sm font-bold text-orange-500">✓ Plan fully paid</p>
             </div>
           )}
         </div>

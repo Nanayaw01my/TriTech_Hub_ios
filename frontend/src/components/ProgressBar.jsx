@@ -11,14 +11,14 @@ export default function ProgressBar({ current, total, showLabel = true, height =
   }
 
   const colors = {
-    green: 'bg-green-600',
+    green: 'bg-orange-500',
     blue: 'bg-blue-500',
     red: 'bg-red-500',
     orange: 'bg-orange-500',
   }
 
   const bgColors = {
-    green: 'bg-green-100',
+    green: 'bg-orange-100',
     blue: 'bg-blue-100',
     red: 'bg-red-100',
     orange: 'bg-orange-100',
@@ -31,7 +31,7 @@ export default function ProgressBar({ current, total, showLabel = true, height =
           <span className="text-xs font-medium text-gray-600">
             {current} of {total} payments
           </span>
-          <span className="text-xs font-bold text-green-800">{percentage}%</span>
+          <span className="text-xs font-bold text-orange-500">{percentage}%</span>
         </div>
       )}
       <div className={`w-full ${bgColors[color] || bgColors.green} rounded-full overflow-hidden ${heights[height] || heights.md}`}>

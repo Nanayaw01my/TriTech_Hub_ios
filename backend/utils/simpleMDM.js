@@ -60,7 +60,7 @@ const lockDevice = async (udid) => {
 
   const deviceId = device.id;
   const businessPhone = process.env.BUSINESS_PHONE || '';
-  const businessName = process.env.BUSINESS_NAME || 'Tritech Hub iOS';
+  const businessName = process.env.BUSINESS_NAME || 'Dan Dorsolar Company Limited';
   const message = `This iPhone is locked due to a missed payment. Please call ${businessName} to resolve your account.`;
 
   // Try Lost Mode FIRST — the real, non-dismissible lock (works on supervised

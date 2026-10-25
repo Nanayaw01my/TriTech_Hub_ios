@@ -12,8 +12,8 @@ function Section({ title, children }) {
 function Row({ icon, label, desc }) {
   return (
     <div className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0">
-      <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <svg className="w-4 h-4 text-emerald-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <svg className="w-4 h-4 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           {icon}
         </svg>
       </div>
@@ -27,7 +27,7 @@ function Row({ icon, label, desc }) {
 
 function Rule({ color, text }) {
   const colors = {
-    green: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    green: 'bg-orange-50 text-orange-500 border-orange-200',
     red:   'bg-red-50 text-red-800 border-red-200',
     blue:  'bg-blue-50 text-blue-800 border-blue-200',
     amber: 'bg-amber-50 text-amber-800 border-amber-200',
@@ -45,18 +45,18 @@ export default function AdminAbout() {
 
       {/* Mobile hero */}
       <div className="lg:hidden -mx-0 mb-0" style={{
-        background: 'linear-gradient(135deg, #1B5E20 0%, #2E7D32 50%, #1a3a1a 100%)',
+        background: 'linear-gradient(135deg, #C2410C 0%, #EA580C 50%, #1a3a1a 100%)',
         padding: '2rem 1.25rem 3rem',
       }}>
-        <p className="text-green-300 text-xs font-bold uppercase tracking-widest mb-1">Admin Portal</p>
+        <p className="text-orange-300 text-xs font-bold uppercase tracking-widest mb-1">Admin Portal</p>
         <h1 className="text-white text-2xl font-black">About the System</h1>
-        <p className="text-green-200/70 text-sm mt-1">TriTech Hub iOS · Full Reference Guide</p>
+        <p className="text-orange-200/70 text-sm mt-1">Dan Dorsolar Company Limited · Full Reference Guide</p>
       </div>
 
       {/* Desktop header */}
       <div className="hidden lg:block pt-6 pb-4 px-0">
         <h1 className="text-2xl font-black text-gray-900">About the System</h1>
-        <p className="text-gray-500 text-sm mt-1">TriTech Hub iOS · Admin Reference Guide</p>
+        <p className="text-gray-500 text-sm mt-1">Dan Dorsolar Company Limited · Admin Reference Guide</p>
       </div>
 
       <div className="px-4 lg:px-0 -mt-5 lg:mt-0">
@@ -64,7 +64,7 @@ export default function AdminAbout() {
         {/* Overview */}
         <Section title="System Overview">
           <p className="text-sm text-gray-600 leading-relaxed mb-3">
-            TriTech Hub iOS is an iPhone installment management platform. Staff register customers with a device and payment plan.
+            Dan Dorsolar Company Limited is an Android installment management platform. Staff register customers with a device and payment plan.
             Customers pay in installments via Mobile Money or card. You manage everything from this admin portal.
           </p>
           <div className="grid grid-cols-3 gap-2 mt-2">
@@ -73,9 +73,9 @@ export default function AdminAbout() {
               { label: 'Staff', desc: 'Register & pay' },
               { label: 'Customer', desc: 'View & track' },
             ].map(r => (
-              <div key={r.label} className="bg-emerald-50 rounded-xl p-2.5 text-center">
-                <p className="text-xs font-black text-emerald-900">{r.label}</p>
-                <p className="text-[10px] text-emerald-700 mt-0.5">{r.desc}</p>
+              <div key={r.label} className="bg-orange-50 rounded-xl p-2.5 text-center">
+                <p className="text-xs font-black text-orange-600">{r.label}</p>
+                <p className="text-[10px] text-orange-600 mt-0.5">{r.desc}</p>
               </div>
             ))}
           </div>
@@ -130,7 +130,7 @@ export default function AdminAbout() {
 
         {/* Version */}
         <div className="text-center py-4">
-          <p className="text-xs text-gray-400 font-medium">TriTech Hub iOS · Powered by Ittek Solutions</p>
+          <p className="text-xs text-gray-400 font-medium">Dan Dorsolar Company Limited · Powered by Ittek Solutions</p>
         </div>
       </div>
     </div>

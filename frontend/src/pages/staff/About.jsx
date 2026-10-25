@@ -12,7 +12,7 @@ function Section({ title, children }) {
 function Step({ num, title, desc }) {
   return (
     <div className="flex items-start gap-3 py-3 border-b border-gray-50 last:border-0">
-      <div className="w-7 h-7 rounded-full bg-emerald-700 text-white text-xs font-black flex items-center justify-center flex-shrink-0 mt-0.5">
+      <div className="w-7 h-7 rounded-full bg-orange-600 text-white text-xs font-black flex items-center justify-center flex-shrink-0 mt-0.5">
         {num}
       </div>
       <div>
@@ -25,7 +25,7 @@ function Step({ num, title, desc }) {
 
 function Rule({ color, text }) {
   const colors = {
-    green: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    green: 'bg-orange-50 text-orange-500 border-orange-200',
     red:   'bg-red-50 text-red-800 border-red-200',
     amber: 'bg-amber-50 text-amber-800 border-amber-200',
   }
@@ -42,12 +42,12 @@ export default function StaffAbout() {
 
       {/* Mobile hero */}
       <div className="lg:hidden mb-0" style={{
-        background: 'linear-gradient(135deg, #1B5E20 0%, #2E7D32 50%, #1a3a1a 100%)',
+        background: 'linear-gradient(135deg, #C2410C 0%, #EA580C 50%, #1a3a1a 100%)',
         padding: '2rem 1.25rem 3rem',
       }}>
-        <p className="text-green-300 text-xs font-bold uppercase tracking-widest mb-1">Staff Portal</p>
+        <p className="text-orange-300 text-xs font-bold uppercase tracking-widest mb-1">Staff Portal</p>
         <h1 className="text-white text-2xl font-black">About</h1>
-        <p className="text-green-200/70 text-sm mt-1">Your role, workflows, and guidelines</p>
+        <p className="text-orange-200/70 text-sm mt-1">Your role, workflows, and guidelines</p>
       </div>
 
       {/* Desktop header */}
@@ -121,7 +121,7 @@ export default function StaffAbout() {
         </Section>
 
         <div className="text-center py-4">
-          <p className="text-xs text-gray-400 font-medium">TriTech Hub iOS · Powered by Ittek Solutions</p>
+          <p className="text-xs text-gray-400 font-medium">Dan Dorsolar Company Limited · Powered by Ittek Solutions</p>
         </div>
       </div>
     </div>

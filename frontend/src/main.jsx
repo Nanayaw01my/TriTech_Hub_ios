@@ -73,7 +73,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
           maxWidth: '340px',
         },
-        success: { iconTheme: { primary: '#2E7D32', secondary: '#fff' } },
+        success: { iconTheme: { primary: '#EA580C', secondary: '#fff' } },
         error: { iconTheme: { primary: '#D32F2F', secondary: '#fff' } },
       }}
     />

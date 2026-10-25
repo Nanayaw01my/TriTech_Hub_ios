@@ -142,15 +142,15 @@ export default function SignaturePad({ onSign, onClear, required = false, label 
           type="button"
           onClick={handleConfirm}
           disabled={isEmpty || signed}
-          className="px-4 py-1.5 text-xs font-semibold text-white bg-green-700 rounded-xl
-                     hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-1.5 text-xs font-semibold text-white bg-orange-600 rounded-xl
+                     hover:bg-orange-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {signed ? '✓ Confirmed' : 'Confirm Signature'}
         </button>
       </div>
 
       {signed && (
-        <p className="text-xs text-green-700 font-semibold flex items-center gap-1">
+        <p className="text-xs text-orange-600 font-semibold flex items-center gap-1">
           <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-4.121-4.121a1 1 0 011.414-1.414L8.414 12.172l6.879-6.879a1 1 0 011.414 0z" clipRule="evenodd"/>
           </svg>

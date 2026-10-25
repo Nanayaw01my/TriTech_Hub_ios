@@ -9,7 +9,7 @@ export default function LoadingSpinner({ size = 'md', color = 'primary', fullScr
   }
 
   const colors = {
-    primary: 'border-green-800 border-t-transparent',
+    primary: 'border-orange-500 border-t-transparent',
     white: 'border-white border-t-transparent',
     gray: 'border-gray-400 border-t-transparent',
   }

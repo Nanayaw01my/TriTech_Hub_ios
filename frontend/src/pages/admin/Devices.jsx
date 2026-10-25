@@ -7,63 +7,56 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
-const IPHONE_MODELS = [
-  // iPhone SE
-  { model: 'iPhone SE (1st Gen)', price: 1200 },
-  { model: 'iPhone SE (2nd Gen)', price: 1800 },
-  { model: 'iPhone SE (3rd Gen)', price: 2500 },
-  // iPhone X series
-  { model: 'iPhone X', price: 1500 },
-  { model: 'iPhone XR', price: 2000 },
-  { model: 'iPhone XS', price: 2200 },
-  { model: 'iPhone XS Max', price: 2500 },
-  // iPhone 11 series
-  { model: 'iPhone 11', price: 2800 },
-  { model: 'iPhone 11 Pro', price: 3500 },
-  { model: 'iPhone 11 Pro Max', price: 4000 },
-  // iPhone 12 series
-  { model: 'iPhone 12 Mini', price: 3000 },
-  { model: 'iPhone 12', price: 3500 },
-  { model: 'iPhone 12 Pro', price: 4500 },
-  { model: 'iPhone 12 Pro Max', price: 5000 },
-  // iPhone 13 series
-  { model: 'iPhone 13 Mini', price: 4500 },
-  { model: 'iPhone 13', price: 5500 },
-  { model: 'iPhone 13 Pro', price: 7000 },
-  { model: 'iPhone 13 Pro Max', price: 7500 },
-  // iPhone 14 series
-  { model: 'iPhone 14', price: 8500 },
-  { model: 'iPhone 14 Plus', price: 9500 },
-  { model: 'iPhone 14 Pro', price: 11000 },
-  { model: 'iPhone 14 Pro Max', price: 12500 },
-  // iPhone 15 series
-  { model: 'iPhone 15', price: 10500 },
-  { model: 'iPhone 15 Plus', price: 11500 },
-  { model: 'iPhone 15 Pro', price: 14000 },
-  { model: 'iPhone 15 Pro Max', price: 16000 },
-  // iPhone 16 series
-  { model: 'iPhone 16e', price: 15000 },
-  { model: 'iPhone 16', price: 18000 },
-  { model: 'iPhone 16 Plus', price: 19500 },
-  { model: 'iPhone 16 Pro', price: 20000 },
-  { model: 'iPhone 16 Pro Max', price: 22000 },
+const ANDROID_MODELS = [
+  // itel
+  { model: 'itel A70', price: 850 },
+  { model: 'itel S23', price: 1400 },
+  // Tecno
+  { model: 'Tecno Spark Go 2024', price: 900 },
+  { model: 'Tecno Spark 20', price: 1300 },
+  { model: 'Tecno Spark 20 Pro', price: 1800 },
+  { model: 'Tecno Camon 20', price: 2200 },
+  { model: 'Tecno Camon 30', price: 3200 },
+  { model: 'Tecno Pova 6', price: 3000 },
+  { model: 'Tecno Phantom V Flip', price: 7000 },
+  // Infinix
+  { model: 'Infinix Smart 8', price: 900 },
+  { model: 'Infinix Hot 40i', price: 1300 },
+  { model: 'Infinix Hot 40 Pro', price: 1900 },
+  { model: 'Infinix Note 40', price: 2600 },
+  { model: 'Infinix Note 40 Pro', price: 3400 },
+  { model: 'Infinix Zero 30', price: 4200 },
+  // Redmi / Xiaomi
+  { model: 'Redmi 13C', price: 1300 },
+  { model: 'Xiaomi Redmi A3', price: 1100 },
+  { model: 'Redmi Note 13', price: 2200 },
+  { model: 'Redmi Note 13 Pro', price: 3200 },
+  // Samsung
+  { model: 'Samsung Galaxy A05', price: 1200 },
+  { model: 'Samsung Galaxy A15', price: 1900 },
+  { model: 'Samsung Galaxy A25 5G', price: 2800 },
+  { model: 'Samsung Galaxy A35 5G', price: 4200 },
+  { model: 'Samsung Galaxy A55 5G', price: 5500 },
+  { model: 'Samsung Galaxy S23', price: 9000 },
+  { model: 'Samsung Galaxy S24', price: 12000 },
+  { model: 'Samsung Galaxy S24 Ultra', price: 18000 },
+  // Oppo
+  { model: 'Oppo A58', price: 2000 },
+  { model: 'Oppo Reno 11', price: 4500 },
 ]
 
 const STORAGE_OPTIONS = ['32GB', '64GB', '128GB', '256GB', '512GB', '1TB']
 
-const IPHONE_COLORS = [
-  'Black', 'White', 'Blue', 'Green', 'Yellow', 'Pink', 'Purple', 'Red',
-  'Midnight', 'Starlight', 'Blue Titanium', 'Natural Titanium', 'White Titanium',
-  'Black Titanium', 'Desert Titanium', 'Ultramarine', 'Teal',
+const ANDROID_COLORS = [
+  'Black', 'White', 'Blue', 'Light Blue', 'Dark Blue', 'Green', 'Gray',
+  'Gold', 'Silver', 'Purple', 'Red', 'Pink', 'Cyan', 'Titanium Gray', 'Titanium Black',
 ]
 
 const COLOR_DOTS = {
-  Black: '#1c1c1e', White: '#f5f5f0', Blue: '#3b82f6', Green: '#22c55e',
-  Yellow: '#eab308', Pink: '#ec4899', Purple: '#a855f7', Red: '#ef4444',
-  Midnight: '#1e293b', Starlight: '#f0ebe3', 'Blue Titanium': '#60a5fa',
-  'Natural Titanium': '#a8a095', 'White Titanium': '#e8e8e4',
-  'Black Titanium': '#2d2d2d', 'Desert Titanium': '#c8a882',
-  Ultramarine: '#3730a3', Teal: '#14b8a6',
+  Black: '#1c1c1e', White: '#f5f5f0', Blue: '#3b82f6', 'Light Blue': '#7dd3fc',
+  'Dark Blue': '#1e3a8a', Green: '#22c55e', Gray: '#6b7280', Gold: '#d4af37',
+  Silver: '#cbd5e1', Purple: '#a855f7', Red: '#ef4444', Pink: '#ec4899',
+  Cyan: '#06b6d4', 'Titanium Gray': '#a8a095', 'Titanium Black': '#2d2d2d',
 }
 
 const initForm = { model: '', color: '', storage: '', price: '' }
@@ -137,7 +130,7 @@ export default function AdminDevices() {
   useEffect(() => { if (tab === 'sales') fetchSales() }, [tab, fetchSales])
 
   const handleModelChange = (model) => {
-    const found = IPHONE_MODELS.find(m => m.model === model)
+    const found = ANDROID_MODELS.find(m => m.model === model)
     setForm(f => ({ ...f, model, price: found ? String(found.price) : '' }))
   }
 
@@ -206,11 +199,11 @@ export default function AdminDevices() {
   }
 
   return (
-    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
+    <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50">
 
       {/* Mobile Hero */}
-      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-emerald-50">
-        <p className="text-emerald-600 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
+      <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-orange-50">
+        <p className="text-orange-500 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
         <div className="flex items-start justify-between mt-1">
           <div>
             <h1 className="text-gray-900 text-2xl font-black">Devices</h1>
@@ -221,7 +214,7 @@ export default function AdminDevices() {
           {tab === 'catalog' && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl active:scale-95 transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 bg-orange-50 border border-orange-200 text-orange-600 text-xs font-semibold rounded-xl active:scale-95 transition-all"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -245,8 +238,8 @@ export default function AdminDevices() {
         {tab === 'catalog' && (
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white font-semibold text-sm rounded-xl
-                       hover:bg-emerald-600 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
+            className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white font-semibold text-sm rounded-xl
+                       hover:bg-orange-500 active:scale-95 transition-all shadow-lg shadow-orange-500/20"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -264,7 +257,7 @@ export default function AdminDevices() {
         <select
           value={lockFilter}
           onChange={(e) => setLockFilter(e.target.value)}
-          className="flex-1 px-3 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-white"
+          className="flex-1 px-3 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-orange-500 bg-white"
         >
           <option value="">All Lock Status</option>
           <option value="false">Unlocked</option>
@@ -329,7 +322,7 @@ export default function AdminDevices() {
                     onClick={() => setLockModal(d)}
                     className={`mt-1.5 text-xs px-3 py-1.5 rounded-xl font-semibold transition-colors
                       ${isLocked
-                        ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                        ? 'bg-orange-100 text-orange-600 hover:bg-orange-200'
                         : 'bg-red-100 text-red-700 hover:bg-red-200'
                       }`}
                   >
@@ -363,13 +356,13 @@ export default function AdminDevices() {
                 value={salesSearch}
                 onChange={(e) => { setSalesSearch(e.target.value); setSalesPage(1) }}
                 placeholder="Search by customer, device..."
-                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-white"
+                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-orange-500 bg-white"
               />
             </div>
             <select
               value={salesStatus}
               onChange={(e) => { setSalesStatus(e.target.value); setSalesPage(1) }}
-              className="px-3 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-white"
+              className="px-3 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-orange-500 bg-white"
             >
               <option value="">All Status</option>
               <option value="active">Active</option>
@@ -406,7 +399,7 @@ export default function AdminDevices() {
                     >
                       {/* Customer + Device row */}
                       <div className="flex items-start gap-3 mb-3">
-                        <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0 font-black text-emerald-800 text-lg">
+                        <div className="w-11 h-11 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0 font-black text-orange-500 text-lg">
                           {s.customer_name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -418,7 +411,7 @@ export default function AdminDevices() {
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-xs text-gray-400">{s.start_date ? format(new Date(s.start_date), 'dd MMM yyyy') : ''}</p>
-                          <p className="text-xs text-emerald-600 font-semibold mt-0.5">{s.staff_name}</p>
+                          <p className="text-xs text-orange-500 font-semibold mt-0.5">{s.staff_name}</p>
                         </div>
                       </div>
 
@@ -445,11 +438,11 @@ export default function AdminDevices() {
                         </div>
                         <div className="text-center">
                           <p className="text-xs text-gray-400 mb-0.5">Paid</p>
-                          <p className="text-sm font-black text-emerald-700">GHS {Number(s.amount_paid).toLocaleString()}</p>
+                          <p className="text-sm font-black text-orange-600">GHS {Number(s.amount_paid).toLocaleString()}</p>
                         </div>
                         <div className="text-center">
                           <p className="text-xs text-gray-400 mb-0.5">Balance</p>
-                          <p className={`text-sm font-black ${s.remaining_balance > 0 ? 'text-orange-600' : 'text-emerald-700'}`}>
+                          <p className={`text-sm font-black ${s.remaining_balance > 0 ? 'text-orange-600' : 'text-orange-600'}`}>
                             GHS {Number(s.remaining_balance).toLocaleString()}
                           </p>
                         </div>
@@ -459,11 +452,11 @@ export default function AdminDevices() {
                       <div className="mt-2">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-[10px] text-gray-400">{s.payments_made}/{s.total_payments} payments</span>
-                          <span className="text-[10px] font-bold text-emerald-700">{pct}%</span>
+                          <span className="text-[10px] font-bold text-orange-600">{pct}%</span>
                         </div>
                         <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all ${isCompleted ? 'bg-emerald-500' : isDefaulted ? 'bg-red-400' : 'bg-green-600'}`}
+                            className={`h-full rounded-full transition-all ${isCompleted ? 'bg-orange-500' : isDefaulted ? 'bg-red-400' : 'bg-orange-500'}`}
                             style={{ width: `${Math.min(100, pct)}%` }}
                           />
                         </div>
@@ -503,7 +496,7 @@ export default function AdminDevices() {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
           <div className="relative bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
             {/* Modal header strip */}
-            <div className="h-1 bg-gradient-to-r from-green-500 to-emerald-400 rounded-t-3xl sm:rounded-t-3xl" />
+            <div className="h-1 bg-gradient-to-r from-orange-500 to-orange-400 rounded-t-3xl sm:rounded-t-3xl" />
 
             <div className="p-6">
               <div className="flex items-center justify-between mb-5">
@@ -519,7 +512,7 @@ export default function AdminDevices() {
 
                 {/* Model */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">iPhone Model *</label>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Android Model *</label>
                   <ModelPickerInput
                     value={form.model}
                     onChange={(v) => handleModelChange(v)}
@@ -535,10 +528,10 @@ export default function AdminDevices() {
                     <select
                       value={form.color}
                       onChange={(e) => setForm(f => ({ ...f, color: e.target.value }))}
-                      className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-gray-50"
+                      className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-orange-500 bg-gray-50"
                     >
                       <option value="">Select color</option>
-                      {IPHONE_COLORS.map(c => (
+                      {ANDROID_COLORS.map(c => (
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
@@ -548,7 +541,7 @@ export default function AdminDevices() {
                     <select
                       value={form.storage}
                       onChange={(e) => setForm(f => ({ ...f, storage: e.target.value }))}
-                      className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-gray-50"
+                      className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-orange-500 bg-gray-50"
                     >
                       <option value="">Select storage</option>
                       {STORAGE_OPTIONS.map(s => (
@@ -579,7 +572,7 @@ export default function AdminDevices() {
                     value={form.price}
                     onChange={(e) => setForm(f => ({ ...f, price: e.target.value }))}
                     placeholder="Auto-filled from model"
-                    className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-gray-50"
+                    className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl text-sm focus:outline-none focus:border-orange-500 bg-gray-50"
                   />
                 </div>
 
@@ -596,9 +589,9 @@ export default function AdminDevices() {
                   <button
                     type="submit"
                     disabled={addLoading}
-                    className="flex-1 py-3 bg-gradient-to-r from-green-700 to-emerald-600 text-white font-semibold text-sm rounded-2xl
-                               hover:from-green-800 hover:to-emerald-700 disabled:opacity-60 flex items-center justify-center gap-2
-                               shadow-lg shadow-green-900/20 transition-all"
+                    className="flex-1 py-3 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-semibold text-sm rounded-2xl
+                               hover:from-orange-500 hover:to-orange-600 disabled:opacity-60 flex items-center justify-center gap-2
+                               shadow-lg shadow-orange-600/20 transition-all"
                   >
                     {addLoading && <LoadingSpinner size="sm" color="white" />}
                     Add Device
@@ -661,7 +654,7 @@ function ModelPickerInput({ value, onChange, error }) {
     }
   }, [])
 
-  const filtered = IPHONE_MODELS.filter(m =>
+  const filtered = ANDROID_MODELS.filter(m =>
     m.model.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -685,9 +678,9 @@ function ModelPickerInput({ value, onChange, error }) {
         value={search}
         onChange={handleInput}
         onFocus={() => setOpen(true)}
-        placeholder="e.g. iPhone 17 Pro Max"
+        placeholder="e.g. Samsung Galaxy A55 5G"
         autoComplete="off"
-        className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-emerald-600 bg-gray-50
+        className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-orange-500 bg-gray-50
           ${error ? 'border-red-400' : 'border-gray-100'}`}
       />
       {open && filtered.length > 0 && (
@@ -698,7 +691,7 @@ function ModelPickerInput({ value, onChange, error }) {
               type="button"
               onMouseDown={(e) => { e.preventDefault(); select(m.model) }}
               onTouchEnd={(e) => { e.preventDefault(); select(m.model) }}
-              className="w-full text-left px-4 py-3 text-sm hover:bg-emerald-50 active:bg-emerald-100 border-b border-gray-50 last:border-0 flex justify-between items-center gap-2"
+              className="w-full text-left px-4 py-3 text-sm hover:bg-orange-50 active:bg-orange-100 border-b border-gray-50 last:border-0 flex justify-between items-center gap-2"
             >
               <span className="font-medium text-gray-800">{m.model}</span>
               <span className="text-xs text-gray-400 flex-shrink-0">GHS {m.price.toLocaleString()}</span>

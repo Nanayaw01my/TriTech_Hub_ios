@@ -11,7 +11,7 @@ export default function AdminSettings() {
   const { user, updateUser } = useAuth()
 
   const [settings, setSettings] = useState({
-    business_name: 'Tritech Hub iOS',
+    business_name: 'Dan Dorsolar Company Limited',
     contact_email: '',
     contact_phone: '',
     contact_address: '',
@@ -126,9 +126,9 @@ export default function AdminSettings() {
   }
 
   return (
-    <div className="pb-24 lg:pb-6 bg-gradient-to-br from-gray-50 via-white to-emerald-50 min-h-screen">
+    <div className="pb-24 lg:pb-6 bg-gradient-to-br from-gray-50 via-white to-orange-50 min-h-screen">
       {/* Header */}
-      <div className="lg:hidden px-6 pt-6 pb-8 bg-gradient-to-br from-gray-50 to-emerald-50">
+      <div className="lg:hidden px-6 pt-6 pb-8 bg-gradient-to-br from-gray-50 to-orange-50">
         <h1 className="text-gray-900 text-3xl font-black">Settings</h1>
         <p className="text-gray-600 text-sm mt-2">Manage your account & app</p>
       </div>
@@ -143,7 +143,7 @@ export default function AdminSettings() {
         {/* My Account Section */}
         <Card padding="p-6 sm:p-8" className="mb-6 shadow-lg">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center">
               <span className="text-white text-xl font-black">
                 {(user?.name || 'A').charAt(0).toUpperCase()}
               </span>
@@ -179,7 +179,7 @@ export default function AdminSettings() {
                   onChange={e => setProfileForm(f => ({ ...f, current_password: e.target.value }))}
                   placeholder="••••••••"
                   className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
-                           focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
+                           focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                            text-gray-900 placeholder-gray-500 transition-all"
                 />
                 <button
@@ -232,7 +232,7 @@ export default function AdminSettings() {
                 placeholder="Physical address"
                 rows={3}
                 className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl
-                         focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900
+                         focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900
                          placeholder-gray-500 transition-all resize-none"
               />
             </div>
@@ -289,7 +289,7 @@ export default function AdminSettings() {
                   value={passwordForm.current_password}
                   onChange={(e) => setPasswordForm(f => ({ ...f, current_password: e.target.value }))}
                   className={`w-full px-4 py-3 bg-white border rounded-xl focus:outline-none focus:ring-2
-                            focus:ring-emerald-500 text-gray-900 transition-all
+                            focus:ring-orange-500 text-gray-900 transition-all
                             ${pwErrors.current_password ? 'border-red-400' : 'border-gray-200'}`}
                 />
                 <button type="button" onClick={() => setShowCurrentPw(!showCurrentPw)}
@@ -308,7 +308,7 @@ export default function AdminSettings() {
                   value={passwordForm.new_password}
                   onChange={(e) => setPasswordForm(f => ({ ...f, new_password: e.target.value }))}
                   className={`w-full px-4 py-3 bg-white border rounded-xl focus:outline-none focus:ring-2
-                            focus:ring-emerald-500 text-gray-900 transition-all
+                            focus:ring-orange-500 text-gray-900 transition-all
                             ${pwErrors.new_password ? 'border-red-400' : 'border-gray-200'}`}
                 />
                 <button type="button" onClick={() => setShowNewPw(!showNewPw)}
@@ -326,7 +326,7 @@ export default function AdminSettings() {
                 value={passwordForm.confirm_password}
                 onChange={(e) => setPasswordForm(f => ({ ...f, confirm_password: e.target.value }))}
                 className={`w-full px-4 py-3 bg-white border rounded-xl focus:outline-none focus:ring-2
-                          focus:ring-emerald-500 text-gray-900 transition-all
+                          focus:ring-orange-500 text-gray-900 transition-all
                           ${pwErrors.confirm_password ? 'border-red-400' : 'border-gray-200'}`}
               />
               {pwErrors.confirm_password && <p className="text-red-600 text-xs mt-1">{pwErrors.confirm_password}</p>}

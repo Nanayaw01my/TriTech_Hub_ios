@@ -18,20 +18,20 @@ export default function NotFound() {
       <div className="text-center max-w-xs w-full">
         <div style={{
           fontSize: '6rem', fontWeight: '900', lineHeight: 1,
-          color: '#E8F5E9', marginBottom: '0.5rem',
+          color: '#FFF7ED', marginBottom: '0.5rem',
           textShadow: '0 2px 8px rgba(0,0,0,0.08)',
         }}>
           404
         </div>
-        <div className="w-16 h-1 bg-emerald-600 rounded-full mx-auto mb-6" />
+        <div className="w-16 h-1 bg-orange-500 rounded-full mx-auto mb-6" />
         <h1 className="text-2xl font-black text-gray-900 mb-2">Page Not Found</h1>
         <p className="text-gray-500 text-sm mb-8 leading-relaxed">
           This page doesn't exist or you don't have permission to view it.
         </p>
         <button
           onClick={handleGoHome}
-          className="w-full py-3.5 bg-emerald-700 text-white font-bold rounded-2xl
-                     hover:bg-green-900 active:scale-95 transition-all"
+          className="w-full py-3.5 bg-orange-600 text-white font-bold rounded-2xl
+                     hover:bg-orange-600 active:scale-95 transition-all"
         >
           Back to Home
         </button>

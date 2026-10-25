@@ -151,7 +151,7 @@ app.use('/uploads', express.static(uploadsPath));
 app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Tritech Hub iOS API is running.',
+    message: 'Dan Dorsolar Company Limited API is running.',
     data: {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
@@ -190,7 +190,7 @@ app.get('/api/forceseed', async (req, res) => {
     const salt2 = await bcrypt.genSalt(10);
     await User.collection.insertMany([
       {
-        name: 'Tritech Admin',
+        name: 'Dan Dorsolar Admin',
         email: 'admin@tritech.com',
         password: await bcrypt.hash('admin123', salt1),
         role: 'admin',
@@ -199,7 +199,7 @@ app.get('/api/forceseed', async (req, res) => {
         updated_at: new Date(),
       },
       {
-        name: 'Tritech Staff',
+        name: 'Dan Dorsolar Staff',
         email: 'staff@tritech.com',
         password: await bcrypt.hash('staff123', salt2),
         role: 'staff',
@@ -362,7 +362,7 @@ const seedDatabase = async () => {
       const salt = await bcrypt.genSalt(10);
       const hashed = await bcrypt.hash('admin123', salt);
       await User.collection.insertOne({
-        name: 'Tritech Admin',
+        name: 'Dan Dorsolar Admin',
         email: 'admin@tritech.com',
         password: hashed,
         role: 'admin',
@@ -379,7 +379,7 @@ const seedDatabase = async () => {
       const salt = await bcrypt.genSalt(10);
       const hashed = await bcrypt.hash('staff123', salt);
       await User.collection.insertOne({
-        name: 'Tritech Staff',
+        name: 'Dan Dorsolar Staff',
         email: 'staff@tritech.com',
         password: hashed,
         role: 'staff',
@@ -466,7 +466,7 @@ const seedDatabase = async () => {
 const startServer = async () => {
   // Bind port FIRST so Render sees the service as alive
   app.listen(PORT, () => {
-    logger.info('Tritech Hub iOS API — port %d — env: %s', PORT, process.env.NODE_ENV || 'development');
+    logger.info('Dan Dorsolar Company Limited API — port %d — env: %s', PORT, process.env.NODE_ENV || 'development');
   });
 
   // Then connect to MongoDB (retries in background)

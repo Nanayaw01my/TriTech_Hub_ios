@@ -12,10 +12,10 @@ export default function Button({
   const baseStyles = 'font-semibold rounded-full transition-all duration-200 active:scale-95 flex items-center justify-center gap-2'
 
   const variants = {
-    primary: 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed',
+    primary: 'bg-orange-500 text-white hover:bg-orange-500 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed',
     secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed',
     danger: 'bg-red-500 text-white hover:bg-red-600 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed',
-    ghost: 'text-emerald-600 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed',
+    ghost: 'text-orange-500 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed',
   }
 
   const sizes = {
