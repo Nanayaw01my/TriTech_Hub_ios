@@ -29,15 +29,18 @@ const processSuccessfulPayment = async ({
   paidBy,
   recordedBy,
   notes = '',
+  method = 'paystack',
 }) => {
   // Amount from Paystack is in kobo — convert back to GHS
   const amountGHS = paystackData.amount / 100;
   const reference = paystackData.reference;
 
-  // Check for duplicate payment (idempotency)
-  const existingPayment = await Payment.findOne({ paystack_reference: reference });
-  if (existingPayment) {
-    return { duplicate: true, payment: existingPayment };
+  // Check for duplicate payment (idempotency) — only Paystack has a reference.
+  if (reference) {
+    const existingPayment = await Payment.findOne({ paystack_reference: reference });
+    if (existingPayment) {
+      return { duplicate: true, payment: existingPayment };
+    }
   }
 
   // Create Payment record
@@ -46,9 +49,9 @@ const processSuccessfulPayment = async ({
     customer_id: customer._id,
     amount: amountGHS,
     payment_date: new Date(paystackData.paid_at || Date.now()),
-    payment_method: 'paystack',
-    paystack_reference: reference,
-    paystack_status: paystackData.status,
+    payment_method: method,
+    paystack_reference: method === 'paystack' ? reference : undefined,
+    paystack_status: method === 'paystack' ? paystackData.status : undefined,
     paid_by: paidBy,
     recorded_by: recordedBy,
     notes,
@@ -157,7 +160,7 @@ const processSuccessfulPayment = async ({
   });
 
   // Send payment confirmation email + SMS
-  const deviceModel = device?.model || 'iPhone';
+  const deviceModel = device?.model || 'device';
   const paymentsLeft = Math.max(0, plan.total_payments - newPaymentsMade);
 
   try {
@@ -521,4 +524,4 @@ const paystackWebhook = async (req, res) => {
   }
 };
 
-module.exports = { initializePayment: initializePaymentHandler, verifyPayment: verifyPaymentHandler, paystackWebhook };
+module.exports = { initializePayment: initializePaymentHandler, verifyPayment: verifyPaymentHandler, paystackWebhook, processSuccessfulPayment };

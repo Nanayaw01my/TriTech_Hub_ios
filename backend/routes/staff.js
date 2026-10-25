@@ -10,6 +10,7 @@ const {
   getCustomerDetail,
   getCustomerPayments,
   makePaymentForCustomer,
+  recordCashPayment,
   getAvailableDevices,
   getStaffStats,
 } = require('../controllers/staffController');
@@ -98,6 +99,19 @@ router.post(
     body('amount').optional().isFloat({ min: 0.01 }).withMessage('Amount must be greater than 0.'),
   ],
   makePaymentForCustomer
+);
+
+/**
+ * POST /api/staff/customers/:id/record-cash
+ * Record an installment payment collected in cash.
+ */
+router.post(
+  '/customers/:id/record-cash',
+  [
+    param('id').isMongoId().withMessage('Invalid customer ID.'),
+    body('amount').isFloat({ min: 0.01 }).withMessage('Amount must be greater than 0.'),
+  ],
+  recordCashPayment
 );
 
 module.exports = router;

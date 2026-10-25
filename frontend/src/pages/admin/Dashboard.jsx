@@ -135,7 +135,7 @@ export default function AdminDashboard() {
       <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-orange-50">
         <p className="text-orange-500 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
         <h1 className="text-gray-900 text-2xl font-black mt-1 leading-tight">
-          {(user?.full_name || user?.name || 'Admin').split(' ')[0]}
+          Dan Dorsolar
         </h1>
         <p className="text-gray-500 text-xs mt-0.5">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
 
@@ -162,7 +162,7 @@ export default function AdminDashboard() {
         <div className="hidden lg:block mb-5">
           <h1 className="text-2xl font-black text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Welcome back, {user?.full_name || user?.name} • {format(new Date(), 'EEEE, dd MMMM yyyy')}
+            Welcome back • {format(new Date(), 'EEEE, dd MMMM yyyy')}
           </p>
         </div>
 

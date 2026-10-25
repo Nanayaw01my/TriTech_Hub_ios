@@ -12,6 +12,7 @@ const { sendAdminSaleSMS, sendAdminSaleWhatsApp, sendCustomerWelcomeSMS } = requ
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../utils/logger');
 const { uploadBase64 } = require('../utils/cloudinary');
+const { processSuccessfulPayment } = require('./paymentController');
 
 // Upload a base64-encoded image to Cloudinary, return the secure URL (or null).
 const saveBase64Image = async (base64String, fieldName, customerId = '') => {
@@ -643,6 +644,62 @@ const getCustomerPayments = async (req, res) => {
 };
 
 /**
+ * POST /api/staff/customers/:id/record-cash
+ * Record an installment payment collected in cash at the counter.
+ */
+const recordCashPayment = async (req, res) => {
+  try {
+    const amt = Number(req.body?.amount);
+    if (!Number.isFinite(amt) || amt <= 0) {
+      return res.status(400).json({ success: false, message: 'Enter a valid payment amount.' });
+    }
+
+    const filter = { _id: req.params.id };
+    if (req.user.role === 'staff') filter.created_by = req.user._id;
+    const customer = await Customer.findOne(filter).lean();
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Customer not found or access denied.' });
+    }
+
+    const plan = await InstallmentPlan.findOne({ customer_id: customer._id }).lean();
+    if (!plan) return res.status(404).json({ success: false, message: 'No installment plan for this customer.' });
+    if (plan.status === 'completed' || plan.remaining_balance <= 0) {
+      return res.status(400).json({ success: false, message: 'This plan is already fully paid.' });
+    }
+
+    const device = plan.device_id ? await Device.findById(plan.device_id).lean() : null;
+    const paidBy = { user_id: req.user._id, user_role: req.user.role, name: req.user.name };
+
+    const result = await processSuccessfulPayment({
+      paystackData: { amount: Math.round(amt * 100), paid_at: Date.now(), reference: null, status: 'manual_cash' },
+      customer,
+      plan,
+      device,
+      paidBy,
+      recordedBy: req.user._id,
+      notes: `Cash payment recorded by ${req.user.name || 'staff'}`,
+      method: 'manual_cash',
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: result.isCompleted
+        ? 'Cash payment recorded — plan fully paid, device unlocked.'
+        : 'Cash payment recorded.',
+      data: {
+        amount: amt,
+        remaining_balance: result.newRemainingBalance,
+        payments_made: result.newPaymentsMade,
+        completed: result.isCompleted,
+      },
+    });
+  } catch (error) {
+    logger.error('Staff recordCashPayment error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
  * POST /api/staff/customers/:id/payment
  * Initialize Paystack payment on behalf of a customer.
  */
@@ -771,6 +828,7 @@ module.exports = {
   getCustomerDetail,
   getCustomerPayments,
   makePaymentForCustomer,
+  recordCashPayment,
   getAvailableDevices,
   getStaffStats,
 };

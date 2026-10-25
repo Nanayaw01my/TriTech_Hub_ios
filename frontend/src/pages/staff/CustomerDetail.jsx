@@ -94,6 +94,30 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
     }
   }
 
+  // Record the installment as cash collected at the counter (no Paystack).
+  const handleCash = async () => {
+    const amt = parseFloat(amount)
+    if (!amt || amt <= 0) { toast.error('Enter a valid amount'); return }
+    if (amt > remaining) { toast.error(`Amount exceeds remaining balance (GHS ${remaining.toLocaleString()})`); return }
+    setProcessing(true)
+    try {
+      const res = await api.post(`/staff/customers/${customer._id}/record-cash`, { amount: amt })
+      const d = res.data?.data || {}
+      setReceipt({
+        amount: amt,
+        reference: 'CASH',
+        date: new Date(),
+        newBalance: d.remaining_balance ?? Math.max(0, remaining - amt),
+      })
+      toast.success(res.data?.message || 'Cash payment recorded')
+      onSuccess()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not record cash payment')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50 px-4 pb-4 sm:p-4">
       <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-xl">
@@ -257,6 +281,24 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
               )}
             </button>
             <p className="text-center text-xs text-gray-400 mt-2">Powered by Paystack · MoMo & Card accepted</p>
+
+            {/* Cash option */}
+            <div className="flex items-center gap-3 my-3">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400 font-semibold">OR</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+            <button
+              onClick={handleCash}
+              disabled={processing || !amount}
+              className="w-full py-3.5 border-2 border-orange-600 text-orange-700 font-bold text-sm rounded-2xl
+                         flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-all hover:bg-orange-50"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              Record Cash Payment
+            </button>
           </>
         )}
       </div>
