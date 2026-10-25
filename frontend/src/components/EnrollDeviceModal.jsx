@@ -67,9 +67,9 @@ export default function EnrollDeviceModal({ deviceId, deviceLabel, isOpen, onClo
             <>
               {!data?.ready && (
                 <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl p-3 mb-4">
-                  The agent APK isn’t published yet. Build it (Actions → “Build Lock Agent APK”),
-                  host it, and set <span className="font-mono">AGENT_APK_URL</span> +{' '}
-                  <span className="font-mono">AGENT_APK_CHECKSUM</span> on the server to make this QR installable.
+                  The agent APK isn’t published yet. Run <span className="font-semibold">Actions → “Build Lock
+                  Agent APK”</span> (it commits the APK to the server), then redeploy the backend to make this
+                  QR installable.
                 </div>
               )}
 

@@ -14,19 +14,36 @@
  * set up.
  */
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const logger = require('./logger');
 
 // ── Config (deploy-time) ──────────────────────────────────────────────────
 const AGENT_PACKAGE = process.env.AGENT_PACKAGE || 'com.dandorsolar.lockagent';
 const AGENT_RECEIVER =
   process.env.AGENT_RECEIVER || `${AGENT_PACKAGE}/.DeviceAdminReceiver`;
-// The signed agent APK and the base64url SHA-256 of its signing certificate.
-// Both are produced by the agent build (see lock-agent/README.md) and set as
-// env vars so the provisioning QR can point installers at the right binary.
-const AGENT_APK_URL = process.env.AGENT_APK_URL || '';
-const AGENT_APK_CHECKSUM = process.env.AGENT_APK_CHECKSUM || '';
 const BACKEND_URL =
   process.env.PUBLIC_BACKEND_URL || process.env.APP_BASE_URL || 'https://tritechhub.online';
+// The signed agent APK is served from this app's own /downloads folder by
+// default, so no external host is needed. Override AGENT_APK_URL to point
+// elsewhere (e.g. a GitHub Release).
+const APK_FILENAME = process.env.AGENT_APK_FILENAME || 'dandorsolar-lock-agent.apk';
+const AGENT_APK_URL = process.env.AGENT_APK_URL || `${BACKEND_URL}/downloads/${APK_FILENAME}`;
+// base64url SHA-256 of the APK's signing certificate. Read from env, else from
+// the committed downloads/agent-checksum.txt that the build writes next to the
+// APK. Until a checksum is available the provisioning QR is not "ready".
+let _checksumCache;
+function agentApkChecksum() {
+  if (process.env.AGENT_APK_CHECKSUM) return process.env.AGENT_APK_CHECKSUM.trim();
+  if (_checksumCache !== undefined) return _checksumCache;
+  try {
+    const p = path.join(__dirname, '..', 'downloads', 'agent-checksum.txt');
+    _checksumCache = fs.existsSync(p) ? fs.readFileSync(p, 'utf8').trim() : '';
+  } catch {
+    _checksumCache = '';
+  }
+  return _checksumCache;
+}
 const BUSINESS_NAME = process.env.BUSINESS_NAME || 'Dan Dorsolar Company Limited';
 const BUSINESS_PHONE = process.env.BUSINESS_PHONE || '';
 // A phone is "online" if it has checked in within this window.
@@ -159,7 +176,7 @@ function buildProvisioningPayload(enrollmentToken, opts = {}) {
   return {
     'android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME': AGENT_RECEIVER,
     'android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION': AGENT_APK_URL,
-    'android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM': AGENT_APK_CHECKSUM,
+    'android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM': agentApkChecksum(),
     'android.app.extra.PROVISIONING_SKIP_ENCRYPTION': true,
     'android.app.extra.PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED': true,
     'android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE': {
@@ -177,7 +194,7 @@ function buildProvisioningPayload(enrollmentToken, opts = {}) {
 }
 
 function provisioningReady() {
-  return !!(AGENT_APK_URL && AGENT_APK_CHECKSUM);
+  return !!(AGENT_APK_URL && agentApkChecksum());
 }
 
 module.exports = {

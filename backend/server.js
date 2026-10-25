@@ -268,6 +268,18 @@ app.use('/api/agent', require('./routes/agent'));
 const frontendDist = path.join(__dirname, 'public');
 app.use(express.static(frontendDist));
 
+// Committed public downloads (e.g. the Android lock-agent APK). Served from
+// this app's own domain so the enrollment QR can point at it. Must come before
+// the SPA catch-all, and sets the APK content type so Android can install it.
+const downloadsPath = path.join(__dirname, 'downloads');
+app.use('/downloads', express.static(downloadsPath, {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.apk')) {
+      res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+    }
+  },
+}));
+
 // Any non-API route serves index.html so React Router handles it
 app.get(/^(?!\/api).*$/, (req, res) => {
   res.sendFile(path.join(frontendDist, 'index.html'));

@@ -7,6 +7,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: lock-agent
@@ -59,18 +61,36 @@ jobs:
           SHA_HEX=$("$APKSIGNER" verify --print-certs "$APK" | awk -F': ' '/SHA-256 digest/{print $2; exit}')
           CHECKSUM=$(echo "$SHA_HEX" | tr -d ' :' | xxd -r -p | openssl base64 -A | tr '+/' '-_' | tr -d '=')
           echo "AGENT_APK_CHECKSUM = $CHECKSUM"
+          echo "CHECKSUM=$CHECKSUM" >> "$GITHUB_ENV"
+          echo "$CHECKSUM" > checksum.txt
           {
             echo "## Lock Agent APK built";
             echo "";
-            echo "Set these on the backend so the enrollment QR works:";
+            echo "The APK + checksum are committed to backend/downloads/, so the";
+            echo "enrollment QR serves from your own domain automatically — no env";
+            echo "vars needed. Deploy the backend to pick them up.";
             echo '```';
-            echo "AGENT_APK_CHECKSUM=$CHECKSUM";
-            echo "AGENT_APK_URL=<host app-release.apk at a public https URL>";
+            echo "signature checksum: $CHECKSUM";
             echo '```';
           } >> "$GITHUB_STEP_SUMMARY"
-          echo "$CHECKSUM" > checksum.txt
 
-      - name: Upload APK + checksum
+      - name: Publish APK to backend/downloads
+        working-directory: ${{ github.workspace }}
+        run: |
+          mkdir -p backend/downloads
+          cp lock-agent/app/build/outputs/apk/release/app-release.apk backend/downloads/dandorsolar-lock-agent.apk
+          printf '%s' "$CHECKSUM" > backend/downloads/agent-checksum.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f backend/downloads/dandorsolar-lock-agent.apk backend/downloads/agent-checksum.txt
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "ci: publish lock-agent APK + checksum to backend/downloads"
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+
+      - name: Upload APK + checksum (artifact)
         uses: actions/upload-artifact@v4
         with:
           name: dandorsolar-lock-agent

@@ -49,23 +49,32 @@ every update, because the signature is pinned in the provisioning QR).
 
 ---
 
-## Wire it to the backend
+## Wire it to the backend (automatic)
 
-After building, host `app-release.apk` at a **public HTTPS URL** (e.g. a GitHub
-Release asset, or `backend/public/`), then set these on the backend:
+The **“Build Lock Agent APK”** workflow commits the built APK and its checksum
+into `backend/downloads/`:
+
+- `backend/downloads/dandorsolar-lock-agent.apk`
+- `backend/downloads/agent-checksum.txt`
+
+The backend serves the APK from its **own domain** at
+`/downloads/dandorsolar-lock-agent.apk` and reads the checksum from that file,
+so **you don't need to set `AGENT_APK_URL` or `AGENT_APK_CHECKSUM`** — just
+**deploy the backend** after the workflow runs, and the admin “Enroll phone”
+screen is ready.
+
+Only set these if you want to change defaults:
 
 ```
-AGENT_APK_URL=https://tritechhub.online/downloads/dandorsolar-lock-agent.apk
-AGENT_APK_CHECKSUM=<the checksum printed by the build>
-AGENT_PACKAGE=com.dandorsolar.lockagent
-PUBLIC_BACKEND_URL=https://tritechhub.online
+PUBLIC_BACKEND_URL=https://tritechhub.online   # your domain (used in the QR)
 BUSINESS_NAME=Dan Dorsolar Company Limited
 BUSINESS_PHONE=+233XXXXXXXXX
+AGENT_APK_URL=...        # override to host the APK elsewhere
+AGENT_APK_CHECKSUM=...   # override the committed checksum
 ```
 
-Until `AGENT_APK_URL` + `AGENT_APK_CHECKSUM` are set, the admin “Enroll phone”
-screen shows **“not ready”** (it can still show the token/payload for manual
-testing).
+Until the workflow has published the APK + checksum (and you've deployed), the
+admin “Enroll phone” screen shows **“not ready.”**
 
 To compute the checksum yourself from an APK:
 ```bash
