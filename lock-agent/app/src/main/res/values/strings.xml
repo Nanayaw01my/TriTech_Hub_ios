@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Dan Dorsolar</string>
+    <string name="admin_label">Dan Dorsolar Device Protection</string>
+    <string name="admin_description">Lets Dan Dorsolar Company Limited lock this device while it is on an installment plan.</string>
+
+    <string name="status_title">Dan Dorsolar</string>
+    <string name="status_subtitle">Device Protection</string>
+    <string name="status_enrolled">This device is protected and linked to your account.</string>
+    <string name="status_not_enrolled">This device is not yet enrolled.</string>
+    <string name="status_not_owner">Not set as device owner. Factory reset and enroll via the QR code.</string>
+
+    <string name="lock_title">Device Locked</string>
+    <string name="lock_default_message">This device is locked due to an overdue installment payment. Make your payment to unlock it automatically.</string>
+    <string name="lock_contact_prefix">Contact: </string>
+    <string name="lock_check_again">Check for payment</string>
+    <string name="lock_checking">Checking…</string>
+</resources>

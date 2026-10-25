@@ -1,0 +1,78 @@
+name: Build Lock Agent APK
+
+# Manually triggered from the GitHub "Actions" tab.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lock-agent
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Install Gradle 8.7
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          unzip -q gradle-8.7-bin.zip -d "$HOME/gradle"
+          echo "$HOME/gradle/gradle-8.7/bin" >> "$GITHUB_PATH"
+
+      - name: Build release APK
+        run: gradle assembleRelease --no-daemon
+
+      - name: Sign with release keystore (optional)
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > release.jks
+          APKSIGNER="$ANDROID_HOME/build-tools/34.0.0/apksigner"
+          "$APKSIGNER" sign \
+            --ks release.jks --ks-pass pass:"$KEYSTORE_PASSWORD" \
+            --ks-key-alias "$KEY_ALIAS" --key-pass pass:"$KEY_PASSWORD" \
+            app/build/outputs/apk/release/app-release.apk
+
+      - name: Compute provisioning signature checksum
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          APKSIGNER="$ANDROID_HOME/build-tools/34.0.0/apksigner"
+          SHA_HEX=$("$APKSIGNER" verify --print-certs "$APK" | awk -F': ' '/SHA-256 digest/{print $2; exit}')
+          CHECKSUM=$(echo "$SHA_HEX" | tr -d ' :' | xxd -r -p | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+          echo "AGENT_APK_CHECKSUM = $CHECKSUM"
+          {
+            echo "## Lock Agent APK built";
+            echo "";
+            echo "Set these on the backend so the enrollment QR works:";
+            echo '```';
+            echo "AGENT_APK_CHECKSUM=$CHECKSUM";
+            echo "AGENT_APK_URL=<host app-release.apk at a public https URL>";
+            echo '```';
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "$CHECKSUM" > checksum.txt
+
+      - name: Upload APK + checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: dandorsolar-lock-agent
+          path: |
+            lock-agent/app/build/outputs/apk/release/app-release.apk
+            lock-agent/checksum.txt
+          if-no-files-found: error

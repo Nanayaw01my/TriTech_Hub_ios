@@ -1,0 +1,8 @@
+<resources>
+    <color name="orange">#EA580C</color>
+    <color name="orange_dark">#C2410C</color>
+    <color name="orange_light">#F97316</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#120A05</color>
+    <color name="ic_launcher_background">#EA580C</color>
+</resources>
