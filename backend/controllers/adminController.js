@@ -836,7 +836,11 @@ const getDeviceProvisioning = async (req, res) => {
       await device.save();
     }
 
-    const payload = agent.buildProvisioningPayload(device.agent.enrollment_token);
+    // Point the QR at the domain the admin is actually using, so the phone can
+    // reach the APK + backend even if PUBLIC_BACKEND_URL isn't set.
+    const baseUrl = process.env.PUBLIC_BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+    const payload = agent.buildProvisioningPayload(device.agent.enrollment_token, { baseUrl });
+    const apkUrl = payload['android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION'];
     let qr = null;
     try {
       const QRCode = require('qrcode');
@@ -851,9 +855,9 @@ const getDeviceProvisioning = async (req, res) => {
         enrollment_token: device.agent.enrollment_token,
         enrollment_status: device.agent.enrollment_status,
         enrolled: !!device.agent.enrolled,
-        // false until AGENT_APK_URL + AGENT_APK_CHECKSUM are configured on the server
+        // false until the agent APK + checksum are published (build workflow)
         ready: agent.provisioningReady(),
-        apk_url: agent.config.AGENT_APK_URL || null,
+        apk_url: apkUrl,
         package: agent.config.AGENT_PACKAGE,
         payload,
         qr,

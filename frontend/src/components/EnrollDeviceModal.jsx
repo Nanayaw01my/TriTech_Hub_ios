@@ -81,6 +81,16 @@ export default function EnrollDeviceModal({ deviceId, deviceLabel, isOpen, onClo
                 </div>
               )}
 
+              {data?.apk_url && (
+                <p className="mt-3 text-center text-xs text-gray-400">
+                  App download:{' '}
+                  <a href={data.apk_url} target="_blank" rel="noreferrer" className="text-orange-600 font-semibold break-all">
+                    test link
+                  </a>{' '}
+                  (should download the .apk)
+                </p>
+              )}
+
               <ol className="mt-5 space-y-2 text-sm text-gray-600 list-decimal list-inside">
                 <li><span className="font-semibold text-gray-800">Factory reset</span> the phone (back up photos first).</li>
                 <li>On the “Hi there” welcome screen, <span className="font-semibold text-gray-800">tap the screen 6 times</span>.</li>

@@ -173,15 +173,20 @@ async function unlockDevice(device) {
  * through to the app.
  */
 function buildProvisioningPayload(enrollmentToken, opts = {}) {
+  // Prefer the domain the admin is actually on (passed as opts.baseUrl), so the
+  // phone downloads the agent + talks to the backend at a URL that really works,
+  // even if PUBLIC_BACKEND_URL isn't set. AGENT_APK_URL env still overrides.
+  const base = (opts.baseUrl || BACKEND_URL).replace(/\/+$/, '');
+  const apkUrl = process.env.AGENT_APK_URL || `${base}/downloads/${APK_FILENAME}`;
   return {
     'android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME': AGENT_RECEIVER,
-    'android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION': AGENT_APK_URL,
+    'android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION': apkUrl,
     'android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM': agentApkChecksum(),
     'android.app.extra.PROVISIONING_SKIP_ENCRYPTION': true,
     'android.app.extra.PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED': true,
     'android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE': {
       enrollment_token: enrollmentToken,
-      backend_url: BACKEND_URL,
+      backend_url: base,
       business_name: BUSINESS_NAME,
       unlock_contact: BUSINESS_PHONE,
       ...(opts.wifiSsid && { wifi_ssid: opts.wifiSsid }),
