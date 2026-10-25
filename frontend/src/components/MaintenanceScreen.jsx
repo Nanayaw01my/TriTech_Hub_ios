@@ -11,7 +11,7 @@ export default function MaintenanceScreen() {
       <div className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] bg-orange-500/30 rounded-full blur-[120px] animate-pulse" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-orange-500/20 rounded-full blur-[140px] animate-pulse"
            style={{ animationDelay: '1.5s' }} />
-      <div className="absolute top-[40%] left-[55%] w-[300px] h-[300px] bg-teal-400/10 rounded-full blur-[100px] animate-pulse"
+      <div className="absolute top-[40%] left-[55%] w-[300px] h-[300px] bg-amber-400/10 rounded-full blur-[100px] animate-pulse"
            style={{ animationDelay: '0.7s' }} />
 
       {/* Subtle grid overlay */}

@@ -250,7 +250,7 @@ function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
   const roleLabel = role === 'admin' ? 'Admin Portal' : role === 'staff' ? 'Staff Portal' : 'My Account'
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-orange-600 to-green-950">
+    <div className="flex flex-col h-full bg-gradient-to-b from-orange-600 to-orange-900">
       {/* Brand */}
       <div
         className="flex items-center gap-3 px-5 pb-5 border-b border-white/10"
