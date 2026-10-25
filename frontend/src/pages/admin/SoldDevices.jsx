@@ -4,6 +4,7 @@ import api from '../../api/axios'
 import toast from 'react-hot-toast'
 import StatusBadge from '../../components/StatusBadge'
 import ConfirmModal from '../../components/ConfirmModal'
+import EnrollDeviceModal from '../../components/EnrollDeviceModal'
 import Skeleton from '../../components/Skeleton'
 import { format } from 'date-fns'
 
@@ -18,6 +19,7 @@ export default function SoldDevices() {
   const [totalPages, setTotalPages] = useState(1)
   const [lockModal, setLockModal] = useState(null) // { sale, action }
   const [lockLoading, setLockLoading] = useState(false)
+  const [enrollModal, setEnrollModal] = useState(null) // sale
   const PER = 25
 
   const fetchSales = useCallback(async () => {
@@ -150,18 +152,29 @@ export default function SoldDevices() {
                       </span>
                       <span className="text-gray-400 text-xs"> of {Number(s.total_price || 0).toLocaleString()}</span>
                     </div>
-                    {!s.has_udid ? (
-                      <span className="text-[11px] text-gray-400">Add UDID to lock</span>
-                    ) : (
+                    {!s.agent_enrolled ? (
                       <button
-                        onClick={() => setLockModal({ sale: s, action: isLocked ? 'unlock' : 'lock' })}
-                        className={`text-sm px-4 py-2 rounded-xl font-bold transition-colors flex-shrink-0
-                          ${isLocked
-                            ? 'bg-orange-100 text-orange-600 hover:bg-orange-200'
-                            : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
+                        onClick={() => setEnrollModal(s)}
+                        className="text-sm px-4 py-2 rounded-xl font-bold bg-orange-600 text-white hover:bg-orange-700 transition-colors flex-shrink-0"
                       >
-                        {isLocked ? 'Unlock' : 'Lock'}
+                        Enroll phone
                       </button>
+                    ) : (
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${s.agent_online ? 'text-green-600' : 'text-gray-400'}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${s.agent_online ? 'bg-green-500' : 'bg-gray-300'}`} />
+                          {s.agent_online ? 'Online' : 'Offline'}
+                        </span>
+                        <button
+                          onClick={() => setLockModal({ sale: s, action: isLocked ? 'unlock' : 'lock' })}
+                          className={`text-sm px-4 py-2 rounded-xl font-bold transition-colors
+                            ${isLocked
+                              ? 'bg-orange-100 text-orange-600 hover:bg-orange-200'
+                              : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
+                        >
+                          {isLocked ? 'Unlock' : 'Lock'}
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -195,6 +208,13 @@ export default function SoldDevices() {
         confirmText={lockModal?.action === 'lock' ? 'Lock' : 'Unlock'}
         confirmVariant={lockModal?.action === 'lock' ? 'danger' : 'primary'}
         loading={lockLoading}
+      />
+
+      <EnrollDeviceModal
+        isOpen={!!enrollModal}
+        deviceId={enrollModal?.device_id}
+        deviceLabel={enrollModal ? `${enrollModal.customer_name} · ${enrollModal.device_model}` : ''}
+        onClose={() => { setEnrollModal(null); fetchSales() }}
       />
     </div>
   )

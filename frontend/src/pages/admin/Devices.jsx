@@ -167,12 +167,8 @@ export default function AdminDevices() {
       const endpoint = isLocking
         ? `/admin/devices/${deviceId}/lock`
         : `/admin/devices/${deviceId}/unlock`
-      await api.post(endpoint)
-      if (isLocking) {
-        toast.success('Device marked as locked. Go to icloud.com to restrict iCloud access.', { duration: 5000 })
-      } else {
-        toast.success('Device marked as unlocked. Go to icloud.com to restore iCloud access.', { duration: 5000 })
-      }
+      const res = await api.post(endpoint)
+      toast.success(res.data?.message || (isLocking ? 'Lock command sent.' : 'Unlock command sent.'), { duration: 6000 })
       setLockModal(null)
       fetchDevices()
     } catch (err) {
@@ -576,7 +572,7 @@ export default function AdminDevices() {
                   />
                 </div>
 
-                {/* Serial number & UDID are entered by staff per phone at customer registration, not here. */}
+                {/* Serial number & IMEI are entered by staff per phone at customer registration, not here. */}
 
                 <div className="flex gap-3 pt-1">
                   <button
@@ -610,10 +606,10 @@ export default function AdminDevices() {
         title={lockModal?.lock_status === 'locked' ? 'Unlock Device' : 'Lock Device'}
         message={
           lockModal?.lock_status === 'locked'
-            ? `Mark ${lockModal?.model}${lockModal?.color ? ` (${lockModal.color})` : ''} as unlocked in the system. You will also need to restore iCloud access on icloud.com manually.`
-            : `Mark ${lockModal?.model}${lockModal?.color ? ` (${lockModal.color})` : ''} as locked in the system. You will also need to remove iCloud access on icloud.com manually to restrict the device.`
+            ? `Unlock ${lockModal?.model}${lockModal?.color ? ` (${lockModal.color})` : ''}? The phone's lock agent will restore access.`
+            : `Lock ${lockModal?.model}${lockModal?.color ? ` (${lockModal.color})` : ''}? The phone must be enrolled with the lock agent first.`
         }
-        confirmText={lockModal?.lock_status === 'locked' ? 'Mark Unlocked' : 'Mark Locked'}
+        confirmText={lockModal?.lock_status === 'locked' ? 'Unlock' : 'Lock'}
         confirmVariant={lockModal?.lock_status === 'locked' ? 'primary' : 'danger'}
         loading={lockLoading}
       />

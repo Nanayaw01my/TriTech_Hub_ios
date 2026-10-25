@@ -5,6 +5,7 @@ import LoadingSpinner from '../../components/LoadingSpinner'
 import StatusBadge from '../../components/StatusBadge'
 import ProgressBar from '../../components/ProgressBar'
 import ConfirmModal from '../../components/ConfirmModal'
+import EnrollDeviceModal from '../../components/EnrollDeviceModal'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
@@ -25,29 +26,7 @@ export default function AdminCustomerDetail() {
   const [imageModal, setImageModal] = useState(null)
   const [repossessModal, setRepossessModal] = useState(false)
   const [repossessLoading, setRepossessLoading] = useState(false)
-  const [editIds, setEditIds] = useState(false)
-  const [idForm, setIdForm] = useState({ serial_number: '', udid: '' })
-  const [savingIds, setSavingIds] = useState(false)
-
-  const saveDeviceIds = async () => {
-    const dev = plan?.device_id || customer?.device
-    const deviceId = dev?._id || dev
-    if (!deviceId) { toast.error('No device is linked to this customer.'); return }
-    setSavingIds(true)
-    try {
-      await api.put(`/admin/devices/${deviceId}`, {
-        serial_number: idForm.serial_number.trim() || undefined,
-        udid: idForm.udid.trim() || undefined,
-      })
-      toast.success('Device serial / UDID saved. You can now lock this phone from the customer.')
-      setEditIds(false)
-      fetchCustomer()
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not save — that serial or UDID may already be in use.')
-    } finally {
-      setSavingIds(false)
-    }
-  }
+  const [enrollOpen, setEnrollOpen] = useState(false)
 
   const fetchCustomer = async () => {
     try {
@@ -226,7 +205,7 @@ export default function AdminCustomerDetail() {
             <p className="text-sm font-bold text-orange-600 mt-0.5">{customer.account_number}</p>
             <div className="flex flex-wrap gap-1.5 mt-2">
               <StatusBadge status={plan?.status || customer.plan_status || 'active'} />
-              {device?.is_locked && <StatusBadge status="locked" />}
+              {device?.lock_status === 'locked' && <StatusBadge status="locked" />}
             </div>
           </div>
         </div>
@@ -317,7 +296,7 @@ export default function AdminCustomerDetail() {
         <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-gray-800">Device</h3>
-            {device.is_locked ? (
+            {(device.lock_status === "locked") ? (
               <button
                 onClick={() => { setLockAction('unlock'); setLockModal(true) }}
                 className="px-3 py-1.5 bg-orange-100 text-orange-600 rounded-xl text-xs font-semibold hover:bg-orange-200 transition-colors"
@@ -333,57 +312,26 @@ export default function AdminCustomerDetail() {
             <Row label="Model" value={device.model || device.device_model} />
             {device.serial_number && <Row label="Serial Number" value={device.serial_number} mono />}
             {device.imei && <Row label="IMEI" value={device.imei} mono />}
-            {device.udid && <Row label="UDID" value={device.udid} mono truncate />}
             <div className="flex justify-between items-center pt-0.5">
               <span className="text-gray-500">Lock Status</span>
-              <StatusBadge status={device.is_locked ? 'locked' : 'unlocked'} />
+              <StatusBadge status={(device.lock_status === "locked") ? 'locked' : 'unlocked'} />
+            </div>
+            <div className="flex justify-between items-center pt-0.5">
+              <span className="text-gray-500">Lock Agent</span>
+              {device.agent?.enrolled ? (
+                <span className="text-xs font-semibold text-green-600">Enrolled</span>
+              ) : (
+                <span className="text-xs font-semibold text-gray-400">Not enrolled</span>
+              )}
             </div>
 
-            {/* Serial / UDID editor — the UDID is what makes the customer-side lock work */}
-            {!editIds ? (
-              <button
-                onClick={() => { setIdForm({ serial_number: device.serial_number || '', udid: device.udid || '' }); setEditIds(true) }}
-                className="mt-2 text-xs font-semibold text-orange-600 hover:text-orange-600"
-              >
-                {device.udid ? 'Edit Serial / UDID' : '+ Add Serial / UDID (needed to lock this phone)'}
-              </button>
-            ) : (
-              <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Serial Number</label>
-                  <input
-                    value={idForm.serial_number}
-                    onChange={e => setIdForm(f => ({ ...f, serial_number: e.target.value.trim() }))}
-                    placeholder="C39XKT1JQ1GH"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Device UDID</label>
-                  <input
-                    value={idForm.udid}
-                    onChange={e => setIdForm(f => ({ ...f, udid: e.target.value.trim() }))}
-                    placeholder="00008110-001A38A62209801E"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white font-mono"
-                  />
-                </div>
-                <div className="flex gap-2 pt-1">
-                  <button
-                    onClick={saveDeviceIds}
-                    disabled={savingIds}
-                    className="flex-1 py-2 bg-orange-600 text-white rounded-xl text-sm font-semibold disabled:opacity-60 active:scale-95 transition"
-                  >
-                    {savingIds ? 'Saving…' : 'Save'}
-                  </button>
-                  <button
-                    onClick={() => setEditIds(false)}
-                    className="px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Enroll the phone with the lock agent (point of sale). */}
+            <button
+              onClick={() => setEnrollOpen(true)}
+              className="mt-2 text-xs font-semibold text-orange-600 hover:text-orange-700"
+            >
+              {device.agent?.enrolled ? 'View enrollment QR' : '+ Enroll phone (needed to lock this phone)'}
+            </button>
           </div>
         </div>
       )}
@@ -522,6 +470,13 @@ export default function AdminCustomerDetail() {
         loading={lockLoading}
       />
 
+      <EnrollDeviceModal
+        isOpen={enrollOpen}
+        deviceId={device?._id || device}
+        deviceLabel={device ? `${customer?.full_name} · ${device.model || device.device_model || 'Device'}` : ''}
+        onClose={() => { setEnrollOpen(false); fetchCustomer() }}
+      />
+
       {/* Reset Password Modal */}
       <ConfirmModal
         isOpen={resetModal}
@@ -617,31 +572,9 @@ function PhotoEmpty({ label }) {
 }
 
 function LockDeviceModal({ isOpen, onClose, onConfirm, action, customer, device, settings, loading }) {
-  const [copied, setCopied] = useState(false)
   if (!isOpen) return null
 
   const isLocking = action === 'lock'
-  const businessName = settings?.business_name || 'Dan Dorsolar Company Limited'
-  const phone = settings?.contact_phone || ''
-
-  const lostModeMessage = `This device belongs to ${businessName}.${phone ? ` Call ${phone} to unlock.` : ''} Make your payment at tritechhub.online to restore access.`
-
-  const copyMessage = () => {
-    navigator.clipboard.writeText(lostModeMessage).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2500)
-    }).catch(() => {
-      // fallback for older browsers
-      const el = document.createElement('textarea')
-      el.value = lostModeMessage
-      document.body.appendChild(el)
-      el.select()
-      document.execCommand('copy')
-      document.body.removeChild(el)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2500)
-    })
-  }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
@@ -669,50 +602,18 @@ function LockDeviceModal({ isOpen, onClose, onConfirm, action, customer, device,
         </div>
 
         <div className="px-5 py-4 space-y-4">
-          {/* Lost Mode instructions — only when locking */}
+          {/* How the Android agent lock works — only when locking */}
           {isLocking && (
-            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-              <p className="text-xs font-bold text-blue-800 uppercase tracking-wide mb-2">iCloud Lost Mode — copy this message</p>
-              <p className="text-sm text-blue-900 leading-relaxed mb-3 font-medium">{lostModeMessage}</p>
-              <button
-                type="button"
-                onClick={copyMessage}
-                className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2
-                  ${copied ? 'bg-orange-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'}`}
-              >
-                {copied ? (
-                  <>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                    Copy Message
-                  </>
-                )}
-              </button>
-
-              <div className="mt-3 space-y-1.5">
-                <p className="text-xs font-bold text-blue-700">Steps on iCloud:</p>
-                {[
-                  'Go to icloud.com/find on any browser',
-                  'Sign in with your Apple ID',
-                  `Find "${device?.model || 'the device'}" in the list`,
-                  'Click the device → Lost Mode → Turn On',
-                  'Paste the message above + enter your phone number',
-                  'Click Activate — the message shows on the lock screen',
-                ].map((step, i) => (
-                  <div key={i} className="flex gap-2 items-start">
-                    <span className="w-4 h-4 rounded-full bg-blue-200 text-blue-800 text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
-                    <p className="text-xs text-blue-800">{step}</p>
-                  </div>
-                ))}
-              </div>
+            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
+              <p className="text-xs font-bold text-orange-700 uppercase tracking-wide mb-2">Automatic lock</p>
+              <p className="text-sm text-orange-900 leading-relaxed">
+                This sends a lock command to the phone’s Dan Dorsolar agent. The phone shows a
+                full-screen lock the customer can’t dismiss. It applies <span className="font-semibold">instantly if the
+                phone is online</span>, otherwise the next time it connects (usually within ~15 minutes).
+              </p>
+              <p className="text-xs text-orange-700/80 mt-2">
+                The phone must already be enrolled (factory reset → scan the enrollment QR at sale).
+              </p>
             </div>
           )}
 

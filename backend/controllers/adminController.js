@@ -201,7 +201,7 @@ const getCustomerDetail = async (req, res) => {
 
     const [plan, payments] = await Promise.all([
       InstallmentPlan.findOne({ customer_id: customer._id })
-        .populate({ path: 'device_id', select: 'model price serial_number udid imei lock_status' })
+        .populate({ path: 'device_id', select: 'model price serial_number udid imei lock_status agent' })
         .lean(),
       Payment.find({ customer_id: customer._id })
         .sort({ createdAt: -1 })
@@ -539,7 +539,7 @@ const getDeviceSales = async (req, res) => {
 
     let plans = await InstallmentPlan.find(filter)
       .populate({ path: 'customer_id', select: 'full_name phone email photos' })
-      .populate({ path: 'device_id', select: 'model color storage price serial_number udid lock_status' })
+      .populate({ path: 'device_id', select: 'model color storage price serial_number udid imei lock_status agent' })
       .populate({ path: 'created_by', select: 'name full_name staff_id' })
       .sort({ createdAt: -1 })
       .lean();
@@ -567,7 +567,10 @@ const getDeviceSales = async (req, res) => {
         customer_photo: p.customer_id?.photos?.customer_photo || null,
         device_id: p.device_id?._id,
         lock_status: p.device_id?.lock_status || 'unlocked',
-        has_udid: !!p.device_id?.udid,
+        agent_enrolled: !!p.device_id?.agent?.enrolled,
+        agent_online: !!p.device_id?.agent?.last_heartbeat &&
+          (Date.now() - new Date(p.device_id.agent.last_heartbeat).getTime() < 20 * 60 * 1000),
+        last_seen: p.device_id?.agent?.last_heartbeat || null,
         device_model: p.device_id?.model || 'Unknown',
         device_color: p.device_id?.color || '',
         device_storage: p.device_id?.storage || '',
