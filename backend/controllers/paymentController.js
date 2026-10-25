@@ -6,7 +6,7 @@ const Payment = require('../models/Payment');
 const Device = require('../models/Device');
 const AuditLog = require('../models/AuditLog');
 const { initializePayment, verifyPayment } = require('../utils/paystack');
-const { unlockDevice: mdmUnlock } = require('../utils/simpleMDM');
+const agent = require('../utils/androidAgent');
 const { sendPaymentConfirmationEmail } = require('../utils/email');
 const { sendPaymentConfirmedSMS, sendPaymentConfirmedWhatsApp, sendPlanCompletedWhatsApp, sendDeviceUnlockedWhatsApp } = require('../utils/sms');
 const { sendDeviceUnlockedEmail } = require('../utils/email');
@@ -93,23 +93,24 @@ const processSuccessfulPayment = async ({
   // If plan is completed, unlock the device
   let deviceUnlocked = false;
   if (isCompleted && device) {
-    // Update local device status
-    await Device.findByIdAndUpdate(device._id, { lock_status: 'unlocked' });
     deviceUnlocked = true;
-
-    // Attempt MDM unlock if device has UDID
-    if (device.udid) {
-      try {
-        await mdmUnlock(device.udid);
-      } catch (mdmError) {
-        logger.error(`MDM unlock failed after plan completion for UDID ${device.udid}:`, mdmError.message);
+    // Unlock the phone via the lock agent (or just clear the flag if not enrolled).
+    try {
+      const devDoc = await Device.findById(device._id);
+      if (devDoc) {
+        devDoc.lock_status = 'unlocked';
+        if (devDoc.agent?.enrolled) await agent.unlockDevice(devDoc);
+        else await devDoc.save();
       }
+    } catch (unlockErr) {
+      logger.error('Agent unlock failed after plan completion for device %s: %s', device._id, unlockErr.message);
+      await Device.findByIdAndUpdate(device._id, { lock_status: 'unlocked' });
     }
 
     // Log plan completion
     await AuditLog.create({
       action: 'installment_completed',
-      device_udid: device.udid,
+      device_udid: device.agent?.device_id || device.imei || '',
       target_user_id: customer.user_id,
       details: {
         plan_id: plan._id,
@@ -119,14 +120,17 @@ const processSuccessfulPayment = async ({
       },
     });
   } else if (device && device.lock_status === 'locked' && !isCompleted) {
-    // Unlock device after payment if it was locked for late payment
-    await Device.findByIdAndUpdate(device._id, { lock_status: 'unlocked' });
-    if (device.udid) {
-      try {
-        await mdmUnlock(device.udid);
-      } catch (mdmError) {
-        logger.error(`MDM unlock failed after payment for UDID ${device.udid}:`, mdmError.message);
+    // Unlock the phone after a payment if it was locked for a late payment.
+    try {
+      const devDoc = await Device.findById(device._id);
+      if (devDoc) {
+        devDoc.lock_status = 'unlocked';
+        if (devDoc.agent?.enrolled) await agent.unlockDevice(devDoc);
+        else await devDoc.save();
       }
+    } catch (unlockErr) {
+      logger.error('Agent unlock failed after payment for device %s: %s', device._id, unlockErr.message);
+      await Device.findByIdAndUpdate(device._id, { lock_status: 'unlocked' });
     }
 
     // Reactivate defaulted plan back to active

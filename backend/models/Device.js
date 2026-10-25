@@ -43,6 +43,30 @@ const DeviceSchema = new mongoose.Schema(
       enum: ['locked', 'unlocked'],
       default: 'unlocked',
     },
+    // ── Android lock agent (Device Owner app installed on the phone) ──
+    // Replaces the old iOS SimpleMDM/Lost Mode mechanism.
+    agent: {
+      enrolled: { type: Boolean, default: false },
+      // Stable id the on-phone agent reports for itself (Android ID based).
+      device_id: { type: String, trim: true, default: null },
+      // Secret issued once at enrollment; the agent sends it on every call.
+      device_secret: { type: String, default: null },
+      // One-time token embedded in the provisioning QR, consumed at enroll.
+      enrollment_token: { type: String, trim: true, default: null },
+      enrollment_status: {
+        type: String,
+        enum: ['none', 'pending', 'enrolled', 'revoked'],
+        default: 'none',
+      },
+      // Firebase Cloud Messaging token for instant lock/unlock push.
+      fcm_token: { type: String, default: null },
+      // What the backend WANTS the phone to be; the agent converges to this.
+      desired_lock_state: { type: String, enum: ['locked', 'unlocked'], default: 'unlocked' },
+      last_heartbeat: { type: Date, default: null },
+      app_version: { type: String, default: null },
+      android_version: { type: String, default: null },
+      model_reported: { type: String, default: null },
+    },
     sold_status: {
       type: String,
       enum: ['available', 'sold'],
@@ -64,5 +88,8 @@ DeviceSchema.index({ lock_status: 1 });
 DeviceSchema.index({ sold_status: 1 });
 DeviceSchema.index({ lock_status: 1, sold_status: 1 });
 DeviceSchema.index({ model: 'text' });
+DeviceSchema.index({ 'agent.device_id': 1 }, { sparse: true });
+DeviceSchema.index({ 'agent.enrollment_token': 1 }, { sparse: true });
+DeviceSchema.index({ 'agent.enrolled': 1 });
 
 module.exports = mongoose.model('Device', DeviceSchema);

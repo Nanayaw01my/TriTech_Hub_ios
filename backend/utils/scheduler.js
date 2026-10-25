@@ -7,7 +7,7 @@ const AuditLog = require('../models/AuditLog');
 const Payment = require('../models/Payment');
 const { sendLockNotificationEmail, sendAdminPaymentReminderEmail, sendAdminOverdueAlertEmail, sendPaymentReminderEmail } = require('./email');
 const { sendPaymentReminderSMS, sendPaymentReminderWhatsApp, sendDeviceLockedSMS, sendDeviceLockedWhatsApp } = require('./sms');
-const { lockDevice: mdmLock } = require('./simpleMDM');
+const agent = require('./androidAgent');
 const logger = require('./logger');
 
 /**
@@ -109,28 +109,34 @@ const checkOverduePayments = async () => {
 
         logger.info('[Scheduler] Marking device %s as locked for overdue plan %s (customer: %s)', device._id, plan._id, customer.full_name);
 
-        // Send the ACTUAL lock command to the physical iPhone via SimpleMDM (Lost Mode).
-        // Requires the device to be supervised and enrolled in SimpleMDM with a stored UDID.
-        let mdmResult = 'skipped (no UDID)';
-        if (device.udid) {
-          try {
-            await mdmLock(device.udid);
-            mdmResult = 'sent';
-            logger.info('[Scheduler][MDM] Lock command sent for UDID %s', device.udid);
-          } catch (mdmErr) {
-            mdmResult = `failed: ${mdmErr.message}`;
-            logger.error('[Scheduler][MDM] Lock failed for UDID %s: %s', device.udid, mdmErr.message);
+        // Send the lock command to the phone via the Dan Dorsolar lock agent.
+        // The agent applies it instantly (FCM push) or on its next check-in.
+        let mdmResult = 'skipped (not enrolled)';
+        try {
+          const devDoc = await Device.findById(device._id);
+          if (devDoc && devDoc.agent?.enrolled) {
+            const r = await agent.lockDevice(devDoc);
+            devDoc.lock_status = 'locked';
+            await devDoc.save();
+            mdmResult = r.delivered ? 'sent' : 'queued';
+            logger.info('[Scheduler][agent] Lock %s for device %s', mdmResult, device._id);
+          } else {
+            // Not enrolled yet — record the intent so the UI reflects it.
+            await Device.findByIdAndUpdate(device._id, { lock_status: 'locked' });
           }
+        } catch (lockErr) {
+          mdmResult = `failed: ${lockErr.message}`;
+          logger.error('[Scheduler][agent] Lock failed for device %s: %s', device._id, lockErr.message);
+          await Device.findByIdAndUpdate(device._id, { lock_status: 'locked' });
         }
 
-        // Mark device as locked in DB and plan as defaulted
-        await Device.findByIdAndUpdate(device._id, { lock_status: 'locked' });
+        // Mark the plan as defaulted.
         await InstallmentPlan.findByIdAndUpdate(plan._id, { status: 'defaulted' });
 
         // Audit log
         await AuditLog.create({
           action: 'device_lock',
-          device_udid: device.udid || null,
+          device_udid: device.agent?.device_id || device.imei || null,
           target_user_id: customer.user_id,
           details: {
             reason: 'Automated: payment overdue by more than 48 hours',

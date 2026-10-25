@@ -19,6 +19,7 @@ const {
   deleteDevice,
   lockDevice,
   unlockDevice,
+  getDeviceProvisioning,
   getTransactions,
   getReports,
   getAuditLogs,
@@ -152,6 +153,11 @@ router.post(
   '/devices/:id/unlock',
   [param('id').isMongoId().withMessage('Invalid device ID.')],
   unlockDevice
+);
+router.get(
+  '/devices/:id/provision',
+  [param('id').isMongoId().withMessage('Invalid device ID.')],
+  getDeviceProvisioning
 );
 
 // ─── TRANSACTIONS ─────────────────────────────────────────────────────────────

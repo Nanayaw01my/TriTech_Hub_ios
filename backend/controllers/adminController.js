@@ -12,7 +12,7 @@ const { createTransferRecipient, initiateTransfer } = require('../utils/paystack
 const { generateStaffId } = require('../utils/accountGenerator');
 const { sendPaymentReminderSMS, sendDeviceLockedSMS, sendDeviceUnlockedSMS, sendDeviceLockedWhatsApp, sendDeviceUnlockedWhatsApp } = require('../utils/sms');
 const { sendLockNotificationEmail, sendDeviceUnlockedEmail } = require('../utils/email');
-const { lockDevice: mdmLock, unlockDevice: mdmUnlock } = require('../utils/simpleMDM');
+const agent = require('../utils/androidAgent');
 const logger = require('../utils/logger');
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
@@ -725,49 +725,36 @@ const lockDeviceHandler = async (req, res) => {
     if (device.lock_status === 'locked') {
       return res.status(400).json({ success: false, message: 'Device is already marked as locked.' });
     }
-    if (!device.udid) {
+    if (!device.agent?.enrolled) {
       return res.status(400).json({
         success: false,
-        message: 'This device has no UDID saved, so it cannot be locked remotely. Add the UDID from SimpleMDM to the device record first.',
+        message: 'This phone is not enrolled with the Dan Dorsolar lock agent yet. Provision it at point of sale (factory reset → scan the enrollment QR) before it can be locked remotely.',
       });
     }
 
-    // Actually send the lock command to the phone via SimpleMDM.
-    let supervised = null;
-    try {
-      const r = await mdmLock(device.udid);
-      supervised = r?.supervised;
-      logger.info(`[MDM] Lock command sent for UDID ${device.udid} (supervised: ${supervised})`);
-    } catch (mdmErr) {
-      logger.error(`[MDM] Lock failed for UDID ${device.udid}:`, mdmErr.message);
-      return res.status(502).json({
-        success: false,
-        message: `Could not lock the device: ${mdmErr.message}. Check the UDID matches SimpleMDM and that SIMPLEMDM_API_KEY is set on the server.`,
-      });
-    }
-
+    const r = await agent.lockDevice(device);
     device.lock_status = 'locked';
     await device.save();
+    logger.info('[agent] Lock queued for device %s (delivered: %s)', device._id, r.delivered);
 
     await AuditLog.create({
       user_id: req.user._id,
       action: 'device_lock',
-      device_udid: device.udid,
+      device_udid: device.agent?.device_id || device.imei || '',
       details: {
         device_id: device._id,
         model: device.model,
         reason: req.body.reason || 'Manual lock by admin',
-        supervised,
+        delivered: r.delivered,
       },
       ip_address: req.ip,
     });
 
-    const note = supervised === false
-      ? ' Note: this iPhone is not supervised, so this is a basic screen lock the customer can dismiss with their passcode. Supervise the device for a lock they cannot remove.'
-      : '';
     return res.status(200).json({
       success: true,
-      message: 'Lock command sent to the device.' + note,
+      message: r.delivered
+        ? 'Lock sent — the phone is applying it now.'
+        : 'Lock queued — it will apply the next time the phone is online (usually within ~15 minutes).',
       data: { device },
     });
   } catch (error) {
@@ -786,47 +773,89 @@ const unlockDeviceHandler = async (req, res) => {
     if (device.lock_status === 'unlocked') {
       return res.status(400).json({ success: false, message: 'Device is already marked as unlocked.' });
     }
-    if (!device.udid) {
+    if (!device.agent?.enrolled) {
       return res.status(400).json({
         success: false,
-        message: 'This device has no UDID saved, so it cannot be unlocked remotely. Add the UDID from SimpleMDM to the device record first.',
+        message: 'This phone is not enrolled with the Dan Dorsolar lock agent yet, so there is nothing to unlock remotely.',
       });
     }
 
-    // Actually send the unlock command to the phone via SimpleMDM.
-    try {
-      await mdmUnlock(device.udid);
-      logger.info(`[MDM] Unlock command sent for UDID ${device.udid}`);
-    } catch (mdmErr) {
-      logger.error(`[MDM] Unlock failed for UDID ${device.udid}:`, mdmErr.message);
-      return res.status(502).json({
-        success: false,
-        message: `Could not unlock the device: ${mdmErr.message}. Check the UDID matches SimpleMDM and that SIMPLEMDM_API_KEY is set on the server.`,
-      });
-    }
-
+    const r = await agent.unlockDevice(device);
     device.lock_status = 'unlocked';
     await device.save();
+    logger.info('[agent] Unlock queued for device %s (delivered: %s)', device._id, r.delivered);
 
     await AuditLog.create({
       user_id: req.user._id,
       action: 'device_unlock',
-      device_udid: device.udid,
+      device_udid: device.agent?.device_id || device.imei || '',
       details: {
         device_id: device._id,
         model: device.model,
         reason: req.body.reason || 'Manual unlock by admin',
+        delivered: r.delivered,
       },
       ip_address: req.ip,
     });
 
     return res.status(200).json({
       success: true,
-      message: 'Unlock command sent to the device.',
+      message: r.delivered
+        ? 'Unlock sent — the phone is applying it now.'
+        : 'Unlock queued — it will apply the next time the phone is online (usually within ~15 minutes).',
       data: { device },
     });
   } catch (error) {
     logger.error('Admin unlockDevice error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * GET /api/admin/devices/:id/provision
+ * Returns the Device Owner provisioning QR (data URL) + payload used to enroll
+ * this phone with the Dan Dorsolar lock agent at point of sale (factory reset →
+ * tap welcome screen 6× → scan).
+ */
+const getDeviceProvisioning = async (req, res) => {
+  try {
+    const device = await Device.findById(req.params.id);
+    if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
+
+    if (!device.agent) device.agent = {};
+    // Mint a fresh enrollment token if there isn't a usable one yet.
+    if (!device.agent.enrollment_token || device.agent.enrollment_status === 'revoked') {
+      device.agent.enrollment_token = agent.generateEnrollmentToken();
+      device.agent.enrollment_status = 'pending';
+      device.agent.enrolled = false;
+      await device.save();
+    }
+
+    const payload = agent.buildProvisioningPayload(device.agent.enrollment_token);
+    let qr = null;
+    try {
+      const QRCode = require('qrcode');
+      qr = await QRCode.toDataURL(JSON.stringify(payload), { errorCorrectionLevel: 'M', margin: 1, width: 360 });
+    } catch (e) {
+      logger.warn('[agent] QR generation unavailable: %s', e.message);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        enrollment_token: device.agent.enrollment_token,
+        enrollment_status: device.agent.enrollment_status,
+        enrolled: !!device.agent.enrolled,
+        // false until AGENT_APK_URL + AGENT_APK_CHECKSUM are configured on the server
+        ready: agent.provisioningReady(),
+        apk_url: agent.config.AGENT_APK_URL || null,
+        package: agent.config.AGENT_PACKAGE,
+        payload,
+        qr,
+      },
+    });
+  } catch (error) {
+    logger.error('getDeviceProvisioning error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -1565,38 +1594,26 @@ const lockCustomerDevice = async (req, res) => {
     const device = await Device.findById(plan.device_id);
     if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
 
-    // A remote lock is only real if the device has a UDID linked to SimpleMDM.
-    if (!device.udid) {
+    // A remote lock is only real if the phone is enrolled with the lock agent.
+    if (!device.agent?.enrolled) {
       return res.status(400).json({
         success: false,
-        message: 'This device has no UDID saved, so it cannot be locked remotely. Add the UDID from SimpleMDM to the device record first.',
+        message: 'This phone is not enrolled with the Dan Dorsolar lock agent yet. Provision it at point of sale (factory reset → scan the enrollment QR) before it can be locked remotely.',
       });
     }
 
-    // Send the actual lock command FIRST — only mark it locked if it went out.
-    let supervised = null;
-    try {
-      const r = await mdmLock(device.udid);
-      supervised = r?.supervised;
-      logger.info(`[MDM] Lock command sent for UDID ${device.udid} (supervised: ${supervised})`);
-    } catch (mdmErr) {
-      logger.error(`[MDM] Lock failed for UDID ${device.udid}:`, mdmErr.message);
-      return res.status(502).json({
-        success: false,
-        message: `Could not lock the device: ${mdmErr.message}. Check the UDID matches SimpleMDM and that SIMPLEMDM_API_KEY is set on the server.`,
-      });
-    }
-
+    const r = await agent.lockDevice(device);
     device.lock_status = 'locked';
     await device.save();
+    logger.info('[agent] Lock queued for customer %s device %s (delivered: %s)', customer._id, device._id, r.delivered);
 
-    const mdmResult = 'sent';
+    const mdmResult = r.delivered ? 'sent' : 'queued';
     await AuditLog.create({
       user_id: req.user._id,
       action: 'device_lock',
-      device_udid: device.udid,
+      device_udid: device.agent?.device_id || device.imei || '',
       target_user_id: customer.user_id,
-      details: { device_id: device._id, customer_id: customer._id, reason: req.body.reason || 'Manual lock by admin', mdm: mdmResult, supervised },
+      details: { device_id: device._id, customer_id: customer._id, reason: req.body.reason || 'Manual lock by admin', delivered: r.delivered },
     });
 
     if (customer.phone) {
@@ -1613,10 +1630,13 @@ const lockCustomerDevice = async (req, res) => {
       );
     }
 
-    const note = supervised === false
-      ? ' Note: this iPhone is not supervised, so this is a basic screen lock the customer can dismiss with their passcode. Supervise the device for a lock they cannot remove.'
-      : '';
-    return res.status(200).json({ success: true, message: 'Lock command sent to the device.' + note, mdm: mdmResult, supervised });
+    return res.status(200).json({
+      success: true,
+      message: r.delivered
+        ? 'Lock sent — the phone is applying it now. The customer has been notified.'
+        : 'Lock queued — it will apply the next time the phone is online (usually within ~15 minutes). The customer has been notified.',
+      mdm: mdmResult,
+    });
   } catch (error) {
     logger.error('lockCustomerDevice error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
@@ -1634,35 +1654,25 @@ const unlockCustomerDevice = async (req, res) => {
     const device = await Device.findById(plan.device_id);
     if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
 
-    if (!device.udid) {
+    if (!device.agent?.enrolled) {
       return res.status(400).json({
         success: false,
-        message: 'This device has no UDID saved, so it cannot be unlocked remotely. Add the UDID from SimpleMDM to the device record first.',
+        message: 'This phone is not enrolled with the Dan Dorsolar lock agent yet, so there is nothing to unlock remotely.',
       });
     }
 
-    // Send the actual unlock command FIRST — only mark it unlocked if it went out.
-    try {
-      await mdmUnlock(device.udid);
-      logger.info(`[MDM] Unlock command sent for UDID ${device.udid}`);
-    } catch (mdmErr) {
-      logger.error(`[MDM] Unlock failed for UDID ${device.udid}:`, mdmErr.message);
-      return res.status(502).json({
-        success: false,
-        message: `Could not unlock the device: ${mdmErr.message}. Check the UDID matches SimpleMDM and that SIMPLEMDM_API_KEY is set on the server.`,
-      });
-    }
-
+    const r = await agent.unlockDevice(device);
     device.lock_status = 'unlocked';
     await device.save();
+    logger.info('[agent] Unlock queued for customer %s device %s (delivered: %s)', customer._id, device._id, r.delivered);
 
-    const mdmResult = 'sent';
+    const mdmResult = r.delivered ? 'sent' : 'queued';
     await AuditLog.create({
       user_id: req.user._id,
       action: 'device_unlock',
-      device_udid: device.udid,
+      device_udid: device.agent?.device_id || device.imei || '',
       target_user_id: customer.user_id,
-      details: { device_id: device._id, customer_id: customer._id, reason: req.body.reason || 'Manual unlock by admin', mdm: mdmResult },
+      details: { device_id: device._id, customer_id: customer._id, reason: req.body.reason || 'Manual unlock by admin', delivered: r.delivered },
     });
 
     if (customer.phone) {
@@ -1679,7 +1689,13 @@ const unlockCustomerDevice = async (req, res) => {
       );
     }
 
-    return res.status(200).json({ success: true, message: 'Unlock command sent to the device.', mdm: mdmResult });
+    return res.status(200).json({
+      success: true,
+      message: r.delivered
+        ? 'Unlock sent — the phone is applying it now. The customer has been notified.'
+        : 'Unlock queued — it will apply the next time the phone is online (usually within ~15 minutes). The customer has been notified.',
+      mdm: mdmResult,
+    });
   } catch (error) {
     logger.error('unlockCustomerDevice error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
@@ -2125,6 +2141,7 @@ module.exports = {
   deleteDevice,
   lockDevice: lockDeviceHandler,
   unlockDevice: unlockDeviceHandler,
+  getDeviceProvisioning,
   getTransactions,
   getReports,
   getAuditLogs,
