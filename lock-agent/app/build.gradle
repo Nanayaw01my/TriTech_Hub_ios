@@ -36,6 +36,18 @@ android {
         jvmTarget = '17'
     }
 
+    signingConfigs {
+        // Force v1 (JAR) signing ON in addition to v2/v3. AGP turns v1 off for
+        // minSdk >= 24, but many devices' Device Owner QR provisioning validate
+        // the v1 signature and report "missing components or corrupted" without
+        // it. Keeping v1 makes enrollment work across Samsung/Tecno/Infinix.
+        debug {
+            enableV1Signing true
+            enableV2Signing true
+            enableV3Signing true
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
