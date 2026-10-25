@@ -86,15 +86,36 @@ apksigner verify --print-certs app-release.apk | grep "SHA-256 digest" | head -1
 
 ## Instant lock with Firebase (optional)
 
-Poll-only already works. For **instant** lock/unlock:
+Poll-only already works (locks apply within ~15 min). For **instant** lock/unlock
+and fresher location, turn on Firebase Cloud Messaging. **No `google-services.json`
+is needed** — the agent initializes Firebase from 4 build-time values, and the
+build works with or without them.
 
-1. Create a free Firebase project, add an Android app `com.dandorsolar.lockagent`,
-   download `google-services.json` into `lock-agent/app/`.
-2. Add the FCM dependency + Google Services plugin to the agent (a `fcm` branch
-   is the natural next step — the backend already sends FCM data messages when
-   `FIREBASE_SERVICE_ACCOUNT` is set), and a `FirebaseMessagingService` that calls
-   `SyncManager.syncBlocking()` on message and reports its token via heartbeat.
-3. On the backend set `FIREBASE_SERVICE_ACCOUNT` (the service-account JSON).
+**1. Create the Firebase project (free)**
+- [console.firebase.google.com](https://console.firebase.google.com) → *Add project*.
+- Add an **Android app** with package name `com.dandorsolar.lockagent`.
+- Download the generated `google-services.json` (you won't commit it — you just
+  read 4 values out of it).
+
+**2. Add these 4 values as GitHub repo secrets**, then re-run the build workflow.
+Map them from `google-services.json`:
+
+| GitHub secret | from google-services.json |
+|---|---|
+| `FIREBASE_APP_ID` | `client[0].client_info.mobilesdk_app_id` (looks like `1:123…:android:abc…`) |
+| `FIREBASE_API_KEY` | `client[0].api_key[0].current_key` |
+| `FIREBASE_SENDER_ID` | `project_info.project_number` |
+| `FIREBASE_PROJECT_ID` | `project_info.project_id` |
+
+**3. On the backend, set `FIREBASE_SERVICE_ACCOUNT`** (so the server can send
+pushes): Firebase console → *Project settings → Service accounts → Generate new
+private key* → paste that whole JSON into the env var → redeploy.
+
+**4. Re-enroll (or update) phones.** Each phone registers its FCM token on
+check-in; after that, Lock/Unlock is delivered in seconds instead of on the poll.
+
+> Needs Google Play Services on the phone (virtually all Samsung/Tecno/Infinix/
+> Xiaomi retail phones have it). Phones without it silently stay poll-only.
 
 ---
 

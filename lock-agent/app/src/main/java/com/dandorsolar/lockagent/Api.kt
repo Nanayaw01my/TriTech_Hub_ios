@@ -44,7 +44,7 @@ object Api {
     /** POST /api/agent/enroll — exchange the enrollment token for a device secret. */
     fun enroll(
         backend: String, token: String, deviceId: String, imei: String?,
-        androidVersion: String, appVersion: String, model: String
+        androidVersion: String, appVersion: String, model: String, fcmToken: String? = null
     ): Result {
         val body = JSONObject()
             .put("enrollment_token", token)
@@ -53,18 +53,20 @@ object Api {
             .put("app_version", appVersion)
             .put("model", model)
         if (!imei.isNullOrBlank()) body.put("imei", imei)
+        if (!fcmToken.isNullOrBlank()) body.put("fcm_token", fcmToken)
         return request("POST", "$backend/api/agent/enroll", body, emptyMap())
     }
 
     /** POST /api/agent/heartbeat — report applied state + location, receive desired state. */
     fun heartbeat(
         backend: String, deviceId: String, secret: String, appliedState: String,
-        fix: LocationHelper.Fix? = null
+        fix: LocationHelper.Fix? = null, fcmToken: String? = null
     ): Result {
         val body = JSONObject()
             .put("lock_state", appliedState)
             .put("android_version", android.os.Build.VERSION.RELEASE)
             .put("app_version", BuildConfig.VERSION_NAME)
+        if (!fcmToken.isNullOrBlank()) body.put("fcm_token", fcmToken)
         if (fix != null) {
             body.put("lat", fix.lat)
                 .put("lng", fix.lng)

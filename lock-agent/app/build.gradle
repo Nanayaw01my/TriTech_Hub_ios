@@ -13,6 +13,14 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
+
+        // Firebase Cloud Messaging config (optional). Supplied as Gradle
+        // properties at build time (e.g. from CI secrets). Blank => FCM off,
+        // agent stays poll-only and the build still works.
+        buildConfigField "String", "FIREBASE_APP_ID", "\"${project.findProperty('FIREBASE_APP_ID') ?: ''}\""
+        buildConfigField "String", "FIREBASE_API_KEY", "\"${project.findProperty('FIREBASE_API_KEY') ?: ''}\""
+        buildConfigField "String", "FIREBASE_SENDER_ID", "\"${project.findProperty('FIREBASE_SENDER_ID') ?: ''}\""
+        buildConfigField "String", "FIREBASE_PROJECT_ID", "\"${project.findProperty('FIREBASE_PROJECT_ID') ?: ''}\""
     }
 
     buildFeatures {
@@ -51,4 +59,9 @@ dependencies {
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.work:work-runtime-ktx:2.9.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
+
+    // Firebase Cloud Messaging (initialized programmatically — no
+    // google-services plugin or google-services.json required).
+    implementation platform('com.google.firebase:firebase-bom:33.5.1')
+    implementation 'com.google.firebase:firebase-messaging'
 }

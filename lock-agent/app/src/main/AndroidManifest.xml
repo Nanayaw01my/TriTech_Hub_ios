@@ -76,6 +76,15 @@
             </intent-filter>
         </receiver>
 
+        <!-- Firebase Cloud Messaging: instant lock/unlock pushes (optional). -->
+        <service
+            android:name=".FcmService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <!-- Re-apply the lock state after a reboot. -->
         <receiver
             android:name=".BootReceiver"

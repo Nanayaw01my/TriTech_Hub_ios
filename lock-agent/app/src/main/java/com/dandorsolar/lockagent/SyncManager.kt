@@ -24,7 +24,8 @@ object SyncManager {
         val deviceId = DeviceInfo.androidId(c)
         val res = Api.enroll(
             backend, token, deviceId, DeviceInfo.imei(c),
-            DeviceInfo.androidVersion(), BuildConfig.VERSION_NAME, DeviceInfo.model()
+            DeviceInfo.androidVersion(), BuildConfig.VERSION_NAME, DeviceInfo.model(),
+            Prefs.fcmToken(c).ifEmpty { null }
         )
         val j = res.json
         if (res.ok && j != null && j.optBoolean("success", false)) {
@@ -49,8 +50,12 @@ object SyncManager {
         val secret = Prefs.deviceSecret(c)
         if (backend.isEmpty() || id.isEmpty() || secret.isEmpty()) return
 
+        // Make sure we have an FCM token to report (best-effort, async).
+        if (Fcm.enabled() && Prefs.fcmToken(c).isEmpty()) {
+            Fcm.fetchToken { Prefs.setFcmToken(c, it) }
+        }
         val fix = LocationHelper.lastKnown(c)
-        val res = Api.heartbeat(backend, id, secret, Prefs.appliedLockState(c), fix)
+        val res = Api.heartbeat(backend, id, secret, Prefs.appliedLockState(c), fix, Prefs.fcmToken(c).ifEmpty { null })
         val j = res.json ?: return
         if (!res.ok) return
         applyServerInfo(c, j)

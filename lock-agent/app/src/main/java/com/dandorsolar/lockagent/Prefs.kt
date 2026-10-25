@@ -38,4 +38,7 @@ object Prefs {
 
     fun enrolled(c: Context): Boolean = p(c).getBoolean("enrolled", false)
     fun setEnrolled(c: Context, v: Boolean) = p(c).edit().putBoolean("enrolled", v).apply()
+
+    fun fcmToken(c: Context): String = p(c).getString("fcm_token", "") ?: ""
+    fun setFcmToken(c: Context, v: String) = p(c).edit().putString("fcm_token", v).apply()
 }
