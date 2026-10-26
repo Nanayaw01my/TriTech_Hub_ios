@@ -29,6 +29,8 @@ export default function AdminCustomerDetail() {
   const [repossessLoading, setRepossessLoading] = useState(false)
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [trackOpen, setTrackOpen] = useState(false)
+  const [releaseModal, setReleaseModal] = useState(false)
+  const [releaseLoading, setReleaseLoading] = useState(false)
 
   const fetchCustomer = async () => {
     try {
@@ -69,6 +71,20 @@ export default function AdminCustomerDetail() {
       toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Action failed')
     } finally {
       setLockLoading(false)
+    }
+  }
+
+  const handleRelease = async () => {
+    setReleaseLoading(true)
+    try {
+      const res = await api.post(`/admin/customers/${id}/release`)
+      toast.success(res.data?.message || 'Release sent.', { duration: 6000 })
+      setReleaseModal(false)
+      fetchCustomer()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not release the phone.')
+    } finally {
+      setReleaseLoading(false)
     }
   }
 
@@ -343,6 +359,14 @@ export default function AdminCustomerDetail() {
                   📍 Track phone
                 </button>
               )}
+              {device.agent?.enrolled && (
+                <button
+                  onClick={() => setReleaseModal(true)}
+                  className="text-xs font-semibold text-green-700 hover:text-green-800"
+                >
+                  ✓ Release (paid off)
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -494,6 +518,17 @@ export default function AdminCustomerDetail() {
         deviceId={device?._id || device}
         deviceLabel={device ? `${customer?.full_name} · ${device.model || device.device_model || 'Device'}` : ''}
         onClose={() => setTrackOpen(false)}
+      />
+
+      <ConfirmModal
+        isOpen={releaseModal}
+        onClose={() => setReleaseModal(false)}
+        onConfirm={handleRelease}
+        title="Release phone to customer"
+        message={`Release ${customer?.full_name}'s ${device?.model || 'phone'}? This removes the lock and management permanently — the phone becomes fully theirs (factory reset re-enabled). Only do this once they've fully paid.`}
+        confirmText="Release phone"
+        confirmVariant="primary"
+        loading={releaseLoading}
       />
 
       {/* Reset Password Modal */}

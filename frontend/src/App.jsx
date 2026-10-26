@@ -24,6 +24,7 @@ import AdminOverdueAccounts from './pages/admin/OverdueAccounts'
 import AdminStaff from './pages/admin/Staff'
 import AdminDevices from './pages/admin/Devices'
 import AdminSoldDevices from './pages/admin/SoldDevices'
+import AdminStockEnrollment from './pages/admin/StockEnrollment'
 import AdminTransactions from './pages/admin/Transactions'
 import AdminReports from './pages/admin/Reports'
 import AdminAuditLogs from './pages/admin/AuditLogs'
@@ -143,6 +144,7 @@ function AppRoutes() {
         <Route path="staff" element={<AdminStaff />} />
         <Route path="devices" element={<AdminDevices />} />
         <Route path="sold-devices" element={<AdminSoldDevices />} />
+        <Route path="stock" element={<AdminStockEnrollment />} />
         <Route path="transactions" element={<AdminTransactions />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="audit-logs" element={<AdminAuditLogs />} />

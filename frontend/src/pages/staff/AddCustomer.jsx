@@ -60,15 +60,21 @@ export default function StaffAddCustomer() {
   const [submitting, setSubmitting] = useState(false)
   const [availableDevices, setAvailableDevices] = useState([])
   const [devicesLoading, setDevicesLoading] = useState(false)
+  const [enrolledStock, setEnrolledStock] = useState([])
+  const [sellMode, setSellMode] = useState('stock') // 'stock' | 'manual'
 
   useEffect(() => {
     setDevicesLoading(true)
-    api.get('/staff/devices')
-      .then(res => {
-        const d = res.data?.data?.devices || res.data?.devices || []
-        setAvailableDevices(d)
+    Promise.all([
+      api.get('/staff/devices').then(res => res.data?.data?.devices || res.data?.devices || []).catch(() => []),
+      api.get('/staff/enrolled-stock').then(res => (res.data?.data || res.data)?.devices || []).catch(() => []),
+    ])
+      .then(([cat, stock]) => {
+        setAvailableDevices(cat)
+        setEnrolledStock(stock)
+        // Default to stock if any enrolled phones exist, else manual.
+        setSellMode(stock.length > 0 ? 'stock' : 'manual')
       })
-      .catch(() => toast.error('Could not load available devices'))
       .finally(() => setDevicesLoading(false))
   }, [])
 
@@ -127,7 +133,12 @@ export default function StaffAddCustomer() {
       if (!form.location.trim()) e.location = 'Location/Town is required'
     }
     if (s === 4) {
-      if (!form.device_model) e.device_model = 'Select a device model'
+      if (sellMode === 'stock') {
+        if (!form.device_id) e.device_model = 'Pick a phone from enrolled stock'
+        if (!form.device_price || Number(form.device_price) <= 0) e.device_price = 'Enter the selling price'
+      } else {
+        if (!form.device_model) e.device_model = 'Select a device model'
+      }
       // Down payment is optional — 0 registers a free customer (no Paystack).
       const dp = Number(form.down_payment) || 0
       if (dp < 0) e.down_payment = 'Down payment cannot be negative'
@@ -618,35 +629,88 @@ export default function StaffAddCustomer() {
               <h2 className="text-base font-bold text-gray-800 mb-4">Device & Payment Plan</h2>
 
               <div className="space-y-4">
-                <FormField label="Android Model" required error={errors.device_model}>
-                  {devicesLoading ? (
-                    <div className="flex items-center gap-2 px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm text-gray-400">
-                      <LoadingSpinner size="sm" /> Loading available devices...
-                    </div>
-                  ) : availableDevices.length === 0 ? (
-                    <div className="px-4 py-3 border-2 border-orange-200 bg-orange-50 rounded-2xl text-sm text-orange-700 font-medium">
-                      No available devices in stock. Ask admin to add devices first.
-                    </div>
-                  ) : (
-                    <select
-                      value={form.device_model}
-                      onChange={(e) => {
-                        const d = availableDevices.find(i => i._id === e.target.value)
-                        set('device_model', d ? d.model : '')
-                        set('device_price', d ? String(d.price) : '')
-                        set('device_id', d ? d._id : '')
-                      }}
-                      className={selectClass(errors.device_model)}
-                    >
-                      <option value="">Select Android Model</option>
-                      {availableDevices.map(d => (
-                        <option key={d._id} value={d._id}>
-                          {d.model}{d.storage ? ` ${d.storage}` : ''}{d.color ? ` (${d.color})` : ''} — GHS {Number(d.price).toLocaleString()}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </FormField>
+                {/* Sell mode: pick a pre-enrolled phone, or enter manually */}
+                {enrolledStock.length > 0 && (
+                  <div className="flex gap-2">
+                    <button type="button"
+                      onClick={() => { setSellMode('stock'); set('device_id', ''); set('device_model', ''); set('device_price', '') }}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors
+                        ${sellMode === 'stock' ? 'border-orange-500 bg-orange-50 text-orange-600' : 'border-gray-200 text-gray-600'}`}>
+                      From Enrolled Stock ({enrolledStock.length})
+                    </button>
+                    <button type="button"
+                      onClick={() => { setSellMode('manual'); set('device_id', ''); set('device_model', ''); set('device_price', '') }}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors
+                        ${sellMode === 'manual' ? 'border-orange-500 bg-orange-50 text-orange-600' : 'border-gray-200 text-gray-600'}`}>
+                      Other phone
+                    </button>
+                  </div>
+                )}
+
+                {sellMode === 'stock' ? (
+                  <>
+                    <FormField label="Pick enrolled phone" required error={errors.device_model}>
+                      {enrolledStock.length === 0 ? (
+                        <div className="px-4 py-3 border-2 border-orange-200 bg-orange-50 rounded-2xl text-sm text-orange-700 font-medium">
+                          No enrolled phones in stock. Enroll phones first (Admin → Enroll Stock), or use “Other phone”.
+                        </div>
+                      ) : (
+                        <select
+                          value={form.device_id}
+                          onChange={(e) => {
+                            const d = enrolledStock.find(i => i._id === e.target.value)
+                            set('device_id', d ? d._id : '')
+                            set('device_model', d ? d.model : '')
+                            set('serial_number', ''); set('udid', '')
+                          }}
+                          className={selectClass(errors.device_model)}
+                        >
+                          <option value="">Select a phone…</option>
+                          {enrolledStock.map(d => (
+                            <option key={d._id} value={d._id}>
+                              {d.model}{d.imei ? ` · IMEI ${d.imei}` : ''}{d.online ? '' : ' (offline)'}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </FormField>
+                    <FormField label="Selling Price (GHS)" required error={errors.device_price}>
+                      <input type="number" value={form.device_price}
+                        onChange={(e) => set('device_price', e.target.value)}
+                        placeholder="Enter the price" className={inputClass(errors.device_price)} inputMode="numeric" min="0" />
+                    </FormField>
+                  </>
+                ) : (
+                  <FormField label="Android Model" required error={errors.device_model}>
+                    {devicesLoading ? (
+                      <div className="flex items-center gap-2 px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm text-gray-400">
+                        <LoadingSpinner size="sm" /> Loading available devices...
+                      </div>
+                    ) : availableDevices.length === 0 ? (
+                      <div className="px-4 py-3 border-2 border-orange-200 bg-orange-50 rounded-2xl text-sm text-orange-700 font-medium">
+                        No catalog devices. Ask admin to add devices first.
+                      </div>
+                    ) : (
+                      <select
+                        value={form.device_model}
+                        onChange={(e) => {
+                          const d = availableDevices.find(i => i._id === e.target.value)
+                          set('device_model', d ? d.model : '')
+                          set('device_price', d ? String(d.price) : '')
+                          set('device_id', d ? d._id : '')
+                        }}
+                        className={selectClass(errors.device_model)}
+                      >
+                        <option value="">Select Android Model</option>
+                        {availableDevices.map(d => (
+                          <option key={d._id} value={d._id}>
+                            {d.model}{d.storage ? ` ${d.storage}` : ''}{d.color ? ` (${d.color})` : ''} — GHS {Number(d.price).toLocaleString()}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </FormField>
+                )}
 
                 {form.device_model && (
                   <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-2xl border border-orange-200">
@@ -673,29 +737,37 @@ export default function StaffAddCustomer() {
                   />
                 </FormField>
 
-                <FormField label="Phone Serial Number" error={errors.serial_number}>
-                  <input
-                    type="text"
-                    value={form.serial_number}
-                    onChange={(e) => set('serial_number', e.target.value.trim())}
-                    placeholder="e.g. C39XKT1JQ1GH"
-                    className={inputClass(errors.serial_number)}
-                    autoCapitalize="characters"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">From the phone: Settings → About phone → Status, or dial *#06#.</p>
-                </FormField>
+                {sellMode === 'stock' ? (
+                  <div className="bg-green-50 border border-green-200 rounded-2xl p-3 text-xs text-green-800">
+                    ✓ This phone is already enrolled &amp; locked — no serial/IMEI needed. It links to this customer on registration.
+                  </div>
+                ) : (
+                  <>
+                    <FormField label="Phone Serial Number" error={errors.serial_number}>
+                      <input
+                        type="text"
+                        value={form.serial_number}
+                        onChange={(e) => set('serial_number', e.target.value.trim())}
+                        placeholder="e.g. C39XKT1JQ1GH"
+                        className={inputClass(errors.serial_number)}
+                        autoCapitalize="characters"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">From the phone: Settings → About phone → Status, or dial *#06#.</p>
+                    </FormField>
 
-                <FormField label="Device IMEI" error={errors.udid}>
-                  <input
-                    type="text"
-                    value={form.udid}
-                    onChange={(e) => set('udid', e.target.value.trim())}
-                    placeholder="e.g. 356938035643809"
-                    className={inputClass(errors.udid)}
-                    inputMode="numeric"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">Dial *#06# on the phone to see the IMEI. Required to lock this phone from the customer's account.</p>
-                </FormField>
+                    <FormField label="Device IMEI" error={errors.udid}>
+                      <input
+                        type="text"
+                        value={form.udid}
+                        onChange={(e) => set('udid', e.target.value.trim())}
+                        placeholder="e.g. 356938035643809"
+                        className={inputClass(errors.udid)}
+                        inputMode="numeric"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">Dial *#06# on the phone to see the IMEI.</p>
+                    </FormField>
+                  </>
+                )}
 
                 <FormField label="Payment Frequency">
                   <div className="grid grid-cols-3 gap-2">
