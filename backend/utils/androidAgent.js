@@ -32,8 +32,12 @@ const APK_FILENAME = process.env.AGENT_APK_FILENAME || 'dandorsolar-lock-agent.a
 // and can hand the phone a broken/partial file mid-provisioning). The CI
 // publishes the exact same APK here and to /downloads, so the checksum matches
 // either source. Override with AGENT_APK_URL if you host it elsewhere.
+// Use GitHub's raw host: a DIRECT 200 (no cross-domain redirect) and always-on.
+// The Android setup-wizard downloader often won't follow the 302 that a GitHub
+// Release download URL issues, which yields "missing components or corrupted".
+// raw serves the committed APK at the branch HEAD, which matches agent-checksum.txt.
 const AGENT_APK_RELEASE_URL = process.env.AGENT_APK_RELEASE_URL ||
-  'https://github.com/Nanayaw01my/TriTech_Hub_ios/releases/download/lock-agent/dandorsolar-lock-agent.apk';
+  'https://raw.githubusercontent.com/Nanayaw01my/TriTech_Hub_ios/claude/beautiful-goldberg-OmWU0/backend/downloads/dandorsolar-lock-agent.apk';
 const AGENT_APK_URL = process.env.AGENT_APK_URL || AGENT_APK_RELEASE_URL;
 // base64url SHA-256 of the APK's signing certificate. Read from env, else from
 // the committed downloads/agent-checksum.txt that the build writes next to the
