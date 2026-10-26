@@ -99,9 +99,21 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f backend/downloads/dandorsolar-lock-agent.apk backend/downloads/agent-checksum.txt
           if git diff --cached --quiet; then
-            echo "No changes to commit."
+            echo "No APK changes."
           else
             git commit -m "ci: publish lock-agent APK + checksum to backend/downloads"
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+          # Pin a COMMIT-based raw download URL (no slash) so the provisioning QR
+          # has a direct, always-on link. Branch names with a slash (like
+          # claude/beautiful-goldberg-OmWU0) break raw.githubusercontent.com URLs.
+          SHA=$(git rev-parse HEAD)
+          printf 'https://raw.githubusercontent.com/%s/%s/backend/downloads/dandorsolar-lock-agent.apk' "$GITHUB_REPOSITORY" "$SHA" > backend/downloads/agent-apk-url.txt
+          git add -f backend/downloads/agent-apk-url.txt
+          if git diff --cached --quiet; then
+            echo "URL unchanged."
+          else
+            git commit -m "ci: pin agent APK raw download URL"
             git push origin HEAD:${{ github.ref_name }}
           fi
 

@@ -32,13 +32,26 @@ const APK_FILENAME = process.env.AGENT_APK_FILENAME || 'dandorsolar-lock-agent.a
 // and can hand the phone a broken/partial file mid-provisioning). The CI
 // publishes the exact same APK here and to /downloads, so the checksum matches
 // either source. Override with AGENT_APK_URL if you host it elsewhere.
-// Use GitHub's raw host: a DIRECT 200 (no cross-domain redirect) and always-on.
-// The Android setup-wizard downloader often won't follow the 302 that a GitHub
-// Release download URL issues, which yields "missing components or corrupted".
-// raw serves the committed APK at the branch HEAD, which matches agent-checksum.txt.
-const AGENT_APK_RELEASE_URL = process.env.AGENT_APK_RELEASE_URL ||
-  'https://raw.githubusercontent.com/Nanayaw01my/TriTech_Hub_ios/claude/beautiful-goldberg-OmWU0/backend/downloads/dandorsolar-lock-agent.apk';
-const AGENT_APK_URL = process.env.AGENT_APK_URL || AGENT_APK_RELEASE_URL;
+// Download URL for the agent APK, used in the provisioning QR. It MUST be a
+// direct, no-redirect, always-on URL with NO slash in the ref — a raw GitHub
+// URL pinned to a COMMIT SHA (a branch name with a slash, like
+// claude/beautiful-goldberg-OmWU0, breaks raw URLs: raw can't tell where the
+// ref ends). The CI writes the correct commit-pinned URL into
+// backend/downloads/agent-apk-url.txt on every build, which we read here.
+const AGENT_APK_FALLBACK_URL = process.env.AGENT_APK_RELEASE_URL ||
+  'https://github.com/Nanayaw01my/TriTech_Hub_ios/releases/download/lock-agent/dandorsolar-lock-agent.apk';
+function agentApkUrl() {
+  if (process.env.AGENT_APK_URL) return process.env.AGENT_APK_URL.trim();
+  try {
+    const p = path.join(__dirname, '..', 'downloads', 'agent-apk-url.txt');
+    if (fs.existsSync(p)) {
+      const u = fs.readFileSync(p, 'utf8').trim();
+      if (u) return u;
+    }
+  } catch { /* ignore */ }
+  return AGENT_APK_FALLBACK_URL;
+}
+const AGENT_APK_URL = agentApkUrl();
 // base64url SHA-256 of the APK's signing certificate. Read from env, else from
 // the committed downloads/agent-checksum.txt that the build writes next to the
 // APK. Until a checksum is available the provisioning QR is not "ready".
@@ -187,7 +200,7 @@ function buildProvisioningPayload(enrollmentToken, opts = {}) {
   // phone downloads the agent + talks to the backend at a URL that really works,
   // even if PUBLIC_BACKEND_URL isn't set. AGENT_APK_URL env still overrides.
   const base = (opts.baseUrl || BACKEND_URL).replace(/\/+$/, '');
-  const apkUrl = AGENT_APK_URL; // GitHub release (always-on) by default
+  const apkUrl = agentApkUrl(); // commit-pinned raw URL written by CI
   return {
     'android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME': AGENT_RECEIVER,
     'android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION': apkUrl,
@@ -209,7 +222,7 @@ function buildProvisioningPayload(enrollmentToken, opts = {}) {
 }
 
 function provisioningReady() {
-  return !!(AGENT_APK_URL && agentApkChecksum());
+  return !!(agentApkUrl() && agentApkChecksum());
 }
 
 module.exports = {
