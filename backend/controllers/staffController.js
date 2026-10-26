@@ -268,35 +268,50 @@ const addCustomer = async (req, res) => {
       });
     }
 
-    // --- 2. Find catalog device and clone it for this customer ---
-    // Devices act as a catalog — the original stays available so staff can
-    // keep selling it. Each sale creates its own device record.
-    let catalogDevice = null;
+    // --- 2. Resolve the device for this sale ---
+    // Two modes:
+    //  a) Enrolled stock: device_id is a pre-enrolled, unassigned phone — sell
+    //     THAT exact phone so its lock-agent enrollment carries over. Don't clone.
+    //  b) Catalog: device_id/model is a catalog entry — clone a fresh per-sale
+    //     device record (serial/IMEI come from the form for the physical phone).
+    const cleanSerial = (serial_number && String(serial_number).trim()) || undefined;
+    const cleanUdid = (udid && String(udid).trim()) || undefined;
+    let device;
     if (device_id_param) {
-      catalogDevice = await Device.findById(device_id_param);
-      if (!catalogDevice) {
+      const picked = await Device.findById(device_id_param);
+      if (!picked) {
         return res.status(400).json({ success: false, message: 'Selected device not found. Please choose another.' });
       }
+      if (picked.agent?.enrolled && !picked.assigned_to) {
+        // Selling a pre-enrolled stock phone — use it directly.
+        device = picked;
+        device.price = Number(device_price) || device.price || 0;
+        device.sold_status = 'sold';
+        if (cleanSerial) device.serial_number = cleanSerial;
+        if (cleanUdid) device.udid = cleanUdid;
+        await device.save();
+      } else {
+        device = await Device.create({
+          model: picked.model, color: picked.color, storage: picked.storage,
+          price: Number(device_price) || picked.price,
+          imei: picked.imei || null,
+          serial_number: cleanSerial, udid: cleanUdid,
+          sold_status: 'sold',
+        });
+      }
     } else {
-      catalogDevice = await Device.findOne({ model: device_model, sold_status: 'available' });
+      let catalogDevice = await Device.findOne({ model: device_model, sold_status: 'available' });
       if (!catalogDevice) {
         catalogDevice = await Device.create({ model: device_model, price: Number(device_price) || 0 });
       }
+      device = await Device.create({
+        model: catalogDevice.model, color: catalogDevice.color, storage: catalogDevice.storage,
+        price: Number(device_price) || catalogDevice.price,
+        imei: catalogDevice.imei || null,
+        serial_number: cleanSerial, udid: cleanUdid,
+        sold_status: 'sold',
+      });
     }
-
-    // Create a fresh device record for this specific customer. The serial number
-    // and UDID belong to the physical phone handed to THIS customer (each is
-    // unique), so they're taken from the form — not copied from the catalog.
-    const device = await Device.create({
-      model: catalogDevice.model,
-      color: catalogDevice.color,
-      storage: catalogDevice.storage,
-      price: Number(device_price) || catalogDevice.price,
-      imei: catalogDevice.imei || null,
-      serial_number: (serial_number && String(serial_number).trim()) || undefined,
-      udid: (udid && String(udid).trim()) || undefined,
-      sold_status: 'sold',
-    });
 
     // --- 3. Check email uniqueness ---
     const existingEmail = await User.findOne({ email: email.toLowerCase().trim() });
@@ -644,6 +659,30 @@ const getCustomerPayments = async (req, res) => {
 };
 
 /**
+ * GET /api/staff/enrolled-stock
+ * Pre-enrolled phones available to sell (unassigned), for the sale picker.
+ */
+const getEnrolledStock = async (req, res) => {
+  try {
+    const devices = await Device.find({ 'agent.enrolled': true, assigned_to: null })
+      .select('model imei serial_number agent createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+    const mapped = devices.map((d) => ({
+      _id: d._id,
+      model: d.model,
+      imei: d.imei || '',
+      serial_number: d.serial_number || '',
+      online: !!d.agent?.last_heartbeat && (Date.now() - new Date(d.agent.last_heartbeat).getTime() < 20 * 60 * 1000),
+    }));
+    return res.status(200).json({ success: true, data: { devices: mapped, total: mapped.length } });
+  } catch (error) {
+    logger.error('getEnrolledStock error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
  * POST /api/staff/customers/:id/record-cash
  * Record an installment payment collected in cash at the counter.
  */
@@ -829,6 +868,7 @@ module.exports = {
   getCustomerPayments,
   makePaymentForCustomer,
   recordCashPayment,
+  getEnrolledStock,
   getAvailableDevices,
   getStaffStats,
 };

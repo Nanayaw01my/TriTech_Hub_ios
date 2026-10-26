@@ -55,7 +55,7 @@ const DeviceSchema = new mongoose.Schema(
       enrollment_token: { type: String, trim: true, default: null },
       enrollment_status: {
         type: String,
-        enum: ['none', 'pending', 'enrolled', 'revoked'],
+        enum: ['none', 'pending', 'enrolled', 'revoked', 'released'],
         default: 'none',
       },
       // Firebase Cloud Messaging token for instant lock/unlock push.

@@ -8,6 +8,7 @@ const Device = require('../models/Device');
 const Customer = require('../models/Customer');
 const AuditLog = require('../models/AuditLog');
 const LocationPing = require('../models/LocationPing');
+const Settings = require('../models/Settings');
 const logger = require('../utils/logger');
 const agent = require('../utils/androidAgent');
 
@@ -51,13 +52,36 @@ const enroll = async (req, res) => {
       return res.status(400).json({ success: false, message: 'enrollment_token and device_id are required.' });
     }
 
-    const device = await Device.findOne({ 'agent.enrollment_token': enrollment_token });
-    if (!device) {
-      return res.status(404).json({ success: false, message: 'Invalid or expired enrollment token.' });
+    // Two enrollment paths:
+    //  - STOCK: the reusable stock token enrols any phone into the unassigned
+    //    inventory pool (creating a Device record keyed by the phone's id).
+    //  - PER-SALE: a one-time token already attached to a specific Device.
+    const settings = await Settings.getSingleton();
+    const isStock = settings.stock_enrollment_token && enrollment_token === settings.stock_enrollment_token;
+
+    let device;
+    if (isStock) {
+      device = await Device.findOne({ 'agent.device_id': device_id });
+      if (!device) {
+        device = new Device({
+          model: model || 'Android phone',
+          price: 0,
+          imei: imei || undefined,
+          sold_status: 'available',
+          assigned_to: null,
+          agent: {},
+        });
+      }
+    } else {
+      device = await Device.findOne({ 'agent.enrollment_token': enrollment_token });
+      if (!device) {
+        return res.status(404).json({ success: false, message: 'Invalid or expired enrollment token.' });
+      }
+      if (device.agent?.enrollment_status === 'revoked') {
+        return res.status(403).json({ success: false, message: 'This enrollment has been revoked.' });
+      }
     }
-    if (device.agent?.enrollment_status === 'revoked') {
-      return res.status(403).json({ success: false, message: 'This enrollment has been revoked.' });
-    }
+    if (!device.agent) device.agent = {};
 
     const device_secret = agent.generateDeviceSecret();
     device.agent.enrolled = true;
@@ -167,6 +191,13 @@ const ack = async (req, res) => {
     const { applied_state } = req.body || {};
     if (applied_state === 'locked' || applied_state === 'unlocked') {
       device.lock_status = applied_state;
+      device.agent.last_heartbeat = new Date();
+      await device.save();
+    } else if (applied_state === 'released') {
+      // The phone relinquished Device Owner — it's the customer's now.
+      device.lock_status = 'unlocked';
+      device.agent.enrolled = false;
+      device.agent.enrollment_status = 'released';
       device.agent.last_heartbeat = new Date();
       await device.save();
     }

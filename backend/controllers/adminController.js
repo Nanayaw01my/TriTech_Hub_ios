@@ -8,6 +8,7 @@ const Payment = require('../models/Payment');
 const AuditLog = require('../models/AuditLog');
 const LocationPing = require('../models/LocationPing');
 const Settings = require('../models/Settings');
+const crypto = require('crypto');
 const CommissionPayout = require('../models/CommissionPayout');
 const { createTransferRecipient, initiateTransfer } = require('../utils/paystack');
 const { generateStaffId } = require('../utils/accountGenerator');
@@ -898,6 +899,119 @@ const getDeviceLocations = async (req, res) => {
     });
   } catch (error) {
     logger.error('getDeviceLocations error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * GET /api/admin/stock-enrollment
+ * The reusable "Stock Enrollment" QR — scan it on any factory-reset phone to
+ * enrol it into the unassigned inventory pool.
+ */
+const getStockEnrollment = async (req, res) => {
+  try {
+    const settings = await Settings.getSingleton();
+    if (!settings.stock_enrollment_token) {
+      settings.stock_enrollment_token = 'stk_' + crypto.randomBytes(18).toString('hex');
+      await settings.save();
+    }
+    const baseUrl = process.env.PUBLIC_BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+    const payload = agent.buildProvisioningPayload(settings.stock_enrollment_token, { baseUrl });
+    let qr = null;
+    try {
+      const QRCode = require('qrcode');
+      qr = await QRCode.toDataURL(JSON.stringify(payload), { errorCorrectionLevel: 'M', margin: 1, width: 360 });
+    } catch (e) {
+      logger.warn('[agent] stock QR unavailable: %s', e.message);
+    }
+    const available = await Device.countDocuments({ 'agent.enrolled': true, assigned_to: null });
+    const enrolledTotal = await Device.countDocuments({ 'agent.enrolled': true });
+    return res.status(200).json({
+      success: true,
+      data: {
+        ready: agent.provisioningReady(),
+        checksum: payload['android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM'],
+        apk_url: payload['android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION'],
+        qr,
+        available_count: available,
+        enrolled_total: enrolledTotal,
+      },
+    });
+  } catch (error) {
+    logger.error('getStockEnrollment error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * GET /api/admin/enrolled-devices?available=1
+ * Enrolled phones. With available=1, only unassigned stock (for selling).
+ */
+const getEnrolledDevices = async (req, res) => {
+  try {
+    const onlyAvailable = req.query.available === '1' || req.query.available === 'true';
+    const filter = { 'agent.enrolled': true };
+    if (onlyAvailable) filter.assigned_to = null;
+    const devices = await Device.find(filter)
+      .select('model imei serial_number agent assigned_to lock_status createdAt')
+      .populate({ path: 'assigned_to', select: 'full_name' })
+      .sort({ createdAt: -1 })
+      .lean();
+    const mapped = devices.map((d) => ({
+      _id: d._id,
+      model: d.model,
+      imei: d.imei || '',
+      serial_number: d.serial_number || '',
+      online: !!d.agent?.last_heartbeat && (Date.now() - new Date(d.agent.last_heartbeat).getTime() < 20 * 60 * 1000),
+      last_seen: d.agent?.last_heartbeat || null,
+      assigned: !!d.assigned_to,
+      customer_name: d.assigned_to?.full_name || null,
+      lock_status: d.lock_status,
+      enrolled_at: d.createdAt,
+    }));
+    return res.status(200).json({ success: true, data: { devices: mapped, total: mapped.length } });
+  } catch (error) {
+    logger.error('getEnrolledDevices error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * POST /api/admin/customers/:id/release
+ * Free a phone: tell the agent to relinquish Device Owner (full payoff / manual).
+ */
+const releaseCustomerDevice = async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id).lean();
+    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found.' });
+    const plan = await InstallmentPlan.findOne({ customer_id: customer._id }).lean();
+    if (!plan || !plan.device_id) return res.status(404).json({ success: false, message: 'No device found for this customer.' });
+    const device = await Device.findById(plan.device_id);
+    if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
+    if (!device.agent?.enrolled) {
+      return res.status(400).json({ success: false, message: 'This phone is not enrolled, so there is nothing to release.' });
+    }
+
+    const r = await agent.releaseDevice(device);
+    device.lock_status = 'unlocked';
+    await device.save();
+
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'device_released',
+      device_udid: device.agent?.device_id || device.imei || '',
+      target_user_id: customer.user_id,
+      details: { device_id: device._id, customer_id: customer._id, delivered: r.delivered },
+    }).catch(() => {});
+
+    return res.status(200).json({
+      success: true,
+      message: r.delivered
+        ? 'Release sent — the phone is being freed now. It becomes fully the customer’s.'
+        : 'Release queued — it will apply the next time the phone is online.',
+    });
+  } catch (error) {
+    logger.error('releaseCustomerDevice error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -2185,6 +2299,9 @@ module.exports = {
   unlockDevice: unlockDeviceHandler,
   getDeviceProvisioning,
   getDeviceLocations,
+  getStockEnrollment,
+  getEnrolledDevices,
+  releaseCustomerDevice,
   getTransactions,
   getReports,
   getAuditLogs,

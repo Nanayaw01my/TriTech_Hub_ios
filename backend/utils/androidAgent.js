@@ -188,6 +188,23 @@ async function unlockDevice(device) {
   };
 }
 
+/** Tell the phone to relinquish Device Owner and become fully the customer's. */
+async function releaseDevice(device) {
+  if (!device.agent) device.agent = {};
+  device.agent.desired_lock_state = 'released';
+  await device.save();
+  const { pushed, reason } = await pushCommand(device);
+  const online = isOnline(device);
+  return {
+    ok: true,
+    enrolled: !!device.agent.enrolled,
+    pushed,
+    reason,
+    online,
+    delivered: pushed || online,
+  };
+}
+
 // ── Provisioning QR payload ────────────────────────────────────────────────
 /**
  * Build the Android Device Owner provisioning JSON that a factory-reset phone
@@ -228,6 +245,7 @@ function provisioningReady() {
 module.exports = {
   lockDevice,
   unlockDevice,
+  releaseDevice,
   pushCommand,
   isOnline,
   lockMessage,

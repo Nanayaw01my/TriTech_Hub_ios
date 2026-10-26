@@ -11,6 +11,7 @@ const {
   getCustomerPayments,
   makePaymentForCustomer,
   recordCashPayment,
+  getEnrolledStock,
   getAvailableDevices,
   getStaffStats,
 } = require('../controllers/staffController');
@@ -23,6 +24,7 @@ router.use(authenticate, authorize('staff', 'admin'));
  * List available (unsold) devices for customer registration dropdown.
  */
 router.get('/devices', getAvailableDevices);
+router.get('/enrolled-stock', getEnrolledStock);
 
 /**
  * GET /api/staff/stats

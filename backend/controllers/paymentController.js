@@ -97,16 +97,17 @@ const processSuccessfulPayment = async ({
   let deviceUnlocked = false;
   if (isCompleted && device) {
     deviceUnlocked = true;
-    // Unlock the phone via the lock agent (or just clear the flag if not enrolled).
+    // Plan fully paid → RELEASE the phone: the agent relinquishes Device Owner
+    // so the device becomes 100% the customer's (reset re-enabled).
     try {
       const devDoc = await Device.findById(device._id);
       if (devDoc) {
         devDoc.lock_status = 'unlocked';
-        if (devDoc.agent?.enrolled) await agent.unlockDevice(devDoc);
+        if (devDoc.agent?.enrolled) await agent.releaseDevice(devDoc);
         else await devDoc.save();
       }
-    } catch (unlockErr) {
-      logger.error('Agent unlock failed after plan completion for device %s: %s', device._id, unlockErr.message);
+    } catch (releaseErr) {
+      logger.error('Agent release failed after plan completion for device %s: %s', device._id, releaseErr.message);
       await Device.findByIdAndUpdate(device._id, { lock_status: 'unlocked' });
     }
 

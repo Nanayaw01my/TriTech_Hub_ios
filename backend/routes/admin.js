@@ -21,6 +21,9 @@ const {
   unlockDevice,
   getDeviceProvisioning,
   getDeviceLocations,
+  getStockEnrollment,
+  getEnrolledDevices,
+  releaseCustomerDevice,
   getTransactions,
   getReports,
   getAuditLogs,
@@ -83,6 +86,9 @@ router.post(
 );
 router.post('/customers/:id/lock', [param('id').isMongoId()], lockCustomerDevice);
 router.post('/customers/:id/unlock', [param('id').isMongoId()], unlockCustomerDevice);
+router.post('/customers/:id/release', [param('id').isMongoId()], releaseCustomerDevice);
+router.get('/stock-enrollment', getStockEnrollment);
+router.get('/enrolled-devices', getEnrolledDevices);
 router.post('/customers/:id/remind', [param('id').isMongoId()], sendCustomerReminder);
 router.post('/customers/:id/repossess', [param('id').isMongoId().withMessage('Invalid customer ID.')], repossessDevice);
 
