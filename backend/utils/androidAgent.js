@@ -28,7 +28,13 @@ const BACKEND_URL =
 // default, so no external host is needed. Override AGENT_APK_URL to point
 // elsewhere (e.g. a GitHub Release).
 const APK_FILENAME = process.env.AGENT_APK_FILENAME || 'dandorsolar-lock-agent.apk';
-const AGENT_APK_URL = process.env.AGENT_APK_URL || `${BACKEND_URL}/downloads/${APK_FILENAME}`;
+// Prefer GitHub's always-on CDN for the APK download (Render's free tier sleeps
+// and can hand the phone a broken/partial file mid-provisioning). The CI
+// publishes the exact same APK here and to /downloads, so the checksum matches
+// either source. Override with AGENT_APK_URL if you host it elsewhere.
+const AGENT_APK_RELEASE_URL = process.env.AGENT_APK_RELEASE_URL ||
+  'https://github.com/Nanayaw01my/TriTech_Hub_ios/releases/download/lock-agent/dandorsolar-lock-agent.apk';
+const AGENT_APK_URL = process.env.AGENT_APK_URL || AGENT_APK_RELEASE_URL;
 // base64url SHA-256 of the APK's signing certificate. Read from env, else from
 // the committed downloads/agent-checksum.txt that the build writes next to the
 // APK. Until a checksum is available the provisioning QR is not "ready".
@@ -177,7 +183,7 @@ function buildProvisioningPayload(enrollmentToken, opts = {}) {
   // phone downloads the agent + talks to the backend at a URL that really works,
   // even if PUBLIC_BACKEND_URL isn't set. AGENT_APK_URL env still overrides.
   const base = (opts.baseUrl || BACKEND_URL).replace(/\/+$/, '');
-  const apkUrl = process.env.AGENT_APK_URL || `${base}/downloads/${APK_FILENAME}`;
+  const apkUrl = AGENT_APK_URL; // GitHub release (always-on) by default
   return {
     'android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME': AGENT_RECEIVER,
     'android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION': apkUrl,

@@ -46,7 +46,8 @@
              admin receiver below carries BIND_DEVICE_ADMIN). -->
         <activity
             android:name=".GetProvisioningModeActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
             <intent-filter>
                 <action android:name="android.app.action.GET_PROVISIONING_MODE" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -56,7 +57,8 @@
         <!-- Shown right after provisioning: we enroll + apply policies here. -->
         <activity
             android:name=".PolicyComplianceActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
             <intent-filter>
                 <action android:name="android.app.action.ADMIN_POLICY_COMPLIANCE" />
                 <category android:name="android.intent.category.DEFAULT" />
