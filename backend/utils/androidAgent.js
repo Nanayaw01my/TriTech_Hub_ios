@@ -28,28 +28,17 @@ const BACKEND_URL =
 // default, so no external host is needed. Override AGENT_APK_URL to point
 // elsewhere (e.g. a GitHub Release).
 const APK_FILENAME = process.env.AGENT_APK_FILENAME || 'dandorsolar-lock-agent.apk';
-// Prefer GitHub's always-on CDN for the APK download (Render's free tier sleeps
-// and can hand the phone a broken/partial file mid-provisioning). The CI
-// publishes the exact same APK here and to /downloads, so the checksum matches
-// either source. Override with AGENT_APK_URL if you host it elsewhere.
-// Download URL for the agent APK, used in the provisioning QR. It MUST be a
-// direct, no-redirect, always-on URL with NO slash in the ref — a raw GitHub
-// URL pinned to a COMMIT SHA (a branch name with a slash, like
-// claude/beautiful-goldberg-OmWU0, breaks raw URLs: raw can't tell where the
-// ref ends). The CI writes the correct commit-pinned URL into
-// backend/downloads/agent-apk-url.txt on every build, which we read here.
-const AGENT_APK_FALLBACK_URL = process.env.AGENT_APK_RELEASE_URL ||
-  'https://github.com/Nanayaw01my/TriTech_Hub_ios/releases/download/lock-agent/dandorsolar-lock-agent.apk';
+// Download URL for the agent APK, used in the provisioning QR. It must be a
+// direct, no-redirect, always-on URL with NO slash in the ref (a branch name
+// with a slash, like claude/beautiful-goldberg-OmWU0, breaks raw URLs). We pin
+// to the stable "agent-latest" git TAG, which the CI force-moves to each new
+// build commit. This keeps the URL CONSTANT (no per-build file that could drift
+// out of sync with the checksum). raw always serves the tag's committed APK,
+// which matches agent-checksum.txt from the same build. Override via env.
+const AGENT_APK_URL_DEFAULT = process.env.AGENT_APK_RELEASE_URL ||
+  'https://raw.githubusercontent.com/Nanayaw01my/TriTech_Hub_ios/agent-latest/backend/downloads/dandorsolar-lock-agent.apk';
 function agentApkUrl() {
-  if (process.env.AGENT_APK_URL) return process.env.AGENT_APK_URL.trim();
-  try {
-    const p = path.join(__dirname, '..', 'downloads', 'agent-apk-url.txt');
-    if (fs.existsSync(p)) {
-      const u = fs.readFileSync(p, 'utf8').trim();
-      if (u) return u;
-    }
-  } catch { /* ignore */ }
-  return AGENT_APK_FALLBACK_URL;
+  return (process.env.AGENT_APK_URL && process.env.AGENT_APK_URL.trim()) || AGENT_APK_URL_DEFAULT;
 }
 const AGENT_APK_URL = agentApkUrl();
 // base64url SHA-256 of the APK's signing certificate. Read from env, else from

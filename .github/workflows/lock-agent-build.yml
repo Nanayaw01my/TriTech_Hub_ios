@@ -104,18 +104,13 @@ jobs:
             git commit -m "ci: publish lock-agent APK + checksum to backend/downloads"
             git push origin HEAD:${{ github.ref_name }}
           fi
-          # Pin a COMMIT-based raw download URL (no slash) so the provisioning QR
-          # has a direct, always-on link. Branch names with a slash (like
-          # claude/beautiful-goldberg-OmWU0) break raw.githubusercontent.com URLs.
+          # Move the stable "agent-latest" tag to this commit. The backend's
+          # download URL is pinned to this tag (no slash, always-on via raw), so
+          # the link and the checksum always come from the SAME build — they can
+          # never drift out of sync the way a per-build URL file could.
           SHA=$(git rev-parse HEAD)
-          printf 'https://raw.githubusercontent.com/%s/%s/backend/downloads/dandorsolar-lock-agent.apk' "$GITHUB_REPOSITORY" "$SHA" > backend/downloads/agent-apk-url.txt
-          git add -f backend/downloads/agent-apk-url.txt
-          if git diff --cached --quiet; then
-            echo "URL unchanged."
-          else
-            git commit -m "ci: pin agent APK raw download URL"
-            git push origin HEAD:${{ github.ref_name }}
-          fi
+          git tag -f agent-latest "$SHA"
+          git push -f origin "refs/tags/agent-latest"
 
       - name: Upload APK + checksum (artifact)
         uses: actions/upload-artifact@v4
