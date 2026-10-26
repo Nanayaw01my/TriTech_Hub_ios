@@ -44,12 +44,21 @@ object Policy {
 
     fun lockNow(c: Context) = runCatching { dpm(c).lockNow() }
 
-    /** Called on unlock: leave factory reset blocked (device still on a plan). */
-    fun clearRestrictionsForFullPayoff(c: Context) {
+    /**
+     * Release the phone to the customer: lift every restriction and relinquish
+     * Device Owner, so the phone becomes fully theirs (factory reset re-enabled,
+     * "managed by your organization" removed). Used on full payoff / manual release.
+     */
+    fun releaseDevice(c: Context) {
         if (!isOwner(c)) return
         val dpm = dpm(c); val admin = admin(c)
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_FACTORY_RESET) }
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_ADD_USER) }
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_SAFE_BOOT) }
+        runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_OUTGOING_BEAM) }
+        runCatching { dpm.setDeviceOwnerLockScreenInfo(admin, null) }
+        runCatching { dpm.setLockTaskPackages(admin, arrayOf()) }
+        // Relinquish Device Owner last — after this we lose management powers.
+        runCatching { @Suppress("DEPRECATION") dpm.clearDeviceOwnerApp(c.packageName) }
     }
 }

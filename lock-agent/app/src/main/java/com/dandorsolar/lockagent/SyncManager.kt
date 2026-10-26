@@ -66,9 +66,24 @@ object SyncManager {
         j.optString("business_name").takeIf { it.isNotEmpty() }?.let { Prefs.setBusinessName(c, it) }
     }
 
-    /** Make the phone match [desired] ("locked"/"unlocked"). Idempotent. */
+    /** Make the phone match [desired] ("locked"/"unlocked"/"released"). Idempotent. */
     fun applyDesired(c: Context, desired: String) {
-        if (desired == "locked") lock(c) else unlock(c)
+        when (desired) {
+            "released" -> release(c)
+            "locked" -> lock(c)
+            else -> unlock(c)
+        }
+    }
+
+    /** Fully hand the phone to the customer: lift the lock + drop Device Owner. */
+    fun release(c: Context) {
+        if (Prefs.appliedLockState(c) == "released") return
+        Notifications.clearLock(c)
+        c.sendBroadcast(Intent(ACTION_UNLOCK).setPackage(c.packageName))
+        Prefs.setAppliedLockState(c, "released")
+        ack(c, "released")            // tell the backend first (network still works)
+        Policy.releaseDevice(c)       // clears restrictions + relinquishes Device Owner
+        Log.i(TAG, "Device released to customer")
     }
 
     fun lock(c: Context) {
