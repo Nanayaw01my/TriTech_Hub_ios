@@ -20,8 +20,12 @@ const logger = require('./logger');
 
 // ── Config (deploy-time) ──────────────────────────────────────────────────
 const AGENT_PACKAGE = process.env.AGENT_PACKAGE || 'com.dandorsolar.lockagent';
+// MUST match the receiver class actually declared in the agent's
+// AndroidManifest.xml (com.dandorsolar.lockagent.LockDeviceAdminReceiver). If
+// this names a class the APK doesn't contain, the phone downloads the APK fine
+// but reports "Can't use the admin app. It's missing components or corrupted."
 const AGENT_RECEIVER =
-  process.env.AGENT_RECEIVER || `${AGENT_PACKAGE}/.DeviceAdminReceiver`;
+  process.env.AGENT_RECEIVER || `${AGENT_PACKAGE}/.LockDeviceAdminReceiver`;
 const BACKEND_URL =
   process.env.PUBLIC_BACKEND_URL || process.env.APP_BASE_URL || 'https://tritechhub.online';
 // The signed agent APK is served from this app's own /downloads folder by
