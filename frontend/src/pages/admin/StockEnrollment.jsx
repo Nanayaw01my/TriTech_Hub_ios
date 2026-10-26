@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import api from '../../api/axios'
 import toast from 'react-hot-toast'
 import Skeleton from '../../components/Skeleton'
+import LocationModal from '../../components/LocationModal'
 import { formatDistanceToNow } from 'date-fns'
 
 // Bulk enrollment: scan ONE QR on every factory-reset phone to fill your
@@ -11,6 +12,8 @@ export default function StockEnrollment() {
   const [info, setInfo] = useState(null)
   const [devices, setDevices] = useState([])
   const [tab, setTab] = useState('available') // available | all
+  const [busyId, setBusyId] = useState(null)
+  const [locate, setLocate] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -31,6 +34,24 @@ export default function StockEnrollment() {
   useEffect(() => { load() }, [load])
 
   const shown = devices.filter((x) => (tab === 'available' ? !x.assigned : true))
+
+  // Lock / unlock any enrolled phone directly from stock (uses the device _id).
+  const act = async (d, action) => {
+    setBusyId(d._id)
+    try {
+      await api.post(`/admin/devices/${d._id}/${action}`)
+      toast.success(
+        action === 'lock'
+          ? 'Lock sent. The phone locks on its next check-in (reboot it or open the app on it to apply now).'
+          : 'Unlock sent. The phone unlocks on its next check-in.'
+      )
+      await load()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || `Could not ${action} the phone`)
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   return (
     <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50">
@@ -102,23 +123,42 @@ export default function StockEnrollment() {
             ) : (
               <div className="space-y-2">
                 {shown.map((d) => (
-                  <div key={d._id} className="bg-white rounded-2xl border border-gray-100 p-3 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
+                  <div key={d._id} className="bg-white rounded-2xl border border-gray-100 p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-gray-900 text-sm truncate">{d.model}</p>
+                        <p className="text-xs text-gray-400 font-mono truncate">{d.imei ? `IMEI ${d.imei}` : (d.serial_number ? `SN ${d.serial_number}` : '—')}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        {d.assigned
+                          ? <span className="text-[11px] font-semibold text-gray-500">Sold · {d.customer_name}</span>
+                          : <span className="text-[11px] font-semibold text-orange-600">In stock</span>}
+                        <p className={`text-[10px] font-semibold ${d.lock_status === 'locked' ? 'text-red-600' : (d.online ? 'text-green-600' : 'text-gray-400')}`}>
+                          {d.lock_status === 'locked' ? '🔒 Locked' : (d.online ? 'Online' : (d.last_seen ? formatDistanceToNow(new Date(d.last_seen), { addSuffix: true }) : 'Offline'))}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900 text-sm truncate">{d.model}</p>
-                      <p className="text-xs text-gray-400 font-mono truncate">{d.imei ? `IMEI ${d.imei}` : (d.serial_number ? `SN ${d.serial_number}` : '—')}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      {d.assigned
-                        ? <span className="text-[11px] font-semibold text-gray-500">Sold · {d.customer_name}</span>
-                        : <span className="text-[11px] font-semibold text-orange-600">In stock</span>}
-                      <p className={`text-[10px] font-semibold ${d.online ? 'text-green-600' : 'text-gray-400'}`}>
-                        {d.online ? 'Online' : (d.last_seen ? formatDistanceToNow(new Date(d.last_seen), { addSuffix: true }) : 'Offline')}
-                      </p>
+                    <div className="mt-3 flex gap-2">
+                      {d.lock_status === 'locked' ? (
+                        <button onClick={() => act(d, 'unlock')} disabled={busyId === d._id}
+                          className="flex-1 py-2 rounded-xl text-sm font-semibold bg-green-600 text-white disabled:opacity-50">
+                          {busyId === d._id ? 'Sending…' : 'Unlock'}
+                        </button>
+                      ) : (
+                        <button onClick={() => act(d, 'lock')} disabled={busyId === d._id}
+                          className="flex-1 py-2 rounded-xl text-sm font-semibold bg-orange-600 text-white disabled:opacity-50">
+                          {busyId === d._id ? 'Sending…' : 'Lock'}
+                        </button>
+                      )}
+                      <button onClick={() => setLocate({ id: d._id, label: d.model })}
+                        className="flex-1 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50">
+                        Locate
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -127,6 +167,13 @@ export default function StockEnrollment() {
           </>
         )}
       </div>
+
+      <LocationModal
+        deviceId={locate?.id}
+        deviceLabel={locate?.label}
+        isOpen={!!locate}
+        onClose={() => setLocate(null)}
+      />
     </div>
   )
 }
