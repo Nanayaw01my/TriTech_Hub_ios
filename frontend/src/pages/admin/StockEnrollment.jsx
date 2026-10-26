@@ -70,6 +70,11 @@ export default function StockEnrollment() {
               ) : (
                 <div className="w-64 h-64 mx-auto rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400 text-sm">QR unavailable</div>
               )}
+              {info?.checksum && (
+                <p className="mt-2 text-center text-[10px] text-gray-300 font-mono break-all">
+                  build: {info.checksum.slice(0, 10)}…{info.checksum.slice(-6)}
+                </p>
+              )}
               <ol className="mt-5 space-y-2 text-sm text-gray-600 list-decimal list-inside text-left max-w-md mx-auto">
                 <li><span className="font-semibold text-gray-800">Factory reset</span> each new phone.</li>
                 <li>On the welcome screen, <span className="font-semibold text-gray-800">tap the screen 6 times</span>.</li>
