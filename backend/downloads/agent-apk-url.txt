@@ -1,1 +1,1 @@
-https://raw.githubusercontent.com/Nanayaw01my/TriTech_Hub_ios/1d6444c860f4ee38f3d43fc53461fdd3dcf20eb4/backend/downloads/dandorsolar-lock-agent.apk
+https://raw.githubusercontent.com/Nanayaw01my/TriTech_Hub_ios/e8e7be8824dff936d0440680b23812503bf10e75/backend/downloads/dandorsolar-lock-agent.apk
