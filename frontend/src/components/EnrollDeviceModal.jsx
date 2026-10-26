@@ -91,6 +91,12 @@ export default function EnrollDeviceModal({ deviceId, deviceLabel, isOpen, onClo
                 </p>
               )}
 
+              {data?.checksum && (
+                <p className="mt-2 text-center text-[10px] text-gray-300 font-mono break-all">
+                  build: {data.checksum.slice(0, 10)}…{data.checksum.slice(-6)}
+                </p>
+              )}
+
               <ol className="mt-5 space-y-2 text-sm text-gray-600 list-decimal list-inside">
                 <li><span className="font-semibold text-gray-800">Factory reset</span> the phone (back up photos first).</li>
                 <li>On the “Hi there” welcome screen, <span className="font-semibold text-gray-800">tap the screen 6 times</span>.</li>

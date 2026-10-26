@@ -858,6 +858,7 @@ const getDeviceProvisioning = async (req, res) => {
         // false until the agent APK + checksum are published (build workflow)
         ready: agent.provisioningReady(),
         apk_url: apkUrl,
+        checksum: payload['android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM'],
         package: agent.config.AGENT_PACKAGE,
         payload,
         qr,
