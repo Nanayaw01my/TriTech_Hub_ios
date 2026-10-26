@@ -80,11 +80,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          APK=lock-agent/app/build/outputs/apk/release/app-release.apk
+          cp lock-agent/app/build/outputs/apk/release/app-release.apk dandorsolar-lock-agent.apk
           gh release view lock-agent >/dev/null 2>&1 || \
             gh release create lock-agent --title "Dan Dorsolar Lock Agent" \
               --notes "Latest lock agent APK (auto-published)." --target "$GITHUB_SHA"
-          gh release upload lock-agent "$APK#dandorsolar-lock-agent.apk" --clobber
+          # Upload under the exact filename the QR points at.
+          gh release upload lock-agent dandorsolar-lock-agent.apk --clobber
+          # Remove the mislabeled asset from the first run, if present.
+          gh release delete-asset lock-agent app-release.apk -y || true
 
       - name: Publish APK to backend/downloads
         working-directory: ${{ github.workspace }}
