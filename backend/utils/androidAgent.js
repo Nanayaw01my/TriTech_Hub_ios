@@ -28,17 +28,26 @@ const BACKEND_URL =
 // default, so no external host is needed. Override AGENT_APK_URL to point
 // elsewhere (e.g. a GitHub Release).
 const APK_FILENAME = process.env.AGENT_APK_FILENAME || 'dandorsolar-lock-agent.apk';
-// Download URL for the agent APK, used in the provisioning QR. It must be a
-// direct, no-redirect, always-on URL with NO slash in the ref (a branch name
-// with a slash, like claude/beautiful-goldberg-OmWU0, breaks raw URLs). We pin
-// to the stable "agent-latest" git TAG, which the CI force-moves to each new
-// build commit. This keeps the URL CONSTANT (no per-build file that could drift
-// out of sync with the checksum). raw always serves the tag's committed APK,
-// which matches agent-checksum.txt from the same build. Override via env.
-const AGENT_APK_URL_DEFAULT = process.env.AGENT_APK_RELEASE_URL ||
-  'https://raw.githubusercontent.com/Nanayaw01my/TriTech_Hub_ios/agent-latest/backend/downloads/dandorsolar-lock-agent.apk';
+const AGENT_REPO = process.env.AGENT_GITHUB_REPO || 'Nanayaw01my/TriTech_Hub_ios';
+// Download URL for the agent APK, used in the provisioning QR. It MUST serve the
+// SAME APK that agent-checksum.txt describes, or the phone reports "missing
+// components or corrupted". The bulletproof way: build a raw GitHub URL pinned
+// to THIS deployment's own commit SHA (Render exposes it as RENDER_GIT_COMMIT),
+// because that commit holds both the APK and its matching checksum. A raw URL
+// with a commit SHA has no slash (branch names with slashes break raw) and is
+// immutable, so it's cache-safe and never drifts. Falls back to the moving
+// "agent-latest" tag when no deploy SHA is available (local/dev).
+const DEPLOY_SHA = (
+  process.env.RENDER_GIT_COMMIT ||
+  process.env.GIT_COMMIT ||
+  process.env.SOURCE_VERSION ||
+  process.env.COMMIT_SHA ||
+  ''
+).trim();
 function agentApkUrl() {
-  return (process.env.AGENT_APK_URL && process.env.AGENT_APK_URL.trim()) || AGENT_APK_URL_DEFAULT;
+  if (process.env.AGENT_APK_URL) return process.env.AGENT_APK_URL.trim();
+  const ref = DEPLOY_SHA || 'agent-latest';
+  return `https://raw.githubusercontent.com/${AGENT_REPO}/${ref}/backend/downloads/${APK_FILENAME}`;
 }
 const AGENT_APK_URL = agentApkUrl();
 // base64url SHA-256 of the APK's signing certificate. Read from env, else from
