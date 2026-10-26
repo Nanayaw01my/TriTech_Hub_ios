@@ -50,10 +50,6 @@ object SyncManager {
         val secret = Prefs.deviceSecret(c)
         if (backend.isEmpty() || id.isEmpty() || secret.isEmpty()) return
 
-        // Make sure we have an FCM token to report (best-effort, async).
-        if (Fcm.enabled() && Prefs.fcmToken(c).isEmpty()) {
-            Fcm.fetchToken { Prefs.setFcmToken(c, it) }
-        }
         val fix = LocationHelper.lastKnown(c)
         val res = Api.heartbeat(backend, id, secret, Prefs.appliedLockState(c), fix, Prefs.fcmToken(c).ifEmpty { null })
         val j = res.json ?: return

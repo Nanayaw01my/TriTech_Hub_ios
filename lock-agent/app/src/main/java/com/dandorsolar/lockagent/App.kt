@@ -14,8 +14,6 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         Notifications.ensureChannel(this)
-        Fcm.init(this)
-        Fcm.fetchToken { Prefs.setFcmToken(this, it) }
         scheduleSync(this)
     }
 
