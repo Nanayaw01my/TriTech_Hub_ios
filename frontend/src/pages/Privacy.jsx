@@ -79,7 +79,7 @@ export default function Privacy() {
       <Section heading="8. Contact">
         <p>
           For privacy questions or data requests, contact Dan & Dor Solar Company Ltd. at{' '}
-          <span className="font-semibold text-gray-900">support@tritechhub.online</span>.
+          <span className="font-semibold text-gray-900">support@dandorsolar.site</span>.
         </p>
       </Section>
     </LegalLayout>

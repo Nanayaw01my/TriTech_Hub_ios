@@ -2,7 +2,7 @@ const { MailerSend, EmailParams, Sender, Recipient, Attachment } = require('mail
 const nodemailer = require('nodemailer');
 const logger = require('./logger');
 
-const FROM_EMAIL = process.env.EMAIL_FROM_ADDRESS || 'noreply@tritechhub.online';
+const FROM_EMAIL = process.env.EMAIL_FROM_ADDRESS || 'noreply@dandorsolar.site';
 const FROM_NAME  = process.env.EMAIL_FROM_NAME    || 'Dan & Dor Solar Company Ltd.';
 
 // Provider: MailerSend if its API key is set, otherwise SMTP (e.g. Gmail with an

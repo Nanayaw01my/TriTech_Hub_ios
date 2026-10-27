@@ -85,7 +85,7 @@ export default function Terms() {
       <Section heading="9. Contact">
         <p>
           For questions about these Terms, contact Dan & Dor Solar Company Ltd. at{' '}
-          <span className="font-semibold text-gray-900">support@tritechhub.online</span>{' '}
+          <span className="font-semibold text-gray-900">support@dandorsolar.site</span>{' '}
           or through the contact details provided at registration.
         </p>
       </Section>
