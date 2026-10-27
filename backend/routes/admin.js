@@ -24,6 +24,8 @@ const {
   getStockEnrollment,
   getEnrolledDevices,
   releaseCustomerDevice,
+  getPendingActivations,
+  activatePlan,
   getTransactions,
   getReports,
   getAuditLogs,
@@ -89,6 +91,8 @@ router.post('/customers/:id/unlock', [param('id').isMongoId()], unlockCustomerDe
 router.post('/customers/:id/release', [param('id').isMongoId()], releaseCustomerDevice);
 router.get('/stock-enrollment', getStockEnrollment);
 router.get('/enrolled-devices', getEnrolledDevices);
+router.get('/activations', getPendingActivations);
+router.post('/plans/:id/activate', [param('id').isMongoId()], activatePlan);
 router.post('/customers/:id/remind', [param('id').isMongoId()], sendCustomerReminder);
 router.post('/customers/:id/repossess', [param('id').isMongoId().withMessage('Invalid customer ID.')], repossessDevice);
 

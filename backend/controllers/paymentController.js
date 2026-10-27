@@ -129,7 +129,9 @@ const processSuccessfulPayment = async ({
       const devDoc = await Device.findById(device._id);
       if (devDoc) {
         devDoc.lock_status = 'unlocked';
-        if (devDoc.agent?.enrolled) await agent.unlockDevice(devDoc);
+        // Move the offline deadline forward to the new due date so the phone
+        // stays unlocked online AND offline until the next installment lapses.
+        if (devDoc.agent?.enrolled) await agent.unlockDevice(devDoc, { paidUntil: agent.computePaidUntil(nextDueDate) });
         else await devDoc.save();
       }
     } catch (unlockErr) {
@@ -140,6 +142,15 @@ const processSuccessfulPayment = async ({
     // Reactivate defaulted plan back to active
     await InstallmentPlan.findByIdAndUpdate(plan._id, { status: 'active' });
     deviceUnlocked = true;
+  } else if (device && !isCompleted) {
+    // On-time payment (phone wasn't locked): just push the offline deadline
+    // forward so the self-lock failsafe tracks the next due date.
+    try {
+      const devDoc = await Device.findById(device._id);
+      if (devDoc && devDoc.agent?.enrolled) await agent.setDeadline(devDoc, nextDueDate);
+    } catch (dlErr) {
+      logger.error('Agent setDeadline failed after payment for device %s: %s', device._id, dlErr.message);
+    }
   }
 
   // Create payment audit log

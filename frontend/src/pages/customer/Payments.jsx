@@ -43,7 +43,18 @@ export default function CustomerPayments() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async (response) => {
+    // Confirm the charge server-side immediately (don't rely only on the
+    // Paystack webhook). This credits the installment and auto-unlocks the phone.
+    const reference = response?.reference || response?.trxref
+    if (reference) {
+      try {
+        await api.get(`/payment/verify/${reference}`)
+      } catch (err) {
+        // The webhook will still reconcile it; surface a soft note.
+        toast('Payment received — confirming shortly…')
+      }
+    }
     toast.success('Payment successful!')
     fetchData()
   }

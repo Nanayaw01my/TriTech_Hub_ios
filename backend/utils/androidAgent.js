@@ -73,6 +73,19 @@ const BUSINESS_NAME = process.env.BUSINESS_NAME || 'Dan Dorsolar Company Limited
 const BUSINESS_PHONE = process.env.BUSINESS_PHONE || '';
 // A phone is "online" if it has checked in within this window.
 const ONLINE_WINDOW_MS = 20 * 60 * 1000;
+// Offline failsafe grace: how long after a missed due date the phone waits
+// before locking ITSELF with no internet. Matches the server's 48h auto-lock
+// so online and offline enforcement agree.
+const OFFLINE_GRACE_MS = (Number(process.env.OFFLINE_GRACE_HOURS) || 48) * 60 * 60 * 1000;
+// A manual admin unlock keeps the phone unlocked offline for this long before
+// the deadline failsafe can re-assert (gives a clear override window).
+const MANUAL_UNLOCK_MS = (Number(process.env.MANUAL_UNLOCK_DAYS) || 7) * 24 * 60 * 60 * 1000;
+
+/** The offline self-lock deadline for a due date: due date + grace window. */
+function computePaidUntil(nextDueDate) {
+  if (!nextDueDate) return null;
+  return new Date(new Date(nextDueDate).getTime() + OFFLINE_GRACE_MS);
+}
 
 // ── Firebase (lazy, optional) ──────────────────────────────────────────────
 let _fcm = null;
@@ -160,6 +173,8 @@ async function pushCommand(device) {
 async function lockDevice(device, opts = {}) {
   if (!device.agent) device.agent = {};
   device.agent.desired_lock_state = 'locked';
+  // Keep the phone locked offline too: deadline is now (already passed).
+  device.agent.paid_until = new Date();
   await device.save();
   const { pushed, reason } = await pushCommand(device);
   const online = isOnline(device);
@@ -174,9 +189,15 @@ async function lockDevice(device, opts = {}) {
   };
 }
 
-async function unlockDevice(device) {
+async function unlockDevice(device, opts = {}) {
   if (!device.agent) device.agent = {};
   device.agent.desired_lock_state = 'unlocked';
+  // Extend the offline deadline so the phone doesn't immediately re-lock when
+  // offline. Callers that know the plan pass opts.paidUntil (next due + grace);
+  // a bare manual unlock gets a fixed override window.
+  device.agent.paid_until = opts.paidUntil
+    ? new Date(opts.paidUntil)
+    : new Date(Date.now() + MANUAL_UNLOCK_MS);
   await device.save();
   const { pushed, reason } = await pushCommand(device);
   const online = isOnline(device);
@@ -190,10 +211,28 @@ async function unlockDevice(device) {
   };
 }
 
+/**
+ * Set/refresh the phone's offline self-lock deadline without changing the
+ * desired lock state. Used on activation and after each payment: while the
+ * customer is paid up, the deadline sits in the future; the phone locks itself
+ * offline only once it passes. Tries to push the new deadline instantly.
+ */
+async function setDeadline(device, nextDueDate) {
+  if (!device.agent) device.agent = {};
+  device.agent.paid_until = computePaidUntil(nextDueDate);
+  if (device.agent.desired_lock_state === 'released') {
+    device.agent.desired_lock_state = 'unlocked';
+  }
+  await device.save();
+  const { pushed, reason } = await pushCommand(device);
+  return { ok: true, pushed, reason, online: isOnline(device), paid_until: device.agent.paid_until };
+}
+
 /** Tell the phone to relinquish Device Owner and become fully the customer's. */
 async function releaseDevice(device) {
   if (!device.agent) device.agent = {};
   device.agent.desired_lock_state = 'released';
+  device.agent.paid_until = null; // no more enforcement — phone is the customer's
   await device.save();
   const { pushed, reason } = await pushCommand(device);
   const online = isOnline(device);
@@ -248,6 +287,8 @@ module.exports = {
   lockDevice,
   unlockDevice,
   releaseDevice,
+  setDeadline,
+  computePaidUntil,
   pushCommand,
   isOnline,
   lockMessage,

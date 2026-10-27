@@ -260,11 +260,27 @@ const addCustomer = async (req, res) => {
 
     const frequency = payment_frequency || frequencyField || 'monthly';
 
-    // --- 1. Validate password length (max 5 chars) ---
-    if (!password || password.length > 5) {
+    // --- 1. Password is optional ---
+    // If the DSR supplies one it must be 1-5 chars. If omitted, auto-generate a
+    // short numeric PIN so the portal account still exists; the customer can set
+    // their own later via "forgot password".
+    let customerPassword = password;
+    if (customerPassword) {
+      if (customerPassword.length > 5) {
+        return res.status(400).json({
+          success: false,
+          message: 'Customer password must be between 1 and 5 characters.',
+        });
+      }
+    } else {
+      customerPassword = String(Math.floor(10000 + Math.random() * 90000)); // 5-digit PIN
+    }
+
+    // --- 1b. Guarantor details are all required ---
+    if (!guarantor_name || !guarantor_phone || !guarantor_ghana_card_id || !guarantor_relationship) {
       return res.status(400).json({
         success: false,
-        message: 'Customer password must be between 1 and 5 characters.',
+        message: 'All guarantor details (name, phone, Ghana Card ID, relationship) are required.',
       });
     }
 
@@ -326,7 +342,7 @@ const addCustomer = async (req, res) => {
     const newUser = await User.create({
       name: full_name.trim(),
       email: email.toLowerCase().trim(),
-      password,
+      password: customerPassword,
       phone: phone?.trim(),
       role: 'customer',
       account_number: accountNumber,
@@ -398,7 +414,8 @@ const addCustomer = async (req, res) => {
     // Calculate installment amount (round to 2 decimal places)
     const installmentAmount = Math.ceil((remainingBalance / totalPayments) * 100) / 100;
 
-    // Start date is today; first payment is due today
+    // Provisional dates — the real schedule clock only starts when the admin
+    // ACTIVATES the sale. Stored now so the (required) fields are valid.
     const startDate = new Date();
     const nextDueDate = new Date(startDate);
     const endDate = calculateEndDate(startDate, frequency, totalPayments);
@@ -406,7 +423,7 @@ const addCustomer = async (req, res) => {
     // Generate payment schedule
     const schedule = buildSchedule(startDate, frequency, totalPayments, installmentAmount);
 
-    // --- 9. Create InstallmentPlan ---
+    // --- 9. Create InstallmentPlan (PENDING until admin activates) ---
     const plan = await InstallmentPlan.create({
       customer_id: newCustomer._id,
       device_id: device._id,
@@ -421,7 +438,7 @@ const addCustomer = async (req, res) => {
       start_date: startDate,
       next_due_date: nextDueDate,
       end_date: endDate,
-      status: 'active',
+      status: 'pending',
       schedule,
     });
 

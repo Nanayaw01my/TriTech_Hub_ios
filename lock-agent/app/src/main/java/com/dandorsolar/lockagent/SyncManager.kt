@@ -39,7 +39,9 @@ object SyncManager {
         }
     }
 
-    /** One sync cycle: heartbeat, read desired state, apply it. */
+    /** One sync cycle: heartbeat, read desired state, apply it, then enforce the
+     *  offline deadline. The deadline check runs even when the network is down —
+     *  that is the whole point of the offline failsafe. */
     fun syncBlocking(c: Context) {
         if (!Prefs.enrolled(c)) {
             tryEnroll(c)
@@ -48,22 +50,43 @@ object SyncManager {
         val backend = Prefs.backendUrl(c)
         val id = Prefs.deviceId(c)
         val secret = Prefs.deviceSecret(c)
-        if (backend.isEmpty() || id.isEmpty() || secret.isEmpty()) return
+        if (backend.isNotEmpty() && id.isNotEmpty() && secret.isNotEmpty()) {
+            val fix = LocationHelper.lastKnown(c)
+            val res = Api.heartbeat(backend, id, secret, Prefs.appliedLockState(c), fix, Prefs.fcmToken(c).ifEmpty { null })
+            val j = res.json
+            if (res.ok && j != null) {
+                applyServerInfo(c, j)
+                val desired = j.optString("desired_lock_state", Prefs.desiredLockState(c))
+                Prefs.setDesiredLockState(c, desired)
+                applyDesired(c, desired)
+            }
+        }
+        // Offline failsafe — always, regardless of whether the server was reachable.
+        enforceDeadline(c)
+    }
 
-        val fix = LocationHelper.lastKnown(c)
-        val res = Api.heartbeat(backend, id, secret, Prefs.appliedLockState(c), fix, Prefs.fcmToken(c).ifEmpty { null })
-        val j = res.json ?: return
-        if (!res.ok) return
-        applyServerInfo(c, j)
-        val desired = j.optString("desired_lock_state", Prefs.desiredLockState(c))
-        Prefs.setDesiredLockState(c, desired)
-        applyDesired(c, desired)
+    /**
+     * Lock the phone locally if its stored payment deadline has passed. Needs no
+     * internet: the phone enforces the installment schedule on its own clock. The
+     * clock itself is held to network time by Device Owner policy (see Policy),
+     * so the customer cannot rewind the date to dodge it.
+     */
+    fun enforceDeadline(c: Context) {
+        if (Prefs.desiredLockState(c) == "released") return
+        if (Prefs.appliedLockState(c) == "locked") return
+        val deadline = Prefs.paidUntil(c)
+        if (deadline <= 0L) return
+        if (System.currentTimeMillis() > deadline) {
+            Log.i(TAG, "Offline deadline passed — self-locking")
+            lock(c)
+        }
     }
 
     private fun applyServerInfo(c: Context, j: JSONObject) {
         j.optString("lock_message").takeIf { it.isNotEmpty() }?.let { Prefs.setLockMessage(c, it) }
         Prefs.setUnlockContact(c, j.optString("unlock_contact"))
         j.optString("business_name").takeIf { it.isNotEmpty() }?.let { Prefs.setBusinessName(c, it) }
+        if (j.has("paid_until")) Prefs.setPaidUntil(c, j.optLong("paid_until", 0L))
     }
 
     /** Make the phone match [desired] ("locked"/"unlocked"/"released"). Idempotent. */

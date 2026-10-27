@@ -28,6 +28,7 @@ const AuditLogSchema = new mongoose.Schema(
         'payment_reminder_sent',
         'agent_enroll',
         'device_released',
+        'plan_activated',
       ],
       required: true,
     },

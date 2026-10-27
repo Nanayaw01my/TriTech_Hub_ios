@@ -1016,6 +1016,149 @@ const releaseCustomerDevice = async (req, res) => {
   }
 };
 
+// ─── ACTIVATIONS ──────────────────────────────────────────────────────────────
+
+// Local copies of the schedule helpers (kept small + dependency-free).
+const _addPeriod = (date, frequency, n) => {
+  const d = new Date(date);
+  if (frequency === 'daily') d.setDate(d.getDate() + n);
+  else if (frequency === 'weekly') d.setDate(d.getDate() + n * 7);
+  else d.setMonth(d.getMonth() + n);
+  return d;
+};
+const _buildSchedule = (startDate, frequency, totalPayments, amount) => {
+  const schedule = [];
+  for (let i = 0; i < totalPayments; i++) {
+    schedule.push({ due_date: _addPeriod(startDate, frequency, i), amount, paid: false, payment_id: null });
+  }
+  return schedule;
+};
+
+/**
+ * GET /api/admin/activations
+ * Pending sales awaiting the admin's review + activation.
+ */
+const getPendingActivations = async (req, res) => {
+  try {
+    const plans = await InstallmentPlan.find({ status: 'pending' })
+      .populate({ path: 'customer_id', select: 'full_name phone email ghana_card_id occupation guarantor photos location income' })
+      .populate({ path: 'device_id', select: 'model imei serial_number price agent lock_status' })
+      .populate({ path: 'created_by', select: 'name staff_id' })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const items = plans.map((p) => ({
+      plan_id: p._id,
+      customer_id: p.customer_id?._id,
+      customer_name: p.customer_id?.full_name || 'Unknown',
+      phone: p.customer_id?.phone || '',
+      email: p.customer_id?.email || '',
+      ghana_card_id: p.customer_id?.ghana_card_id || '',
+      occupation: p.customer_id?.occupation || '',
+      guarantor: p.customer_id?.guarantor || null,
+      photos: p.customer_id?.photos || null,
+      location: p.customer_id?.location || null,
+      income: p.customer_id?.income || null,
+      device_model: p.device_id?.model || 'Unknown',
+      device_price: p.device_id?.price || 0,
+      imei: p.device_id?.imei || '',
+      serial_number: p.device_id?.serial_number || '',
+      agent_enrolled: !!p.device_id?.agent?.enrolled,
+      down_payment: p.down_payment,
+      total_price: p.total_price,
+      remaining_balance: p.remaining_balance,
+      installment_amount: p.installment_amount,
+      frequency: p.frequency,
+      total_payments: p.total_payments,
+      created_by: p.created_by?.name || '',
+      created_at: p.createdAt,
+    }));
+
+    return res.status(200).json({ success: true, data: { activations: items, total: items.length } });
+  } catch (error) {
+    logger.error('getPendingActivations error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * POST /api/admin/plans/:id/activate
+ * Approve a pending sale: start the installment schedule from today and arm the
+ * phone's offline self-lock deadline. Only now do frequency/overdue tracking begin.
+ */
+const activatePlan = async (req, res) => {
+  try {
+    const plan = await InstallmentPlan.findById(req.params.id);
+    if (!plan) return res.status(404).json({ success: false, message: 'Sale not found.' });
+    if (plan.status !== 'pending') {
+      return res.status(400).json({ success: false, message: 'This sale is already activated.' });
+    }
+
+    // Rebuild the schedule starting today.
+    const startDate = new Date();
+    const schedule = _buildSchedule(startDate, plan.frequency, plan.total_payments, plan.installment_amount);
+    const nextDueDate = schedule[0].due_date;
+    const endDate = schedule[schedule.length - 1].due_date;
+
+    plan.start_date = startDate;
+    plan.next_due_date = nextDueDate;
+    plan.end_date = endDate;
+    plan.schedule = schedule;
+    plan.status = 'active';
+    plan.activated_at = startDate;
+    await plan.save();
+
+    // Arm the phone's offline deadline (next due + grace) if it's enrolled.
+    let deadlineResult = null;
+    try {
+      const device = await Device.findById(plan.device_id);
+      if (device) {
+        device.assigned_to = plan.customer_id;
+        device.sold_status = 'sold';
+        if (device.agent?.enrolled) deadlineResult = await agent.setDeadline(device, nextDueDate);
+        else await device.save();
+      }
+    } catch (dlErr) {
+      logger.error('[activate] setDeadline failed for plan %s: %s', plan._id, dlErr.message);
+    }
+
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'plan_activated',
+      details: {
+        plan_id: plan._id,
+        customer_id: plan.customer_id,
+        device_id: plan.device_id,
+        next_due_date: nextDueDate,
+        paid_until: deadlineResult?.paid_until || null,
+      },
+      ip_address: req.ip,
+    });
+
+    // Notify the customer that their plan is active (fire-and-forget).
+    ;(async () => {
+      try {
+        const customer = await Customer.findById(plan.customer_id).select('full_name phone');
+        if (customer?.phone) {
+          await sendPaymentReminderSMS(customer.phone, customer.full_name, {
+            deviceModel: '', installmentAmount: plan.installment_amount,
+            remainingBalance: plan.remaining_balance, nextDueDate, isOverdue: false,
+          }).catch(() => {});
+        }
+      } catch { /* ignore */ }
+    })();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Sale activated — the installment plan has started.',
+      data: { plan_id: plan._id, next_due_date: nextDueDate },
+    });
+  } catch (error) {
+    logger.error('activatePlan error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── TRANSACTIONS ─────────────────────────────────────────────────────────────
 
 /**
@@ -2302,6 +2445,8 @@ module.exports = {
   getStockEnrollment,
   getEnrolledDevices,
   releaseCustomerDevice,
+  getPendingActivations,
+  activatePlan,
   getTransactions,
   getReports,
   getAuditLogs,

@@ -37,6 +37,10 @@ async function lockInfoFor(device) {
     business_name: agent.config.BUSINESS_NAME,
     unlock_contact: contact,
     poll_interval: POLL_INTERVAL_SECONDS,
+    // Offline self-lock deadline as epoch millis (0 = no deadline). The phone
+    // stores this and locks itself once its own clock passes it, even with no
+    // internet.
+    paid_until: device.agent?.paid_until ? new Date(device.agent.paid_until).getTime() : 0,
   };
 }
 

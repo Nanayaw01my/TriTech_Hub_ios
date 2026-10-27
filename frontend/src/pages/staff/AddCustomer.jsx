@@ -117,9 +117,9 @@ export default function StaffAddCustomer() {
       if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Valid email required'
       if (!form.phone.trim()) e.phone = 'Phone number is required'
       if (!form.ghana_card_id.trim()) e.ghana_card_id = 'Ghana Card ID is required'
-      if (!form.password) e.password = 'Password is required'
-      if (form.password.length > 5) e.password = 'Password must be 5 characters or less'
-      if (form.password !== form.confirm_password) e.confirm_password = 'Passwords do not match'
+      // Password is OPTIONAL. Only validate it when one is entered.
+      if (form.password && form.password.length > 5) e.password = 'Password must be 5 characters or less'
+      if (form.password && form.password !== form.confirm_password) e.confirm_password = 'Passwords do not match'
       if (!form.agreed) e.agreed = 'The customer must accept the Terms & Privacy Policy'
     }
     if (s === 2) {
@@ -131,6 +131,11 @@ export default function StaffAddCustomer() {
       if (!form.occupation.trim()) e.occupation = 'Occupation is required'
       if (!form.region) e.region = 'Region is required'
       if (!form.location.trim()) e.location = 'Location/Town is required'
+      // Guarantor details are all required.
+      if (!form.guarantor_name.trim()) e.guarantor_name = "Guarantor's full name is required"
+      if (!form.guarantor_phone.trim()) e.guarantor_phone = "Guarantor's phone number is required"
+      if (!form.guarantor_ghana_card_id.trim()) e.guarantor_ghana_card_id = "Guarantor's Ghana Card ID is required"
+      if (!form.guarantor_relationship.trim()) e.guarantor_relationship = "Guarantor's relationship is required"
     }
     if (s === 4) {
       if (sellMode === 'stock') {
@@ -331,7 +336,7 @@ export default function StaffAddCustomer() {
               />
             </FormField>
 
-            <FormField label="Password (max 5 characters)" required error={errors.password}>
+            <FormField label="Password (optional, max 5 characters)" error={errors.password}>
               <div className="relative">
                 <input
                   type="text"
@@ -347,7 +352,7 @@ export default function StaffAddCustomer() {
               </div>
             </FormField>
 
-            <FormField label="Confirm Password" required error={errors.confirm_password}>
+            <FormField label="Confirm Password" error={errors.confirm_password}>
               <input
                 type="text"
                 value={form.confirm_password}
@@ -574,47 +579,55 @@ export default function StaffAddCustomer() {
           <div className="bg-white rounded-2xl shadow-sm p-5 lg:p-6">
             <h3 className="text-sm font-bold text-gray-700 mb-4">Guarantor Information</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <FormField label="Guarantor Full Name">
-                <input
-                  type="text"
-                  value={form.guarantor_name}
-                  onChange={(e) => set('guarantor_name', e.target.value)}
-                  placeholder="Guarantor's full name"
-                  className={inputClass()}
-                  autoCapitalize="words"
-                />
-              </FormField>
+              <div data-error={errors.guarantor_name}>
+                <FormField label="Guarantor Full Name" required error={errors.guarantor_name}>
+                  <input
+                    type="text"
+                    value={form.guarantor_name}
+                    onChange={(e) => set('guarantor_name', e.target.value)}
+                    placeholder="Guarantor's full name"
+                    className={inputClass(errors.guarantor_name)}
+                    autoCapitalize="words"
+                  />
+                </FormField>
+              </div>
 
-              <FormField label="Guarantor Ghana Card ID">
-                <input
-                  type="text"
-                  value={form.guarantor_ghana_card_id}
-                  onChange={(e) => set('guarantor_ghana_card_id', e.target.value.toUpperCase())}
-                  placeholder="GHA-000000000-0"
-                  className={inputClass()}
-                  autoCapitalize="characters"
-                />
-              </FormField>
+              <div data-error={errors.guarantor_ghana_card_id}>
+                <FormField label="Guarantor Ghana Card ID" required error={errors.guarantor_ghana_card_id}>
+                  <input
+                    type="text"
+                    value={form.guarantor_ghana_card_id}
+                    onChange={(e) => set('guarantor_ghana_card_id', e.target.value.toUpperCase())}
+                    placeholder="GHA-000000000-0"
+                    className={inputClass(errors.guarantor_ghana_card_id)}
+                    autoCapitalize="characters"
+                  />
+                </FormField>
+              </div>
 
-              <FormField label="Guarantor Phone">
-                <input
-                  type="tel"
-                  value={form.guarantor_phone}
-                  onChange={(e) => set('guarantor_phone', e.target.value)}
-                  placeholder="Phone"
-                  className={inputClass()}
-                />
-              </FormField>
+              <div data-error={errors.guarantor_phone}>
+                <FormField label="Guarantor Phone" required error={errors.guarantor_phone}>
+                  <input
+                    type="tel"
+                    value={form.guarantor_phone}
+                    onChange={(e) => set('guarantor_phone', e.target.value)}
+                    placeholder="Phone"
+                    className={inputClass(errors.guarantor_phone)}
+                  />
+                </FormField>
+              </div>
 
-              <FormField label="Relationship">
-                <input
-                  type="text"
-                  value={form.guarantor_relationship}
-                  onChange={(e) => set('guarantor_relationship', e.target.value)}
-                  placeholder="e.g. Spouse, Brother"
-                  className={inputClass()}
-                />
-              </FormField>
+              <div data-error={errors.guarantor_relationship}>
+                <FormField label="Relationship" required error={errors.guarantor_relationship}>
+                  <input
+                    type="text"
+                    value={form.guarantor_relationship}
+                    onChange={(e) => set('guarantor_relationship', e.target.value)}
+                    placeholder="e.g. Spouse, Brother"
+                    className={inputClass(errors.guarantor_relationship)}
+                  />
+                </FormField>
+              </div>
             </div>
           </div>
         </div>

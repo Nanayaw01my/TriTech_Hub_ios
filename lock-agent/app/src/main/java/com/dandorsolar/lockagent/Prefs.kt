@@ -41,4 +41,12 @@ object Prefs {
 
     fun fcmToken(c: Context): String = p(c).getString("fcm_token", "") ?: ""
     fun setFcmToken(c: Context, v: String) = p(c).edit().putString("fcm_token", v).apply()
+
+    /**
+     * Offline self-lock deadline as epoch millis (0 = none). The phone locks
+     * itself once its clock passes this, even with no internet. The server
+     * refreshes it on every check-in while the customer is paid up.
+     */
+    fun paidUntil(c: Context): Long = p(c).getLong("paid_until", 0L)
+    fun setPaidUntil(c: Context, v: Long) = p(c).edit().putLong("paid_until", v).apply()
 }

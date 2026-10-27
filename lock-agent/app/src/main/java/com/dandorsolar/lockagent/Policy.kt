@@ -3,6 +3,7 @@ package com.dandorsolar.lockagent
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
+import android.os.Build
 import android.os.UserManager
 import android.util.Log
 
@@ -22,16 +23,27 @@ object Policy {
         runCatching { dpm.addUserRestriction(admin, UserManager.DISALLOW_ADD_USER) }
         runCatching { dpm.addUserRestriction(admin, UserManager.DISALLOW_SAFE_BOOT) }
         runCatching { dpm.addUserRestriction(admin, UserManager.DISALLOW_OUTGOING_BEAM) }
+        // Anti clock-tamper: the offline self-lock relies on the phone's clock, so
+        // forbid the customer from changing date/time and force automatic
+        // network time. Without this they could rewind the clock to dodge a lock.
+        runCatching { dpm.addUserRestriction(admin, UserManager.DISALLOW_CONFIG_DATE_TIME) }
+        runCatching { @Suppress("DEPRECATION") dpm.setAutoTimeRequired(admin, true) }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            runCatching { dpm.setAutoTimeEnabled(admin, true) }
+            runCatching { dpm.setAutoTimeZoneEnabled(admin, true) }
+        }
         // Let only our app run in lock-task (kiosk) mode — no exit confirmation.
         runCatching { dpm.setLockTaskPackages(admin, arrayOf(c.packageName)) }
-        // Silently grant ourselves location so the business can always trace the
-        // phone; the customer cannot revoke these (device-owner grant).
+        // Silently grant ourselves location (always trace the phone) and phone
+        // (so the lock screen's "Call us" button can dial). Device-owner grants
+        // the customer cannot revoke.
         runCatching {
             val pkg = c.packageName
             listOf(
                 android.Manifest.permission.ACCESS_FINE_LOCATION,
                 android.Manifest.permission.ACCESS_COARSE_LOCATION,
-                android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                android.Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+                android.Manifest.permission.CALL_PHONE
             ).forEach { perm ->
                 dpm.setPermissionGrantState(
                     admin, pkg, perm, DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED
@@ -56,6 +68,7 @@ object Policy {
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_ADD_USER) }
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_SAFE_BOOT) }
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_OUTGOING_BEAM) }
+        runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_CONFIG_DATE_TIME) }
         runCatching { dpm.setDeviceOwnerLockScreenInfo(admin, null) }
         runCatching { dpm.setLockTaskPackages(admin, arrayOf()) }
         // Relinquish Device Owner last — after this we lose management powers.

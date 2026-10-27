@@ -61,7 +61,12 @@ const DeviceSchema = new mongoose.Schema(
       // Firebase Cloud Messaging token for instant lock/unlock push.
       fcm_token: { type: String, default: null },
       // What the backend WANTS the phone to be; the agent converges to this.
-      desired_lock_state: { type: String, enum: ['locked', 'unlocked'], default: 'unlocked' },
+      desired_lock_state: { type: String, enum: ['locked', 'unlocked', 'released'], default: 'unlocked' },
+      // Offline failsafe: the phone stores this deadline locally and locks ITSELF
+      // (no internet needed) once the clock passes it. The backend keeps it in
+      // the future while the customer is paid up, and moves it forward on every
+      // payment. null = no deadline (stock/unactivated/released).
+      paid_until: { type: Date, default: null },
       last_heartbeat: { type: Date, default: null },
       app_version: { type: String, default: null },
       android_version: { type: String, default: null },

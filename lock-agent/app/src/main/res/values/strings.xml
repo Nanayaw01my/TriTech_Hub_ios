@@ -14,4 +14,5 @@
     <string name="lock_contact_prefix">Contact: </string>
     <string name="lock_check_again">Check for payment</string>
     <string name="lock_checking">Checking…</string>
+    <string name="lock_call_button">Call us</string>
 </resources>

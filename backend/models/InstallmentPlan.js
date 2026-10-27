@@ -89,8 +89,14 @@ const InstallmentPlanSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['active', 'completed', 'defaulted', 'repossessed'],
+      // 'pending' = sale registered by a DSR but not yet activated by the admin.
+      // The schedule clock + overdue locking only begin once activated ('active').
+      enum: ['pending', 'active', 'completed', 'defaulted', 'repossessed'],
       default: 'active',
+    },
+    activated_at: {
+      type: Date,
+      default: null,
     },
     schedule: [ScheduleItemSchema],
   },

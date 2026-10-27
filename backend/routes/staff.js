@@ -57,12 +57,18 @@ router.post(
     body('full_name').notEmpty().trim().withMessage('Full name is required.'),
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required.'),
     body('phone').notEmpty().trim().withMessage('Phone number is required.'),
+    // Password is OPTIONAL. If given it must be 1-5 chars; if omitted the
+    // backend auto-generates one so the customer portal account still exists.
     body('password')
-      .notEmpty()
-      .withMessage('Password is required.')
+      .optional({ checkFalsy: true })
       .isLength({ min: 1, max: 5 })
       .withMessage('Customer password must be between 1 and 5 characters.'),
-    body('device_model').notEmpty().trim().withMessage('Device model is required.'),
+    // Guarantor details are ALL required.
+    body('guarantor_name').notEmpty().trim().withMessage("Guarantor's full name is required."),
+    body('guarantor_phone').notEmpty().trim().withMessage("Guarantor's phone number is required."),
+    body('guarantor_ghana_card_id').notEmpty().trim().withMessage("Guarantor's Ghana Card ID is required."),
+    body('guarantor_relationship').notEmpty().trim().withMessage("Guarantor's relationship is required."),
+    body('device_model').optional().trim(),
     body('down_payment')
       .isFloat({ min: 0 })
       .withMessage('Down payment must be a non-negative number.'),
