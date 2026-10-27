@@ -129,7 +129,7 @@ export default function Activations() {
         isOpen={!!confirm}
         title="Activate this plan?"
         message={confirm
-          ? `Start ${confirm.customer_name}'s ${confirm.frequency} installments of ${GHS(confirm.installment_amount)}. The schedule begins today and the phone's lock protection goes live.`
+          ? `Start ${confirm.customer_name}'s ${confirm.frequency} installments of ${GHS(confirm.installment_amount)}. The phone's "Awaiting Activation" page is lifted, the schedule begins today and lock protection goes live.`
           : ''}
         confirmText={busy ? 'Activating…' : 'Activate'}
         loading={busy}

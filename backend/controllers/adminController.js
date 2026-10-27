@@ -967,6 +967,7 @@ const getEnrolledDevices = async (req, res) => {
       assigned: !!d.assigned_to,
       customer_name: d.assigned_to?.full_name || null,
       lock_status: d.lock_status,
+      awaiting_activation: d.agent?.desired_lock_state === 'pending_activation',
       enrolled_at: d.createdAt,
     }));
     return res.status(200).json({ success: true, data: { devices: mapped, total: mapped.length } });
@@ -1097,7 +1098,12 @@ const activatePlan = async (req, res) => {
     // Rebuild the schedule starting today.
     const startDate = new Date();
     const schedule = _buildSchedule(startDate, plan.frequency, plan.total_payments, plan.installment_amount);
-    const nextDueDate = schedule[0].due_date;
+    // Installments already paid while the sale was pending count toward the
+    // start of the schedule.
+    const alreadyPaid = Math.min(plan.payments_made || 0, schedule.length);
+    for (let i = 0; i < alreadyPaid; i++) schedule[i].paid = true;
+    const firstUnpaid = schedule.find((s) => !s.paid);
+    const nextDueDate = (firstUnpaid || schedule[schedule.length - 1]).due_date;
     const endDate = schedule[schedule.length - 1].due_date;
 
     plan.start_date = startDate;
@@ -1175,7 +1181,9 @@ const returnDeviceToStock = async (req, res) => {
     device.sold_status = 'available';
     device.lock_status = 'unlocked';
     if (!device.agent) device.agent = {};
-    device.agent.desired_lock_state = 'unlocked';
+    // Back in stock → shows the "Awaiting Activation" page until its next sale
+    // is activated (same as a freshly enrolled stock phone).
+    device.agent.desired_lock_state = 'pending_activation';
     device.agent.paid_until = null; // no deadline while back in stock
     await device.save();
     if (device.agent?.enrolled) {

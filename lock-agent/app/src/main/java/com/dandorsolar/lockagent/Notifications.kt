@@ -41,10 +41,14 @@ object Notifications {
             (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
         val pi = PendingIntent.getActivity(c, 0, intent, flags)
 
+        val awaiting = Prefs.desiredLockState(c) == "pending_activation"
         val notif = Notification.Builder(c, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(c.getString(R.string.lock_title))
-            .setContentText(c.getString(R.string.lock_default_message))
+            .setContentTitle(c.getString(if (awaiting) R.string.pending_title else R.string.lock_title))
+            .setContentText(
+                if (awaiting) c.getString(R.string.pending_message, Prefs.businessName(c))
+                else c.getString(R.string.lock_default_message)
+            )
             .setPriority(Notification.PRIORITY_MAX)
             .setCategory(Notification.CATEGORY_CALL)
             .setOngoing(true)

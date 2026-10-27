@@ -40,24 +40,8 @@ class LockActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_lock)
 
-        val message = Prefs.lockMessage(this).ifEmpty { getString(R.string.lock_default_message) }
-        findViewById<TextView>(R.id.tvLockMessage).text = message
-
-        val contact = Prefs.unlockContact(this)
-        findViewById<TextView>(R.id.tvLockContact).text =
-            if (contact.isNotEmpty()) getString(R.string.lock_contact_prefix) + contact else ""
-
         findViewById<Button>(R.id.btnCheck).setOnClickListener { onCheck() }
-
-        // "Call us" — lets a locked customer reach the company directly. Device
-        // Owner has granted CALL_PHONE silently, so this dials without prompts.
-        val btnCall = findViewById<Button>(R.id.btnCall)
-        if (contact.isNotEmpty()) {
-            btnCall.visibility = View.VISIBLE
-            btnCall.setOnClickListener { callCompany(contact) }
-        } else {
-            btnCall.visibility = View.GONE
-        }
+        render()
 
         ContextCompat.registerReceiver(
             this, unlockReceiver, IntentFilter(SyncManager.ACTION_UNLOCK),
@@ -65,6 +49,44 @@ class LockActivity : AppCompatActivity() {
         )
 
         startKiosk()
+    }
+
+    /** True while the phone is held on the "Awaiting Activation" first page. */
+    private fun isAwaiting() = Prefs.desiredLockState(this) == "pending_activation"
+
+    /** Fill the screen for the current mode: overdue lock, or awaiting activation. */
+    private fun render() {
+        val title = findViewById<TextView>(R.id.tvLockTitle)
+        val msg = findViewById<TextView>(R.id.tvLockMessage)
+        val check = findViewById<Button>(R.id.btnCheck)
+        if (isAwaiting()) {
+            title.setText(R.string.pending_title)
+            msg.text = getString(R.string.pending_message, Prefs.businessName(this))
+            check.setText(R.string.pending_check)
+        } else {
+            title.setText(R.string.lock_title)
+            msg.text = Prefs.lockMessage(this).ifEmpty { getString(R.string.lock_default_message) }
+            check.setText(R.string.lock_check_again)
+        }
+
+        val contact = Prefs.unlockContact(this)
+        findViewById<TextView>(R.id.tvLockContact).text =
+            if (contact.isNotEmpty()) getString(R.string.lock_contact_prefix) + contact else ""
+
+        // "Call us" — lets the customer reach the company directly. Device Owner
+        // has granted CALL_PHONE silently, so this dials without prompts.
+        val btnCall = findViewById<Button>(R.id.btnCall)
+        if (contact.isNotEmpty()) {
+            btnCall.visibility = View.VISIBLE
+            btnCall.setOnClickListener { callCompany(contact) }
+        } else {
+            btnCall.visibility = View.GONE
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        render() // state may have changed (e.g. awaiting → overdue lock)
     }
 
     private fun startKiosk() {
@@ -81,7 +103,8 @@ class LockActivity : AppCompatActivity() {
                 if (Prefs.desiredLockState(applicationContext) == "unlocked") {
                     finishUnlock()
                 } else {
-                    status.text = "Still locked — please complete your payment."
+                    render()
+                    status.setText(if (isAwaiting()) R.string.pending_still else R.string.lock_still)
                 }
             }
         }.start()
@@ -131,6 +154,7 @@ class LockActivity : AppCompatActivity() {
             runCatching {
                 if (Policy.isOwner(this)) Policy.dpm(this).setLockTaskPackages(Policy.admin(this), arrayOf(packageName))
             }
+            render()
             startKiosk()
         }
     }

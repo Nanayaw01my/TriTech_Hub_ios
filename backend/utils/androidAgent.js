@@ -220,7 +220,8 @@ async function unlockDevice(device, opts = {}) {
 async function setDeadline(device, nextDueDate) {
   if (!device.agent) device.agent = {};
   device.agent.paid_until = computePaidUntil(nextDueDate);
-  if (device.agent.desired_lock_state === 'released') {
+  // Activation lifts the "Awaiting Activation" first page.
+  if (['released', 'pending_activation'].includes(device.agent.desired_lock_state)) {
     device.agent.desired_lock_state = 'unlocked';
   }
   await device.save();

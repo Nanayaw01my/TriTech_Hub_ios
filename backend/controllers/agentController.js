@@ -6,6 +6,7 @@
 const crypto = require('crypto');
 const Device = require('../models/Device');
 const Customer = require('../models/Customer');
+const InstallmentPlan = require('../models/InstallmentPlan');
 const AuditLog = require('../models/AuditLog');
 const LocationPing = require('../models/LocationPing');
 const Settings = require('../models/Settings');
@@ -102,6 +103,19 @@ const enroll = async (req, res) => {
     if (model) device.agent.model_reported = model;
     if (imei && !device.imei) device.imei = imei;
     device.agent.last_heartbeat = new Date();
+
+    // Until the admin activates a sale for this phone it shows the "Awaiting
+    // Activation" first page: stock phones (unassigned) and phones whose sale
+    // is still pending. Activation (activatePlan) releases it.
+    let awaiting = !device.assigned_to;
+    if (!awaiting) {
+      const plan = await InstallmentPlan.findOne({ device_id: device._id }).sort({ createdAt: -1 }).lean();
+      awaiting = plan?.status === 'pending';
+    }
+    if (awaiting) {
+      device.agent.desired_lock_state = 'pending_activation';
+      device.agent.paid_until = null;
+    }
     await device.save();
 
     await AuditLog.create({

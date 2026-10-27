@@ -33,6 +33,7 @@ object SyncManager {
             Prefs.setDeviceSecret(c, j.optString("device_secret"))
             Prefs.setEnrolled(c, true)
             Prefs.setLastSyncOk(c, System.currentTimeMillis())
+            Prefs.setDesiredLockState(c, j.optString("desired_lock_state", Prefs.desiredLockState(c)))
             applyServerInfo(c, j)
             Log.i(TAG, "Enrolled successfully")
         } else {
@@ -51,17 +52,24 @@ object SyncManager {
         val backend = Prefs.backendUrl(c)
         val id = Prefs.deviceId(c)
         val secret = Prefs.deviceSecret(c)
+        var synced = false
         if (backend.isNotEmpty() && id.isNotEmpty() && secret.isNotEmpty()) {
             val fix = LocationHelper.lastKnown(c)
             val res = Api.heartbeat(backend, id, secret, Prefs.appliedLockState(c), fix, Prefs.fcmToken(c).ifEmpty { null })
             val j = res.json
             if (res.ok && j != null) {
+                synced = true
                 Prefs.setLastSyncOk(c, System.currentTimeMillis()) // dead-man: fed a heartbeat
                 applyServerInfo(c, j)
                 val desired = j.optString("desired_lock_state", Prefs.desiredLockState(c))
                 Prefs.setDesiredLockState(c, desired)
                 applyDesired(c, desired)
             }
+        }
+        // Offline: keep holding a not-yet-activated phone on the waiting page.
+        if (!synced && Prefs.desiredLockState(c) == "pending_activation" &&
+            Prefs.appliedLockState(c) != "pending") {
+            awaitActivation(c)
         }
         // Offline failsafe — always, regardless of whether the server was reachable.
         enforceDeadline(c)
@@ -75,6 +83,7 @@ object SyncManager {
      */
     fun enforceDeadline(c: Context) {
         if (Prefs.desiredLockState(c) == "released") return
+        if (Prefs.desiredLockState(c) == "pending_activation") return // already held
         if (Prefs.appliedLockState(c) == "locked") return
         val deadline = Prefs.paidUntil(c)
         if (deadline <= 0L) return // stock / unactivated / released — no enforcement
@@ -108,14 +117,44 @@ object SyncManager {
         if (j.has("deadman_days")) Prefs.setDeadmanDays(c, j.optInt("deadman_days", 7))
     }
 
-    /** Make the phone match [desired] ("locked"/"unlocked"/"released"). Idempotent. */
+    /** Make the phone match [desired] ("locked"/"unlocked"/"released"/
+     *  "pending_activation"). Idempotent. */
     fun applyDesired(c: Context, desired: String) {
         when (desired) {
             "released" -> release(c)
             "locked" -> lock(c)
+            "pending_activation" -> awaitActivation(c)
             else -> unlock(c)
         }
     }
+
+    /**
+     * Hold the phone on the "Awaiting Activation" first page (same kiosk as the
+     * lock screen, different wording) until the admin activates the sale. Used
+     * for stock phones and sales still under review.
+     */
+    fun awaitActivation(c: Context) {
+        // Never take over the screen during the setup wizard — that could break
+        // provisioning. Retry shortly; it applies as soon as setup has finished.
+        if (!setupComplete(c)) {
+            App.syncLater(c, 2)
+            return
+        }
+        Prefs.setAppliedLockState(c, "pending")
+        Policy.applyBasePolicies(c)
+        Notifications.showLockFullScreen(c)
+        runCatching {
+            c.startActivity(
+                Intent(c, LockActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            )
+        }
+    }
+
+    /** True once the device's first-run setup wizard has completed. */
+    private fun setupComplete(c: Context): Boolean = runCatching {
+        android.provider.Settings.Secure.getInt(c.contentResolver, "user_setup_complete", 1) == 1
+    }.getOrDefault(true)
 
     /** Fully hand the phone to the customer: lift the lock + drop Device Owner. */
     fun release(c: Context) {
@@ -144,7 +183,8 @@ object SyncManager {
     }
 
     fun unlock(c: Context) {
-        val wasLocked = Prefs.appliedLockState(c) == "locked"
+        val applied = Prefs.appliedLockState(c)
+        val wasLocked = applied == "locked" || applied == "pending"
         Prefs.setAppliedLockState(c, "unlocked")
         Notifications.clearLock(c)
         // Tell a showing LockActivity to leave kiosk mode and finish.

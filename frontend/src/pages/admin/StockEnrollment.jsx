@@ -101,6 +101,7 @@ export default function StockEnrollment() {
                 <li>On the welcome screen, <span className="font-semibold text-gray-800">tap the screen 6 times</span>.</li>
                 <li><span className="font-semibold text-gray-800">Scan this QR</span> → it installs &amp; locks the phone.</li>
                 <li>The phone appears below in <span className="font-semibold text-gray-800">Available stock</span>. Repeat for all phones.</li>
+                <li>Each phone shows an <span className="font-semibold text-gray-800">“Awaiting Activation”</span> page until you activate its sale in <span className="font-semibold text-gray-800">Activations</span>.</li>
               </ol>
               <button onClick={load} className="mt-4 text-sm font-semibold text-orange-600 hover:text-orange-700">Refresh</button>
             </div>
@@ -141,6 +142,9 @@ export default function StockEnrollment() {
                         <p className={`text-[10px] font-semibold ${d.lock_status === 'locked' ? 'text-red-600' : (d.online ? 'text-green-600' : 'text-gray-400')}`}>
                           {d.lock_status === 'locked' ? '🔒 Locked' : (d.online ? 'Online' : (d.last_seen ? formatDistanceToNow(new Date(d.last_seen), { addSuffix: true }) : 'Offline'))}
                         </p>
+                        {d.awaiting_activation && d.lock_status !== 'locked' && (
+                          <p className="text-[10px] font-semibold text-amber-600">⏳ Awaiting activation</p>
+                        )}
                       </div>
                     </div>
                     <div className="mt-3 flex gap-2">

@@ -15,4 +15,11 @@
     <string name="lock_check_again">Check for payment</string>
     <string name="lock_checking">Checking…</string>
     <string name="lock_call_button">Call us</string>
+
+    <!-- "Awaiting Activation" first page: stock phones / sales not yet activated. -->
+    <string name="pending_title">Awaiting Activation</string>
+    <string name="pending_message">Your purchase is being reviewed by %1$s. This phone will unlock automatically as soon as your account is activated.</string>
+    <string name="pending_check">Check status</string>
+    <string name="pending_still">Not activated yet — please wait, or call us.</string>
+    <string name="lock_still">Still locked — please complete your payment.</string>
 </resources>

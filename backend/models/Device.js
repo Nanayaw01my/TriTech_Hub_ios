@@ -61,7 +61,9 @@ const DeviceSchema = new mongoose.Schema(
       // Firebase Cloud Messaging token for instant lock/unlock push.
       fcm_token: { type: String, default: null },
       // What the backend WANTS the phone to be; the agent converges to this.
-      desired_lock_state: { type: String, enum: ['locked', 'unlocked', 'released'], default: 'unlocked' },
+      // 'pending_activation' = in stock / sale not yet activated by the admin:
+      // the phone shows the "Awaiting Activation" first page until activated.
+      desired_lock_state: { type: String, enum: ['locked', 'unlocked', 'released', 'pending_activation'], default: 'unlocked' },
       // Offline failsafe: the phone stores this deadline locally and locks ITSELF
       // (no internet needed) once the clock passes it. The backend keeps it in
       // the future while the customer is paid up, and moves it forward on every
