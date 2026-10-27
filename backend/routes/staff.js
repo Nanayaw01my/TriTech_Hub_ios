@@ -70,8 +70,8 @@ router.post(
     body('guarantor_relationship').notEmpty().trim().withMessage("Guarantor's relationship is required."),
     body('device_model').optional().trim(),
     body('down_payment')
-      .isFloat({ min: 0 })
-      .withMessage('Down payment must be a non-negative number.'),
+      .isFloat({ min: 0.01 })
+      .withMessage('A deposit (down payment) is required.'),
   ],
   addCustomer
 );

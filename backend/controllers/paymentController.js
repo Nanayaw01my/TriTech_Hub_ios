@@ -7,6 +7,7 @@ const Device = require('../models/Device');
 const AuditLog = require('../models/AuditLog');
 const { initializePayment, verifyPayment } = require('../utils/paystack');
 const agent = require('../utils/androidAgent');
+const { recordDeposit } = require('../utils/planActivation');
 const { sendPaymentConfirmationEmail } = require('../utils/email');
 const { sendPaymentConfirmedSMS, sendPaymentConfirmedWhatsApp, sendPlanCompletedWhatsApp, sendDeviceUnlockedWhatsApp } = require('../utils/sms');
 const { sendDeviceUnlockedEmail } = require('../utils/email');
@@ -89,7 +90,7 @@ const processSuccessfulPayment = async ({
     next_due_date: isCompleted ? plan.end_date : nextDueDate,
     // A payment on a sale still awaiting admin activation is recorded, but must
     // NOT activate the plan — only the admin's Activate does that.
-    status: isCompleted ? 'completed' : (plan.status === 'pending' ? 'pending' : 'active'),
+    status: isCompleted ? 'completed' : (['pending', 'approved'].includes(plan.status) ? plan.status : 'active'),
     schedule: scheduleUpdate,
   };
 
@@ -125,7 +126,7 @@ const processSuccessfulPayment = async ({
         total_paid: plan.total_price,
       },
     });
-  } else if (device && device.lock_status === 'locked' && !isCompleted && plan.status !== 'pending') {
+  } else if (device && device.lock_status === 'locked' && !isCompleted && !['pending', 'approved'].includes(plan.status)) {
     // Unlock the phone after a payment if it was locked for a late payment.
     try {
       const devDoc = await Device.findById(device._id);
@@ -144,7 +145,7 @@ const processSuccessfulPayment = async ({
     // Reactivate defaulted plan back to active
     await InstallmentPlan.findByIdAndUpdate(plan._id, { status: 'active' });
     deviceUnlocked = true;
-  } else if (device && !isCompleted && plan.status !== 'pending') {
+  } else if (device && !isCompleted && !['pending', 'approved'].includes(plan.status)) {
     // On-time payment (phone wasn't locked): just push the offline deadline
     // forward so the self-lock failsafe tracks the next due date.
     try {
@@ -355,6 +356,12 @@ const verifyPaymentHandler = async (req, res) => {
     const paystackData = paystackResponse.data;
     const metadata = paystackData.metadata || {};
 
+    // A sale's deposit activates the plan rather than counting as an installment.
+    if (metadata.type === 'down_payment') {
+      const r = await recordDeposit(paystackData, { recordedBy: req.user._id, ip: req.ip });
+      return res.status(r.ok ? 200 : 400).json({ success: r.ok, message: r.message, data: { activated: !!r.activated } });
+    }
+
     // Find customer from metadata or from the logged-in user
     let customer;
     if (metadata.customer_id) {
@@ -460,6 +467,18 @@ const paystackWebhook = async (req, res) => {
 
       // Respond to Paystack quickly (200) then process
       res.status(200).json({ success: true, message: 'Webhook received.' });
+
+      // A sale's DEPOSIT (collected by the DSR after approval) activates the
+      // plan instead of counting as an installment.
+      if (metadata.type === 'down_payment') {
+        try {
+          const r = await recordDeposit(paystackData);
+          logger.info(`Webhook: deposit ${paystackData.reference} — ${r.message}`);
+        } catch (depErr) {
+          logger.error('Webhook deposit error: %s', depErr.message);
+        }
+        return;
+      }
 
       try {
         // Find customer

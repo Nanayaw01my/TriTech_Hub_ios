@@ -144,11 +144,11 @@ export default function StaffAddCustomer() {
       } else {
         if (!form.device_model) e.device_model = 'Select a device model'
       }
-      // Down payment is optional — 0 registers a free customer (no Paystack).
+      // A deposit is required. It's collected via Paystack after admin approval.
       const dp = Number(form.down_payment) || 0
-      if (dp < 0) e.down_payment = 'Down payment cannot be negative'
-      else if (dp > 0 && dp >= Number(form.device_price)) {
-        e.down_payment = 'Down payment must be less than device price'
+      if (dp <= 0) e.down_payment = 'A deposit (down payment) is required'
+      else if (dp >= Number(form.device_price)) {
+        e.down_payment = 'Deposit must be less than device price'
       }
     }
     setErrors(e)
@@ -205,7 +205,7 @@ export default function StaffAddCustomer() {
     setSubmitting(true)
     try {
       const res = await api.post('/staff/customers', buildPayload(paystackRef))
-      toast.success('Customer registered successfully!')
+      toast.success('Sale registered! Waiting for admin approval — then collect the deposit via Paystack.', { duration: 6000 })
       const customerId = res.data?.data?.customer?._id || res.data?.customer?._id
       navigate(`/staff/customers/${customerId}`)
     } catch (err) {
@@ -225,8 +225,9 @@ export default function StaffAddCustomer() {
     }
   }
 
-  // Flow: click Register → (pre-check) → register. No online payment is taken
-  // here; any down payment entered is recorded as cash collected at the counter.
+  // Flow: click Register → (pre-check) → register. No money is taken here: after
+  // the admin approves, the DSR collects the deposit via Paystack on the
+  // customer's page, which starts the plan and unlocks the phone.
   const handleSubmit = async () => {
     if (!validateStep(4)) return
 
@@ -252,7 +253,7 @@ export default function StaffAddCustomer() {
     }
     setSubmitting(false)
 
-    // 2. Register directly — down payment (if any) is recorded as cash.
+    // 2. Register (no payment yet — the deposit is collected after approval).
     saveCustomer()
   }
 
@@ -737,12 +738,12 @@ export default function StaffAddCustomer() {
                   </div>
                 )}
 
-                <FormField label="Down Payment (GHS) — optional" error={errors.down_payment}>
+                <FormField label="Deposit / Down Payment (GHS)" required error={errors.down_payment}>
                   <input
                     type="number"
                     value={form.down_payment}
                     onChange={(e) => set('down_payment', e.target.value)}
-                    placeholder="Enter down payment amount"
+                    placeholder="Deposit — paid via Paystack after approval"
                     className={inputClass(errors.down_payment)}
                     inputMode="numeric"
                     min="0"

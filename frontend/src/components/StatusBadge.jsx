@@ -9,6 +9,7 @@ const STATUS_CONFIG = {
   available: { label: 'Available', classes: 'bg-orange-100 text-orange-500' },
   sold: { label: 'Sold', classes: 'bg-gray-100 text-gray-700' },
   pending: { label: 'Pending', classes: 'bg-yellow-100 text-yellow-800' },
+  approved: { label: 'Awaiting deposit', classes: 'bg-blue-100 text-blue-800' },
   suspended: { label: 'Suspended', classes: 'bg-orange-100 text-orange-800' },
   paid: { label: 'Paid', classes: 'bg-orange-100 text-orange-500' },
   failed: { label: 'Failed', classes: 'bg-red-100 text-red-800' },

@@ -441,7 +441,7 @@ export default function AdminCustomerDetail() {
               {reminderLoading ? 'Sending…' : 'Send Payment Reminder'}
             </button>
           )}
-          {plan && !['completed', 'repossessed', 'pending'].includes(plan.status) && (
+          {plan && !['completed', 'repossessed', 'pending', 'approved'].includes(plan.status) && (
             <button
               onClick={() => setRepossessModal(true)}
               className="w-full py-3 px-4 rounded-xl border-2 border-red-200 text-red-700 font-semibold text-sm

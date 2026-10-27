@@ -317,6 +317,7 @@ export default function StaffCustomerDetail() {
   const [showPayModal, setShowPayModal] = useState(false)
   const [defaultPayAmount, setDefaultPayAmount] = useState(null)
   const [imageModal, setImageModal] = useState(null)
+  const [depositBusy, setDepositBusy] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -346,7 +347,58 @@ export default function StaffCustomerDetail() {
 
   const device = plan?.device_id
   const canPay = plan?.status === 'active' && (plan?.remaining_balance || 0) > 0
-  const downPaymentDue = plan?.down_payment > 0 && payments.length === 0
+
+  // Collect the sale's deposit via Paystack. The payment is tagged as a
+  // deposit, so the server activates the plan (and unlocks the phone) instead
+  // of counting it as an installment.
+  const handleCollectDeposit = () => {
+    if (!PAYSTACK_PUBLIC_KEY) { toast.error('Paystack public key not configured'); return }
+    if (!window.PaystackPop) { toast.error('Payment system not loaded. Refresh and try again.'); return }
+    if (!customer?.email) { toast.error('This customer has no email — Paystack needs one.'); return }
+    setDepositBusy(true)
+    try {
+      const handler = window.PaystackPop.setup({
+        key: PAYSTACK_PUBLIC_KEY,
+        email: customer.email,
+        amount: Math.round(Number(plan.down_payment) * 100),
+        currency: 'GHS',
+        channels: ['mobile_money', 'card'],
+        label: customer.full_name,
+        metadata: {
+          type: 'down_payment',
+          customer_id: customer._id,
+          plan_id: plan._id || plan.id,
+          is_staff_initiated: true,
+        },
+        // Paystack v1 rejects async callbacks — keep this a plain function.
+        callback: (transaction) => { (async () => {
+          try {
+            const res = await api.get(`/payment/verify/${transaction.reference}`)
+            if (res.data?.payment_pending) {
+              toast.success('Payment sent! Ask the customer to approve the MoMo prompt — the phone unlocks once it is confirmed.', { duration: 8000 })
+            } else {
+              toast.success(res.data?.message || 'Deposit received — the phone is unlocking.', { duration: 8000 })
+            }
+          } catch (err) {
+            const isTimeout = err.code === 'ECONNABORTED' || err.code === 'ERR_NETWORK'
+            if (isTimeout || err?.response?.data?.payment_pending) {
+              toast.success('Payment sent! It will be confirmed shortly — refresh this page in a minute.', { duration: 8000 })
+            } else {
+              toast.error(err?.response?.data?.message || 'Could not confirm the deposit. Check again in a minute.', { duration: 10000 })
+            }
+          } finally {
+            setDepositBusy(false)
+            fetchData()
+          }
+        })() },
+        onClose: () => setDepositBusy(false),
+      })
+      handler.openIframe()
+    } catch (err) {
+      setDepositBusy(false)
+      toast.error(err?.message || 'Failed to open payment window')
+    }
+  }
 
   const photoUrl = (p) => {
     if (!p) return null
@@ -443,19 +495,39 @@ export default function StaffCustomerDetail() {
             </div>
           </div>
 
-          {/* Down Payment Button — shown first if not yet collected */}
-          {downPaymentDue && (
-            <button
-              onClick={() => { setDefaultPayAmount(plan.down_payment); setShowPayModal(true) }}
-              className="w-full mt-4 py-4 bg-amber-600 text-white font-black text-base rounded-2xl
-                         flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-amber-700"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Collect Down Payment — GHS {Number(plan.down_payment).toLocaleString()}
-            </button>
+          {/* Sale awaiting the admin's review */}
+          {plan.status === 'pending' && (
+            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+              <p className="text-sm font-bold text-amber-800">⏳ Waiting for admin approval</p>
+              <p className="text-xs text-amber-700 mt-1">
+                Once approved, you'll collect the GHS {Number(plan.down_payment).toLocaleString()} deposit here via Paystack.
+                The phone stays on "Awaiting Activation" until then.
+              </p>
+            </div>
+          )}
+
+          {/* Approved — collect the deposit via Paystack; paying it starts the plan */}
+          {plan.status === 'approved' && !plan.down_payment_paid && (
+            <div className="mt-4">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl mb-2">
+                <p className="text-sm font-bold text-blue-800">✓ Approved by admin</p>
+                <p className="text-xs text-blue-700 mt-0.5">
+                  Collect the deposit now. As soon as Paystack confirms it, the plan starts and the customer's phone unlocks.
+                </p>
+              </div>
+              <button
+                onClick={handleCollectDeposit}
+                disabled={depositBusy}
+                className="w-full py-4 bg-amber-600 text-white font-black text-base rounded-2xl
+                           flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-amber-700 disabled:opacity-60"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {depositBusy ? 'Confirming…' : `Collect Deposit — GHS ${Number(plan.down_payment).toLocaleString()} (MoMo / Card)`}
+              </button>
+            </div>
           )}
 
           {/* Regular Installment Payment Button */}
@@ -464,7 +536,7 @@ export default function StaffCustomerDetail() {
               onClick={() => { setDefaultPayAmount(null); setShowPayModal(true) }}
               className={`w-full py-4 bg-orange-600 text-white font-black text-base rounded-2xl
                          flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-orange-600
-                         ${downPaymentDue ? 'mt-2' : 'mt-4'}`}
+                         mt-4`}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}

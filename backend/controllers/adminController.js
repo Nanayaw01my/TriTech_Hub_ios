@@ -12,9 +12,10 @@ const crypto = require('crypto');
 const CommissionPayout = require('../models/CommissionPayout');
 const { createTransferRecipient, initiateTransfer } = require('../utils/paystack');
 const { generateStaffId } = require('../utils/accountGenerator');
-const { sendPaymentReminderSMS, sendDeviceLockedSMS, sendDeviceUnlockedSMS, sendDeviceLockedWhatsApp, sendDeviceUnlockedWhatsApp } = require('../utils/sms');
+const { sendSMS, sendPaymentReminderSMS, sendDeviceLockedSMS, sendDeviceUnlockedSMS, sendDeviceLockedWhatsApp, sendDeviceUnlockedWhatsApp } = require('../utils/sms');
 const { sendLockNotificationEmail, sendDeviceUnlockedEmail } = require('../utils/email');
 const agent = require('../utils/androidAgent');
+const { activatePlanNow } = require('../utils/planActivation');
 const logger = require('../utils/logger');
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
@@ -1019,29 +1020,14 @@ const releaseCustomerDevice = async (req, res) => {
 
 // ─── ACTIVATIONS ──────────────────────────────────────────────────────────────
 
-// Local copies of the schedule helpers (kept small + dependency-free).
-const _addPeriod = (date, frequency, n) => {
-  const d = new Date(date);
-  if (frequency === 'daily') d.setDate(d.getDate() + n);
-  else if (frequency === 'weekly') d.setDate(d.getDate() + n * 7);
-  else d.setMonth(d.getMonth() + n);
-  return d;
-};
-const _buildSchedule = (startDate, frequency, totalPayments, amount) => {
-  const schedule = [];
-  for (let i = 0; i < totalPayments; i++) {
-    schedule.push({ due_date: _addPeriod(startDate, frequency, i), amount, paid: false, payment_id: null });
-  }
-  return schedule;
-};
-
 /**
  * GET /api/admin/activations
- * Pending sales awaiting the admin's review + activation.
+ * Sales awaiting the admin's review ('pending') and approved sales waiting for
+ * the DSR to collect the deposit ('approved').
  */
 const getPendingActivations = async (req, res) => {
   try {
-    const plans = await InstallmentPlan.find({ status: 'pending' })
+    const plans = await InstallmentPlan.find({ status: { $in: ['pending', 'approved'] } })
       .populate({ path: 'customer_id', select: 'full_name phone email ghana_card_id occupation guarantor photos location income' })
       .populate({ path: 'device_id', select: 'model imei serial_number price agent lock_status' })
       .populate({ path: 'created_by', select: 'name staff_id' })
@@ -1050,6 +1036,8 @@ const getPendingActivations = async (req, res) => {
 
     const items = plans.map((p) => ({
       plan_id: p._id,
+      status: p.status,
+      approved_at: p.approved_at || null,
       customer_id: p.customer_id?._id,
       customer_name: p.customer_id?.full_name || 'Unknown',
       phone: p.customer_id?.phone || '',
@@ -1083,84 +1071,68 @@ const getPendingActivations = async (req, res) => {
 };
 
 /**
- * POST /api/admin/plans/:id/activate
- * Approve a pending sale: start the installment schedule from today and arm the
- * phone's offline self-lock deadline. Only now do frequency/overdue tracking begin.
+ * POST /api/admin/plans/:id/approve
+ * Approve a reviewed sale. The DSR then collects the deposit via Paystack, and
+ * that payment starts the plan and unlocks the phone (see utils/planActivation).
+ * Sales registered before this flow already recorded their deposit at sign-up,
+ * so those start immediately on approval.
  */
-const activatePlan = async (req, res) => {
+const approvePlan = async (req, res) => {
   try {
     const plan = await InstallmentPlan.findById(req.params.id);
     if (!plan) return res.status(404).json({ success: false, message: 'Sale not found.' });
     if (plan.status !== 'pending') {
-      return res.status(400).json({ success: false, message: 'This sale is already activated.' });
+      return res.status(400).json({ success: false, message: `This sale is already ${plan.status}.` });
     }
 
-    // Rebuild the schedule starting today.
-    const startDate = new Date();
-    const schedule = _buildSchedule(startDate, plan.frequency, plan.total_payments, plan.installment_amount);
-    // Installments already paid while the sale was pending count toward the
-    // start of the schedule.
-    const alreadyPaid = Math.min(plan.payments_made || 0, schedule.length);
-    for (let i = 0; i < alreadyPaid; i++) schedule[i].paid = true;
-    const firstUnpaid = schedule.find((s) => !s.paid);
-    const nextDueDate = (firstUnpaid || schedule[schedule.length - 1]).due_date;
-    const endDate = schedule[schedule.length - 1].due_date;
+    plan.status = 'approved';
+    plan.approved_at = new Date();
 
-    plan.start_date = startDate;
-    plan.next_due_date = nextDueDate;
-    plan.end_date = endDate;
-    plan.schedule = schedule;
-    plan.status = 'active';
-    plan.activated_at = startDate;
+    const legacyDeposit = await Payment.findOne({
+      installment_plan_id: plan._id,
+      notes: /down payment/i,
+    }).lean();
+    if (legacyDeposit || !(plan.down_payment > 0)) {
+      plan.down_payment_paid = true;
+      await plan.save();
+      await activatePlanNow(plan, { userId: req.user._id, ip: req.ip });
+      return res.status(200).json({
+        success: true,
+        message: 'Approved. Its deposit was already recorded, so the plan has started and the phone is unlocking.',
+        data: { plan_id: plan._id, status: 'active' },
+      });
+    }
+
     await plan.save();
-
-    // Arm the phone's offline deadline (next due + grace) if it's enrolled.
-    let deadlineResult = null;
-    try {
-      const device = await Device.findById(plan.device_id);
-      if (device) {
-        device.assigned_to = plan.customer_id;
-        device.sold_status = 'sold';
-        if (device.agent?.enrolled) deadlineResult = await agent.setDeadline(device, nextDueDate);
-        else await device.save();
-      }
-    } catch (dlErr) {
-      logger.error('[activate] setDeadline failed for plan %s: %s', plan._id, dlErr.message);
-    }
-
     await AuditLog.create({
       user_id: req.user._id,
-      action: 'plan_activated',
-      details: {
-        plan_id: plan._id,
-        customer_id: plan.customer_id,
-        device_id: plan.device_id,
-        next_due_date: nextDueDate,
-        paid_until: deadlineResult?.paid_until || null,
-      },
+      action: 'customer_updated',
+      details: { plan_id: plan._id, customer_id: plan.customer_id, approved: true },
       ip_address: req.ip,
-    });
+    }).catch(() => {});
 
-    // Notify the customer that their plan is active (fire-and-forget).
+    // Let the DSR know they can collect the deposit (fire-and-forget).
     ;(async () => {
       try {
-        const customer = await Customer.findById(plan.customer_id).select('full_name phone');
-        if (customer?.phone) {
-          await sendPaymentReminderSMS(customer.phone, customer.full_name, {
-            deviceModel: '', installmentAmount: plan.installment_amount,
-            remainingBalance: plan.remaining_balance, nextDueDate, isOverdue: false,
-          }).catch(() => {});
+        const [dsr, customer] = await Promise.all([
+          User.findById(plan.created_by).select('phone name'),
+          Customer.findById(plan.customer_id).select('full_name'),
+        ]);
+        if (dsr?.phone) {
+          await sendSMS(dsr.phone,
+            `Sale approved: ${customer?.full_name || 'your customer'}. Open the customer in the Dan & Dor Solar app and collect the GHS ${Number(plan.down_payment).toLocaleString()} deposit via Paystack to unlock the phone.`
+          ).catch(() => {});
         }
       } catch { /* ignore */ }
     })();
 
     return res.status(200).json({
       success: true,
-      message: 'Sale activated — the installment plan has started.',
-      data: { plan_id: plan._id, next_due_date: nextDueDate },
+      message: 'Approved. The DSR can now collect the deposit — the phone unlocks once it is paid.',
+      data: { plan_id: plan._id, status: 'approved' },
     });
   } catch (error) {
-    logger.error('activatePlan error: %s', error.message);
+    logger.error('approvePlan error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -1182,7 +1154,7 @@ const unenrollDevice = async (req, res) => {
 
     if (device.assigned_to) {
       const plan = await InstallmentPlan.findOne({ device_id: device._id }).sort({ createdAt: -1 }).lean();
-      if (plan && ['pending', 'active', 'defaulted'].includes(plan.status)) {
+      if (plan && ['pending', 'approved', 'active', 'defaulted'].includes(plan.status)) {
         return res.status(400).json({
           success: false,
           message: "This phone is sold to a customer with an open plan. Use Release (paid off) or Repossess on the customer's page instead.",
@@ -1514,7 +1486,7 @@ const resetCustomerPassword = async (req, res) => {
     let smsStatus = 'not sent';
     if (customer.phone) {
       try {
-        const { sendSMS } = require('../utils/sms');
+
         await sendSMS(
           customer.phone,
           `Hi ${customer.full_name}, your Dan & Dor Solar password has been reset. New password: ${new_password}. Login at dandorsolar.site -Dan & Dor Solar`
@@ -1616,10 +1588,10 @@ const getStaffSales = async (req, res) => {
         // Commission is earned on ACTIVATED sales (admin-approved), not on raw
         // registrations. Count activated installment plans by this DSR.
         const [totalSales, periodSales] = await Promise.all([
-          InstallmentPlan.countDocuments({ created_by: s._id, status: { $ne: 'pending' } }),
+          InstallmentPlan.countDocuments({ created_by: s._id, status: { $nin: ['pending', 'approved'] } }),
           InstallmentPlan.countDocuments({
             created_by: s._id,
-            status: { $ne: 'pending' },
+            status: { $nin: ['pending', 'approved'] },
             $or: [
               { activated_at: { $gte: periodStart } },
               { activated_at: null, createdAt: { $gte: periodStart } },
@@ -2397,7 +2369,7 @@ const getCommissions = async (req, res) => {
     const rows = await Promise.all(staff.map(async (s) => {
       const rate = Number(s.commission_per_sale) || 100;
       // Only activated (approved) sales count toward commission.
-      const totalSales = await InstallmentPlan.countDocuments({ created_by: s._id, status: { $ne: 'pending' } });
+      const totalSales = await InstallmentPlan.countDocuments({ created_by: s._id, status: { $nin: ['pending', 'approved'] } });
       const paidAgg = await CommissionPayout.aggregate([
         { $match: { staff_id: s._id, status: 'success' } },
         { $group: { _id: null, paidCount: { $sum: '$sales_count' }, paidAmount: { $sum: '$amount' } } },
@@ -2441,7 +2413,7 @@ const payCommission = async (req, res) => {
     const rate = Number(staff.commission_per_sale) || 100;
 
     // Only activated (approved) sales count toward commission.
-    const totalSales = await InstallmentPlan.countDocuments({ created_by: staff._id, status: { $ne: 'pending' } });
+    const totalSales = await InstallmentPlan.countDocuments({ created_by: staff._id, status: { $nin: ['pending', 'approved'] } });
     const paidAgg = await CommissionPayout.aggregate([
       { $match: { staff_id: staff._id, status: 'success' } },
       { $group: { _id: null, paidCount: { $sum: '$sales_count' } } },
@@ -2558,7 +2530,7 @@ module.exports = {
   getEnrolledDevices,
   releaseCustomerDevice,
   getPendingActivations,
-  activatePlan,
+  approvePlan,
   unenrollDevice,
   returnDeviceToStock,
   getTransactions,

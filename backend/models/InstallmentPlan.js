@@ -89,13 +89,29 @@ const InstallmentPlanSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      // 'pending' = sale registered by a DSR but not yet activated by the admin.
-      // The schedule clock + overdue locking only begin once activated ('active').
-      enum: ['pending', 'active', 'completed', 'defaulted', 'repossessed'],
+      // 'pending'  = sale registered by a DSR, awaiting the admin's review.
+      // 'approved' = admin approved; waiting for the DSR to collect the deposit
+      //              via Paystack. Paying it activates the plan automatically.
+      // The schedule clock + overdue locking only begin once 'active'.
+      enum: ['pending', 'approved', 'active', 'completed', 'defaulted', 'repossessed'],
       default: 'active',
+    },
+    approved_at: {
+      type: Date,
+      default: null,
     },
     activated_at: {
       type: Date,
+      default: null,
+    },
+    // Deposit (down payment) — collected through Paystack after approval.
+    down_payment_paid: {
+      type: Boolean,
+      default: false,
+    },
+    down_payment_reference: {
+      type: String,
+      trim: true,
       default: null,
     },
     schedule: [ScheduleItemSchema],

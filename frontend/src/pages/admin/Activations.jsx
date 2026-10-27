@@ -7,12 +7,12 @@ import { formatDistanceToNow } from 'date-fns'
 
 const GHS = (n) => `GH₵${Number(n || 0).toLocaleString()}`
 
-// Admin reviews DSR sales and activates them. Activation starts the installment
-// schedule and arms the phone's offline self-lock — nothing counts until then.
+// Admin reviews DSR sales and approves them. The DSR then collects the deposit
+// via Paystack, which starts the plan and unlocks the phone automatically.
 export default function Activations() {
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState([])
-  const [confirm, setConfirm] = useState(null) // the plan being activated
+  const [confirm, setConfirm] = useState(null) // the plan being approved
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
@@ -29,16 +29,19 @@ export default function Activations() {
 
   useEffect(() => { load() }, [load])
 
-  const activate = async () => {
+  const approve = async () => {
     if (!confirm) return
     setBusy(true)
     try {
-      await api.post(`/admin/plans/${confirm.plan_id}/activate`)
-      toast.success(`${confirm.customer_name}'s plan is now active.`)
-      setItems((prev) => prev.filter((x) => x.plan_id !== confirm.plan_id))
+      const res = await api.post(`/admin/plans/${confirm.plan_id}/approve`)
+      const status = res.data?.data?.status
+      toast.success(res.data?.message || 'Approved.', { duration: 6000 })
+      setItems((prev) => status === 'active'
+        ? prev.filter((x) => x.plan_id !== confirm.plan_id)
+        : prev.map((x) => (x.plan_id === confirm.plan_id ? { ...x, status: 'approved' } : x)))
       setConfirm(null)
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not activate')
+      toast.error(err?.response?.data?.message || 'Could not approve')
     } finally {
       setBusy(false)
     }
@@ -50,7 +53,7 @@ export default function Activations() {
         <p className="text-xs font-semibold text-orange-500 uppercase tracking-wider mb-1">Admin</p>
         <h1 className="text-2xl font-black text-gray-900 mb-1">Activations</h1>
         <p className="text-sm text-gray-500 mb-4">
-          Review each sale your DSRs registered, then activate it to start the installment plan.
+          Review each sale your DSRs registered and approve it. The DSR then collects the deposit via Paystack — that starts the plan and unlocks the phone.
         </p>
 
         {loading ? (
@@ -59,7 +62,7 @@ export default function Activations() {
           </div>
         ) : items.length === 0 ? (
           <div className="bg-white rounded-2xl p-10 text-center shadow-card">
-            <p className="text-gray-500 font-medium">Nothing waiting for activation</p>
+            <p className="text-gray-500 font-medium">Nothing waiting for review</p>
             <p className="text-sm text-gray-400 mt-1">New sales from your DSRs will appear here for review.</p>
           </div>
         ) : (
@@ -80,9 +83,15 @@ export default function Activations() {
                       <p className="text-xs text-gray-500 truncate">{it.phone} · {it.email}</p>
                     </div>
                   </div>
-                  <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1 flex-shrink-0">
-                    Pending
-                  </span>
+                  {it.status === 'approved' ? (
+                    <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2.5 py-1 flex-shrink-0">
+                      Waiting for deposit
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1 flex-shrink-0">
+                      Needs review
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4 text-sm">
@@ -112,12 +121,18 @@ export default function Activations() {
                   <p className="text-[11px] text-gray-400">
                     By {it.created_by || 'DSR'} · {it.created_at ? formatDistanceToNow(new Date(it.created_at), { addSuffix: true }) : ''}
                   </p>
-                  <button
-                    onClick={() => setConfirm(it)}
-                    className="px-5 py-2.5 rounded-xl text-sm font-bold bg-orange-600 text-white hover:bg-orange-500"
-                  >
-                    Activate
-                  </button>
+                  {it.status === 'approved' ? (
+                    <p className="text-xs font-semibold text-blue-700 text-right">
+                      DSR collects {GHS(it.down_payment)}<br />via Paystack
+                    </p>
+                  ) : (
+                    <button
+                      onClick={() => setConfirm(it)}
+                      className="px-5 py-2.5 rounded-xl text-sm font-bold bg-orange-600 text-white hover:bg-orange-500"
+                    >
+                      Approve
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -127,13 +142,13 @@ export default function Activations() {
 
       <ConfirmModal
         isOpen={!!confirm}
-        title="Activate this plan?"
+        title="Approve this sale?"
         message={confirm
-          ? `Start ${confirm.customer_name}'s ${confirm.frequency} installments of ${GHS(confirm.installment_amount)}. The phone's "Awaiting Activation" page is lifted, the schedule begins today and lock protection goes live.`
+          ? `Approve ${confirm.customer_name}'s purchase of ${confirm.device_model}. The DSR will then collect the ${GHS(confirm.down_payment)} deposit via Paystack — when it's paid, the ${confirm.frequency} installments of ${GHS(confirm.installment_amount)} start and the phone unlocks automatically.`
           : ''}
-        confirmText={busy ? 'Activating…' : 'Activate'}
+        confirmText={busy ? 'Approving…' : 'Approve'}
         loading={busy}
-        onConfirm={activate}
+        onConfirm={approve}
         onClose={() => !busy && setConfirm(null)}
       />
     </div>

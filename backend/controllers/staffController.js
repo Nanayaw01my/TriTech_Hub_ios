@@ -194,10 +194,10 @@ const precheckCustomer = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please select a device.' });
     }
     const dp = Number(down_payment) || 0;
-    if (dp < 0) {
-      return res.status(400).json({ success: false, message: 'Down payment cannot be negative.' });
+    if (dp <= 0) {
+      return res.status(400).json({ success: false, message: 'A deposit (down payment) is required.' });
     }
-    if (dp > 0 && dp >= Number(device_price)) {
+    if (dp >= Number(device_price)) {
       return res.status(400).json({ success: false, message: 'Down payment must be less than the device price.' });
     }
 
@@ -282,6 +282,11 @@ const addCustomer = async (req, res) => {
         success: false,
         message: 'All guarantor details (name, phone, Ghana Card ID, relationship) are required.',
       });
+    }
+
+    // --- 1c. A deposit is required (it's collected via Paystack after approval) ---
+    if (!(Number(down_payment) > 0)) {
+      return res.status(400).json({ success: false, message: 'A deposit (down payment) is required.' });
     }
 
     // --- 2. Resolve the device for this sale ---
@@ -445,24 +450,9 @@ const addCustomer = async (req, res) => {
     // --- 10. Link device to customer ---
     await Device.findByIdAndUpdate(device._id, { assigned_to: newCustomer._id });
 
-    // --- 11. Record the down payment (Paystack if a reference was supplied,
-    //         otherwise as cash collected at the counter) ---
-    if (downPaymentAmount > 0) {
-      await Payment.create({
-        installment_plan_id: plan._id,
-        customer_id: newCustomer._id,
-        amount: downPaymentAmount,
-        payment_date: new Date(),
-        payment_method: down_payment_reference ? 'paystack' : 'manual_cash',
-        paystack_reference: down_payment_reference || undefined,
-        paystack_status: down_payment_reference ? 'success' : undefined,
-        paid_by: newUser._id,
-        recorded_by: req.user._id,
-        notes: down_payment_reference
-          ? 'Down payment collected at registration'
-          : 'Down payment (cash) collected at registration',
-      });
-    }
+    // --- 11. No payment is taken at registration. After the admin approves the
+    //         sale, the DSR collects this deposit via Paystack; that payment
+    //         starts the plan and unlocks the phone (utils/planActivation). ---
 
     // --- 12. Create audit log ---
     await AuditLog.create({
@@ -719,6 +709,14 @@ const recordCashPayment = async (req, res) => {
 
     const plan = await InstallmentPlan.findOne({ customer_id: customer._id }).lean();
     if (!plan) return res.status(404).json({ success: false, message: 'No installment plan for this customer.' });
+    if (plan.status === 'pending' || plan.status === 'approved') {
+      return res.status(400).json({
+        success: false,
+        message: plan.status === 'pending'
+          ? 'This sale is still awaiting admin approval — no payments can be recorded yet.'
+          : 'Collect the deposit through Paystack first; installments start after that.',
+      });
+    }
     if (plan.status === 'completed' || plan.remaining_balance <= 0) {
       return res.status(400).json({ success: false, message: 'This plan is already fully paid.' });
     }
