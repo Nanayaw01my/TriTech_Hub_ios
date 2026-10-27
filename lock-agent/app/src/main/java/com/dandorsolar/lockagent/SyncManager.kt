@@ -54,6 +54,10 @@ object SyncManager {
         val secret = Prefs.deviceSecret(c)
         var synced = false
         if (backend.isNotEmpty() && id.isNotEmpty() && secret.isNotEmpty()) {
+            // Make sure we have an FCM token to report (best-effort, async).
+            if (Fcm.enabled() && Prefs.fcmToken(c).isEmpty()) {
+                Fcm.fetchToken { Prefs.setFcmToken(c, it) }
+            }
             val fix = LocationHelper.lastKnown(c)
             val res = Api.heartbeat(backend, id, secret, Prefs.appliedLockState(c), fix, Prefs.fcmToken(c).ifEmpty { null })
             val j = res.json
@@ -158,13 +162,20 @@ object SyncManager {
 
     /** Fully hand the phone to the customer: lift the lock + drop Device Owner. */
     fun release(c: Context) {
-        if (Prefs.appliedLockState(c) == "released") return
+        // Done only once Device Owner is really gone — a failed attempt retries
+        // on the next sync instead of being marked done.
+        if (Prefs.appliedLockState(c) == "released" && !Policy.isOwner(c)) return
         Notifications.clearLock(c)
         c.sendBroadcast(Intent(ACTION_UNLOCK).setPackage(c.packageName))
-        Prefs.setAppliedLockState(c, "released")
         ack(c, "released")            // tell the backend first (network still works)
         Policy.releaseDevice(c)       // clears restrictions + relinquishes Device Owner
-        Log.i(TAG, "Device released to customer")
+        if (Policy.isOwner(c)) {
+            Prefs.setAppliedLockState(c, "release_pending")
+            Log.w(TAG, "Release incomplete — still Device Owner, will retry")
+        } else {
+            Prefs.setAppliedLockState(c, "released")
+            Log.i(TAG, "Device released to customer")
+        }
     }
 
     fun lock(c: Context) {

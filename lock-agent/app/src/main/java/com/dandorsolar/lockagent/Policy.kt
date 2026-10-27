@@ -73,5 +73,6 @@ object Policy {
         runCatching { dpm.setLockTaskPackages(admin, arrayOf()) }
         // Relinquish Device Owner last — after this we lose management powers.
         runCatching { @Suppress("DEPRECATION") dpm.clearDeviceOwnerApp(c.packageName) }
+            .onFailure { Log.e(TAG, "clearDeviceOwnerApp failed: ${it.message}") }
     }
 }

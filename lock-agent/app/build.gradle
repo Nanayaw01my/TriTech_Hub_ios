@@ -13,6 +13,16 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
+
+        // Firebase Cloud Messaging (instant lock/unlock), project
+        // "dan-and-dor-solar". These are the public client values from
+        // google-services.json (safe to ship in the app); initialized in code
+        // (Fcm.kt), so no google-services plugin is needed. Overridable with
+        // -PFIREBASE_* Gradle properties; blank => FCM off, 15-min poll only.
+        buildConfigField "String", "FIREBASE_APP_ID", "\"${project.findProperty('FIREBASE_APP_ID') ?: '1:4156809907:android:a59d226eb7f12dc10306c6'}\""
+        buildConfigField "String", "FIREBASE_API_KEY", "\"${project.findProperty('FIREBASE_API_KEY') ?: 'AIzaSyAx-zWwbrK0k3i3YIM9EdQlmhg2-OD1ChU'}\""
+        buildConfigField "String", "FIREBASE_SENDER_ID", "\"${project.findProperty('FIREBASE_SENDER_ID') ?: '4156809907'}\""
+        buildConfigField "String", "FIREBASE_PROJECT_ID", "\"${project.findProperty('FIREBASE_PROJECT_ID') ?: 'dan-and-dor-solar'}\""
     }
 
     buildFeatures {
@@ -63,4 +73,8 @@ dependencies {
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.work:work-runtime-ktx:2.9.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
+
+    // Firebase Cloud Messaging — instant lock/unlock/release pushes.
+    implementation platform('com.google.firebase:firebase-bom:33.5.1')
+    implementation 'com.google.firebase:firebase-messaging'
 }
