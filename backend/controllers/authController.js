@@ -630,12 +630,17 @@ const updateProfile = async (req, res) => {
 
     await user.save();
 
-    await AuditLog.create({
-      user_id: user._id,
-      action: 'profile_updated',
-      details: { updated_fields: [...(name ? ['name'] : []), ...(email ? ['email'] : [])] },
-      ip_address: req.ip,
-    });
+    // Audit is best-effort — never let a logging hiccup fail a saved change.
+    try {
+      await AuditLog.create({
+        user_id: user._id,
+        action: 'profile_updated',
+        details: { updated_fields: [...(name ? ['name'] : []), ...(email ? ['email'] : [])] },
+        ip_address: req.ip,
+      });
+    } catch (logErr) {
+      logger.warn('updateProfile audit log failed: %s', logErr.message);
+    }
 
     logger.info(`Profile updated for ${user.email}`);
 
