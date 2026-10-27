@@ -26,6 +26,7 @@ const {
   releaseCustomerDevice,
   getPendingActivations,
   activatePlan,
+  unenrollDevice,
   returnDeviceToStock,
   getTransactions,
   getReports,
@@ -95,6 +96,7 @@ router.get('/enrolled-devices', getEnrolledDevices);
 router.get('/activations', getPendingActivations);
 router.post('/plans/:id/activate', [param('id').isMongoId()], activatePlan);
 router.post('/devices/:id/return-to-stock', [param('id').isMongoId()], returnDeviceToStock);
+router.post('/devices/:id/unenroll', [param('id').isMongoId()], unenrollDevice);
 router.post('/customers/:id/remind', [param('id').isMongoId()], sendCustomerReminder);
 router.post('/customers/:id/repossess', [param('id').isMongoId().withMessage('Invalid customer ID.')], repossessDevice);
 

@@ -3,6 +3,7 @@ import api from '../../api/axios'
 import toast from 'react-hot-toast'
 import Skeleton from '../../components/Skeleton'
 import LocationModal from '../../components/LocationModal'
+import ConfirmModal from '../../components/ConfirmModal'
 import { formatDistanceToNow } from 'date-fns'
 
 // Bulk enrollment: scan ONE QR on every factory-reset phone to fill your
@@ -14,6 +15,8 @@ export default function StockEnrollment() {
   const [tab, setTab] = useState('available') // available | all
   const [busyId, setBusyId] = useState(null)
   const [locate, setLocate] = useState(null)
+  const [unenroll, setUnenroll] = useState(null) // phone awaiting unenroll confirmation
+  const [unenrolling, setUnenrolling] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -50,6 +53,24 @@ export default function StockEnrollment() {
       toast.error(err?.response?.data?.message || `Could not ${action} the phone`)
     } finally {
       setBusyId(null)
+    }
+  }
+
+  // Remove a phone from the system: hidden from the list now, released (lock
+  // app removed) the next time the phone is online.
+  const confirmUnenroll = async () => {
+    if (!unenroll) return
+    setUnenrolling(true)
+    try {
+      const res = await api.post(`/admin/devices/${unenroll._id}/unenroll`)
+      toast.success(res.data?.message || 'Phone unenrolled.', { duration: 6000 })
+      setDevices((prev) => prev.filter((x) => x._id !== unenroll._id))
+      setUnenroll(null)
+      load()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not unenroll the phone')
+    } finally {
+      setUnenrolling(false)
     }
   }
 
@@ -163,6 +184,10 @@ export default function StockEnrollment() {
                         className="flex-1 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50">
                         Locate
                       </button>
+                      <button onClick={() => setUnenroll(d)}
+                        className="flex-1 py-2 rounded-xl text-sm font-semibold border border-red-200 text-red-600 hover:bg-red-50">
+                        Unenroll
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -177,6 +202,19 @@ export default function StockEnrollment() {
         deviceLabel={locate?.label}
         isOpen={!!locate}
         onClose={() => setLocate(null)}
+      />
+
+      <ConfirmModal
+        isOpen={!!unenroll}
+        title="Unenroll this phone?"
+        message={unenroll
+          ? `${unenroll.model}${unenroll.imei ? ` (IMEI ${unenroll.imei})` : ''} will be removed from your list now. The next time it's online, the Dan & Dor Solar lock app gives up control and it becomes a normal phone — it can't be locked or tracked any more. To use it again you'd factory reset it and scan the QR.`
+          : ''}
+        confirmText={unenrolling ? 'Unenrolling…' : 'Unenroll'}
+        confirmVariant="danger"
+        loading={unenrolling}
+        onConfirm={confirmUnenroll}
+        onClose={() => !unenrolling && setUnenroll(null)}
       />
     </div>
   )

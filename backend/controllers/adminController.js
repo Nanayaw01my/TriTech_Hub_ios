@@ -1165,6 +1165,57 @@ const activatePlan = async (req, res) => {
   }
 };
 
+// ─── UNENROLL ─────────────────────────────────────────────────────────────────
+
+/**
+ * POST /api/admin/devices/:id/unenroll
+ * Take a phone off the system: it is removed from the enrolled list now, and
+ * told to RELEASE (lock app gives up Device Owner, phone becomes a normal phone)
+ * the next time it checks in. The record is kept (hidden) so a phone that's
+ * offline today still receives the release later — deleting it would leave a
+ * phone on the "Awaiting Activation" page locked forever.
+ */
+const unenrollDevice = async (req, res) => {
+  try {
+    const device = await Device.findById(req.params.id);
+    if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
+
+    if (device.assigned_to) {
+      const plan = await InstallmentPlan.findOne({ device_id: device._id }).sort({ createdAt: -1 }).lean();
+      if (plan && ['pending', 'active', 'defaulted'].includes(plan.status)) {
+        return res.status(400).json({
+          success: false,
+          message: "This phone is sold to a customer with an open plan. Use Release (paid off) or Repossess on the customer's page instead.",
+        });
+      }
+    }
+
+    const wasEnrolled = !!device.agent?.enrolled;
+    device.lock_status = 'unlocked';
+    if (device.agent) {
+      await agent.releaseDevice(device); // desired = released, deadline cleared, push attempted
+      device.agent.enrolled = false;
+      device.agent.enrollment_status = 'released';
+    }
+    await device.save();
+
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'device_released',
+      details: { device_id: device._id, model: device.model, imei: device.imei, unenrolled: true, was_enrolled: wasEnrolled },
+      ip_address: req.ip,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Phone unenrolled. It is removed from your list and will be released the next time it is online.',
+    });
+  } catch (error) {
+    logger.error('unenrollDevice error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── RETURN TO STOCK (post-repossession recovery) ─────────────────────────────
 
 /**
@@ -2508,6 +2559,7 @@ module.exports = {
   releaseCustomerDevice,
   getPendingActivations,
   activatePlan,
+  unenrollDevice,
   returnDeviceToStock,
   getTransactions,
   getReports,
