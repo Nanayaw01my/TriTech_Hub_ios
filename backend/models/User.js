@@ -52,7 +52,8 @@ const UserSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
       trim: true,
-      match: [/^TRI\d{4}\d{5}$/, 'Account number must follow format TRI202400001'],
+      // New accounts are DBS…; TRI… numbers from before the rename stay valid.
+      match: [/^(DBS|TRI)\d{4}\d{5}$/, 'Account number must follow format DBS202600001'],
     },
     is_active: {
       type: Boolean,

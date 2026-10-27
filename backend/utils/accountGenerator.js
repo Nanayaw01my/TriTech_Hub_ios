@@ -1,12 +1,12 @@
 const User = require('../models/User');
 
 /**
- * Generate a unique account number in format TRI + year + 5-digit-zero-padded number
- * Example: TRI202400001
+ * Generate a unique account number in format DBS + year + 5-digit-zero-padded number
+ * Example: DBS202600001. (Accounts created before the rename keep their TRI… numbers.)
  */
 const generateAccountNumber = async () => {
   const year = new Date().getFullYear();
-  const prefix = `TRI${year}`;
+  const prefix = `DBS${year}`;
 
   // Find all account numbers starting with current year prefix, sorted descending
   const lastUser = await User.findOne(

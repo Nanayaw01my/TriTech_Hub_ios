@@ -127,6 +127,9 @@ export default function StaffAddCustomer() {
       if (!form.ghana_card_front) e.ghana_card_front = 'Ghana Card front photo is required'
       if (!form.ghana_card_back) e.ghana_card_back = 'Ghana Card back photo is required'
       if (!form.signature) e.signature = 'Customer signature is required'
+      if (!form.customer_photo) e.customer_photo = 'Customer photo is required'
+      if (!form.guarantor_photo) e.guarantor_photo = 'Guarantor photo is required'
+      if (!form.proof_of_income) e.proof_of_income = 'Proof of income is required'
     }
     if (s === 3) {
       if (!form.occupation.trim()) e.occupation = 'Occupation is required'
@@ -412,15 +415,23 @@ export default function StaffAddCustomer() {
               {errors.ghana_card_back && <p className="text-xs text-red-500 mt-1">{errors.ghana_card_back}</p>}
             </div>
 
-            <CameraCapture
-              label="Customer Photo (Optional)"
-              onCapture={(img) => set('customer_photo', img)}
-            />
+            <div data-error={errors.customer_photo}>
+              <CameraCapture
+                label="Customer Photo"
+                required
+                onCapture={(img) => set('customer_photo', img)}
+              />
+              {errors.customer_photo && <p className="text-xs text-red-500 mt-1">{errors.customer_photo}</p>}
+            </div>
 
-            <CameraCapture
-              label="Guarantor Photo (Optional)"
-              onCapture={(img) => set('guarantor_photo', img)}
-            />
+            <div data-error={errors.guarantor_photo}>
+              <CameraCapture
+                label="Guarantor Photo"
+                required
+                onCapture={(img) => set('guarantor_photo', img)}
+              />
+              {errors.guarantor_photo && <p className="text-xs text-red-500 mt-1">{errors.guarantor_photo}</p>}
+            </div>
           </div>
 
           {/* Proof of Income - file upload */}
@@ -434,10 +445,11 @@ export default function StaffAddCustomer() {
             {errors.signature && <p className="text-xs text-red-500 mt-1">{errors.signature}</p>}
           </div>
 
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2" data-error={errors.proof_of_income}>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Proof of Income <span className="text-gray-400 font-normal text-xs">(Optional)</span>
+              Proof of Income <span className="text-red-500">*</span>
             </label>
+            {errors.proof_of_income && <p className="text-xs text-red-500 mb-1.5">{errors.proof_of_income}</p>}
             {form.proof_of_income ? (
               <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-2xl border border-orange-200">
                 <svg className="w-8 h-8 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">

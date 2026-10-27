@@ -165,7 +165,8 @@ const precheckCustomer = async (req, res) => {
   try {
     const { email, device_id, device_model, device_price, password, down_payment, serial_number, udid } = req.body;
 
-    if (!password || String(password).length > 5) {
+    // Password is optional (a PIN is generated if blank) — only check length if given.
+    if (password && String(password).length > 5) {
       return res.status(400).json({ success: false, message: 'Customer password must be between 1 and 5 characters.' });
     }
     if (email) {
@@ -283,6 +284,18 @@ const addCustomer = async (req, res) => {
         success: false,
         message: 'All guarantor details (name, phone, Ghana Card ID, relationship) are required.',
       });
+    }
+
+    // --- 1b2. Customer photo, guarantor photo and proof of income are required ---
+    const hasUpload = (f) => !!(req.files?.[f]?.[0] ||
+      (typeof req.body[f] === 'string' && req.body[f].startsWith('data:')));
+    const missingDocs = [
+      ['customer_photo', 'customer photo'],
+      ['guarantor_photo', 'guarantor photo'],
+      ['proof_of_income', 'proof of income'],
+    ].filter(([f]) => !hasUpload(f)).map(([, label]) => label);
+    if (missingDocs.length) {
+      return res.status(400).json({ success: false, message: `Please add the ${missingDocs.join(', ')}.` });
     }
 
     // --- 1c. A deposit is required (it's collected via Paystack after approval) ---
