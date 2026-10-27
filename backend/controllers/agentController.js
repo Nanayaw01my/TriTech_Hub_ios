@@ -158,7 +158,8 @@ const heartbeat = async (req, res) => {
   try {
     const device = await authDevice(req, res);
     if (!device) return;
-    const { fcm_token, lock_state, android_version, app_version, lat, lng, accuracy, loc_at } = req.body || {};
+    const { fcm_token, lock_state, android_version, app_version, lat, lng, accuracy, loc_at, imei } = req.body || {};
+    if (imei && !device.imei) device.imei = String(imei).trim();
     device.agent.last_heartbeat = new Date();
     if (fcm_token && fcm_token !== device.agent.fcm_token) device.agent.fcm_token = fcm_token;
     if (android_version) device.agent.android_version = android_version;

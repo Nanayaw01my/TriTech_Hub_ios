@@ -43,7 +43,9 @@ object Policy {
                 android.Manifest.permission.ACCESS_FINE_LOCATION,
                 android.Manifest.permission.ACCESS_COARSE_LOCATION,
                 android.Manifest.permission.ACCESS_BACKGROUND_LOCATION,
-                android.Manifest.permission.CALL_PHONE
+                android.Manifest.permission.CALL_PHONE,
+                // Lets the Device Owner read the IMEI, so you can tell phones apart.
+                android.Manifest.permission.READ_PHONE_STATE
             ).forEach { perm ->
                 dpm.setPermissionGrantState(
                     admin, pkg, perm, DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED

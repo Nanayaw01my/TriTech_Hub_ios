@@ -303,6 +303,8 @@ const deleteCustomer = async (req, res) => {
         const device = await Device.findById(plan.device_id);
         if (device && String(device.assigned_to) === String(customer._id)) {
           device.assigned_to = null;
+          device.held_by = null;
+          device.held_since = null;
           device.sold_status = 'available';
           device.lock_status = 'unlocked';
           if (device.agent?.enrolled) {
@@ -992,8 +994,9 @@ const getEnrolledDevices = async (req, res) => {
     const filter = { 'agent.enrolled': true };
     if (onlyAvailable) filter.assigned_to = null;
     const devices = await Device.find(filter)
-      .select('model imei serial_number agent assigned_to lock_status createdAt')
+      .select('model imei serial_number agent assigned_to held_by lock_status createdAt')
       .populate({ path: 'assigned_to', select: 'full_name' })
+      .populate({ path: 'held_by', select: 'name staff_id' })
       .sort({ createdAt: -1 })
       .lean();
     const mapped = devices.map((d) => ({
@@ -1007,6 +1010,10 @@ const getEnrolledDevices = async (req, res) => {
       customer_name: d.assigned_to?.full_name || null,
       lock_status: d.lock_status,
       awaiting_activation: d.agent?.desired_lock_state === 'pending_activation',
+      // Same ID the Dan & Dor Solar app shows on the phone — tells phones apart
+      // when the IMEI isn't known.
+      device_code: d.agent?.device_id ? String(d.agent.device_id).slice(-6) : '',
+      held_by: d.held_by ? { _id: d.held_by._id, name: d.held_by.name, staff_id: d.held_by.staff_id || '' } : null,
       enrolled_at: d.createdAt,
     }));
     return res.status(200).json({ success: true, data: { devices: mapped, total: mapped.length } });
@@ -1292,6 +1299,8 @@ const unenrollDevice = async (req, res) => {
       device.agent.enrolled = false;
       device.agent.enrollment_status = 'released';
     }
+    device.held_by = null;
+    device.held_since = null;
     await device.save();
 
     await AuditLog.create({
@@ -1311,6 +1320,43 @@ const unenrollDevice = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/admin/devices/assign   body: { device_ids: [...], staff_id | null }
+ * Hand unsold enrolled phones to a DSR (only they can sell them), or take them
+ * back to the office with staff_id = null.
+ */
+const assignStock = async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.device_ids) ? req.body.device_ids.filter(Boolean) : [];
+    if (!ids.length) return res.status(400).json({ success: false, message: 'Select at least one phone.' });
+    let staff = null;
+    if (req.body.staff_id) {
+      staff = await User.findOne({ _id: req.body.staff_id, role: 'staff', is_active: true }).select('name staff_id');
+      if (!staff) return res.status(404).json({ success: false, message: 'DSR not found.' });
+    }
+    const r = await Device.updateMany(
+      { _id: { $in: ids }, 'agent.enrolled': true, assigned_to: null },
+      { $set: { held_by: staff ? staff._id : null, held_since: staff ? new Date() : null } }
+    );
+    const moved = r.modifiedCount || 0;
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'device_updated',
+      details: { stock_assigned_to: staff ? staff._id : null, device_ids: ids, moved },
+      ip_address: req.ip,
+    }).catch(() => {});
+    const skipped = ids.length - (r.matchedCount || 0);
+    return res.status(200).json({
+      success: true,
+      message: `${moved} phone(s) ${staff ? `given to ${staff.name}` : 'taken back to the office'}.${skipped > 0 ? ` ${skipped} skipped (already sold).` : ''}`,
+      data: { moved },
+    });
+  } catch (error) {
+    logger.error('assignStock error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── RETURN TO STOCK (post-repossession recovery) ─────────────────────────────
 
 /**
@@ -1324,6 +1370,8 @@ const returnDeviceToStock = async (req, res) => {
     if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
 
     device.assigned_to = null;
+    device.held_by = null; // back with the office
+    device.held_since = null;
     device.sold_status = 'available';
     device.lock_status = 'unlocked';
     if (!device.agent) device.agent = {};
@@ -2816,6 +2864,7 @@ module.exports = {
   releaseCustomerDevice,
   getPendingActivations,
   approvePlan,
+  assignStock,
   getPaystackBanks,
   setStaffPayout,
   removeStaffPayout,

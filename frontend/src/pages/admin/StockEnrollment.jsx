@@ -17,6 +17,38 @@ export default function StockEnrollment() {
   const [locate, setLocate] = useState(null)
   const [unenroll, setUnenroll] = useState(null) // phone awaiting unenroll confirmation
   const [unenrolling, setUnenrolling] = useState(false)
+  // Handing stock to DSRs
+  const [selecting, setSelecting] = useState(false)
+  const [selected, setSelected] = useState([])
+  const [staffList, setStaffList] = useState([])
+  const [giveTo, setGiveTo] = useState('')
+  const [assigning, setAssigning] = useState(false)
+
+  useEffect(() => {
+    api.get('/admin/staff?limit=100')
+      .then((res) => setStaffList((res.data?.data || res.data)?.staff || []))
+      .catch(() => {})
+  }, [])
+
+  const toggleSelect = (id) =>
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+
+  const assign = async (staffId) => {
+    if (!selected.length) { toast.error('Tick the phones first.'); return }
+    if (staffId === '') { toast.error('Choose a DSR.'); return }
+    setAssigning(true)
+    try {
+      const res = await api.post('/admin/devices/assign', { device_ids: selected, staff_id: staffId })
+      toast.success(res.data?.message || 'Done.')
+      setSelected([])
+      setSelecting(false)
+      load()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not update the phones')
+    } finally {
+      setAssigning(false)
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -37,6 +69,12 @@ export default function StockEnrollment() {
   useEffect(() => { load() }, [load])
 
   const shown = devices.filter((x) => (tab === 'available' ? !x.assigned : true))
+  // Who is holding the unsold phones (office vs each DSR).
+  const holders = devices.filter((x) => !x.assigned).reduce((acc, x) => {
+    const k = x.held_by?.name || 'Office'
+    acc[k] = (acc[k] || 0) + 1
+    return acc
+  }, {})
 
   // Lock / unlock any enrolled phone directly from stock (uses the device _id).
   const act = async (d, action) => {
@@ -128,14 +166,28 @@ export default function StockEnrollment() {
             </div>
 
             {/* Inventory */}
-            <div className="flex gap-2 mb-3">
+            <div className="flex gap-2 mb-2 flex-wrap">
               {['available', 'all'].map((t) => (
                 <button key={t} onClick={() => setTab(t)}
                   className={`px-4 py-2 rounded-xl text-sm font-semibold ${tab === t ? 'bg-orange-600 text-white' : 'bg-white text-gray-600 border border-gray-200'}`}>
                   {t === 'available' ? 'Available' : 'All enrolled'}
                 </button>
               ))}
+              <button onClick={() => { setSelecting((v) => !v); setSelected([]) }}
+                className={`ml-auto px-4 py-2 rounded-xl text-sm font-semibold border-2 ${selecting ? 'border-orange-500 bg-orange-50 text-orange-600' : 'border-gray-200 bg-white text-gray-700'}`}>
+                {selecting ? 'Cancel' : 'Give phones to DSR'}
+              </button>
             </div>
+            {Object.keys(holders).length > 0 && (
+              <p className="text-xs text-gray-500 mb-3">
+                Unsold phones: {Object.entries(holders).map(([k, n]) => `${k} ${n}`).join(' · ')}
+              </p>
+            )}
+            {selecting && (
+              <p className="text-xs text-orange-700 bg-orange-50 rounded-xl px-3 py-2 mb-3">
+                Tick the phones you're handing over, then choose the DSR at the bottom. Only that DSR will see them when selling.
+              </p>
+            )}
 
             {shown.length === 0 ? (
               <div className="bg-white rounded-2xl p-10 text-center shadow-card">
@@ -145,8 +197,14 @@ export default function StockEnrollment() {
             ) : (
               <div className="space-y-2">
                 {shown.map((d) => (
-                  <div key={d._id} className="bg-white rounded-2xl border border-gray-100 p-3">
+                  <div key={d._id}
+                    onClick={selecting && !d.assigned ? () => toggleSelect(d._id) : undefined}
+                    className={`bg-white rounded-2xl border p-3 ${selecting && !d.assigned ? 'cursor-pointer' : ''} ${selected.includes(d._id) ? 'border-orange-500 ring-2 ring-orange-200' : 'border-gray-100'}`}>
                     <div className="flex items-center gap-3">
+                      {selecting && !d.assigned && (
+                        <input type="checkbox" readOnly checked={selected.includes(d._id)}
+                          className="w-5 h-5 accent-orange-600 flex-shrink-0" />
+                      )}
                       <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
                         <svg className="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -154,7 +212,14 @@ export default function StockEnrollment() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-gray-900 text-sm truncate">{d.model}</p>
-                        <p className="text-xs text-gray-400 font-mono truncate">{d.imei ? `IMEI ${d.imei}` : (d.serial_number ? `SN ${d.serial_number}` : '—')}</p>
+                        <p className="text-xs text-gray-400 font-mono truncate">
+                          {d.imei ? `IMEI ${d.imei}` : d.serial_number ? `SN ${d.serial_number}` : d.device_code ? `ID …${d.device_code}` : '—'}
+                        </p>
+                        {!d.assigned && (
+                          <p className={`text-[11px] font-semibold mt-0.5 ${d.held_by ? 'text-blue-600' : 'text-gray-400'}`}>
+                            {d.held_by ? `With ${d.held_by.name}${d.held_by.staff_id ? ` (${d.held_by.staff_id})` : ''}` : 'At office'}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right flex-shrink-0">
                         {d.assigned
@@ -168,7 +233,7 @@ export default function StockEnrollment() {
                         )}
                       </div>
                     </div>
-                    <div className="mt-3 flex gap-2">
+                    {!selecting && <div className="mt-3 flex gap-2">
                       {d.lock_status === 'locked' ? (
                         <button onClick={() => act(d, 'unlock')} disabled={busyId === d._id}
                           className="flex-1 py-2 rounded-xl text-sm font-semibold bg-green-600 text-white disabled:opacity-50">
@@ -188,7 +253,7 @@ export default function StockEnrollment() {
                         className="flex-1 py-2 rounded-xl text-sm font-semibold border border-red-200 text-red-600 hover:bg-red-50">
                         Unenroll
                       </button>
-                    </div>
+                    </div>}
                   </div>
                 ))}
               </div>
@@ -196,6 +261,31 @@ export default function StockEnrollment() {
           </>
         )}
       </div>
+
+      {/* Room so the last phone can scroll above the action bar */}
+      {selecting && <div className="h-40" />}
+      {selecting && (
+        <div className="fixed left-0 right-0 bottom-24 lg:bottom-6 z-40 px-4">
+          <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl border border-gray-200 p-3 flex flex-wrap items-center gap-2">
+            <span className="text-sm font-bold text-gray-800">{selected.length} selected</span>
+            <select value={giveTo} onChange={(e) => setGiveTo(e.target.value)}
+              className="flex-1 min-w-[140px] px-3 py-2 border border-gray-200 rounded-xl text-sm">
+              <option value="">Choose DSR…</option>
+              {staffList.map((st) => (
+                <option key={st._id} value={st._id}>{st.name}{st.staff_id ? ` (${st.staff_id})` : ''}</option>
+              ))}
+            </select>
+            <button onClick={() => assign(giveTo)} disabled={assigning || !selected.length}
+              className="px-4 py-2 rounded-xl bg-orange-600 text-white text-sm font-bold disabled:opacity-50">
+              {assigning ? '…' : 'Give'}
+            </button>
+            <button onClick={() => assign(null)} disabled={assigning || !selected.length}
+              className="px-3 py-2 rounded-xl border border-gray-200 text-gray-700 text-sm font-semibold disabled:opacity-50">
+              Take back
+            </button>
+          </div>
+        </div>
+      )}
 
       <LocationModal
         deviceId={locate?.id}

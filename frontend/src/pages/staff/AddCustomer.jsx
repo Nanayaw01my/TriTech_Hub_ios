@@ -774,7 +774,7 @@ export default function StaffAddCustomer() {
                     <FormField label="Pick enrolled phone" required error={errors.device_model}>
                       {enrolledStock.length === 0 ? (
                         <div className="px-4 py-3 border-2 border-orange-200 bg-orange-50 rounded-2xl text-sm text-orange-700 font-medium">
-                          No enrolled phones in stock. Enroll phones first (Admin → Enroll Stock), or use “Other phone”.
+                          No phones have been given to you yet. Ask the admin to assign phones to you (Enroll Stock → Give phones to DSR).
                         </div>
                       ) : (
                         <select
@@ -790,7 +790,7 @@ export default function StaffAddCustomer() {
                           <option value="">Select a phone…</option>
                           {enrolledStock.map(d => (
                             <option key={d._id} value={d._id}>
-                              {d.model}{d.imei ? ` · IMEI ${d.imei}` : ''}{d.online ? '' : ' (offline)'}
+                              {d.model}{d.imei ? ` · IMEI ${d.imei}` : d.device_code ? ` · ID …${d.device_code}` : ''}{d.online ? '' : ' (offline)'}
                             </option>
                           ))}
                         </select>

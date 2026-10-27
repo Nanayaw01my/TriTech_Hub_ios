@@ -317,6 +317,9 @@ const addCustomer = async (req, res) => {
       if (!picked) {
         return res.status(400).json({ success: false, message: 'Selected device not found. Please choose another.' });
       }
+      if (picked.agent?.enrolled && !picked.assigned_to && String(picked.held_by) !== String(req.user._id)) {
+        return res.status(403).json({ success: false, message: 'That phone was not given to you. Ask the admin to assign it to you first.' });
+      }
       if (picked.agent?.enrolled && !picked.assigned_to) {
         // Selling a pre-enrolled stock phone — use it directly.
         device = picked;
@@ -684,6 +687,9 @@ const updateSale = async (req, res) => {
       if (!picked || !picked.agent?.enrolled || picked.assigned_to) {
         return res.status(400).json({ success: false, message: 'That phone is not available in stock. Choose another.' });
       }
+      if (String(picked.held_by) !== String(req.user._id)) {
+        return res.status(403).json({ success: false, message: 'That phone was not given to you. Ask the admin to assign it to you first.' });
+      }
       const old = device;
       device = picked;
       device.assigned_to = customer._id;
@@ -881,7 +887,8 @@ const getCustomerPayments = async (req, res) => {
  */
 const getEnrolledStock = async (req, res) => {
   try {
-    const devices = await Device.find({ 'agent.enrolled': true, assigned_to: null })
+    // Only phones the admin handed to this DSR.
+    const devices = await Device.find({ 'agent.enrolled': true, assigned_to: null, held_by: req.user._id })
       .select('model imei serial_number agent createdAt')
       .sort({ createdAt: -1 })
       .lean();
@@ -890,6 +897,7 @@ const getEnrolledStock = async (req, res) => {
       model: d.model,
       imei: d.imei || '',
       serial_number: d.serial_number || '',
+      device_code: d.agent?.device_id ? String(d.agent.device_id).slice(-6) : '',
       online: !!d.agent?.last_heartbeat && (Date.now() - new Date(d.agent.last_heartbeat).getTime() < 20 * 60 * 1000),
     }));
     return res.status(200).json({ success: true, data: { devices: mapped, total: mapped.length } });

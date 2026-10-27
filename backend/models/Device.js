@@ -91,6 +91,17 @@ const DeviceSchema = new mongoose.Schema(
       ref: 'Customer',
       default: null,
     },
+    // Stock handed to a DSR to sell. Only that DSR sees it in their phone
+    // picker. null = with the admin/office.
+    held_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    held_since: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

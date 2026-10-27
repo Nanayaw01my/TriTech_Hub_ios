@@ -26,6 +26,7 @@ const {
   releaseCustomerDevice,
   getPendingActivations,
   approvePlan,
+  assignStock,
   getPaystackBanks,
   setStaffPayout,
   removeStaffPayout,
@@ -103,6 +104,7 @@ router.get('/paystack/banks', getPaystackBanks);
 router.put('/staff/:id/payout', [param('id').isMongoId()], setStaffPayout);
 router.delete('/staff/:id/payout', [param('id').isMongoId()], removeStaffPayout);
 router.post('/plans/:id/return', [param('id').isMongoId()], returnPlan);
+router.post('/devices/assign', assignStock);
 router.post('/devices/:id/return-to-stock', [param('id').isMongoId()], returnDeviceToStock);
 router.post('/devices/:id/unenroll', [param('id').isMongoId()], unenrollDevice);
 router.post('/customers/:id/remind', [param('id').isMongoId()], sendCustomerReminder);

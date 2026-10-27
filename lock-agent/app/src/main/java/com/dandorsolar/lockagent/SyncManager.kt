@@ -59,7 +59,10 @@ object SyncManager {
                 Fcm.fetchToken { Prefs.setFcmToken(c, it) }
             }
             val fix = LocationHelper.lastKnown(c)
-            val res = Api.heartbeat(backend, id, secret, Prefs.appliedLockState(c), fix, Prefs.fcmToken(c).ifEmpty { null })
+            val res = Api.heartbeat(
+                backend, id, secret, Prefs.appliedLockState(c), fix,
+                Prefs.fcmToken(c).ifEmpty { null }, DeviceInfo.imei(c)
+            )
             val j = res.json
             if (res.ok && j != null) {
                 synced = true
