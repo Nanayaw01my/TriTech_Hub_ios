@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
+import useLogo from '../hooks/useLogo'
 
 export default function MaintenanceScreen() {
+  const logo = useLogo()
   const [logoLoaded, setLogoLoaded] = useState(false)
   const [logoError, setLogoError] = useState(false)
 
@@ -34,7 +36,7 @@ export default function MaintenanceScreen() {
               <span className="text-white text-2xl font-black tracking-tight">T</span>
             ) : (
               <img
-                src="/logo.png"
+                src={logo}
                 alt="Dan & Dor Solar"
                 onLoad={() => setLogoLoaded(true)}
                 onError={() => setLogoError(true)}

@@ -11,8 +11,12 @@ const {
 const { getPublicSettings } = require('../controllers/adminController');
 
 // Public route (no auth required)
-router.get('/business-info', (req, res) => {
-  res.json({ success: true, data: getPublicSettings() });
+router.get('/business-info', async (req, res) => {
+  try {
+    res.json({ success: true, data: await getPublicSettings() });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
 });
 
 // Apply authentication and customer authorization to all routes

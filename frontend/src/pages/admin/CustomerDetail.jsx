@@ -32,6 +32,8 @@ export default function AdminCustomerDetail() {
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [trackOpen, setTrackOpen] = useState(false)
   const [releaseModal, setReleaseModal] = useState(false)
+  const [deleteModal, setDeleteModal] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [releaseLoading, setReleaseLoading] = useState(false)
   const [returnModal, setReturnModal] = useState(false)
   const [returnLoading, setReturnLoading] = useState(false)
@@ -89,6 +91,20 @@ export default function AdminCustomerDetail() {
       toast.error(err?.response?.data?.message || 'Could not release the phone.')
     } finally {
       setReleaseLoading(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    setDeleteLoading(true)
+    try {
+      const res = await api.delete(`/admin/customers/${id}`)
+      toast.success(res.data?.message || 'Customer deleted.', { duration: 6000 })
+      setDeleteModal(false)
+      navigate('/admin/customers')
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not delete the customer.')
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -239,6 +255,12 @@ export default function AdminCustomerDetail() {
             <div className="flex flex-wrap gap-1.5 mt-2">
               <StatusBadge status={plan?.status || customer.plan_status || 'active'} />
               {device?.lock_status === 'locked' && <StatusBadge status="locked" />}
+              {['closed', 'cancelled'].includes(plan?.status) && plan?.closed_at && (
+                <span className="text-[11px] text-gray-500 self-center">
+                  {plan.status === 'closed' ? 'Phone released' : 'Cancelled'} {format(new Date(plan.closed_at), 'dd MMM yyyy')}
+                  {plan.written_off > 0 ? ` · GHS ${Number(plan.written_off).toLocaleString()} written off` : ''}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -429,7 +451,7 @@ export default function AdminCustomerDetail() {
             </svg>
             Reset Customer Password
           </button>
-          {plan && plan.status !== 'completed' && (
+          {plan && ['active', 'defaulted'].includes(plan.status) && (
             <button
               onClick={handleSendReminder}
               disabled={reminderLoading}
@@ -442,7 +464,7 @@ export default function AdminCustomerDetail() {
               {reminderLoading ? 'Sending…' : 'Send Payment Reminder'}
             </button>
           )}
-          {plan && !['completed', 'repossessed', 'pending', 'approved'].includes(plan.status) && (
+          {plan && ['active', 'defaulted'].includes(plan.status) && (
             <button
               onClick={() => setRepossessModal(true)}
               className="w-full py-3 px-4 rounded-xl border-2 border-red-200 text-red-700 font-semibold text-sm
@@ -475,6 +497,16 @@ export default function AdminCustomerDetail() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             Download PDF Receipt
+          </button>
+          <button
+            onClick={() => setDeleteModal(true)}
+            className="w-full py-3 px-4 rounded-xl border-2 border-red-200 text-red-600 font-semibold text-sm
+                       hover:bg-red-50 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Delete Customer
           </button>
         </div>
       </div>
@@ -552,10 +584,22 @@ export default function AdminCustomerDetail() {
         onClose={() => setReleaseModal(false)}
         onConfirm={handleRelease}
         title="Release phone to customer"
-        message={`Release ${customer?.full_name}'s ${device?.model || 'phone'}? This removes the lock and management permanently — the phone becomes fully theirs (factory reset re-enabled). Only do this once they've fully paid.`}
+        message={`Release ${customer?.full_name}'s ${device?.model || 'phone'}? This removes the lock and management permanently — the phone becomes fully theirs (factory reset re-enabled) — and CLOSES the plan: reminders and auto-lock stop${(plan?.remaining_balance || 0) > 0 ? `, and the unpaid GHS ${Number(plan.remaining_balance).toLocaleString()} is written off` : ''}.`}
         confirmText="Release phone"
         confirmVariant="primary"
         loading={releaseLoading}
+      />
+
+      {/* Delete Customer Modal */}
+      <ConfirmModal
+        isOpen={deleteModal}
+        onClose={() => !deleteLoading && setDeleteModal(false)}
+        onConfirm={handleDelete}
+        title="Delete this customer?"
+        message={`${customer?.full_name} will be removed from all lists and can no longer log in. Any open plan is cancelled${['active', 'defaulted', 'repossessed'].includes(plan?.status) && (plan?.remaining_balance || 0) > 0 ? ` (unpaid GHS ${Number(plan.remaining_balance).toLocaleString()} written off)` : ''}${device?.agent?.enrolled ? ', and their phone goes back to stock showing "Awaiting Activation" — only do this if you have the phone back or it was a test' : ''}. This is kept in the audit log.`}
+        confirmText={deleteLoading ? 'Deleting…' : 'Delete customer'}
+        confirmVariant="danger"
+        loading={deleteLoading}
       />
 
       {/* Reset Password Modal */}

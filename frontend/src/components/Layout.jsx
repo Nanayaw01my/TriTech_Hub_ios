@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ConfirmModal from './ConfirmModal'
 import api from '../api/axios'
+import useLogo from '../hooks/useLogo'
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icon = {
@@ -251,6 +252,7 @@ function SideNavLink({ item, role, onClick }) {
 
 // ─── Sidebar component ────────────────────────────────────────────────────────
 function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
+  const logo = useLogo()
   const roleLabel = role === 'admin' ? 'Admin Portal' : role === 'staff' ? 'Staff Portal' : 'My Account'
 
   return (
@@ -261,9 +263,9 @@ function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' }}
       >
         <img
-          src="/logo.png"
+          src={logo}
           alt="Dan & Dor Solar Company Ltd."
-          className="w-9 h-9 rounded-xl object-cover flex-shrink-0 shadow-sm"
+          className="w-9 h-9 rounded-xl object-cover flex-shrink-0 shadow-sm bg-white"
         />
         <div>
           <p className="text-white font-bold text-sm leading-tight">Dan & Dor Solar Company Ltd.</p>
@@ -313,6 +315,7 @@ function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
 
 // ─── Main Layout ──────────────────────────────────────────────────────────────
 export default function Layout({ role }) {
+  const logo = useLogo()
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -408,8 +411,8 @@ export default function Layout({ role }) {
             </button>
 
             <div className="flex-1 flex items-center justify-center gap-2.5 min-w-0 px-2">
-              <div className="w-9 h-9 rounded-xl overflow-hidden bg-black flex-shrink-0 shadow-sm">
-                <img src="/logo.png" alt="Dan & Dor Solar Company Ltd." className="w-full h-full object-cover" />
+              <div className="w-9 h-9 rounded-xl overflow-hidden bg-white flex-shrink-0 shadow-sm">
+                <img src={logo} alt="Dan & Dor Solar Company Ltd." className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-col items-start min-w-0">
                 <p className="text-white font-bold text-sm leading-tight truncate">

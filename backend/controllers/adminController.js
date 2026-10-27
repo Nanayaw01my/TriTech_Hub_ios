@@ -15,6 +15,7 @@ const { generateStaffId } = require('../utils/accountGenerator');
 const { sendSMS, sendPaymentReminderSMS, sendDeviceLockedSMS, sendDeviceUnlockedSMS, sendDeviceLockedWhatsApp, sendDeviceUnlockedWhatsApp } = require('../utils/sms');
 const { sendLockNotificationEmail, sendDeviceUnlockedEmail } = require('../utils/email');
 const agent = require('../utils/androidAgent');
+const { uploadBase64 } = require('../utils/cloudinary');
 const { activatePlanNow } = require('../utils/planActivation');
 const logger = require('../utils/logger');
 
@@ -38,7 +39,7 @@ const getDashboard = async (req, res) => {
       monthlyRevenue,
     ] = await Promise.all([
       User.countDocuments({ role: 'staff', is_active: true }),
-      Customer.countDocuments(),
+      Customer.countDocuments({ deleted_at: null }),
       Device.countDocuments(),
       InstallmentPlan.countDocuments({ status: 'defaulted' }),
       Device.countDocuments({ lock_status: 'locked' }),
@@ -103,7 +104,7 @@ const getCustomers = async (req, res) => {
     const skip = (page - 1) * limit;
     const { search, region } = req.query;
 
-    const filter = {};
+    const filter = { deleted_at: null }; // deleted customers are hidden
 
     if (search) {
       const searchRegex = new RegExp(search, 'i');
@@ -278,23 +279,57 @@ const deleteCustomer = async (req, res) => {
     if (!customer) {
       return res.status(404).json({ success: false, message: 'Customer not found.' });
     }
+    if (customer.deleted_at) {
+      return res.status(400).json({ success: false, message: 'This customer was already deleted.' });
+    }
 
     const userId = customer.user_id;
 
-    // Soft-delete: deactivate the user account
+    // Cancel any open plan and put an enrolled phone back into stock (it shows
+    // "Awaiting Activation" until it's sold again).
+    const plan = await InstallmentPlan.findOne({ customer_id: customer._id }).sort({ createdAt: -1 });
+    let phoneToStock = false;
+    if (plan) {
+      if (['pending', 'returned', 'approved', 'active', 'defaulted', 'repossessed'].includes(plan.status)) {
+        plan.written_off = ['active', 'defaulted', 'repossessed'].includes(plan.status) ? Math.max(0, plan.remaining_balance || 0) : 0;
+        plan.status = 'cancelled';
+        plan.closed_at = new Date();
+        plan.close_reason = 'customer_deleted';
+        await plan.save();
+
+        const device = await Device.findById(plan.device_id);
+        if (device && String(device.assigned_to) === String(customer._id)) {
+          device.assigned_to = null;
+          device.sold_status = 'available';
+          device.lock_status = 'unlocked';
+          if (device.agent?.enrolled) {
+            device.agent.desired_lock_state = 'pending_activation';
+            device.agent.paid_until = null;
+            phoneToStock = true;
+          }
+          await device.save();
+          if (phoneToStock) { try { await agent.pushCommand(device); } catch { /* next check-in */ } }
+        }
+      }
+    }
+
+    // Hide from lists and disable their login; the record stays for the audit trail.
+    await Customer.updateOne({ _id: customer._id }, { $set: { deleted_at: new Date() } });
     await User.findByIdAndUpdate(userId, { is_active: false });
 
     await AuditLog.create({
       user_id: req.user._id,
       action: 'customer_deleted',
       target_user_id: userId,
-      details: { customer_id: customer._id, customer_name: customer.full_name },
+      details: { customer_id: customer._id, customer_name: customer.full_name, plan_id: plan?._id || null, phone_to_stock: phoneToStock },
       ip_address: req.ip,
     });
 
     return res.status(200).json({
       success: true,
-      message: 'Customer account deactivated successfully.',
+      message: phoneToStock
+        ? 'Customer deleted. Their phone is back in stock (it shows "Awaiting Activation" until sold again).'
+        : 'Customer deleted.',
       data: null,
     });
   } catch (error) {
@@ -331,7 +366,7 @@ const getStaff = async (req, res) => {
     // Enrich with customer count
     const enriched = await Promise.all(
       staff.map(async (s) => {
-        const customerCount = await Customer.countDocuments({ created_by: s._id });
+        const customerCount = await Customer.countDocuments({ created_by: s._id, deleted_at: null });
         return { ...s, customer_count: customerCount };
       })
     );
@@ -998,19 +1033,30 @@ const releaseCustomerDevice = async (req, res) => {
     device.lock_status = 'unlocked';
     await device.save();
 
+    // Releasing ends the sale: close the plan (stops reminders and auto-lock,
+    // leaves the active/overdue lists). Any unpaid balance is written off.
+    let writtenOff = 0;
+    if (!['completed', 'closed', 'cancelled'].includes(plan.status)) {
+      writtenOff = Math.max(0, plan.remaining_balance || 0);
+      await InstallmentPlan.updateOne({ _id: plan._id }, {
+        $set: { status: 'closed', closed_at: new Date(), close_reason: 'phone_released', written_off: writtenOff },
+      });
+    }
+
     await AuditLog.create({
       user_id: req.user._id,
       action: 'device_released',
       device_udid: device.agent?.device_id || device.imei || '',
       target_user_id: customer.user_id,
-      details: { device_id: device._id, customer_id: customer._id, delivered: r.delivered },
+      details: { device_id: device._id, customer_id: customer._id, delivered: r.delivered, plan_closed: true, written_off: writtenOff },
     }).catch(() => {});
 
+    const freed = r.delivered
+      ? 'The phone is being freed now and becomes fully the customer’s.'
+      : 'The phone is freed the next time it is online.';
     return res.status(200).json({
       success: true,
-      message: r.delivered
-        ? 'Release sent — the phone is being freed now. It becomes fully the customer’s.'
-        : 'Release queued — it will apply the next time the phone is online.',
+      message: `Plan closed. ${freed}${writtenOff > 0 ? ` Unpaid balance written off: GHS ${writtenOff.toLocaleString()}.` : ''}`,
     });
   } catch (error) {
     logger.error('releaseCustomerDevice error: %s', error.message);
@@ -1027,8 +1073,12 @@ const releaseCustomerDevice = async (req, res) => {
  */
 const getPendingActivations = async (req, res) => {
   try {
-    const plans = await InstallmentPlan.find({ status: { $in: ['pending', 'approved'] } })
-      .populate({ path: 'customer_id', select: 'full_name phone email ghana_card_id occupation guarantor photos location income' })
+    const plans = await InstallmentPlan.find({ status: { $in: ['pending', 'returned', 'approved'] } })
+      .populate({
+        path: 'customer_id',
+        select: 'full_name phone email ghana_card_id occupation guarantor photos proof_of_income location income user_id createdAt',
+        populate: { path: 'user_id', select: 'account_number' },
+      })
       .populate({ path: 'device_id', select: 'model imei serial_number price agent lock_status' })
       .populate({ path: 'created_by', select: 'name staff_id' })
       .sort({ createdAt: -1 })
@@ -1038,6 +1088,11 @@ const getPendingActivations = async (req, res) => {
       plan_id: p._id,
       status: p.status,
       approved_at: p.approved_at || null,
+      review_note: p.review_note || null,
+      returned_at: p.returned_at || null,
+      account_number: p.customer_id?.user_id?.account_number || '',
+      proof_of_income: p.customer_id?.proof_of_income || null,
+      end_date: p.end_date || null,
       customer_id: p.customer_id?._id,
       customer_name: p.customer_id?.full_name || 'Unknown',
       phone: p.customer_id?.phone || '',
@@ -1137,6 +1192,59 @@ const approvePlan = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/admin/plans/:id/return   body: { note }
+ * Send a sale back to the DSR to correct (from review, or after approval while
+ * the deposit is still unpaid). The DSR sees the note, edits and resubmits.
+ */
+const returnPlan = async (req, res) => {
+  try {
+    const note = String(req.body?.note || '').trim();
+    if (note.length < 3) {
+      return res.status(400).json({ success: false, message: 'Tell the DSR what needs fixing.' });
+    }
+    const plan = await InstallmentPlan.findById(req.params.id);
+    if (!plan) return res.status(404).json({ success: false, message: 'Sale not found.' });
+    const canReturn = plan.status === 'pending' || (plan.status === 'approved' && !plan.down_payment_paid);
+    if (!canReturn) {
+      return res.status(400).json({ success: false, message: `This sale is ${plan.status} and can't be sent back.` });
+    }
+
+    plan.status = 'returned';
+    plan.review_note = note;
+    plan.returned_at = new Date();
+    plan.approved_at = null;
+    await plan.save();
+
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'customer_updated',
+      details: { plan_id: plan._id, customer_id: plan.customer_id, returned_for_correction: true, note },
+      ip_address: req.ip,
+    }).catch(() => {});
+
+    // Tell the DSR what to fix (fire-and-forget).
+    ;(async () => {
+      try {
+        const [dsr, customer] = await Promise.all([
+          User.findById(plan.created_by).select('phone'),
+          Customer.findById(plan.customer_id).select('full_name'),
+        ]);
+        if (dsr?.phone) {
+          await sendSMS(dsr.phone,
+            `Sale sent back: ${customer?.full_name || 'your customer'}. Fix: ${note.slice(0, 100)}. Open the customer in the Dan & Dor Solar app, tap Edit & resubmit.`
+          ).catch(() => {});
+        }
+      } catch { /* ignore */ }
+    })();
+
+    return res.status(200).json({ success: true, message: 'Sent back to the DSR for correction.', data: { plan_id: plan._id, status: 'returned' } });
+  } catch (error) {
+    logger.error('returnPlan error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── UNENROLL ─────────────────────────────────────────────────────────────────
 
 /**
@@ -1154,7 +1262,7 @@ const unenrollDevice = async (req, res) => {
 
     if (device.assigned_to) {
       const plan = await InstallmentPlan.findOne({ device_id: device._id }).sort({ createdAt: -1 }).lean();
-      if (plan && ['pending', 'approved', 'active', 'defaulted'].includes(plan.status)) {
+      if (plan && ['pending', 'returned', 'approved', 'active', 'defaulted'].includes(plan.status)) {
         return res.status(400).json({
           success: false,
           message: "This phone is sold to a customer with an open plan. Use Release (paid off) or Repossess on the customer's page instead.",
@@ -1546,6 +1654,16 @@ const updateSettings = async (req, res) => {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
 
+    // Company logo: `logo` is a new image (data: URL) to upload; `logo_url: null`
+    // removes it (falls back to the built-in logo).
+    if (typeof req.body.logo === 'string' && req.body.logo.startsWith('data:image/')) {
+      const url = await uploadBase64(req.body.logo, 'dandorsolar/branding');
+      if (!url) return res.status(502).json({ success: false, message: 'Could not upload the logo. Try a smaller image.' });
+      updates.logo_url = url;
+    } else if (req.body.logo_url === null) {
+      updates.logo_url = null;
+    }
+
     const settings = await Settings.findOneAndUpdate(
       {},
       { $set: updates },
@@ -1588,10 +1706,10 @@ const getStaffSales = async (req, res) => {
         // Commission is earned on ACTIVATED sales (admin-approved), not on raw
         // registrations. Count activated installment plans by this DSR.
         const [totalSales, periodSales] = await Promise.all([
-          InstallmentPlan.countDocuments({ created_by: s._id, status: { $nin: ['pending', 'approved'] } }),
+          InstallmentPlan.countDocuments({ created_by: s._id, status: { $nin: ['pending', 'returned', 'approved', 'cancelled'] } }),
           InstallmentPlan.countDocuments({
             created_by: s._id,
-            status: { $nin: ['pending', 'approved'] },
+            status: { $nin: ['pending', 'returned', 'approved', 'cancelled'] },
             $or: [
               { activated_at: { $gte: periodStart } },
               { activated_at: null, createdAt: { $gte: periodStart } },
@@ -1920,7 +2038,7 @@ const exportTransactions = async (req, res) => {
 
 const exportCustomers = async (req, res) => {
   try {
-    const customers = await Customer.find({})
+    const customers = await Customer.find({ deleted_at: null })
       .populate({ path: 'user_id', select: 'account_number email' })
       .lean();
 
@@ -2078,13 +2196,19 @@ const unlockCustomerDevice = async (req, res) => {
   }
 };
 
-const getPublicSettings = () => ({
-  business_name: appSettings.business_name,
-  contact_phone: appSettings.contact_phone,
-  contact_email: appSettings.contact_email,
-  whatsapp_number: appSettings.whatsapp_number,
-  contact_address: appSettings.contact_address,
-});
+// Public business info (no login needed — the login page uses the logo).
+// This previously read an undefined `appSettings` and always threw.
+const getPublicSettings = async () => {
+  const s = await Settings.getSingleton();
+  return {
+    business_name: s.business_name,
+    contact_phone: s.contact_phone,
+    contact_email: s.contact_email,
+    whatsapp_number: s.whatsapp_number,
+    contact_address: s.contact_address,
+    logo_url: s.logo_url || null,
+  };
+};
 
 // ─── BACKUP ──────────────────────────────────────────────────────────────────
 const downloadBackup = async (req, res) => {
@@ -2133,6 +2257,7 @@ const globalSearch = async (req, res) => {
 
     const [customers, devices, payments] = await Promise.all([
       Customer.find({
+        deleted_at: null,
         $or: [{ full_name: regex }, { phone: regex }, { email: regex }, { ghana_card_id: regex }],
       })
         .select('full_name phone email ghana_card_id createdAt')
@@ -2369,7 +2494,7 @@ const getCommissions = async (req, res) => {
     const rows = await Promise.all(staff.map(async (s) => {
       const rate = Number(s.commission_per_sale) || 100;
       // Only activated (approved) sales count toward commission.
-      const totalSales = await InstallmentPlan.countDocuments({ created_by: s._id, status: { $nin: ['pending', 'approved'] } });
+      const totalSales = await InstallmentPlan.countDocuments({ created_by: s._id, status: { $nin: ['pending', 'returned', 'approved', 'cancelled'] } });
       const paidAgg = await CommissionPayout.aggregate([
         { $match: { staff_id: s._id, status: 'success' } },
         { $group: { _id: null, paidCount: { $sum: '$sales_count' }, paidAmount: { $sum: '$amount' } } },
@@ -2413,7 +2538,7 @@ const payCommission = async (req, res) => {
     const rate = Number(staff.commission_per_sale) || 100;
 
     // Only activated (approved) sales count toward commission.
-    const totalSales = await InstallmentPlan.countDocuments({ created_by: staff._id, status: { $nin: ['pending', 'approved'] } });
+    const totalSales = await InstallmentPlan.countDocuments({ created_by: staff._id, status: { $nin: ['pending', 'returned', 'approved', 'cancelled'] } });
     const paidAgg = await CommissionPayout.aggregate([
       { $match: { staff_id: staff._id, status: 'success' } },
       { $group: { _id: null, paidCount: { $sum: '$sales_count' } } },
@@ -2531,6 +2656,7 @@ module.exports = {
   releaseCustomerDevice,
   getPendingActivations,
   approvePlan,
+  returnPlan,
   unenrollDevice,
   returnDeviceToStock,
   getTransactions,

@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { useIdleTimeout } from './hooks/useIdleTimeout'
 import LoadingSpinner from './components/LoadingSpinner'
-import SplashScreen from './components/SplashScreen'
 import ErrorBoundary from './components/ErrorBoundary'
 import OfflineBanner from './components/OfflineBanner'
 import MaintenanceScreen from './components/MaintenanceScreen'
@@ -167,6 +166,7 @@ function AppRoutes() {
         <Route path="dashboard" element={<StaffDashboard />} />
         <Route path="customers" element={<StaffCustomers />} />
         <Route path="customers/add" element={<StaffAddCustomer />} />
+        <Route path="customers/:id/edit" element={<StaffAddCustomer />} />
         <Route path="customers/:id" element={<StaffCustomerDetail />} />
         <Route path="about" element={<StaffAbout />} />
       </Route>
@@ -195,17 +195,9 @@ function AppRoutes() {
 }
 
 export default function App() {
-  const [splash, setSplash] = useState(() => !sessionStorage.getItem('splashShown'))
-
-  const handleSplashDone = () => {
-    sessionStorage.setItem('splashShown', '1')
-    setSplash(false)
-  }
-
   return (
     <ErrorBoundary>
       <OfflineBanner />
-      {splash && <SplashScreen onDone={handleSplashDone} />}
       <BrowserRouter>
         <AuthProvider>
           <AppRoutes />

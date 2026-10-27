@@ -113,6 +113,12 @@ const CustomerSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    // Set when the admin deletes the customer: hidden from lists and counts,
+    // record kept for the audit trail.
+    deleted_at: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

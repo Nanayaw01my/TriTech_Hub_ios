@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import Button from '../../components/Modern/Button'
 import Card from '../../components/Modern/Card'
 import Input from '../../components/Modern/Input'
+import useLogo, { setLogo } from '../../hooks/useLogo'
 
 export default function AdminSettings() {
   const { user, updateUser } = useAuth()
@@ -20,6 +21,47 @@ export default function AdminSettings() {
   })
   const [settingsLoading, setSettingsLoading] = useState(true)
   const [settingsSaving, setSettingsSaving] = useState(false)
+  const logo = useLogo()
+  const [logoSaving, setLogoSaving] = useState(false)
+
+  // Upload a new company logo (shown on login, menu, legal pages…).
+  const handleLogoFile = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) { toast.error('Choose an image file (PNG or JPG).'); return }
+    if (file.size > 2 * 1024 * 1024) { toast.error('Logo must be under 2 MB.'); return }
+    const reader = new FileReader()
+    reader.onloadend = async () => {
+      setLogoSaving(true)
+      try {
+        const res = await api.put('/admin/settings', { logo: reader.result })
+        const url = res.data?.data?.settings?.logo_url
+        setSettings(s => ({ ...s, logo_url: url }))
+        setLogo(url)
+        toast.success('Logo updated.')
+      } catch (err) {
+        toast.error(err?.response?.data?.message || 'Could not upload the logo.')
+      } finally {
+        setLogoSaving(false)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const removeLogo = async () => {
+    setLogoSaving(true)
+    try {
+      await api.put('/admin/settings', { logo_url: null })
+      setSettings(s => ({ ...s, logo_url: null }))
+      setLogo(null)
+      toast.success('Back to the default logo.')
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not remove the logo.')
+    } finally {
+      setLogoSaving(false)
+    }
+  }
 
   const [profileForm, setProfileForm] = useState({ name: '', email: '', current_password: '' })
   const [profileLoading, setProfileLoading] = useState(false)
@@ -43,7 +85,7 @@ export default function AdminSettings() {
     const fetchSettings = async () => {
       try {
         const res = await api.get('/admin/settings')
-        setSettings(prev => ({ ...prev, ...(res.data?.data || res.data) }))
+        setSettings(prev => ({ ...prev, ...(res.data?.data?.settings || res.data?.data || res.data) }))
       } catch {
         // Use defaults
       } finally {
@@ -195,6 +237,31 @@ export default function AdminSettings() {
               Save Changes
             </Button>
           </form>
+        </Card>
+
+        {/* Company Logo */}
+        <Card padding="p-6 sm:p-8" className="mb-6 shadow-lg">
+          <h2 className="text-gray-900 text-lg font-bold mb-1">Company Logo</h2>
+          <p className="text-sm text-gray-500 mb-5">
+            Shown on the login page, the menu and other screens. PNG or JPG under 2 MB — a square logo works best.
+          </p>
+          <div className="flex items-center gap-5">
+            <div className="w-24 h-24 rounded-2xl border border-gray-200 bg-white overflow-hidden flex items-center justify-center flex-shrink-0">
+              <img src={logo} alt="Company logo" className="w-full h-full object-contain" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className={`inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-orange-600 hover:bg-orange-500 cursor-pointer ${logoSaving ? 'opacity-60 pointer-events-none' : ''}`}>
+                {logoSaving ? 'Saving…' : 'Upload new logo'}
+                <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoFile} />
+              </label>
+              {settings.logo_url && (
+                <button type="button" onClick={removeLogo} disabled={logoSaving}
+                  className="text-sm font-semibold text-gray-500 hover:text-gray-700 disabled:opacity-50">
+                  Use the default logo
+                </button>
+              )}
+            </div>
+          </div>
         </Card>
 
         {/* Business Settings */}

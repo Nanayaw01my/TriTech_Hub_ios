@@ -89,12 +89,39 @@ const InstallmentPlanSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      // 'pending'  = sale registered by a DSR, awaiting the admin's review.
-      // 'approved' = admin approved; waiting for the DSR to collect the deposit
-      //              via Paystack. Paying it activates the plan automatically.
-      // The schedule clock + overdue locking only begin once 'active'.
-      enum: ['pending', 'approved', 'active', 'completed', 'defaulted', 'repossessed'],
+      // 'pending'   = sale registered by a DSR, awaiting the admin's review.
+      // 'returned'  = admin sent it back to the DSR to correct (see review_note).
+      // 'approved'  = admin approved; waiting for the DSR to collect the deposit
+      //               via Paystack. Paying it activates the plan automatically.
+      // 'closed'    = phone released by the admin; plan ended (balance written off).
+      // 'cancelled' = customer deleted.
+      // The schedule clock + overdue locking only run while 'active'.
+      enum: ['pending', 'returned', 'approved', 'active', 'completed', 'defaulted', 'repossessed', 'closed', 'cancelled'],
       default: 'active',
+    },
+    // Admin's reason when sending a sale back for correction.
+    review_note: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    returned_at: {
+      type: Date,
+      default: null,
+    },
+    closed_at: {
+      type: Date,
+      default: null,
+    },
+    close_reason: {
+      type: String,
+      enum: [null, 'phone_released', 'customer_deleted'],
+      default: null,
+    },
+    // Unpaid balance at the moment the plan was closed/cancelled.
+    written_off: {
+      type: Number,
+      default: 0,
     },
     approved_at: {
       type: Date,

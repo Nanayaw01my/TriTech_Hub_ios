@@ -503,6 +503,28 @@ export default function StaffCustomerDetail() {
                 Once approved, you'll collect the GHS {Number(plan.down_payment).toLocaleString()} deposit here via Paystack.
                 The phone stays on "Awaiting Activation" until then.
               </p>
+              <button
+                onClick={() => navigate(`/staff/customers/${id}/edit`)}
+                className="mt-2 text-xs font-bold text-amber-800 underline underline-offset-2"
+              >
+                Spotted a mistake? Edit details
+              </button>
+            </div>
+          )}
+
+          {/* Admin sent it back — fix and resubmit */}
+          {plan.status === 'returned' && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-2xl">
+              <p className="text-sm font-bold text-red-800">↩ Sent back by the admin — please correct</p>
+              {plan.review_note && (
+                <p className="text-sm text-red-700 mt-1"><span className="font-semibold">What to fix:</span> {plan.review_note}</p>
+              )}
+              <button
+                onClick={() => navigate(`/staff/customers/${id}/edit`)}
+                className="w-full mt-3 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700"
+              >
+                Edit & resubmit
+              </button>
             </div>
           )}
 

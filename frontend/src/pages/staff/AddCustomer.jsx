@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import api from '../../api/axios'
 import CameraCapture from '../../components/CameraCapture'
 import SignaturePad from '../../components/SignaturePad'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import toast from 'react-hot-toast'
 import { addDays, addWeeks, addMonths, format } from 'date-fns'
+import { displayEmail } from '../../utils/customerEmail'
 
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || ''
 
@@ -39,6 +40,23 @@ const DURATION_OPTIONS = {
 
 const DEFAULT_DURATION = { daily: 90, weekly: 13, monthly: 12 }
 
+// Edit mode: a photo already stored for this sale. Ghana Card images are hidden
+// from DSRs for privacy, so they're marked ON_FILE instead of shown.
+const ON_FILE = 'on_file'
+const fileUrl = (p) => (!p || p === ON_FILE ? null : (p.startsWith('data:') || p.startsWith('http') ? p : `/uploads/${p.replace(/\\/g, '/').split('/').pop()}`))
+function OnFile({ value }) {
+  if (!value || (typeof value === 'string' && value.startsWith('data:'))) return null
+  if (value === ON_FILE) {
+    return <p className="text-xs text-green-700 bg-green-50 rounded-lg px-2.5 py-1.5 mb-2">✓ Already on file (hidden for privacy). Retake only if it's wrong.</p>
+  }
+  return (
+    <div className="flex items-center gap-2 mb-2">
+      <img src={fileUrl(value)} alt="" className="w-14 h-14 rounded-lg object-cover border border-gray-200" />
+      <p className="text-xs text-gray-500">Current photo — retake below to replace it.</p>
+    </div>
+  )
+}
+
 const initForm = {
   // Step 1
   full_name: '', email: '', phone: '', ghana_card_id: '', password: '', confirm_password: '', agreed: false,
@@ -54,6 +72,11 @@ const initForm = {
 
 export default function StaffAddCustomer() {
   const navigate = useNavigate()
+  // /staff/customers/:id/edit → correct a sale that's pending or was sent back.
+  const { id: editId } = useParams()
+  const editMode = !!editId
+  const [loadingSale, setLoadingSale] = useState(editMode)
+  const [reviewNote, setReviewNote] = useState('')
   const [step, setStep] = useState(1)
   const [form, setForm] = useState(initForm)
   const [errors, setErrors] = useState({})
@@ -69,14 +92,54 @@ export default function StaffAddCustomer() {
       api.get('/staff/devices').then(res => res.data?.data?.devices || res.data?.devices || []).catch(() => []),
       api.get('/staff/enrolled-stock').then(res => (res.data?.data || res.data)?.devices || []).catch(() => []),
     ])
-      .then(([cat, stock]) => {
+      .then(async ([cat, stock]) => {
         setAvailableDevices(cat)
-        setEnrolledStock(stock)
-        // Default to stock if any enrolled phones exist, else manual.
-        setSellMode(stock.length > 0 ? 'stock' : 'manual')
+        if (!editMode) {
+          setEnrolledStock(stock)
+          // Default to stock if any enrolled phones exist, else manual.
+          setSellMode(stock.length > 0 ? 'stock' : 'manual')
+          return
+        }
+        // Edit mode: load the sale and fill the form with what was submitted.
+        try {
+          const res = await api.get(`/staff/customers/${editId}`)
+          const { customer: c, plan } = res.data?.data || res.data
+          const dev = plan?.device_id || {}
+          const enrolled = !!dev?.agent?.enrolled
+          // The sale's own phone isn't "in stock" any more — keep it selectable.
+          setEnrolledStock(enrolled && !stock.some(d => d._id === dev._id) ? [{ _id: dev._id, model: dev.model, imei: dev.imei, online: true }, ...stock] : stock)
+          setSellMode(enrolled ? 'stock' : 'manual')
+          setReviewNote(plan?.review_note || '')
+          const ph = c.photos || {}
+          setForm(f => ({
+            ...f,
+            full_name: c.full_name || '', email: displayEmail(c.email), phone: c.phone || '', ghana_card_id: c.ghana_card_id || '',
+            password: '', confirm_password: '', agreed: true,
+            ghana_card_front: ON_FILE, ghana_card_back: ON_FILE,
+            customer_photo: ph.customer_photo || null, guarantor_photo: ph.guarantor_photo || null,
+            signature: ph.signature || null, proof_of_income: c.proof_of_income || null,
+            occupation: c.occupation || '', income_amount: c.income?.amount || '', income_source: c.income?.source || '',
+            region: c.location?.region || '', district: c.location?.district || '', location: c.location?.town || '',
+            landmark: c.location?.landmark || '', gps_address: c.location?.gps_address || '',
+            guarantor_name: c.guarantor?.full_name || '', guarantor_phone: c.guarantor?.phone || '',
+            guarantor_ghana_card_id: c.guarantor?.ghana_card_id || '', guarantor_relationship: c.guarantor?.relationship || '',
+            device_id: enrolled ? dev._id : '', device_model: dev.model || '', device_price: plan?.total_price || dev.price || '',
+            serial_number: dev.serial_number || '', udid: dev.udid || '',
+            down_payment: plan?.down_payment || '', payment_frequency: plan?.frequency || 'monthly', duration: plan?.total_payments || 12,
+          }))
+          if (!['pending', 'returned'].includes(plan?.status)) {
+            toast.error('This sale has already been approved and can no longer be edited.')
+            navigate(`/staff/customers/${editId}`)
+          }
+        } catch (err) {
+          toast.error(err?.response?.data?.message || 'Could not load this sale')
+          navigate('/staff/customers')
+        } finally {
+          setLoadingSale(false)
+        }
       })
       .finally(() => setDevicesLoading(false))
-  }, [])
+  }, [editId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }))
   const districts = form.region ? (GHANA_REGIONS[form.region] || []) : []
@@ -232,8 +295,24 @@ export default function StaffAddCustomer() {
   // Flow: click Register → (pre-check) → register. No money is taken here: after
   // the admin approves, the DSR collects the deposit via Paystack on the
   // customer's page, which starts the plan and unlocks the phone.
+  // Edit mode: save corrections and send the sale back to the admin's review.
+  const saveCorrections = async () => {
+    setSubmitting(true)
+    try {
+      const res = await api.put(`/staff/customers/${editId}`, buildPayload())
+      toast.success(res.data?.message || 'Corrections submitted for review.', { duration: 6000 })
+      navigate(`/staff/customers/${editId}`)
+    } catch (err) {
+      const d = err?.response?.data
+      toast.error(d?.message || d?.errors?.[0]?.msg || 'Could not save the corrections.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const handleSubmit = async () => {
     if (!validateStep(4)) return
+    if (editMode) { saveCorrections(); return }
 
     // 1. Pre-check (unique email, device, etc.) so we fail fast on bad details.
     setSubmitting(true)
@@ -274,10 +353,19 @@ export default function StaffAddCustomer() {
           </svg>
         </button>
         <div>
-          <h1 className="text-xl font-black text-gray-900">Register Customer</h1>
+          <h1 className="text-xl font-black text-gray-900">{editMode ? 'Correct Sale' : 'Register Customer'}</h1>
           <p className="text-xs text-gray-500">Step {step} of 4: {STEPS[step - 1]}</p>
         </div>
       </div>
+
+      {editMode && reviewNote && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl text-sm text-red-800">
+          <span className="font-bold">Admin's note:</span> {reviewNote}
+        </div>
+      )}
+      {editMode && loadingSale && (
+        <div className="flex justify-center py-10"><LoadingSpinner size="lg" /></div>
+      )}
 
       {/* Step Progress */}
       <div className="flex gap-1.5 mb-6">
@@ -398,6 +486,7 @@ export default function StaffAddCustomer() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <div data-error={errors.ghana_card_front}>
+              <OnFile value={form.ghana_card_front} />
               <CameraCapture
                 label="Ghana Card - Front"
                 required
@@ -407,6 +496,7 @@ export default function StaffAddCustomer() {
             </div>
 
             <div data-error={errors.ghana_card_back}>
+              <OnFile value={form.ghana_card_back} />
               <CameraCapture
                 label="Ghana Card - Back"
                 required
@@ -416,6 +506,7 @@ export default function StaffAddCustomer() {
             </div>
 
             <div data-error={errors.customer_photo}>
+              <OnFile value={form.customer_photo} />
               <CameraCapture
                 label="Customer Photo"
                 required
@@ -425,6 +516,7 @@ export default function StaffAddCustomer() {
             </div>
 
             <div data-error={errors.guarantor_photo}>
+              <OnFile value={form.guarantor_photo} />
               <CameraCapture
                 label="Guarantor Photo"
                 required
@@ -436,6 +528,7 @@ export default function StaffAddCustomer() {
 
           {/* Proof of Income - file upload */}
           <div className="mt-2 lg:col-span-2">
+            <OnFile value={form.signature} />
             <SignaturePad
               label="Customer Signature"
               required
@@ -456,7 +549,9 @@ export default function StaffAddCustomer() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-orange-600">Document uploaded</p>
+                  <p className="text-sm font-semibold text-orange-600">
+                    {String(form.proof_of_income).startsWith('data:') ? 'Document uploaded' : 'Document on file — remove to upload a new one'}
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -906,10 +1001,10 @@ export default function StaffAddCustomer() {
             {submitting ? (
               <>
                 <LoadingSpinner size="sm" color="white" />
-                Registering...
+                {editMode ? 'Saving...' : 'Registering...'}
               </>
             ) : (
-              'Register Customer ✓'
+              editMode ? 'Resubmit for review ✓' : 'Register Customer ✓'
             )}
           </button>
         )}

@@ -110,7 +110,7 @@ const enroll = async (req, res) => {
     let awaiting = !device.assigned_to;
     if (!awaiting) {
       const plan = await InstallmentPlan.findOne({ device_id: device._id }).sort({ createdAt: -1 }).lean();
-      awaiting = ['pending', 'approved'].includes(plan?.status);
+      awaiting = ['pending', 'returned', 'approved'].includes(plan?.status);
     }
     if (awaiting) {
       device.agent.desired_lock_state = 'pending_activation';

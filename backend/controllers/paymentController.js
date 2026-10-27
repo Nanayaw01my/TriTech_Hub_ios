@@ -90,7 +90,7 @@ const processSuccessfulPayment = async ({
     next_due_date: isCompleted ? plan.end_date : nextDueDate,
     // A payment on a sale still awaiting admin activation is recorded, but must
     // NOT activate the plan — only the admin's Activate does that.
-    status: isCompleted ? 'completed' : (['pending', 'approved'].includes(plan.status) ? plan.status : 'active'),
+    status: isCompleted ? 'completed' : (['pending', 'returned', 'approved'].includes(plan.status) ? plan.status : 'active'),
     schedule: scheduleUpdate,
   };
 
@@ -126,7 +126,7 @@ const processSuccessfulPayment = async ({
         total_paid: plan.total_price,
       },
     });
-  } else if (device && device.lock_status === 'locked' && !isCompleted && !['pending', 'approved'].includes(plan.status)) {
+  } else if (device && device.lock_status === 'locked' && !isCompleted && !['pending', 'returned', 'approved'].includes(plan.status)) {
     // Unlock the phone after a payment if it was locked for a late payment.
     try {
       const devDoc = await Device.findById(device._id);
@@ -145,7 +145,7 @@ const processSuccessfulPayment = async ({
     // Reactivate defaulted plan back to active
     await InstallmentPlan.findByIdAndUpdate(plan._id, { status: 'active' });
     deviceUnlocked = true;
-  } else if (device && !isCompleted && !['pending', 'approved'].includes(plan.status)) {
+  } else if (device && !isCompleted && !['pending', 'returned', 'approved'].includes(plan.status)) {
     // On-time payment (phone wasn't locked): just push the offline deadline
     // forward so the self-lock failsafe tracks the next due date.
     try {

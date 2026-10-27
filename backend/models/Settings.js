@@ -11,6 +11,9 @@ const SettingsSchema = new mongoose.Schema(
     installment_frequencies: { type: [String], default: ['daily', 'weekly', 'monthly'] },
     currency: { type: String, trim: true, default: 'GHS' },
     maintenance_mode: { type: Boolean, default: false },
+    // Company logo uploaded in Settings (shown on login, header, etc.).
+    // null = use the built-in /logo.png.
+    logo_url: { type: String, default: null },
     // Reusable token embedded in the "Stock Enrollment" QR. Scanning it on any
     // factory-reset phone enrols that phone into the unassigned stock pool.
     stock_enrollment_token: { type: String, default: null },

@@ -83,7 +83,7 @@ const getMyCustomers = async (req, res) => {
     const skip = (page - 1) * limit;
     const { search } = req.query;
 
-    const filter = { created_by: req.user._id };
+    const filter = { created_by: req.user._id, deleted_at: null };
 
     if (search) {
       const searchRegex = new RegExp(search, 'i');
@@ -597,6 +597,186 @@ const addCustomer = async (req, res) => {
  * GET /api/staff/customers/:id
  * Full customer detail for a customer created by this staff member (or admin).
  */
+/**
+ * PUT /api/staff/customers/:id
+ * Correct a sale the admin sent back ('returned') — or one still awaiting review
+ * ('pending') — and resubmit it. The DSR can change everything they entered:
+ * customer, guarantor, photos/documents, phone and plan terms. Photo fields:
+ * a new data: URL replaces the stored image; anything else keeps it.
+ */
+const updateSale = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, message: errors.array()[0].msg, errors: errors.array() });
+    }
+
+    const customer = await Customer.findOne({ _id: req.params.id, created_by: req.user._id, deleted_at: null });
+    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found or access denied.' });
+
+    const plan = await InstallmentPlan.findOne({ customer_id: customer._id }).sort({ createdAt: -1 });
+    if (!plan) return res.status(404).json({ success: false, message: 'No sale found for this customer.' });
+    if (!['returned', 'pending'].includes(plan.status)) {
+      return res.status(400).json({ success: false, message: 'This sale can no longer be edited — it has already been approved.' });
+    }
+
+    const b = req.body;
+    const user = await User.findById(customer.user_id).select('+password');
+    if (!user) return res.status(404).json({ success: false, message: 'Customer account not found.' });
+
+    // --- Validation (same rules as registration) ---
+    if (b.password && String(b.password).length > 5) {
+      return res.status(400).json({ success: false, message: 'Customer password must be between 1 and 5 characters.' });
+    }
+    if (!b.guarantor_name || !b.guarantor_phone || !b.guarantor_ghana_card_id || !b.guarantor_relationship) {
+      return res.status(400).json({ success: false, message: 'All guarantor details (name, phone, Ghana Card ID, relationship) are required.' });
+    }
+    const devicePrice = Number(b.device_price) || 0;
+    const downPayment = Number(b.down_payment) || 0;
+    if (!(downPayment > 0)) return res.status(400).json({ success: false, message: 'A deposit (down payment) is required.' });
+    if (devicePrice > 0 && downPayment >= devicePrice) {
+      return res.status(400).json({ success: false, message: 'Deposit must be less than the device price.' });
+    }
+    const cleanEmail = b.email ? String(b.email).toLowerCase().trim() : '';
+    if (cleanEmail && cleanEmail !== user.email) {
+      const taken = await User.findOne({ email: cleanEmail, _id: { $ne: user._id } });
+      if (taken) return res.status(409).json({ success: false, message: 'An account with this email already exists.' });
+    }
+
+    // --- Photos / documents: replace only the ones re-captured ---
+    const photos = { ...(customer.photos?.toObject ? customer.photos.toObject() : customer.photos || {}) };
+    for (const field of ['ghana_card_front', 'ghana_card_back', 'customer_photo', 'guarantor_photo', 'signature']) {
+      if (typeof b[field] === 'string' && b[field].startsWith('data:')) {
+        photos[field] = await saveBase64Image(b[field], field, user._id);
+      }
+    }
+    let proofOfIncome = customer.proof_of_income;
+    if (typeof b.proof_of_income === 'string' && b.proof_of_income.startsWith('data:')) {
+      proofOfIncome = await saveBase64Image(b.proof_of_income, 'proof_of_income', user._id);
+    }
+    const missingDocs = [
+      ['ghana_card_front', 'Ghana Card front'], ['ghana_card_back', 'Ghana Card back'],
+      ['customer_photo', 'customer photo'], ['guarantor_photo', 'guarantor photo'], ['signature', 'signature'],
+    ].filter(([f]) => !photos[f]).map(([, l]) => l);
+    if (!proofOfIncome) missingDocs.push('proof of income');
+    if (missingDocs.length) {
+      return res.status(400).json({ success: false, message: `Please add the ${missingDocs.join(', ')}.` });
+    }
+
+    // --- Phone (device): keep, switch to another stock phone, or edit manual details ---
+    let device = await Device.findById(plan.device_id);
+    const wantId = b.device_id ? String(b.device_id) : '';
+    const freeOldDevice = async (old) => {
+      if (!old || String(old._id) === String(device?._id)) return;
+      if (old.agent?.enrolled) {
+        old.assigned_to = null;
+        old.sold_status = 'available';
+        old.lock_status = 'unlocked';
+        old.agent.desired_lock_state = 'pending_activation';
+        old.agent.paid_until = null;
+        await old.save();
+      } else if (String(old.assigned_to) === String(customer._id)) {
+        await Device.deleteOne({ _id: old._id }); // per-sale record no longer used
+      }
+    };
+    if (wantId && wantId !== String(plan.device_id)) {
+      const picked = await Device.findById(wantId);
+      if (!picked || !picked.agent?.enrolled || picked.assigned_to) {
+        return res.status(400).json({ success: false, message: 'That phone is not available in stock. Choose another.' });
+      }
+      const old = device;
+      device = picked;
+      device.assigned_to = customer._id;
+      device.sold_status = 'sold';
+      await freeOldDevice(old);
+    } else if (!wantId && b.device_model) {
+      // Manual (not enrolled) phone.
+      if (device && !device.agent?.enrolled) {
+        device.model = b.device_model;
+      } else {
+        const old = device;
+        device = new Device({ model: b.device_model, price: devicePrice, sold_status: 'sold', assigned_to: customer._id });
+        await device.save();
+        await freeOldDevice(old);
+      }
+      const serial = b.serial_number && String(b.serial_number).trim();
+      const udid = b.udid && String(b.udid).trim();
+      if (serial !== undefined) device.serial_number = serial || undefined;
+      if (udid !== undefined) device.udid = udid || undefined;
+    }
+    if (!device) return res.status(400).json({ success: false, message: 'Please select a device.' });
+    if (devicePrice > 0) device.price = devicePrice;
+    await device.save();
+
+    // --- Plan terms (provisional schedule; the real one starts on activation) ---
+    const frequency = b.payment_frequency || b.frequency || plan.frequency || 'monthly';
+    const frequencyDefaults = { daily: 90, weekly: 13, monthly: 12 };
+    const totalPayments = Number(b.duration) > 0 ? Number(b.duration) : (frequencyDefaults[frequency] || 12);
+    const totalPrice = device.price;
+    const remaining = totalPrice - downPayment;
+    if (remaining < 0) return res.status(400).json({ success: false, message: 'Deposit cannot exceed the device price.' });
+    const installmentAmount = Math.ceil((remaining / totalPayments) * 100) / 100;
+    const startDate = new Date();
+
+    plan.device_id = device._id;
+    plan.down_payment = downPayment;
+    plan.total_price = totalPrice;
+    plan.remaining_balance = remaining;
+    plan.installment_amount = installmentAmount;
+    plan.frequency = frequency;
+    plan.total_payments = totalPayments;
+    plan.start_date = startDate;
+    plan.next_due_date = startDate;
+    plan.end_date = calculateEndDate(startDate, frequency, totalPayments);
+    plan.schedule = buildSchedule(startDate, frequency, totalPayments, installmentAmount);
+    const wasReturned = plan.status === 'returned';
+    plan.status = 'pending'; // back to the admin for review
+    await plan.save();
+
+    // --- Customer + login account ---
+    customer.full_name = String(b.full_name || customer.full_name).trim();
+    customer.email = cleanEmail || placeholderEmail(user.account_number); // blank → stand-in
+    if (b.phone) customer.phone = String(b.phone).trim();
+    if (b.ghana_card_id) customer.ghana_card_id = b.ghana_card_id;
+    customer.occupation = b.occupation;
+    customer.income = { amount: Number(b.income_amount) || 0, source: b.income_source || '' };
+    customer.location = { region: b.region, district: b.district, town: b.location, landmark: b.landmark, gps_address: b.gps_address };
+    customer.guarantor = {
+      full_name: b.guarantor_name, phone: b.guarantor_phone,
+      ghana_card_id: b.guarantor_ghana_card_id, relationship: b.guarantor_relationship,
+    };
+    customer.photos = photos;
+    customer.proof_of_income = proofOfIncome;
+    await customer.save();
+
+    user.name = customer.full_name;
+    user.email = customer.email;
+    if (b.phone) user.phone = String(b.phone).trim();
+    if (b.password) user.password = String(b.password);
+    await user.save();
+
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'customer_updated',
+      target_user_id: user._id,
+      details: { customer_id: customer._id, plan_id: plan._id, resubmitted: true, was_returned: wasReturned },
+      ip_address: req.ip,
+    }).catch(() => {});
+
+    return res.status(200).json({
+      success: true,
+      message: 'Corrections saved — the sale is back with the admin for review.',
+      data: { customer_id: customer._id, plan_id: plan._id, status: plan.status },
+    });
+  } catch (error) {
+    logger.error('updateSale error: %s', error.message);
+    if (error.code === 11000) {
+      return res.status(409).json({ success: false, message: 'Duplicate entry: email, serial number or UDID already exists.' });
+    }
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 const getCustomerDetail = async (req, res) => {
   try {
     const filter = { _id: req.params.id };
@@ -624,7 +804,7 @@ const getCustomerDetail = async (req, res) => {
 
     const [plan, payments] = await Promise.all([
       InstallmentPlan.findOne({ customer_id: customer._id })
-        .populate({ path: 'device_id', select: 'model price serial_number udid imei lock_status' })
+        .populate({ path: 'device_id', select: 'model price serial_number udid imei lock_status agent.enrolled' })
         .lean(),
       Payment.find({ customer_id: customer._id })
         .sort({ createdAt: -1 })
@@ -728,10 +908,10 @@ const recordCashPayment = async (req, res) => {
 
     const plan = await InstallmentPlan.findOne({ customer_id: customer._id }).lean();
     if (!plan) return res.status(404).json({ success: false, message: 'No installment plan for this customer.' });
-    if (plan.status === 'pending' || plan.status === 'approved') {
+    if (['pending', 'returned', 'approved'].includes(plan.status)) {
       return res.status(400).json({
         success: false,
-        message: plan.status === 'pending'
+        message: plan.status !== 'approved'
           ? 'This sale is still awaiting admin approval — no payments can be recorded yet.'
           : 'Collect the deposit through Paystack first; installments start after that.',
       });
@@ -868,7 +1048,7 @@ const getStaffStats = async (req, res) => {
     const myCustomerIds = await Customer.distinct('_id', { created_by: staffId });
 
     const [myCustomers, paymentsToday, overdue] = await Promise.all([
-      Customer.countDocuments({ created_by: staffId }),
+      Customer.countDocuments({ created_by: staffId, deleted_at: null }),
       Payment.countDocuments({
         customer_id: { $in: myCustomerIds },
         createdAt: { $gte: todayStart },
@@ -898,6 +1078,7 @@ module.exports = {
   getMyCustomers,
   precheckCustomer,
   addCustomer,
+  updateSale,
   getCustomerDetail,
   getCustomerPayments,
   makePaymentForCustomer,

@@ -7,8 +7,10 @@ import Card from '../components/Modern/Card'
 import Input from '../components/Modern/Input'
 import SwipeButton from '../components/SwipeButton'
 import { isNativeApp } from '../utils/download'
+import useLogo from '../hooks/useLogo'
 
 export default function Login() {
+  const logo = useLogo()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -139,12 +141,12 @@ export default function Login() {
         >
           {/* Logo — full, uncropped */}
           <div className="flex justify-center mb-5">
-            <div className="w-full max-w-[200px] rounded-2xl overflow-hidden border border-white/15 bg-black shadow-lg">
+            <div className="w-full max-w-[200px] rounded-2xl overflow-hidden border border-white/15 bg-white shadow-lg">
               {logoError ? (
-                <span className="block text-white text-2xl font-black text-center py-7">Dan & Dor Solar</span>
+                <span className="block text-orange-700 text-2xl font-black text-center py-7">Dan & Dor Solar</span>
               ) : (
                 <img
-                  src="/logo.png"
+                  src={logo}
                   alt="Dan & Dor Solar Company Ltd."
                   onLoad={() => setLogoLoaded(true)}
                   onError={() => setLogoError(true)}

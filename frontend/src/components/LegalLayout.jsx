@@ -1,18 +1,20 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import useLogo from '../hooks/useLogo'
 
 /**
  * Shared wrapper for public legal pages (Terms, Privacy).
  * Green & white theme to match the login screen.
  */
 export default function LegalLayout({ title, lastUpdated, children }) {
+  const logo = useLogo()
   return (
     <div className="min-h-screen bg-orange-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
           <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center shadow-lg overflow-hidden">
-            <img src="/logo.png" alt="Dan & Dor Solar" className="w-full h-full object-cover"
+            <img src={logo} alt="Dan & Dor Solar" className="w-full h-full object-cover"
                  onError={(e) => { e.currentTarget.style.display = 'none' }} />
           </div>
           <h1 className="text-2xl font-black text-gray-900">{title}</h1>
