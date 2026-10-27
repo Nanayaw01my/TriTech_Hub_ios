@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The app is designed in light colours only. Without this, a phone in dark
+   mode draws form fields black with dark text (unreadable). Fields that set
+   their own colours (e.g. the dark login form) still win — classes beat these. */
+@layer base {
+  :root { color-scheme: light; }
+  input, select, textarea {
+    background-color: #ffffff;
+    color: #111827;
+  }
+}
+
 :root {
   --color-primary: #EA580C;
   --color-primary-dark: #C2410C;
