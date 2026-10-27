@@ -535,6 +535,26 @@ const migrateEncryptionKey = async () => {
   }
 };
 
+// One-off: DSR commission per phone is GHS 85 (was a GHS 100 default). Moves
+// DSRs still on the old default; recorded so it never re-runs and a rate the
+// admin later sets deliberately is left alone.
+const migrateCommission85 = async () => {
+  try {
+    const Settings = require('./models/Settings');
+    const User = require('./models/User');
+    const s = await Settings.getSingleton();
+    if ((s.applied_migrations || []).includes('commission_85')) return;
+    const r = await User.updateMany(
+      { role: 'staff', $or: [{ commission_per_sale: 100 }, { commission_per_sale: { $exists: false } }] },
+      { $set: { commission_per_sale: 85 } }
+    );
+    await Settings.updateOne({ _id: s._id }, { $addToSet: { applied_migrations: 'commission_85' } });
+    logger.info('[migrate] DSR commission set to GHS 85 for %d staff.', r.modifiedCount || 0);
+  } catch (err) {
+    logger.warn('[migrate] Commission 85 skipped: %s', err.message);
+  }
+};
+
 const startServer = async () => {
   // Bind port FIRST so Render sees the service as alive
   app.listen(PORT, () => {
@@ -547,6 +567,7 @@ const startServer = async () => {
     await seedDatabase();
     await migrateCompanyName();
     await migrateEncryptionKey();
+    await migrateCommission85();
     startScheduler();
   } catch (error) {
     logger.error('MongoDB init failed: %s', error.message);

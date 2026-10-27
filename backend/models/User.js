@@ -64,10 +64,26 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    // DSR commission per phone sold (GHS). Also the Paystack split share paid
+    // automatically from the deposit when the DSR has payout details set up.
     commission_per_sale: {
       type: Number,
-      default: 100,
+      default: 85,
       min: 0,
+    },
+    // DSR payout details for the automatic Paystack split (admin-entered).
+    payout: {
+      method: { type: String, enum: [null, 'bank', 'mobile_money'], default: null },
+      bank_code: { type: String, trim: true, default: null },   // Paystack settlement_bank code
+      bank_name: { type: String, trim: true, default: null },
+      account_number: { type: String, trim: true, default: null },
+      account_name: { type: String, trim: true, default: null },
+      subaccount_code: { type: String, trim: true, default: null }, // ACCT_…
+      split_id: { type: String, trim: true, default: null },
+      split_code: { type: String, trim: true, default: null },      // SPL_…
+      split_share: { type: Number, default: null },                 // GHS currently set on Paystack
+      active: { type: Boolean, default: false },
+      updated_at: { type: Date, default: null },
     },
   },
   {

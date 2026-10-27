@@ -100,4 +100,68 @@ const initiateTransfer = async ({ amount, recipient, reason, reference }) => {
   return response.data;
 };
 
-module.exports = { initializePayment, verifyPayment, listTransactions, createTransferRecipient, initiateTransfer };
+// ── DSR commission splits ────────────────────────────────────────────────
+// Each DSR gets a Paystack subaccount (where their commission settles) and a
+// flat "transaction split" that sends their commission to that subaccount on
+// a deposit payment; the main account keeps the rest and bears the fees.
+
+/** Ghana banks and mobile-money providers that can receive settlements. */
+const listBanks = async () => {
+  const response = await axios.get(`${PAYSTACK_BASE_URL}/bank`, {
+    headers: getHeaders(), params: { currency: 'GHS', perPage: 200 }, timeout: 20000,
+  });
+  return (response.data?.data || []).filter((b) => b.active !== false);
+};
+
+/** Create a subaccount; returns Paystack's subaccount object (subaccount_code…). */
+const createSubaccount = async ({ business_name, settlement_bank, account_number, description }) => {
+  const response = await axios.post(
+    `${PAYSTACK_BASE_URL}/subaccount`,
+    // percentage_charge is required by the API but unused: splits set the shares.
+    { business_name, settlement_bank, account_number, percentage_charge: 0, description },
+    { headers: getHeaders(), timeout: 20000 }
+  );
+  return response.data?.data;
+};
+
+/** Change where an existing subaccount settles. */
+const updateSubaccount = async (code, { business_name, settlement_bank, account_number }) => {
+  const response = await axios.put(
+    `${PAYSTACK_BASE_URL}/subaccount/${encodeURIComponent(code)}`,
+    { business_name, settlement_bank, account_number },
+    { headers: getHeaders(), timeout: 20000 }
+  );
+  return response.data?.data;
+};
+
+/** Create a flat split: [shareGHS] to the subaccount, the rest to the main account (which pays fees). */
+const createSplit = async ({ name, subaccount, shareGHS }) => {
+  const response = await axios.post(
+    `${PAYSTACK_BASE_URL}/split`,
+    {
+      name, type: 'flat', currency: 'GHS', bearer_type: 'account',
+      subaccounts: [{ subaccount, share: Math.round(shareGHS * 100) }],
+    },
+    { headers: getHeaders(), timeout: 20000 }
+  );
+  return response.data?.data; // { id, split_code, ... }
+};
+
+/** Set (add or update) a subaccount's flat share in an existing split. */
+const setSplitShare = async ({ splitId, subaccount, shareGHS }) => {
+  const response = await axios.post(
+    `${PAYSTACK_BASE_URL}/split/${encodeURIComponent(splitId)}/subaccount/add`,
+    { subaccount, share: Math.round(shareGHS * 100) },
+    { headers: getHeaders(), timeout: 20000 }
+  );
+  return response.data?.data;
+};
+
+/** Paystack's own error message from an axios error, for showing to the admin. */
+const paystackErrorMessage = (err) =>
+  err?.response?.data?.message || err?.message || 'Paystack request failed';
+
+module.exports = {
+  initializePayment, verifyPayment, listTransactions, createTransferRecipient, initiateTransfer,
+  listBanks, createSubaccount, updateSubaccount, createSplit, setSplitShare, paystackErrorMessage,
+};

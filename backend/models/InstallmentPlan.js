@@ -141,6 +141,16 @@ const InstallmentPlanSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    // The DSR's commission was paid automatically by a Paystack split on the
+    // deposit — excluded from the manual commission payout.
+    commission_split_paid: {
+      type: Boolean,
+      default: false,
+    },
+    commission_split_amount: {
+      type: Number,
+      default: 0,
+    },
     schedule: [ScheduleItemSchema],
   },
   {

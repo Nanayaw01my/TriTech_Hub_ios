@@ -168,6 +168,16 @@ async function recordDeposit(paystackData, { recordedBy = null, ip = null } = {}
     return { ok: false, message: `Payment received but the sale was not activated: ${why} Contact the admin.` };
   }
 
+  // DSR commission paid automatically by a Paystack split on this deposit?
+  // Paystack reports the split on the transaction; metadata says which one we sent.
+  const splitInfo = paystackData.split || {};
+  const splitUsed = metadata.dsr_split_code &&
+    (splitInfo.split_code === metadata.dsr_split_code || Object.keys(splitInfo).length > 0);
+  if (splitUsed) {
+    claimed.commission_split_paid = true;
+    claimed.commission_split_amount = Number(metadata.dsr_commission) || 0;
+  }
+
   await activatePlanNow(claimed, { userId: recordedBy, ip });
   logger.info('[deposit] Plan %s activated by deposit %s (GH₵%s)', plan._id, reference, amountGHS);
   return { ok: true, activated: true, message: 'Deposit received — the sale is active and the phone is unlocking.' };

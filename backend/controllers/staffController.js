@@ -812,10 +812,21 @@ const getCustomerDetail = async (req, res) => {
         .lean(),
     ]);
 
+    // The DSR's automatic commission split, applied when they collect the
+    // deposit (only if it's set up and smaller than the deposit).
+    let deposit_split = null;
+    if (req.user.role === 'staff' && plan?.status === 'approved' && !plan.down_payment_paid) {
+      const me = await User.findById(req.user._id).select('payout commission_per_sale').lean();
+      const share = Number(me?.payout?.split_share) || 0;
+      if (me?.payout?.active && me.payout.split_code && share > 0 && share < Number(plan.down_payment)) {
+        deposit_split = { split_code: me.payout.split_code, share };
+      }
+    }
+
     return res.status(200).json({
       success: true,
       message: 'Customer detail retrieved.',
-      data: { customer, plan, payments },
+      data: { customer, plan, payments, deposit_split },
     });
   } catch (error) {
     logger.error('Staff getCustomerDetail error:', error);

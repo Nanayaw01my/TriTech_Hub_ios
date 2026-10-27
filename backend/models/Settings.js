@@ -14,6 +14,8 @@ const SettingsSchema = new mongoose.Schema(
     // Company logo uploaded in Settings (shown on login, header, etc.).
     // null = use the built-in /logo.png.
     logo_url: { type: String, default: null },
+    // Names of one-off data migrations already applied (so they never re-run).
+    applied_migrations: { type: [String], default: [] },
     // Reusable token embedded in the "Stock Enrollment" QR. Scanning it on any
     // factory-reset phone enrols that phone into the unassigned stock pool.
     stock_enrollment_token: { type: String, default: null },

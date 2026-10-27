@@ -319,6 +319,7 @@ export default function StaffCustomerDetail() {
   const [defaultPayAmount, setDefaultPayAmount] = useState(null)
   const [imageModal, setImageModal] = useState(null)
   const [depositBusy, setDepositBusy] = useState(false)
+  const [depositSplit, setDepositSplit] = useState(null) // DSR's automatic commission split
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -328,6 +329,7 @@ export default function StaffCustomerDetail() {
       setCustomer(d?.customer || d)
       if (d?.plan) setPlan(d.plan)
       if (Array.isArray(d?.payments)) setPayments(d.payments)
+      setDepositSplit(d?.deposit_split || null)
     } catch (err) {
       toast.error('Failed to load customer')
       navigate('/staff/customers')
@@ -364,8 +366,11 @@ export default function StaffCustomerDetail() {
         currency: 'GHS',
         channels: ['mobile_money', 'card'],
         label: customer.full_name,
+        // The DSR's commission is paid straight to them from this deposit.
+        ...(depositSplit ? { split_code: depositSplit.split_code } : {}),
         metadata: {
           type: 'down_payment',
+          ...(depositSplit ? { dsr_split_code: depositSplit.split_code, dsr_commission: depositSplit.share } : {}),
           customer_id: customer._id,
           plan_id: plan._id || plan.id,
           is_staff_initiated: true,
@@ -536,6 +541,11 @@ export default function StaffCustomerDetail() {
                 <p className="text-xs text-blue-700 mt-0.5">
                   Collect the deposit now. As soon as Paystack confirms it, the plan starts and the customer's phone unlocks.
                 </p>
+                {depositSplit && (
+                  <p className="text-xs font-semibold text-green-700 mt-1">
+                    💰 Your GHS {Number(depositSplit.share).toLocaleString()} commission is paid to you automatically from this deposit.
+                  </p>
+                )}
               </div>
               <button
                 onClick={handleCollectDeposit}

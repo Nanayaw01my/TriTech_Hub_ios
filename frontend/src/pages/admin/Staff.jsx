@@ -18,6 +18,7 @@ export default function AdminStaff() {
   const [addLoading, setAddLoading] = useState(false)
   const [deleteModal, setDeleteModal] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [payoutFor, setPayoutFor] = useState(null) // DSR whose payout details are being edited
   const [form, setForm] = useState({ name: '', email: '', phone: '', branch: '', password: '' })
   const [errors, setErrors] = useState({})
 
@@ -214,10 +215,23 @@ export default function AdminStaff() {
                       {s.customers_count !== undefined && (
                         <span className="text-xs text-gray-400">{s.customers_count} customers</span>
                       )}
+                      {s.payout?.active ? (
+                        <span className="text-xs bg-green-50 text-green-700 font-semibold px-2 py-0.5 rounded-lg">
+                          Auto-split ✓ GHS {s.payout.split_share ?? s.commission_per_sale ?? 85} → {s.payout.bank_name} …{String(s.payout.account_number || '').slice(-4)}
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-lg">No payout set</span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {s.phone && <p className="text-xs text-gray-400 hidden sm:block">{s.phone}</p>}
+                    <button
+                      onClick={() => setPayoutFor(s)}
+                      className="px-3 py-1.5 text-xs font-bold text-orange-600 border border-orange-200 rounded-xl hover:bg-orange-50"
+                    >
+                      Payout
+                    </button>
                     <button
                       onClick={() => setDeleteModal(s)}
                       className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
@@ -265,6 +279,7 @@ export default function AdminStaff() {
               <div className="bg-white rounded-2xl p-4 shadow-card">
                 <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Commission Due</p>
                 <p className="text-3xl font-black text-orange-600 mt-1">GHS {totalCommission.toLocaleString()}</p>
+                <p className="text-[11px] text-gray-400 mt-1">Sales whose deposit already paid the DSR by auto-split aren't counted here.</p>
                 <p className="text-xs text-gray-400 mt-0.5">Total owed to staff</p>
               </div>
             </div>
@@ -337,6 +352,14 @@ export default function AdminStaff() {
             </div>
           )}
         </>
+      )}
+
+      {payoutFor && (
+        <PayoutModal
+          staff={payoutFor}
+          onClose={() => setPayoutFor(null)}
+          onSaved={() => { setPayoutFor(null); fetchStaff() }}
+        />
       )}
 
       {/* Add Staff Modal */}
@@ -474,6 +497,116 @@ export default function AdminStaff() {
         loading={deleteLoading}
       />
       </div>{/* end max-w-4xl */}
+    </div>
+  )
+}
+
+// Admin enters where a DSR's commission should be paid. Saving creates (or
+// updates) their Paystack subaccount and split, so their commission is paid
+// automatically from every deposit they collect.
+function PayoutModal({ staff, onClose, onSaved }) {
+  const p = staff.payout || {}
+  const [banks, setBanks] = useState([])
+  const [banksLoading, setBanksLoading] = useState(true)
+  const [method, setMethod] = useState(p.method || 'mobile_money')
+  const [bankCode, setBankCode] = useState(p.bank_code || '')
+  const [accountNumber, setAccountNumber] = useState(p.account_number || '')
+  const [accountName, setAccountName] = useState(p.account_name || staff.name || '')
+  const [saving, setSaving] = useState(false)
+  const share = p.split_share ?? staff.commission_per_sale ?? 85
+
+  useEffect(() => {
+    api.get('/admin/paystack/banks')
+      .then((res) => setBanks(res.data?.data?.banks || []))
+      .catch((err) => toast.error(err?.response?.data?.message || 'Could not load banks from Paystack'))
+      .finally(() => setBanksLoading(false))
+  }, [])
+
+  const options = banks.filter((b) => b.type === method)
+
+  const save = async () => {
+    if (!bankCode || !accountNumber.trim() || !accountName.trim()) {
+      toast.error('Fill in all the payout details.')
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await api.put(`/admin/staff/${staff._id || staff.id}/payout`, {
+        bank_code: bankCode, account_number: accountNumber.trim(), account_name: accountName.trim(),
+      })
+      toast.success(res.data?.message || 'Payout saved.', { duration: 6000 })
+      onSaved()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not save the payout details.', { duration: 8000 })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const turnOff = async () => {
+    setSaving(true)
+    try {
+      const res = await api.delete(`/admin/staff/${staff._id || staff.id}/payout`)
+      toast.success(res.data?.message || 'Automatic split turned off.')
+      onSaved()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not turn it off.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const field = 'w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400'
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => !saving && onClose()} />
+      <div className="relative bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 max-h-[92vh] overflow-y-auto">
+        <h2 className="text-lg font-bold text-gray-900">Payout — {staff.name}</h2>
+        <p className="text-sm text-gray-500 mt-1">
+          GHS {share} per phone is paid to {staff.name} automatically from each deposit they collect.
+          Change the amount in <span className="font-semibold">Sales &amp; Commission</span>.
+        </p>
+
+        <div className="flex gap-2 mt-5">
+          {[['mobile_money', 'Mobile Money'], ['bank', 'Bank account']].map(([id, label]) => (
+            <button key={id} type="button" onClick={() => { setMethod(id); setBankCode('') }}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 ${method === id ? 'border-orange-500 bg-orange-50 text-orange-600' : 'border-gray-200 text-gray-600'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <label className="block text-sm font-semibold text-gray-700 mt-4 mb-1.5">{method === 'mobile_money' ? 'Network' : 'Bank'}</label>
+        <select value={bankCode} onChange={(e) => setBankCode(e.target.value)} className={field} disabled={banksLoading}>
+          <option value="">{banksLoading ? 'Loading from Paystack…' : options.length ? 'Choose…' : 'None available'}</option>
+          {options.map((b) => <option key={b.code} value={b.code}>{b.name}</option>)}
+        </select>
+        {!banksLoading && method === 'mobile_money' && options.length === 0 && (
+          <p className="text-xs text-amber-700 mt-1">Paystack doesn't list Mobile Money for payouts on your account — use a bank account.</p>
+        )}
+
+        <label className="block text-sm font-semibold text-gray-700 mt-4 mb-1.5">{method === 'mobile_money' ? 'MoMo number' : 'Account number'}</label>
+        <input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} inputMode="numeric"
+          placeholder={method === 'mobile_money' ? '024 000 0000' : 'Account number'} className={field} />
+
+        <label className="block text-sm font-semibold text-gray-700 mt-4 mb-1.5">Account name</label>
+        <input value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="Name on the account" className={field} />
+
+        <div className="flex gap-3 mt-6">
+          <button type="button" onClick={onClose} disabled={saving}
+            className="flex-1 py-3 rounded-xl border-2 border-gray-200 font-semibold text-gray-700">Cancel</button>
+          <button type="button" onClick={save} disabled={saving}
+            className="flex-1 py-3 rounded-xl bg-orange-600 text-white font-bold disabled:opacity-60">
+            {saving ? 'Saving…' : p.active ? 'Update' : 'Save & activate'}
+          </button>
+        </div>
+        {p.active && (
+          <button type="button" onClick={turnOff} disabled={saving}
+            className="w-full mt-3 text-sm font-semibold text-gray-500 hover:text-red-600">
+            Turn off automatic split
+          </button>
+        )}
+      </div>
     </div>
   )
 }

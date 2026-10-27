@@ -10,7 +10,10 @@ const LocationPing = require('../models/LocationPing');
 const Settings = require('../models/Settings');
 const crypto = require('crypto');
 const CommissionPayout = require('../models/CommissionPayout');
-const { createTransferRecipient, initiateTransfer } = require('../utils/paystack');
+const {
+  createTransferRecipient, initiateTransfer,
+  listBanks, createSubaccount, updateSubaccount, createSplit, setSplitShare, paystackErrorMessage,
+} = require('../utils/paystack');
 const { generateStaffId } = require('../utils/accountGenerator');
 const { sendSMS, sendPaymentReminderSMS, sendDeviceLockedSMS, sendDeviceUnlockedSMS, sendDeviceLockedWhatsApp, sendDeviceUnlockedWhatsApp } = require('../utils/sms');
 const { sendLockNotificationEmail, sendDeviceUnlockedEmail } = require('../utils/email');
@@ -1718,17 +1721,17 @@ const getStaffSales = async (req, res) => {
         // Commission is earned on ACTIVATED sales (admin-approved), not on raw
         // registrations. Count activated installment plans by this DSR.
         const [totalSales, periodSales] = await Promise.all([
-          InstallmentPlan.countDocuments({ created_by: s._id, status: { $nin: ['pending', 'returned', 'approved', 'cancelled'] } }),
+          InstallmentPlan.countDocuments({ created_by: s._id, status: { $nin: ['pending', 'returned', 'approved', 'cancelled'] }, commission_split_paid: { $ne: true } }),
           InstallmentPlan.countDocuments({
             created_by: s._id,
-            status: { $nin: ['pending', 'returned', 'approved', 'cancelled'] },
+            status: { $nin: ['pending', 'returned', 'approved', 'cancelled'] }, commission_split_paid: { $ne: true },
             $or: [
               { activated_at: { $gte: periodStart } },
               { activated_at: null, createdAt: { $gte: periodStart } },
             ],
           }),
         ]);
-        const rate = s.commission_per_sale || 100;
+        const rate = s.commission_per_sale || 85;
         return {
           _id: s._id,
           name: s.name,
@@ -1762,8 +1765,23 @@ const updateStaffCommissionRate = async (req, res) => {
       { _id: id, role: 'staff' },
       { commission_per_sale: rate },
       { new: true }
-    ).select('name email staff_id commission_per_sale');
+    ).select('name email staff_id commission_per_sale payout');
     if (!user) return res.status(404).json({ success: false, message: 'Staff not found.' });
+
+    // Keep their automatic Paystack split paying the new amount.
+    if (user.payout?.active && user.payout.split_id && user.payout.split_share !== rate) {
+      try {
+        await setSplitShare({ splitId: user.payout.split_id, subaccount: user.payout.subaccount_code, shareGHS: rate });
+        user.payout.split_share = rate;
+        user.payout.updated_at = new Date();
+        await user.save();
+      } catch (err) {
+        return res.status(200).json({
+          success: true, data: { user },
+          message: `Rate saved, but Paystack could not update their split: ${paystackErrorMessage(err)}. Re-save their payout details to retry.`,
+        });
+      }
+    }
     return res.status(200).json({ success: true, data: { user }, message: 'Commission rate updated.' });
   } catch (error) {
     logger.error('Admin updateStaffCommissionRate error:', error);
@@ -2495,6 +2513,136 @@ const repossessDevice = async (req, res) => {
   }
 };
 
+// ─── DSR PAYOUT (automatic Paystack split) ───────────────────────────────────
+
+let _banksCache = { at: 0, list: [] };
+
+/**
+ * GET /api/admin/paystack/banks
+ * Ghana banks and mobile-money providers a DSR's commission can settle to.
+ */
+const getPaystackBanks = async (req, res) => {
+  try {
+    if (Date.now() - _banksCache.at > 60 * 60 * 1000 || !_banksCache.list.length) {
+      const banks = await listBanks();
+      _banksCache = {
+        at: Date.now(),
+        list: banks.map((b) => ({ code: b.code, name: b.name, type: b.type === 'mobile_money' ? 'mobile_money' : 'bank' })),
+      };
+    }
+    return res.status(200).json({ success: true, data: { banks: _banksCache.list } });
+  } catch (err) {
+    logger.error('getPaystackBanks error: %s', paystackErrorMessage(err));
+    return res.status(502).json({ success: false, message: `Could not load banks from Paystack: ${paystackErrorMessage(err)}` });
+  }
+};
+
+/**
+ * PUT /api/admin/staff/:id/payout   body: { bank_code, account_number, account_name }
+ * Save a DSR's payout details and set up (or update) their Paystack
+ * subaccount + flat split, so their commission is paid automatically from
+ * each deposit they collect.
+ */
+const setStaffPayout = async (req, res) => {
+  try {
+    const staff = await User.findOne({ _id: req.params.id, role: 'staff' });
+    if (!staff) return res.status(404).json({ success: false, message: 'Staff member not found.' });
+
+    const bankCode = String(req.body.bank_code || '').trim();
+    const accountNumber = String(req.body.account_number || '').replace(/\s+/g, '');
+    const accountName = String(req.body.account_name || '').trim();
+    if (!bankCode || !accountNumber || !accountName) {
+      return res.status(400).json({ success: false, message: 'Choose the bank or network, and enter the account number and name.' });
+    }
+
+    if (!_banksCache.list.length) {
+      try { _banksCache = { at: Date.now(), list: (await listBanks()).map((b) => ({ code: b.code, name: b.name, type: b.type === 'mobile_money' ? 'mobile_money' : 'bank' })) }; } catch { /* validated by Paystack below */ }
+    }
+    const bank = _banksCache.list.find((b) => b.code === bankCode);
+    const share = Number(staff.commission_per_sale) || 85;
+    const label = `${staff.name}${staff.staff_id ? ` (${staff.staff_id})` : ''}`;
+    const p = staff.payout || {};
+
+    let subaccountCode = p.subaccount_code;
+    let splitId = p.split_id;
+    let splitCode = p.split_code;
+    try {
+      const details = { business_name: label, settlement_bank: bankCode, account_number: accountNumber };
+      if (subaccountCode) {
+        await updateSubaccount(subaccountCode, details);
+      } else {
+        const sub = await createSubaccount({ ...details, description: `DSR commission — ${label}` });
+        subaccountCode = sub?.subaccount_code;
+        if (!subaccountCode) throw new Error('Paystack did not return a subaccount code');
+      }
+      if (!splitId) {
+        const split = await createSplit({ name: `DSR commission — ${label}`, subaccount: subaccountCode, shareGHS: share });
+        splitId = String(split?.id || '');
+        splitCode = split?.split_code;
+        if (!splitCode) throw new Error('Paystack did not return a split code');
+      } else if (p.split_share !== share) {
+        await setSplitShare({ splitId, subaccount: subaccountCode, shareGHS: share });
+      }
+    } catch (err) {
+      logger.error('setStaffPayout Paystack error for %s: %s', staff._id, paystackErrorMessage(err));
+      return res.status(400).json({ success: false, message: `Paystack: ${paystackErrorMessage(err)}` });
+    }
+
+    staff.payout = {
+      method: bank?.type || p.method || null,
+      bank_code: bankCode,
+      bank_name: bank?.name || p.bank_name || bankCode,
+      account_number: accountNumber,
+      account_name: accountName,
+      subaccount_code: subaccountCode,
+      split_id: splitId,
+      split_code: splitCode,
+      split_share: share,
+      active: true,
+      updated_at: new Date(),
+    };
+    await staff.save();
+
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'staff_updated',
+      target_user_id: staff._id,
+      details: { payout_set: true, bank_code: bankCode, subaccount_code: subaccountCode, split_code: splitCode, share },
+      ip_address: req.ip,
+    }).catch(() => {});
+
+    return res.status(200).json({
+      success: true,
+      message: `Split active: ${staff.name} gets GHS ${share} automatically from each deposit they collect.`,
+      data: { payout: staff.payout },
+    });
+  } catch (error) {
+    logger.error('setStaffPayout error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * DELETE /api/admin/staff/:id/payout
+ * Stop the automatic split for a DSR (their commission goes back to the
+ * manual payout). Paystack records are kept so it can be re-enabled.
+ */
+const removeStaffPayout = async (req, res) => {
+  try {
+    const staff = await User.findOne({ _id: req.params.id, role: 'staff' });
+    if (!staff) return res.status(404).json({ success: false, message: 'Staff member not found.' });
+    if (staff.payout) {
+      staff.payout.active = false;
+      staff.payout.updated_at = new Date();
+      await staff.save();
+    }
+    return res.status(200).json({ success: true, message: 'Automatic split turned off — commission goes back to manual payout.' });
+  } catch (error) {
+    logger.error('removeStaffPayout error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── STAFF COMMISSIONS ───────────────────────────────────────────────────────
 // Commission = (phones a staff sold − phones already paid for) × rate per phone.
 
@@ -2504,9 +2652,9 @@ const getCommissions = async (req, res) => {
       .select('name staff_id phone email commission_per_sale').lean();
 
     const rows = await Promise.all(staff.map(async (s) => {
-      const rate = Number(s.commission_per_sale) || 100;
+      const rate = Number(s.commission_per_sale) || 85;
       // Only activated (approved) sales count toward commission.
-      const totalSales = await InstallmentPlan.countDocuments({ created_by: s._id, status: { $nin: ['pending', 'returned', 'approved', 'cancelled'] } });
+      const totalSales = await InstallmentPlan.countDocuments({ created_by: s._id, status: { $nin: ['pending', 'returned', 'approved', 'cancelled'] }, commission_split_paid: { $ne: true } });
       const paidAgg = await CommissionPayout.aggregate([
         { $match: { staff_id: s._id, status: 'success' } },
         { $group: { _id: null, paidCount: { $sum: '$sales_count' }, paidAmount: { $sum: '$amount' } } },
@@ -2547,10 +2695,10 @@ const payCommission = async (req, res) => {
     const staff = await User.findOne({ _id: staffId, role: 'staff' }).select('name staff_id commission_per_sale');
     if (!staff) return res.status(404).json({ success: false, message: 'Staff member not found.' });
 
-    const rate = Number(staff.commission_per_sale) || 100;
+    const rate = Number(staff.commission_per_sale) || 85;
 
     // Only activated (approved) sales count toward commission.
-    const totalSales = await InstallmentPlan.countDocuments({ created_by: staff._id, status: { $nin: ['pending', 'returned', 'approved', 'cancelled'] } });
+    const totalSales = await InstallmentPlan.countDocuments({ created_by: staff._id, status: { $nin: ['pending', 'returned', 'approved', 'cancelled'] }, commission_split_paid: { $ne: true } });
     const paidAgg = await CommissionPayout.aggregate([
       { $match: { staff_id: staff._id, status: 'success' } },
       { $group: { _id: null, paidCount: { $sum: '$sales_count' } } },
@@ -2668,6 +2816,9 @@ module.exports = {
   releaseCustomerDevice,
   getPendingActivations,
   approvePlan,
+  getPaystackBanks,
+  setStaffPayout,
+  removeStaffPayout,
   returnPlan,
   unenrollDevice,
   returnDeviceToStock,
