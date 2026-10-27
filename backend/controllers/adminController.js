@@ -401,7 +401,19 @@ const addStaff = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Validation failed', errors: errors.array() });
     }
 
-    const { name, email, password, phone, branch } = req.body;
+    const { name, email, password, phone, branch, ghana_card_id } = req.body;
+
+    // Ghana Card details + photos are required for every staff member.
+    const isImage = (v) => typeof v === 'string' && v.startsWith('data:');
+    const missing = [
+      ['ghana_card_front', 'Ghana Card front photo'],
+      ['ghana_card_back', 'Ghana Card back photo'],
+      ['photo', 'staff photo'],
+    ].filter(([f]) => !isImage(req.body[f])).map(([, l]) => l);
+    if (!ghana_card_id || !String(ghana_card_id).trim()) missing.unshift('Ghana Card number');
+    if (missing.length) {
+      return res.status(400).json({ success: false, message: `Please add the ${missing.join(', ')}.` });
+    }
 
     // Check if email already exists
     const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
@@ -411,6 +423,17 @@ const addStaff = async (req, res) => {
 
     const staffId = await generateStaffId();
 
+    // Upload the ID photos first — if that fails, nothing is created.
+    const folder = `dandorsolar/staff/${staffId}`;
+    const [front, back, photo] = await Promise.all([
+      uploadBase64(req.body.ghana_card_front, folder),
+      uploadBase64(req.body.ghana_card_back, folder),
+      uploadBase64(req.body.photo, folder),
+    ]);
+    if (!front || !back || !photo) {
+      return res.status(502).json({ success: false, message: 'Could not upload the photos. Check your connection and try again.' });
+    }
+
     const newStaff = await User.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
@@ -419,6 +442,12 @@ const addStaff = async (req, res) => {
       branch: branch?.trim() || null,
       role: 'staff',
       staff_id: staffId,
+      identity: {
+        ghana_card_id: String(ghana_card_id).trim().toUpperCase(),
+        ghana_card_front: front,
+        ghana_card_back: back,
+        photo,
+      },
     });
 
     await AuditLog.create({
@@ -2561,6 +2590,42 @@ const repossessDevice = async (req, res) => {
   }
 };
 
+/**
+ * PUT /api/admin/staff/:id/identity
+ * Add or replace a staff member's Ghana Card number and photos (for staff
+ * registered before these were required). Photo fields: a new data: URL
+ * replaces the stored image; omitted fields are kept.
+ */
+const updateStaffIdentity = async (req, res) => {
+  try {
+    const staff = await User.findOne({ _id: req.params.id, role: 'staff' });
+    if (!staff) return res.status(404).json({ success: false, message: 'Staff member not found.' });
+    const id = { ...(staff.identity?.toObject ? staff.identity.toObject() : staff.identity || {}) };
+    if (req.body.ghana_card_id !== undefined && String(req.body.ghana_card_id).trim()) {
+      id.ghana_card_id = String(req.body.ghana_card_id).trim().toUpperCase();
+    }
+    const folder = `dandorsolar/staff/${staff.staff_id || staff._id}`;
+    for (const f of ['ghana_card_front', 'ghana_card_back', 'photo']) {
+      if (typeof req.body[f] === 'string' && req.body[f].startsWith('data:')) {
+        const url = await uploadBase64(req.body[f], folder);
+        if (!url) return res.status(502).json({ success: false, message: 'Could not upload the photo. Try again.' });
+        id[f] = url;
+      }
+    }
+    staff.identity = id;
+    await staff.save();
+    await AuditLog.create({
+      user_id: req.user._id, action: 'staff_updated', target_user_id: staff._id,
+      details: { identity_updated: true }, ip_address: req.ip,
+    }).catch(() => {});
+    const fresh = await User.findById(staff._id).select('identity').lean();
+    return res.status(200).json({ success: true, message: 'ID details saved.', data: { identity: fresh.identity } });
+  } catch (error) {
+    logger.error('updateStaffIdentity error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── DSR PAYOUT (automatic Paystack split) ───────────────────────────────────
 
 let _banksCache = { at: 0, list: [] };
@@ -2864,6 +2929,7 @@ module.exports = {
   releaseCustomerDevice,
   getPendingActivations,
   approvePlan,
+  updateStaffIdentity,
   assignStock,
   getPaystackBanks,
   setStaffPayout,

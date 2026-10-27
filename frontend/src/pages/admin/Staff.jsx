@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import api from '../../api/axios'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import ConfirmModal from '../../components/ConfirmModal'
+import CameraCapture from '../../components/CameraCapture'
 import toast from 'react-hot-toast'
 
 const PERIODS = [
@@ -19,7 +20,8 @@ export default function AdminStaff() {
   const [deleteModal, setDeleteModal] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [payoutFor, setPayoutFor] = useState(null) // DSR whose payout details are being edited
-  const [form, setForm] = useState({ name: '', email: '', phone: '', branch: '', password: '' })
+  const [idFor, setIdFor] = useState(null) // staff whose Ghana Card / photo is being viewed
+  const [form, setForm] = useState({ name: '', email: '', phone: '', branch: '', password: '', ghana_card_id: '', ghana_card_front: null, ghana_card_back: null, photo: null })
   const [errors, setErrors] = useState({})
 
   // Commission tab state
@@ -65,6 +67,10 @@ export default function AdminStaff() {
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Valid email required'
     if (!form.phone.trim()) e.phone = 'Phone is required'
     if (!form.password || form.password.length < 6) e.password = 'Password must be at least 6 characters'
+    if (!form.ghana_card_id.trim()) e.ghana_card_id = 'Ghana Card number is required'
+    if (!form.photo) e.photo = 'Take or upload a photo of the staff member'
+    if (!form.ghana_card_front) e.ghana_card_front = 'Ghana Card front photo is required'
+    if (!form.ghana_card_back) e.ghana_card_back = 'Ghana Card back photo is required'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -77,7 +83,7 @@ export default function AdminStaff() {
       await api.post('/admin/staff', form)
       toast.success('Staff member added successfully!')
       setShowAddModal(false)
-      setForm({ name: '', email: '', phone: '', branch: '', password: '' })
+      setForm({ name: '', email: '', phone: '', branch: '', password: '', ghana_card_id: '', ghana_card_front: null, ghana_card_back: null, photo: null })
       setErrors({})
       fetchStaff()
     } catch (err) {
@@ -197,11 +203,15 @@ export default function AdminStaff() {
             <div className="bg-white rounded-2xl shadow-card divide-y divide-gray-50">
               {staff.map((s) => (
                 <div key={s._id || s.id} className="flex items-center gap-3 px-4 py-4">
-                  <div className="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <span className="text-blue-700 font-bold">
-                      {(s.full_name || s.name || 'S').charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+                  {s.identity?.photo ? (
+                    <img src={s.identity.photo} alt="" className="w-11 h-11 rounded-full object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <span className="text-blue-700 font-bold">
+                        {(s.full_name || s.name || 'S').charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 text-sm">{s.full_name || s.name}</p>
                     <p className="text-xs text-gray-500 truncate">{s.email}</p>
@@ -226,6 +236,13 @@ export default function AdminStaff() {
                   </div>
                   <div className="flex items-center gap-2">
                     {s.phone && <p className="text-xs text-gray-400 hidden sm:block">{s.phone}</p>}
+                    <button
+                      onClick={() => setIdFor(s)}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl border ${s.identity?.ghana_card_front ? 'text-gray-600 border-gray-200 hover:bg-gray-50' : 'text-red-600 border-red-200 hover:bg-red-50'}`}
+                      title={s.identity?.ghana_card_front ? 'Ghana Card details' : 'Ghana Card details missing'}
+                    >
+                      ID{s.identity?.ghana_card_front ? '' : ' !'}
+                    </button>
                     <button
                       onClick={() => setPayoutFor(s)}
                       className="px-3 py-1.5 text-xs font-bold text-orange-600 border border-orange-200 rounded-xl hover:bg-orange-50"
@@ -354,6 +371,14 @@ export default function AdminStaff() {
         </>
       )}
 
+      {idFor && (
+        <IdentityModal
+          staff={idFor}
+          onClose={() => setIdFor(null)}
+          onSaved={() => { setIdFor(null); fetchStaff() }}
+        />
+      )}
+
       {payoutFor && (
         <PayoutModal
           staff={payoutFor}
@@ -413,6 +438,27 @@ export default function AdminStaff() {
                 />
                 {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
               </div>
+
+              <div className="pt-2 border-t border-gray-100">
+                <p className="text-sm font-bold text-gray-800 mb-3">Identity (Ghana Card)</p>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Ghana Card number</label>
+                <input
+                  type="text"
+                  value={form.ghana_card_id}
+                  onChange={(e) => setForm(f => ({ ...f, ghana_card_id: e.target.value.toUpperCase() }))}
+                  placeholder="GHA-000000000-0"
+                  autoCapitalize="characters"
+                  className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-orange-500
+                    ${errors.ghana_card_id ? 'border-red-400' : 'border-gray-200'}`}
+                />
+                {errors.ghana_card_id && <p className="text-xs text-red-500 mt-1">{errors.ghana_card_id}</p>}
+              </div>
+              {[['photo', 'Staff photo'], ['ghana_card_front', 'Ghana Card — front'], ['ghana_card_back', 'Ghana Card — back']].map(([key, label]) => (
+                <div key={key}>
+                  <CameraCapture label={label} required onCapture={(img) => setForm(f => ({ ...f, [key]: img }))} />
+                  {errors[key] && <p className="text-xs text-red-500 mt-1">{errors[key]}</p>}
+                </div>
+              ))}
 
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowAddModal(false)}
@@ -607,6 +653,95 @@ function PayoutModal({ staff, onClose, onSaved }) {
           </button>
         )}
       </div>
+    </div>
+  )
+}
+
+// Shows a staff member's Ghana Card details and photos; lets the admin add or
+// replace them (e.g. for staff registered before ID photos were required).
+function IdentityModal({ staff, onClose, onSaved }) {
+  const id = staff.identity || {}
+  const [cardId, setCardId] = useState(id.ghana_card_id || '')
+  const [imgs, setImgs] = useState({})
+  const [editing, setEditing] = useState(!id.ghana_card_front)
+  const [zoom, setZoom] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const items = [['photo', 'Staff photo'], ['ghana_card_front', 'Ghana Card — front'], ['ghana_card_back', 'Ghana Card — back']]
+
+  const save = async () => {
+    const missing = items.filter(([k]) => !id[k] && !imgs[k]).map(([, l]) => l)
+    if (!cardId.trim()) missing.unshift('Ghana Card number')
+    if (missing.length) { toast.error(`Please add the ${missing.join(', ')}.`); return }
+    setSaving(true)
+    try {
+      await api.put(`/admin/staff/${staff._id || staff.id}/identity`, { ghana_card_id: cardId.trim(), ...imgs })
+      toast.success('ID details saved.')
+      onSaved()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not save the ID details.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => !saving && onClose()} />
+      <div className="relative bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 max-h-[92vh] overflow-y-auto">
+        <h2 className="text-lg font-bold text-gray-900">ID — {staff.name}</h2>
+        <p className="text-sm text-gray-500 mt-1">{staff.staff_id || ''}</p>
+
+        {!editing ? (
+          <>
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mt-4">Ghana Card number</p>
+            <p className="font-mono font-semibold text-gray-900">{id.ghana_card_id || '—'}</p>
+            <div className="grid grid-cols-3 gap-2 mt-4">
+              {items.map(([k, label]) => (
+                <div key={k}>
+                  <p className="text-[11px] font-semibold text-gray-500 mb-1">{label}</p>
+                  {id[k] ? (
+                    <button onClick={() => setZoom(id[k])} className="block w-full">
+                      <img src={id[k]} alt={label} className="h-24 w-full object-cover rounded-xl border border-gray-100" />
+                    </button>
+                  ) : (
+                    <div className="h-24 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center text-xs font-semibold text-red-600">Missing</div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={onClose} className="flex-1 py-3 rounded-xl border-2 border-gray-200 font-semibold text-gray-700">Close</button>
+              <button onClick={() => setEditing(true)} className="flex-1 py-3 rounded-xl bg-orange-600 text-white font-bold">Update</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <label className="block text-sm font-semibold text-gray-700 mt-4 mb-1.5">Ghana Card number</label>
+            <input value={cardId} onChange={(e) => setCardId(e.target.value.toUpperCase())} placeholder="GHA-000000000-0"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-orange-500" />
+            <div className="space-y-3 mt-4">
+              {items.map(([k, label]) => (
+                <div key={k}>
+                  {id[k] && !imgs[k] && <p className="text-xs text-gray-500 mb-1">Current photo kept unless you retake it.</p>}
+                  <CameraCapture label={label} required={!id[k]} onCapture={(img) => setImgs((p) => ({ ...p, [k]: img }))} />
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => (id.ghana_card_front ? setEditing(false) : onClose())} disabled={saving}
+                className="flex-1 py-3 rounded-xl border-2 border-gray-200 font-semibold text-gray-700">Cancel</button>
+              <button onClick={save} disabled={saving} className="flex-1 py-3 rounded-xl bg-orange-600 text-white font-bold disabled:opacity-60">
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+      {zoom && (
+        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setZoom(null)}>
+          <img src={zoom} alt="" className="max-w-full max-h-full rounded-xl" />
+        </div>
+      )}
     </div>
   )
 }

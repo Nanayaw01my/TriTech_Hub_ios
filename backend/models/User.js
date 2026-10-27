@@ -71,6 +71,14 @@ const UserSchema = new mongoose.Schema(
       default: 85,
       min: 0,
     },
+    // Staff identity, captured at registration (Ghana Card number is
+    // encrypted at rest, like customers').
+    identity: {
+      ghana_card_id: { type: String, trim: true, default: null },
+      ghana_card_front: { type: String, default: null },
+      ghana_card_back: { type: String, default: null },
+      photo: { type: String, default: null },
+    },
     // DSR payout details for the automatic Paystack split (admin-entered).
     payout: {
       method: { type: String, enum: [null, 'bank', 'mobile_money'], default: null },
@@ -107,6 +115,9 @@ UserSchema.pre('save', async function (next) {
   if (this.isModified('phone') && this.phone && !isEncrypted(this.phone)) {
     this.phone = encrypt(this.phone);
   }
+  if (this.isModified('identity.ghana_card_id') && this.identity?.ghana_card_id && !isEncrypted(this.identity.ghana_card_id)) {
+    this.identity.ghana_card_id = encrypt(this.identity.ghana_card_id);
+  }
 
   next();
 });
@@ -117,6 +128,9 @@ UserSchema.post(/^find/, function (docs) {
   docArray.forEach(doc => {
     if (doc && isEncrypted(doc.phone)) {
       doc.phone = decrypt(doc.phone);
+    }
+    if (doc?.identity && isEncrypted(doc.identity.ghana_card_id)) {
+      doc.identity.ghana_card_id = decrypt(doc.identity.ghana_card_id);
     }
   });
 });

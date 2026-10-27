@@ -26,6 +26,7 @@ const {
   releaseCustomerDevice,
   getPendingActivations,
   approvePlan,
+  updateStaffIdentity,
   assignStock,
   getPaystackBanks,
   setStaffPayout,
@@ -119,9 +120,11 @@ router.post(
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required.'),
     body('password').notEmpty().isLength({ min: 6 }).withMessage('Password must be at least 6 characters.'),
     body('phone').optional().trim(),
+    body('ghana_card_id').notEmpty().trim().withMessage('Ghana Card number is required.'),
   ],
   addStaff
 );
+router.put('/staff/:id/identity', [param('id').isMongoId()], updateStaffIdentity);
 router.put(
   '/staff/:id',
   [param('id').isMongoId().withMessage('Invalid staff ID.')],
