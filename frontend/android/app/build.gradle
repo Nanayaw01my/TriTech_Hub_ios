@@ -1,14 +1,15 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.tritechhub.app"
+    namespace = "com.dandorsolar.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.tritechhub.app"
+        applicationId "com.dandorsolar.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // CI passes the build number, so each new APK installs over the last.
+        versionCode((project.findProperty('appVersionCode') ?: '1') as Integer)
+        versionName((project.findProperty('appVersionName') ?: '1.0') as String)
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

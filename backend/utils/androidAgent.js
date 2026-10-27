@@ -27,7 +27,7 @@ const AGENT_PACKAGE = process.env.AGENT_PACKAGE || 'com.dandorsolar.lockagent';
 const AGENT_RECEIVER =
   process.env.AGENT_RECEIVER || `${AGENT_PACKAGE}/.LockDeviceAdminReceiver`;
 const BACKEND_URL =
-  process.env.PUBLIC_BACKEND_URL || process.env.APP_BASE_URL || 'https://tritechhub.online';
+  process.env.PUBLIC_BACKEND_URL || process.env.APP_BASE_URL || 'https://dandorsolar.site';
 // The signed agent APK is served from this app's own /downloads folder by
 // default, so no external host is needed. Override AGENT_APK_URL to point
 // elsewhere (e.g. a GitHub Release).

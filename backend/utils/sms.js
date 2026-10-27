@@ -130,7 +130,7 @@ const sendAdminSaleSMS = async (adminPhone, sale) => {
 };
 
 const sendCustomerWelcomeSMS = async (phone, name, accountNumber) => {
-  const msg = `Welcome ${name}! Acct: ${accountNumber}. Login at tritechhub.online with your email & password. -Dan & Dor Solar`;
+  const msg = `Welcome ${name}! Acct: ${accountNumber}. Login at dandorsolar.site with your email & password. -Dan & Dor Solar`;
   await sendSMS(phone, msg);
 };
 
@@ -138,13 +138,13 @@ const sendPaymentReminderSMS = async (phone, name, details) => {
   const { installmentAmount, nextDueDate, isOverdue } = details;
   const due = nextDueDate ? new Date(nextDueDate).toLocaleDateString('en-GH') : 'N/A';
   const msg = isOverdue
-    ? `URGENT ${name}: GHS ${Number(installmentAmount).toLocaleString()} overdue (${due}). Pay now at tritechhub.online to avoid lock. -Dan & Dor Solar`
-    : `Hi ${name}, GHS ${Number(installmentAmount).toLocaleString()} due ${due}. Pay at tritechhub.online -Dan & Dor Solar`;
+    ? `URGENT ${name}: GHS ${Number(installmentAmount).toLocaleString()} overdue (${due}). Pay now at dandorsolar.site to avoid lock. -Dan & Dor Solar`
+    : `Hi ${name}, GHS ${Number(installmentAmount).toLocaleString()} due ${due}. Pay at dandorsolar.site -Dan & Dor Solar`;
   await sendSMS(phone, msg);
 };
 
 const sendDeviceLockedSMS = async (phone, name, deviceModel) => {
-  const msg = `Hi ${name}, your ${deviceModel} has been locked. Pay at tritechhub.online to unlock. -Dan & Dor Solar`;
+  const msg = `Hi ${name}, your ${deviceModel} has been locked. Pay at dandorsolar.site to unlock. -Dan & Dor Solar`;
   await sendSMS(phone, msg);
 };
 
@@ -179,23 +179,23 @@ const sendPaymentReminderWhatsApp = async (phone, name, details) => {
   const { deviceModel, installmentAmount, remainingBalance, nextDueDate, isOverdue } = details;
   const due = nextDueDate ? new Date(nextDueDate).toLocaleDateString('en-GH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
   const msg = isOverdue
-    ? `*Dan & Dor Solar — Payment Overdue* ⚠️\n\nHi ${name}, your installment payment for your *${deviceModel}* is overdue.\n\n*Amount Due:* GHS ${Number(installmentAmount).toLocaleString()}\n*Due Date:* ${due}\n*Balance:* GHS ${Number(remainingBalance).toLocaleString()}\n\nPlease pay now at *tritechhub.online* to avoid your device being locked.`
-    : `*Dan & Dor Solar — Payment Reminder* 📅\n\nHi ${name}, your next installment for your *${deviceModel}* is coming up.\n\n*Amount:* GHS ${Number(installmentAmount).toLocaleString()}\n*Due Date:* ${due}\n*Balance:* GHS ${Number(remainingBalance).toLocaleString()}\n\nPay at *tritechhub.online*`;
+    ? `*Dan & Dor Solar — Payment Overdue* ⚠️\n\nHi ${name}, your installment payment for your *${deviceModel}* is overdue.\n\n*Amount Due:* GHS ${Number(installmentAmount).toLocaleString()}\n*Due Date:* ${due}\n*Balance:* GHS ${Number(remainingBalance).toLocaleString()}\n\nPlease pay now at *dandorsolar.site* to avoid your device being locked.`
+    : `*Dan & Dor Solar — Payment Reminder* 📅\n\nHi ${name}, your next installment for your *${deviceModel}* is coming up.\n\n*Amount:* GHS ${Number(installmentAmount).toLocaleString()}\n*Due Date:* ${due}\n*Balance:* GHS ${Number(remainingBalance).toLocaleString()}\n\nPay at *dandorsolar.site*`;
   await sendWhatsApp(phone, msg);
 };
 
 const sendDeviceLockedWhatsApp = async (phone, name, deviceModel) => {
-  const msg = `*Dan & Dor Solar — Device Locked* 🔒\n\nHi ${name}, your *${deviceModel}* has been locked due to overdue payment.\n\nTo unlock your device, log in to *tritechhub.online* and make your payment. Your device will be unlocked within minutes.\n\nContact us if you need help.`;
+  const msg = `*Dan & Dor Solar — Device Locked* 🔒\n\nHi ${name}, your *${deviceModel}* has been locked due to overdue payment.\n\nTo unlock your device, log in to *dandorsolar.site* and make your payment. Your device will be unlocked within minutes.\n\nContact us if you need help.`;
   await sendWhatsApp(phone, msg);
 };
 
 const sendDeviceUnlockedWhatsApp = async (phone, name, deviceModel) => {
-  const msg = `*Dan & Dor Solar — Device Unlocked* ✅\n\nHi ${name}, your *${deviceModel}* has been unlocked. Thank you for your payment!\n\nKeep up with your installment schedule. Log in at *tritechhub.online* to view your balance.`;
+  const msg = `*Dan & Dor Solar — Device Unlocked* ✅\n\nHi ${name}, your *${deviceModel}* has been unlocked. Thank you for your payment!\n\nKeep up with your installment schedule. Log in at *dandorsolar.site* to view your balance.`;
   await sendWhatsApp(phone, msg);
 };
 
 const sendPlanCompletedWhatsApp = async (phone, name, deviceModel) => {
-  const msg = `*Dan & Dor Solar — Congratulations!* 🎉\n\nHi ${name}, you have fully paid for your *${deviceModel}*!\n\nThe device is now completely yours. Thank you for trusting Dan & Dor Solar Company Ltd.\n\nLog in at *tritechhub.online* to download your payment history.`;
+  const msg = `*Dan & Dor Solar — Congratulations!* 🎉\n\nHi ${name}, you have fully paid for your *${deviceModel}*!\n\nThe device is now completely yours. Thank you for trusting Dan & Dor Solar Company Ltd.\n\nLog in at *dandorsolar.site* to download your payment history.`;
   await sendWhatsApp(phone, msg);
 };
 

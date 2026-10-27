@@ -6,6 +6,7 @@ import Button from '../components/Modern/Button'
 import Card from '../components/Modern/Card'
 import Input from '../components/Modern/Input'
 import SwipeButton from '../components/SwipeButton'
+import { isNativeApp } from '../utils/download'
 
 export default function Login() {
   const [identifier, setIdentifier] = useState('')
@@ -231,6 +232,20 @@ export default function Login() {
               />
             </div>
           </form>
+
+          {/* Android app download — Android browsers only, hidden inside the app */}
+          {/Android/i.test(navigator.userAgent) && !isNativeApp() && (
+            <a
+              href="/downloads/dandorsolar-app.apk"
+              className="mt-5 flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-white/10 border border-white/20
+                         text-white text-sm font-semibold hover:bg-white/20 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M5 20h14" />
+              </svg>
+              Download the Android app
+            </a>
+          )}
 
           {/* Footer links */}
           <p className="text-center text-xs text-white/70 mt-5">

@@ -543,7 +543,7 @@ const addCustomer = async (req, res) => {
             newCustomer.phone,
             newCustomer.full_name,
             newUser.account_number,
-            process.env.FRONTEND_URL || 'tritechhub.online'
+            process.env.FRONTEND_URL || 'dandorsolar.site'
           ).catch(e => logger.error('[Sale notify] Welcome SMS failed:', e.message));
         }
       } catch (err) {

@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">Dan &amp; Dor Solar</string>
     <string name="title_activity_main">Dan &amp; Dor Solar</string>
-    <string name="package_name">com.tritechhub.app</string>
-    <string name="custom_url_scheme">com.tritechhub.app</string>
+    <string name="package_name">com.dandorsolar.app</string>
+    <string name="custom_url_scheme">com.dandorsolar.app</string>
 </resources>

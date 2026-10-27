@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
+import { saveBlob } from '../../utils/download'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import StatusBadge from '../../components/StatusBadge'
 import ProgressBar from '../../components/ProgressBar'
@@ -115,14 +116,10 @@ export default function AdminCustomerDetail() {
   const handleDownloadReceipt = async () => {
     try {
       const res = await api.get(`/admin/customers/${id}/receipt`, { responseType: 'blob' })
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `receipt-${(customer?.full_name || 'customer').replace(/\s+/g, '-')}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      window.URL.revokeObjectURL(url)
+      await saveBlob(
+        new Blob([res.data], { type: 'application/pdf' }),
+        `receipt-${(customer?.full_name || 'customer').replace(/\s+/g, '-')}.pdf`
+      )
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to download receipt')
     }

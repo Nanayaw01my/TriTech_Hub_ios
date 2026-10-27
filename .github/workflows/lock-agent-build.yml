@@ -102,6 +102,8 @@ jobs:
             echo "No APK changes."
           else
             git commit -m "ci: publish lock-agent APK + checksum to backend/downloads"
+            # Another build may have pushed meanwhile — replay on top of it.
+            git pull --rebase origin "${{ github.ref_name }}"
             git push origin HEAD:${{ github.ref_name }}
           fi
           # Move the stable "agent-latest" tag to this commit. The backend's

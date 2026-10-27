@@ -1,12 +1,26 @@
-name: Build Android APK
+name: Build Dan & Dor Solar App APK
 
-# Manually triggered from the GitHub "Actions" tab.
+# Builds the Android app (a Capacitor shell that loads the live site) and
+# publishes it to backend/downloads/dandorsolar-app.apk, so it can be downloaded
+# from https://dandorsolar.site/downloads/dandorsolar-app.apk after a redeploy.
+#
+# Signing: set the repo secrets APP_KEYSTORE_BASE64, APP_KEYSTORE_PASSWORD,
+# APP_KEY_ALIAS and APP_KEY_PASSWORD to sign every build with the same key, so
+# new versions install over old ones. Without them a temporary key is used and
+# people must uninstall the old app before installing a new build.
 on:
   workflow_dispatch:
 
 jobs:
-  build-apk:
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      APP_KEYSTORE_BASE64: ${{ secrets.APP_KEYSTORE_BASE64 }}
+      APP_KEYSTORE_PASSWORD: ${{ secrets.APP_KEYSTORE_PASSWORD }}
+      APP_KEY_ALIAS: ${{ secrets.APP_KEY_ALIAS }}
+      APP_KEY_PASSWORD: ${{ secrets.APP_KEY_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,29 +38,70 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: ''
 
       - name: Install Android SDK packages
         run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
-      - name: Build web bundle (production API URL)
+      - name: Build offline fallback bundle + sync Android
         working-directory: frontend
-        run: npm run build:cap
+        run: |
+          npm run build:cap
+          npx cap sync android
 
-      - name: Capacitor sync (Android)
-        working-directory: frontend
-        run: npx cap sync android
-
-      - name: Build debug APK
+      - name: Build release APK
         working-directory: frontend/android
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleRelease --no-daemon -PappVersionCode=${{ github.run_number }} -PappVersionName=1.0.${{ github.run_number }}
 
-      - name: Upload APK
+      - name: Sign APK
+        working-directory: frontend/android/app/build/outputs/apk/release
+        run: |
+          BT="$ANDROID_HOME/build-tools/36.0.0"
+          "$BT/zipalign" -p -f 4 app-release-unsigned.apk aligned.apk
+          if [ -n "$APP_KEYSTORE_BASE64" ]; then
+            echo "$APP_KEYSTORE_BASE64" | base64 -d > app.jks
+            KS_PASS="$APP_KEYSTORE_PASSWORD"; ALIAS="$APP_KEY_ALIAS"; KEY_PASS="$APP_KEY_PASSWORD"
+            echo "SIGNING=stable key (repo secret)" >> "$GITHUB_ENV"
+          else
+            KS_PASS=temp-pass; ALIAS=temp; KEY_PASS=temp-pass
+            keytool -genkeypair -keystore app.jks -storepass "$KS_PASS" -keypass "$KEY_PASS" \
+              -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Dan & Dor Solar, O=Dan & Dor Solar Company Ltd., C=GH"
+            echo "SIGNING=TEMPORARY key — uninstall the old app before installing this build" >> "$GITHUB_ENV"
+          fi
+          "$BT/apksigner" sign --ks app.jks --ks-pass pass:"$KS_PASS" \
+            --ks-key-alias "$ALIAS" --key-pass pass:"$KEY_PASS" \
+            --out dandorsolar-app.apk aligned.apk
+          "$BT/apksigner" verify dandorsolar-app.apk
+          rm -f app.jks
+
+      - name: Publish APK to backend/downloads
+        run: |
+          cp frontend/android/app/build/outputs/apk/release/dandorsolar-app.apk backend/downloads/dandorsolar-app.apk
+          printf '1.0.%s\n' "${{ github.run_number }}" > backend/downloads/dandorsolar-app-version.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f backend/downloads/dandorsolar-app.apk backend/downloads/dandorsolar-app-version.txt
+          git commit -m "ci: publish Dan & Dor Solar app APK 1.0.${{ github.run_number }}"
+          # Another build may have pushed meanwhile — replay on top of it.
+          git pull --rebase origin "${{ github.ref_name }}"
+          git push origin HEAD:${{ github.ref_name }}
+          {
+            echo "## Dan & Dor Solar app 1.0.${{ github.run_number }} built"
+            echo ""
+            echo "Signing: $SIGNING"
+            echo ""
+            echo "Redeploy Render, then download: https://dandorsolar.site/downloads/dandorsolar-app.apk"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK (artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: tritech-hub-apk
-          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          name: dandorsolar-app
+          path: backend/downloads/dandorsolar-app.apk
           if-no-files-found: error

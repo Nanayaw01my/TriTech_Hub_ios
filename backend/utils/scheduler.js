@@ -317,16 +317,16 @@ const dailyBackup = async () => {
 
     // Email backup to admin
     const adminEmail = process.env.ADMIN_EMAIL || process.env.MAIL_FROM;
-    if (adminEmail && process.env.MAIL_API_KEY) {
+    const { sendBackupEmail, emailConfigured } = require('./email');
+    if (adminEmail && emailConfigured()) {
       try {
-        const { sendBackupEmail } = require('./email');
         await sendBackupEmail(adminEmail, backupJson, filename);
         logger.info('[Scheduler] Backup emailed to %s', adminEmail);
       } catch (emailErr) {
         logger.error('[Scheduler] Failed to email backup: %s', emailErr.message);
       }
     } else {
-      logger.warn('[Scheduler] No ADMIN_EMAIL or MAIL_API_KEY configured. Backup email not sent.');
+      logger.warn('[Scheduler] Backup email not sent — set ADMIN_EMAIL and an email provider (MAILERSEND_API_KEY, or EMAIL_USER + EMAIL_PASS).');
     }
 
     logger.info('[Scheduler] Daily backup completed.');

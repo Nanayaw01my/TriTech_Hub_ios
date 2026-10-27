@@ -1,23 +1,78 @@
-const { MailerSend, EmailParams, Sender, Recipient } = require('mailersend');
-
-const getClient = () => new MailerSend({ apiKey: process.env.MAILERSEND_API_KEY });
+const { MailerSend, EmailParams, Sender, Recipient, Attachment } = require('mailersend');
+const nodemailer = require('nodemailer');
+const logger = require('./logger');
 
 const FROM_EMAIL = process.env.EMAIL_FROM_ADDRESS || 'noreply@tritechhub.online';
 const FROM_NAME  = process.env.EMAIL_FROM_NAME    || 'Dan & Dor Solar Company Ltd.';
 
-const send = async ({ to, toName, subject, html, text }) => {
-  const ms         = getClient();
-  const sentFrom   = new Sender(FROM_EMAIL, FROM_NAME);
-  const recipients = [new Recipient(to, toName || to)];
+// Provider: MailerSend if its API key is set, otherwise SMTP (e.g. Gmail with an
+// app password) if EMAIL_USER/EMAIL_PASS are set. With neither, emails are
+// skipped with one warning instead of failing every send.
+let _smtp;
+const smtp = () => {
+  if (!_smtp) {
+    _smtp = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+      port: Number(process.env.EMAIL_PORT) || 587,
+      secure: Number(process.env.EMAIL_PORT) === 465,
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    });
+  }
+  return _smtp;
+};
 
-  const params = new EmailParams()
-    .setFrom(sentFrom)
-    .setTo(recipients)
-    .setSubject(subject)
-    .setHtml(html)
-    .setText(text || '');
+let _warnedNoProvider = false;
 
-  await ms.email.send(params);
+// MailerSend rejects with a plain response object, not an Error — turn it into
+// a readable message so logs show the real reason.
+const describeError = (err) => {
+  if (err instanceof Error) return err;
+  const status = err?.statusCode || err?.status;
+  const msg = err?.body?.message || err?.message || JSON.stringify(err?.body || err);
+  return new Error(`Email provider error${status ? ` ${status}` : ''}: ${msg}`);
+};
+
+// attachments: [{ filename, content: Buffer }]
+const send = async ({ to, toName, subject, html, text, attachments = [] }) => {
+  if (process.env.MAILERSEND_API_KEY) {
+    const ms = new MailerSend({ apiKey: process.env.MAILERSEND_API_KEY });
+    const params = new EmailParams()
+      .setFrom(new Sender(FROM_EMAIL, FROM_NAME))
+      .setTo([new Recipient(to, toName || to)])
+      .setSubject(subject)
+      .setHtml(html)
+      .setText(text || '');
+    if (attachments.length) {
+      params.setAttachments(attachments.map(
+        (a) => new Attachment(a.content.toString('base64'), a.filename, 'attachment')
+      ));
+    }
+    try {
+      await ms.email.send(params);
+    } catch (err) {
+      throw describeError(err);
+    }
+    return;
+  }
+
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    // Gmail only sends as the signed-in account, so default the From to it.
+    const from = process.env.EMAIL_FROM || `"${FROM_NAME}" <${process.env.EMAIL_USER}>`;
+    try {
+      await smtp().sendMail({
+        from, to: toName ? `"${toName}" <${to}>` : to, subject, html, text: text || '',
+        attachments: attachments.map((a) => ({ filename: a.filename, content: a.content })),
+      });
+    } catch (err) {
+      throw describeError(err);
+    }
+    return;
+  }
+
+  if (!_warnedNoProvider) {
+    _warnedNoProvider = true;
+    logger.warn('[email] Not configured (set MAILERSEND_API_KEY, or EMAIL_USER + EMAIL_PASS for Gmail) — emails are skipped.');
+  }
 };
 
 const sendPasswordResetEmail = async (email, name, resetUrl) => {
@@ -410,7 +465,7 @@ const sendCustomerWelcomeEmail = async (email, name, accountNumber) => {
           <p>Your installment account has been created. Here are your account details:</p>
           <div class="info-box">
             <strong>Account Number:</strong> ${accountNumber}<br/>
-            <strong>Portal:</strong> <a href="https://tritechhub.online">tritechhub.online</a><br/>
+            <strong>Portal:</strong> <a href="https://dandorsolar.site">dandorsolar.site</a><br/>
             <strong>Login:</strong> Use your email address and the password provided by our staff.
           </div>
           <p>You can log in to track your installment balance, make payments, and view your payment history.</p>
@@ -419,7 +474,7 @@ const sendCustomerWelcomeEmail = async (email, name, accountNumber) => {
         <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan & Dor Solar Company Ltd. All rights reserved.</p></div>
       </div>
       </body></html>`,
-    text: `Welcome to Dan & Dor Solar Company Ltd.!\n\nHello, ${name}!\n\nYour account has been created.\nAccount Number: ${accountNumber}\nLogin at: tritechhub.online\n\nUse your email and password provided by our staff to log in.\n\n© ${new Date().getFullYear()} Dan & Dor Solar Company Ltd.`,
+    text: `Welcome to Dan & Dor Solar Company Ltd.!\n\nHello, ${name}!\n\nYour account has been created.\nAccount Number: ${accountNumber}\nLogin at: dandorsolar.site\n\nUse your email and password provided by our staff to log in.\n\n© ${new Date().getFullYear()} Dan & Dor Solar Company Ltd.`,
   });
 };
 
@@ -447,12 +502,12 @@ const sendDeviceUnlockedEmail = async (email, name, deviceModel) => {
           <h2>Hello, ${name}!</h2>
           <p>Your <strong>${deviceModel}</strong> has been unlocked. Thank you for making your payment!</p>
           <p>Your device is now fully functional. Keep up with your installment schedule to avoid future interruptions.</p>
-          <p>Log in at <a href="https://tritechhub.online">tritechhub.online</a> to view your remaining balance and payment history.</p>
+          <p>Log in at <a href="https://dandorsolar.site">dandorsolar.site</a> to view your remaining balance and payment history.</p>
         </div>
         <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan & Dor Solar Company Ltd. All rights reserved.</p></div>
       </div>
       </body></html>`,
-    text: `Hello, ${name}!\n\nYour ${deviceModel} has been unlocked. Thank you for your payment!\n\nLog in at tritechhub.online to track your remaining balance.\n\n© ${new Date().getFullYear()} Dan & Dor Solar Company Ltd.`,
+    text: `Hello, ${name}!\n\nYour ${deviceModel} has been unlocked. Thank you for your payment!\n\nLog in at dandorsolar.site to track your remaining balance.\n\n© ${new Date().getFullYear()} Dan & Dor Solar Company Ltd.`,
   });
 };
 
@@ -488,21 +543,12 @@ const sendAdminLoginOTPEmail = async (email, name, otp) => {
 };
 
 const sendBackupEmail = async (email, backupJson, filename) => {
-  const ms = getClient();
-  const sentFrom = new Sender(FROM_EMAIL, FROM_NAME);
-  const recipients = [new Recipient(email, 'Admin')];
-
-  const attachment = {
-    id: 'backup-file',
-    filename: filename,
-    content: Buffer.from(backupJson).toString('base64'),
-  };
-
-  const params = new EmailParams()
-    .setFrom(sentFrom)
-    .setTo(recipients)
-    .setSubject(`Dan & Dor Solar Company Ltd. Daily Backup — ${filename}`)
-    .setHtml(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+  await send({
+    to: email,
+    toName: 'Admin',
+    subject: `Dan & Dor Solar Company Ltd. Daily Backup — ${filename}`,
+    attachments: [{ filename, content: Buffer.from(backupJson) }],
+    html: `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
       body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb}
       .wrap{max-width:480px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
       .header{background:linear-gradient(135deg,#C2410C,#EA580C);padding:32px 24px;text-align:center}
@@ -521,13 +567,16 @@ const sendBackupEmail = async (email, backupJson, filename) => {
       </div>
       <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan & Dor Solar Company Ltd. All rights reserved.</p></div>
     </div>
-    </body></html>`)
-    .addAttachment(attachment);
-
-  await ms.email.send(params);
+    </body></html>`,
+  });
 };
 
+/** True when an email provider is configured. */
+const emailConfigured = () =>
+  !!(process.env.MAILERSEND_API_KEY || (process.env.EMAIL_USER && process.env.EMAIL_PASS));
+
 module.exports = {
+  emailConfigured,
   sendPasswordResetEmail,
   sendPaymentConfirmationEmail,
   sendLockNotificationEmail,

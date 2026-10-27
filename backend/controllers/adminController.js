@@ -1466,7 +1466,7 @@ const resetCustomerPassword = async (req, res) => {
         const { sendSMS } = require('../utils/sms');
         await sendSMS(
           customer.phone,
-          `Hi ${customer.full_name}, your Dan & Dor Solar password has been reset. New password: ${new_password}. Login at tritechhub.online -Dan & Dor Solar`
+          `Hi ${customer.full_name}, your Dan & Dor Solar password has been reset. New password: ${new_password}. Login at dandorsolar.site -Dan & Dor Solar`
         );
         smsStatus = 'sent';
       } catch (smsErr) {

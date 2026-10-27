@@ -50,6 +50,8 @@ const corsOptions = {
     const allowedOrigins = [
       'https://tritechhub.online',
       'https://www.tritechhub.online',
+      'https://dandorsolar.site',
+      'https://www.dandorsolar.site',
       process.env.FRONTEND_URL,
       'http://localhost:3000',
       'http://localhost:5173',
@@ -496,6 +498,43 @@ const migrateCompanyName = async () => {
   }
 };
 
+// Once a real ENCRYPTION_KEY is set, move PII that was encrypted with the old
+// public default key onto it. Works on the raw collections (no model hooks) and
+// is idempotent: values already on the real key are skipped.
+const migrateEncryptionKey = async () => {
+  try {
+    const { hasRealKey, reencryptLegacy } = require('./utils/encryption');
+    if (!hasRealKey()) return;
+    const Customer = require('./models/Customer');
+    const User = require('./models/User');
+    const get = (doc, p) => p.split('.').reduce((o, k) => (o == null ? undefined : o[k]), doc);
+    let n = 0;
+
+    const fields = ['phone', 'ghana_card_id', 'guarantor.phone', 'guarantor.ghana_card_id'];
+    for await (const doc of Customer.collection.find({}, { projection: { phone: 1, ghana_card_id: 1, guarantor: 1 } })) {
+      const $set = {};
+      for (const f of fields) {
+        const r = reencryptLegacy(get(doc, f));
+        if (r) $set[f] = r;
+      }
+      if (Object.keys($set).length) {
+        await Customer.collection.updateOne({ _id: doc._id }, { $set });
+        n++;
+      }
+    }
+    for await (const doc of User.collection.find({ phone: { $type: 'string' } }, { projection: { phone: 1 } })) {
+      const r = reencryptLegacy(doc.phone);
+      if (r) {
+        await User.collection.updateOne({ _id: doc._id }, { $set: { phone: r } });
+        n++;
+      }
+    }
+    if (n) logger.info('[migrate] Re-encrypted %d record(s) with the new ENCRYPTION_KEY.', n);
+  } catch (err) {
+    logger.error('[migrate] Re-encryption failed: %s', err.message);
+  }
+};
+
 const startServer = async () => {
   // Bind port FIRST so Render sees the service as alive
   app.listen(PORT, () => {
@@ -507,6 +546,7 @@ const startServer = async () => {
     await connectDB();
     await seedDatabase();
     await migrateCompanyName();
+    await migrateEncryptionKey();
     startScheduler();
   } catch (error) {
     logger.error('MongoDB init failed: %s', error.message);

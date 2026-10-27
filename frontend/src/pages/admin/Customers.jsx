@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
+import { saveBlob } from '../../utils/download'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import StatusBadge from '../../components/StatusBadge'
 import { format } from 'date-fns'
@@ -56,12 +57,7 @@ export default function AdminCustomers() {
   const handleExportCSV = async () => {
     try {
       const res = await api.get('/admin/customers/export', { responseType: 'blob' })
-      const url = window.URL.createObjectURL(new Blob([res.data]))
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `customers_${new Date().toISOString().split('T')[0]}.csv`
-      a.click()
-      window.URL.revokeObjectURL(url)
+      await saveBlob(new Blob([res.data], { type: 'text/csv' }), `customers_${new Date().toISOString().split('T')[0]}.csv`)
       toast.success('Customers exported!')
     } catch {
       toast.error('Failed to export customers')

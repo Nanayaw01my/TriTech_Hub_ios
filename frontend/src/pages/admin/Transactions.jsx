@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import api from '../../api/axios'
+import { saveBlob } from '../../utils/download'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import StatusBadge from '../../components/StatusBadge'
 import { format, subDays } from 'date-fns'
@@ -40,12 +41,7 @@ export default function AdminTransactions() {
       const res = await api.get(`/admin/transactions/export?from=${dateFrom}&to=${dateTo}`, {
         responseType: 'blob',
       })
-      const url = window.URL.createObjectURL(new Blob([res.data]))
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `transactions_${dateFrom}_${dateTo}.csv`
-      a.click()
-      window.URL.revokeObjectURL(url)
+      await saveBlob(new Blob([res.data], { type: 'text/csv' }), `transactions_${dateFrom}_${dateTo}.csv`)
       toast.success('Export started!')
     } catch {
       // Fallback: build CSV from current page data
@@ -54,12 +50,7 @@ export default function AdminTransactions() {
         `"${tx.created_at ? format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm') : ''}","${tx.customer_name || ''}","${tx.amount}","${tx.payment_method || tx.method || ''}","${tx.reference || ''}","${tx.status || ''}"`
       ).join('\n')
       const blob = new Blob([csvHeader + csvRows], { type: 'text/csv' })
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `transactions_${dateFrom}_${dateTo}.csv`
-      a.click()
-      window.URL.revokeObjectURL(url)
+      await saveBlob(blob, `transactions_${dateFrom}_${dateTo}.csv`)
       toast.success('CSV exported!')
     }
   }
