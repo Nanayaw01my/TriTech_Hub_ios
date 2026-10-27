@@ -39,7 +39,11 @@ const buildSchedule = (startDate, frequency, totalPayments, amount) => {
  */
 async function activatePlanNow(plan, { userId = null, ip = null } = {}) {
   const startDate = new Date();
-  const schedule = buildSchedule(startDate, plan.frequency, plan.total_payments, plan.installment_amount);
+  // The deposit covers the activation day, so the first installment is due one
+  // period later (tomorrow / next week / next month) — matching what the DSR
+  // shows the customer at registration.
+  const firstDue = addPeriod(startDate, plan.frequency, 1);
+  const schedule = buildSchedule(firstDue, plan.frequency, plan.total_payments, plan.installment_amount);
   // Installments already paid before activation count toward the schedule.
   const alreadyPaid = Math.min(plan.payments_made || 0, schedule.length);
   for (let i = 0; i < alreadyPaid; i++) schedule[i].paid = true;

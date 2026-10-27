@@ -73,10 +73,15 @@ const BUSINESS_NAME = process.env.BUSINESS_NAME || 'Dan & Dor Solar Company Ltd.
 const BUSINESS_PHONE = process.env.BUSINESS_PHONE || '';
 // A phone is "online" if it has checked in within this window.
 const ONLINE_WINDOW_MS = 20 * 60 * 1000;
-// Offline failsafe grace: how long after a missed due date the phone waits
-// before locking ITSELF with no internet. Matches the server's 48h auto-lock
-// so online and offline enforcement agree.
-const OFFLINE_GRACE_MS = (Number(process.env.OFFLINE_GRACE_HOURS) || 48) * 60 * 60 * 1000;
+// Grace after a missed due date before locking — the same value is used by the
+// server's hourly auto-lock (scheduler) and the phone's offline self-lock, so
+// online and offline enforcement agree.
+// Default 0: the phone locks AT the due date — no grace period. (Read so that
+// an explicit OFFLINE_GRACE_HOURS=0 isn't mistaken for "unset".)
+const GRACE_HOURS = process.env.OFFLINE_GRACE_HOURS !== undefined && process.env.OFFLINE_GRACE_HOURS !== ''
+  ? Math.max(0, Number(process.env.OFFLINE_GRACE_HOURS) || 0)
+  : 0;
+const OFFLINE_GRACE_MS = GRACE_HOURS * 60 * 60 * 1000;
 // A manual admin unlock keeps the phone unlocked offline for this long before
 // the deadline failsafe can re-assert (gives a clear override window).
 const MANUAL_UNLOCK_MS = (Number(process.env.MANUAL_UNLOCK_DAYS) || 7) * 24 * 60 * 60 * 1000;
@@ -290,6 +295,7 @@ module.exports = {
   releaseDevice,
   setDeadline,
   computePaidUntil,
+  OFFLINE_GRACE_MS,
   pushCommand,
   isOnline,
   lockMessage,

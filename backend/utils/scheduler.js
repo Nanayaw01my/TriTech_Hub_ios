@@ -20,10 +20,13 @@ const checkOverduePayments = async () => {
   logger.info('[Scheduler] Running checkOverduePayments job...');
 
   try {
-    const cutoffDate = new Date(Date.now() - 48 * 60 * 60 * 1000); // 48 hours ago
+    // Lock as soon as the due date passes (grace is 0 by default — same value the
+    // phone uses for its offline self-lock).
+    const cutoffDate = new Date(Date.now() - agent.OFFLINE_GRACE_MS);
     const now = new Date();
 
-    // Send overdue warnings (0–48h overdue) — not yet locked, but urgently remind customer
+    // Overdue warnings during the grace window (none when grace is 0 — the phone
+    // locks at the due date; customers are reminded beforehand instead).
     try {
       const warningPlans = await InstallmentPlan.find({
         status: 'active',
@@ -68,7 +71,7 @@ const checkOverduePayments = async () => {
       logger.error('[Scheduler] Error sending overdue warnings: %s', warnErr.message);
     }
 
-    // Find all active plans where next_due_date is past the 48-hour cutoff
+    // Find all active plans past their due date (+ grace, if any)
     const overduePlans = await InstallmentPlan.find({
       status: 'active',
       next_due_date: { $lt: cutoffDate },
@@ -139,7 +142,7 @@ const checkOverduePayments = async () => {
           device_udid: device.agent?.device_id || device.imei || null,
           target_user_id: customer.user_id,
           details: {
-            reason: 'Automated: payment overdue by more than 48 hours',
+            reason: 'Automated: installment not paid by the due date',
             mdm: mdmResult,
             installment_plan_id: plan._id,
             next_due_date: plan.next_due_date,

@@ -207,7 +207,7 @@ const sendLockNotificationEmail = async (email, name, deviceModel) => {
         <div class="body">
           <h2>Hello, ${name}!</h2>
           <p>Your <strong>${deviceModel}</strong> has been locked due to an overdue installment payment.</p>
-          <p>Your payment was due more than <strong>48 hours ago</strong>. As per your installment agreement, we have remotely locked your device.</p>
+          <p>Your installment was <strong>not paid by its due date</strong>. As per your installment agreement, we have remotely locked your device.</p>
           <div class="action">
             <strong>How to Unlock:</strong>
             <p style="margin:8px 0 0">Make your overdue installment payment through the Dan & Dor Solar Company Ltd. app. Once confirmed, your device will be unlocked within minutes.</p>
@@ -419,7 +419,7 @@ async function sendAdminOverdueAlertEmail(adminEmail, customers) {
             <p style="color:#fecaca;margin:6px 0 0;font-size:15px">Overdue Payment Alert</p>
           </div>
           <div style="padding:28px 30px">
-            <p style="color:#374151;font-size:15px;margin:0 0 8px">The following customer(s) have <strong>not paid</strong> and are overdue by 48+ hours.</p>
+            <p style="color:#374151;font-size:15px;margin:0 0 8px">The following customer(s) have <strong>not paid</strong> by their due date and have been locked.</p>
             <p style="color:#374151;font-size:15px;margin:0 0 20px">Please lock their iPhone on iCloud now — go to <a href="https://icloud.com/find" style="color:#dc2626">icloud.com/find</a>, find the device and enable Lost Mode.</p>
             <table style="width:100%;border-collapse:collapse;font-size:14px">
               <thead>
