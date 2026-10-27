@@ -1026,7 +1026,19 @@ const releaseCustomerDevice = async (req, res) => {
     const device = await Device.findById(plan.device_id);
     if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
     if (!device.agent?.enrolled) {
-      return res.status(400).json({ success: false, message: 'This phone is not enrolled, so there is nothing to release.' });
+      // Phone already freed (e.g. released before plans were closed on
+      // release) — still close the plan so it leaves the active lists.
+      if (['completed', 'closed', 'cancelled'].includes(plan.status)) {
+        return res.status(400).json({ success: false, message: 'This phone is already released and the plan is closed.' });
+      }
+      const writtenOff = Math.max(0, plan.remaining_balance || 0);
+      await InstallmentPlan.updateOne({ _id: plan._id }, {
+        $set: { status: 'closed', closed_at: new Date(), close_reason: 'phone_released', written_off: writtenOff },
+      });
+      return res.status(200).json({
+        success: true,
+        message: `Plan closed (the phone was already released).${writtenOff > 0 ? ` Unpaid balance written off: GHS ${writtenOff.toLocaleString()}.` : ''}`,
+      });
     }
 
     const r = await agent.releaseDevice(device);

@@ -388,6 +388,15 @@ export default function AdminCustomerDetail() {
               >
                 {device.agent?.enrolled ? 'View enrollment QR' : '+ Enroll phone (needed to lock this phone)'}
               </button>
+              {!device.agent?.enrolled && device.agent?.enrollment_status === 'released' &&
+                plan && !['completed', 'closed', 'cancelled'].includes(plan.status) && (
+                <button
+                  onClick={() => setReleaseModal(true)}
+                  className="text-xs font-semibold text-green-700 hover:text-green-800"
+                >
+                  ✓ Close plan (phone already released)
+                </button>
+              )}
               {device.agent?.enrolled && (
                 <button
                   onClick={() => setTrackOpen(true)}
