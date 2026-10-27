@@ -13,7 +13,8 @@ const Payment = require('../models/Payment');
 const AuditLog = require('../models/AuditLog');
 const agent = require('./androidAgent');
 const logger = require('./logger');
-const { sendPaymentReminderSMS } = require('./sms');
+const User = require('../models/User');
+const { sendSMS, sendPaymentReminderSMS } = require('./sms');
 
 const addPeriod = (date, frequency, n) => {
   const d = new Date(date);
@@ -180,7 +181,41 @@ async function recordDeposit(paystackData, { recordedBy = null, ip = null } = {}
 
   await activatePlanNow(claimed, { userId: recordedBy, ip });
   logger.info('[deposit] Plan %s activated by deposit %s (GH₵%s)', plan._id, reference, amountGHS);
-  return { ok: true, activated: true, message: 'Deposit received — the sale is active and the phone is unlocking.' };
+
+  const commissionNote = commissionMessage(claimed);
+  notifyDsrOfDeposit(claimed, amountGHS, commissionNote);
+  return {
+    ok: true,
+    activated: true,
+    message: `Deposit received — the sale is active and the phone is unlocking. ${commissionNote}`,
+  };
+}
+
+/** What the DSR is told about their commission for this sale. */
+function commissionMessage(plan) {
+  if (plan.commission_split_paid) {
+    return `Your GHS ${Number(plan.commission_split_amount).toLocaleString()} commission will be paid to your account within 24 hours.`;
+  }
+  return 'Your commission for this sale is recorded and will be paid by the admin.';
+}
+
+/** SMS the DSR who made the sale that the deposit came in (fire-and-forget). */
+function notifyDsrOfDeposit(plan, amountGHS, commissionNote) {
+  ;(async () => {
+    try {
+      const [dsr, customer] = await Promise.all([
+        User.findById(plan.created_by).select('phone role'),
+        Customer.findById(plan.customer_id).select('full_name'),
+      ]);
+      if (!dsr?.phone || dsr.role !== 'staff') return;
+      await sendSMS(dsr.phone,
+        `Deposit of GHS ${Number(amountGHS).toLocaleString()} received for ${customer?.full_name || 'your customer'}. ` +
+        `The phone is now active. ${commissionNote} -Dan & Dor Solar`
+      );
+    } catch (err) {
+      logger.warn('[deposit] DSR SMS failed for plan %s: %s', plan._id, err.message);
+    }
+  })();
 }
 
 module.exports = { activatePlanNow, recordDeposit };
