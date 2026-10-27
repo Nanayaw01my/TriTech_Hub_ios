@@ -80,7 +80,7 @@ export default function Login() {
           style={{ background: 'rgba(30,51,35,0.97)', border: '1px solid rgba(76,175,80,0.35)', backdropFilter: 'blur(12px)' }}>
           <img src="/logo.png" alt="" className="w-10 h-10 rounded-xl flex-shrink-0 object-cover" />
           <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-bold leading-tight">Install Dan Dorsolar</p>
+            <p className="text-white text-sm font-bold leading-tight">Install Dan & Dor Solar</p>
             <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Add to home screen for quick access</p>
           </div>
           <div className="flex gap-2 flex-shrink-0">
@@ -112,7 +112,7 @@ export default function Login() {
           {!logoError ? (
             <img
               src="/logo.png"
-              alt="Dan Dorsolar"
+              alt="Dan & Dor Solar"
               onError={() => setLogoError(true)}
               className="w-full h-full object-cover"
             />
@@ -128,7 +128,7 @@ export default function Login() {
         </div>
 
         <h1 className="text-white font-black tracking-tight" style={{ fontSize: '1.75rem', letterSpacing: '-0.02em' }}>
-          Dan Dorsolar <span style={{
+          Dan & Dor Solar <span style={{
             background: 'linear-gradient(135deg, #F97316, #FDBA74)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
           }}>iOS</span>
@@ -277,7 +277,7 @@ export default function Login() {
 
       {/* Footer */}
       <p className="text-xs mt-8 text-center" style={{ color: 'rgba(255,255,255,0.2)' }}>
-        © {new Date().getFullYear()} Dan Dorsolar Company Limited · Powered by Ittek Solutions
+        © {new Date().getFullYear()} Dan & Dor Solar Company Ltd. · Powered by Ittek Solutions
       </p>
     </div>
   )

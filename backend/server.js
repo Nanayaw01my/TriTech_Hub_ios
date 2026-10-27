@@ -151,7 +151,7 @@ app.use('/uploads', express.static(uploadsPath));
 app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Dan Dorsolar Company Limited API is running.',
+    message: 'Dan & Dor Solar Company Ltd. API is running.',
     data: {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
@@ -190,7 +190,7 @@ app.get('/api/forceseed', async (req, res) => {
     const salt2 = await bcrypt.genSalt(10);
     await User.collection.insertMany([
       {
-        name: 'Dan Dorsolar Admin',
+        name: 'Dan & Dor Solar Admin',
         email: 'admin@tritech.com',
         password: await bcrypt.hash('admin123', salt1),
         role: 'admin',
@@ -199,7 +199,7 @@ app.get('/api/forceseed', async (req, res) => {
         updated_at: new Date(),
       },
       {
-        name: 'Dan Dorsolar Staff',
+        name: 'Dan & Dor Solar Staff',
         email: 'staff@tritech.com',
         password: await bcrypt.hash('staff123', salt2),
         role: 'staff',
@@ -375,7 +375,7 @@ const seedDatabase = async () => {
       const salt = await bcrypt.genSalt(10);
       const hashed = await bcrypt.hash('admin123', salt);
       await User.collection.insertOne({
-        name: 'Dan Dorsolar Admin',
+        name: 'Dan & Dor Solar Admin',
         email: 'admin@tritech.com',
         password: hashed,
         role: 'admin',
@@ -392,7 +392,7 @@ const seedDatabase = async () => {
       const salt = await bcrypt.genSalt(10);
       const hashed = await bcrypt.hash('staff123', salt);
       await User.collection.insertOne({
-        name: 'Dan Dorsolar Staff',
+        name: 'Dan & Dor Solar Staff',
         email: 'staff@tritech.com',
         password: hashed,
         role: 'staff',
@@ -476,16 +476,37 @@ const seedDatabase = async () => {
 
 // ─── SERVER START ─────────────────────────────────────────────────────────────
 
+// One-off rename: values saved under the old company name (the Settings
+// business name and the default seeded account names). Only exact old defaults
+// are touched, so anything the admin typed in themselves is left alone.
+const migrateCompanyName = async () => {
+  try {
+    const Settings = require('./models/Settings');
+    const User = require('./models/User');
+    const s = await Settings.updateMany(
+      { business_name: /^dan dorsolar company limited$/i },
+      { business_name: 'Dan & Dor Solar Company Ltd.' }
+    );
+    const a = await User.updateMany({ name: 'Dan Dorsolar Admin' }, { name: 'Dan & Dor Solar Admin' });
+    const st = await User.updateMany({ name: 'Dan Dorsolar Staff' }, { name: 'Dan & Dor Solar Staff' });
+    const n = (s.modifiedCount || 0) + (a.modifiedCount || 0) + (st.modifiedCount || 0);
+    if (n) logger.info('[migrate] Renamed %d record(s) to Dan & Dor Solar Company Ltd.', n);
+  } catch (err) {
+    logger.warn('[migrate] Company rename skipped: %s', err.message);
+  }
+};
+
 const startServer = async () => {
   // Bind port FIRST so Render sees the service as alive
   app.listen(PORT, () => {
-    logger.info('Dan Dorsolar Company Limited API — port %d — env: %s', PORT, process.env.NODE_ENV || 'development');
+    logger.info('Dan & Dor Solar Company Ltd. API — port %d — env: %s', PORT, process.env.NODE_ENV || 'development');
   });
 
   // Then connect to MongoDB (retries in background)
   try {
     await connectDB();
     await seedDatabase();
+    await migrateCompanyName();
     startScheduler();
   } catch (error) {
     logger.error('MongoDB init failed: %s', error.message);

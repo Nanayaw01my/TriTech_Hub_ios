@@ -98,7 +98,7 @@ export default function ResetPassword() {
           </svg>
         </div>
         <h1 className="text-2xl font-black text-white">New Password</h1>
-        <p className="text-orange-200 text-sm mt-1">Dan Dorsolar Company Limited</p>
+        <p className="text-orange-200 text-sm mt-1">Dan & Dor Solar Company Ltd.</p>
       </div>
 
       <div className="flex-1 bg-white rounded-t-3xl px-6 pt-8 pb-safe">

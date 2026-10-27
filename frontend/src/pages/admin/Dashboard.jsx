@@ -135,7 +135,7 @@ export default function AdminDashboard() {
       <div className="lg:hidden px-5 pt-6 pb-12 bg-gradient-to-br from-gray-50 to-orange-50">
         <p className="text-orange-500 text-xs font-semibold uppercase tracking-widest">Admin Portal</p>
         <h1 className="text-gray-900 text-2xl font-black mt-1 leading-tight">
-          Dan Dorsolar
+          Dan & Dor Solar
         </h1>
         <p className="text-gray-500 text-xs mt-0.5">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
 

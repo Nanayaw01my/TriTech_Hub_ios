@@ -130,7 +130,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
               </svg>
             </div>
             <p className="text-lg font-black text-gray-900 mb-1">Payment Successful</p>
-            <p className="text-xs text-gray-400 mb-5">Dan Dorsolar Company Limited · Payment Receipt</p>
+            <p className="text-xs text-gray-400 mb-5">Dan & Dor Solar Company Ltd. · Payment Receipt</p>
 
             <div className="bg-gray-50 rounded-2xl p-4 text-left space-y-3 mb-5">
               <div className="flex justify-between items-center">
@@ -167,7 +167,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
               {customer.phone && (
                 <a
                   href={`https://wa.me/${customer.phone.replace(/\D/g, '').replace(/^0/, '233')}?text=${encodeURIComponent(
-                    `*Dan Dorsolar Company Limited — Payment Receipt*\n\nCustomer: ${customer.full_name}\nAmount Paid: GHS ${Number(receipt.amount).toLocaleString()}\nDate: ${format(receipt.date, 'dd MMM yyyy · h:mm a')}\nRef: ${receipt.reference}\nBalance: ${receipt.newBalance === 0 ? 'Fully Paid ✓' : 'GHS ' + Number(receipt.newBalance).toLocaleString()}`
+                    `*Dan & Dor Solar Company Ltd. — Payment Receipt*\n\nCustomer: ${customer.full_name}\nAmount Paid: GHS ${Number(receipt.amount).toLocaleString()}\nDate: ${format(receipt.date, 'dd MMM yyyy · h:mm a')}\nRef: ${receipt.reference}\nBalance: ${receipt.newBalance === 0 ? 'Fully Paid ✓' : 'GHS ' + Number(receipt.newBalance).toLocaleString()}`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"

@@ -379,7 +379,7 @@ export default function CustomerDashboard() {
               </svg>
             </div>
             <p className="text-gray-600 font-semibold">No active installment plan</p>
-            <p className="text-sm text-gray-400 mt-1">Contact Dan Dorsolar Company Limited to get started</p>
+            <p className="text-sm text-gray-400 mt-1">Contact Dan & Dor Solar Company Ltd. to get started</p>
           </div>
         )}
 

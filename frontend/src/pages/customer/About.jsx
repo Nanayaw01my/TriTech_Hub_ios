@@ -41,7 +41,7 @@ function FAQ({ q, a }) {
 }
 
 export default function CustomerAbout() {
-  const [bizInfo, setBizInfo] = useState({ business_name: 'Dan Dorsolar', contact_phone: '', whatsapp_number: '', contact_email: '', contact_address: '' })
+  const [bizInfo, setBizInfo] = useState({ business_name: 'Dan & Dor Solar', contact_phone: '', whatsapp_number: '', contact_email: '', contact_address: '' })
 
   useEffect(() => {
     api.get('/customer/business-info').then(res => {
@@ -215,7 +215,7 @@ export default function CustomerAbout() {
         </Section>
 
         <div className="text-center py-4">
-          <p className="text-xs text-gray-400 font-medium">Dan Dorsolar Company Limited · Powered by Ittek Solutions</p>
+          <p className="text-xs text-gray-400 font-medium">Dan & Dor Solar Company Ltd. · Powered by Ittek Solutions</p>
         </div>
       </div>
     </div>

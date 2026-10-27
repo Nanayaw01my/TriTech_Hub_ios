@@ -12,7 +12,7 @@ export default function LegalLayout({ title, lastUpdated, children }) {
         {/* Header */}
         <div className="text-center mb-6">
           <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center shadow-lg overflow-hidden">
-            <img src="/logo.png" alt="Dan Dorsolar" className="w-full h-full object-cover"
+            <img src="/logo.png" alt="Dan & Dor Solar" className="w-full h-full object-cover"
                  onError={(e) => { e.currentTarget.style.display = 'none' }} />
           </div>
           <h1 className="text-2xl font-black text-gray-900">{title}</h1>
@@ -34,7 +34,7 @@ export default function LegalLayout({ title, lastUpdated, children }) {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          © {new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.
+          © {new Date().getFullYear()} Dan & Dor Solar Company Ltd. All rights reserved.
         </p>
       </div>
     </div>

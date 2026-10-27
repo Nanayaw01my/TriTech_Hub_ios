@@ -35,7 +35,7 @@ export default function MaintenanceScreen() {
             ) : (
               <img
                 src="/logo.png"
-                alt="Dan Dorsolar"
+                alt="Dan & Dor Solar"
                 onLoad={() => setLogoLoaded(true)}
                 onError={() => setLogoError(true)}
                 className="w-full h-full object-cover"
@@ -60,7 +60,7 @@ export default function MaintenanceScreen() {
             We&rsquo;ll be right back
           </h1>
           <p className="text-gray-400 text-sm sm:text-base leading-relaxed mb-8">
-            Dan Dorsolar is getting a quick tune-up. We&rsquo;re working behind the scenes
+            Dan & Dor Solar is getting a quick tune-up. We&rsquo;re working behind the scenes
             and will be back online shortly.
           </p>
 
@@ -86,7 +86,7 @@ export default function MaintenanceScreen() {
         </div>
 
         <p className="text-gray-600 text-xs text-center mt-6 tracking-wide">
-          Dan Dorsolar Company Limited &copy; {new Date().getFullYear()}
+          Dan & Dor Solar Company Ltd. &copy; {new Date().getFullYear()}
         </p>
       </div>
 

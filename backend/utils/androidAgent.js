@@ -2,7 +2,7 @@
  * Android lock agent engine.
  *
  * Replaces the old iOS SimpleMDM/Lost Mode integration. Each sold Android
- * phone runs the Dan Dorsolar lock agent as a **Device Owner** app. The
+ * phone runs the Dan & Dor Solar lock agent as a **Device Owner** app. The
  * backend never talks to a third-party MDM — it stores the *desired* lock
  * state on the Device document and the agent converges to it:
  *
@@ -69,7 +69,7 @@ function agentApkChecksum() {
   }
   return _checksumCache;
 }
-const BUSINESS_NAME = process.env.BUSINESS_NAME || 'Dan Dorsolar Company Limited';
+const BUSINESS_NAME = process.env.BUSINESS_NAME || 'Dan & Dor Solar Company Ltd.';
 const BUSINESS_PHONE = process.env.BUSINESS_PHONE || '';
 // A phone is "online" if it has checked in within this window.
 const ONLINE_WINDOW_MS = 20 * 60 * 1000;

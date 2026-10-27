@@ -20,7 +20,7 @@ object Prefs {
     fun setDeviceSecret(c: Context, v: String) = p(c).edit().putString("device_secret", v).apply()
 
     fun businessName(c: Context): String =
-        p(c).getString("business_name", "Dan Dorsolar Company Limited") ?: "Dan Dorsolar Company Limited"
+        p(c).getString("business_name", "Dan & Dor Solar Company Ltd.") ?: "Dan & Dor Solar Company Ltd."
     fun setBusinessName(c: Context, v: String) = p(c).edit().putString("business_name", v).apply()
 
     fun unlockContact(c: Context): String = p(c).getString("unlock_contact", "") ?: ""

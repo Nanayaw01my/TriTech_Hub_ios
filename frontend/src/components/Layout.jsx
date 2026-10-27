@@ -99,7 +99,7 @@ function getPageTitle(pathname) {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname]
   // Detail pages
   if (/\/customers\/[^/]+$/.test(pathname)) return 'Customer Detail'
-  return 'Dan Dorsolar Company Limited'
+  return 'Dan & Dor Solar Company Ltd.'
 }
 
 // ─── Notification Bell ────────────────────────────────────────────────────────
@@ -262,11 +262,11 @@ function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
       >
         <img
           src="/logo.png"
-          alt="Dan Dorsolar Company Limited"
+          alt="Dan & Dor Solar Company Ltd."
           className="w-9 h-9 rounded-xl object-cover flex-shrink-0 shadow-sm"
         />
         <div>
-          <p className="text-white font-bold text-sm leading-tight">Dan Dorsolar Company Limited</p>
+          <p className="text-white font-bold text-sm leading-tight">Dan & Dor Solar Company Ltd.</p>
           <p className="text-orange-300 text-xs">{roleLabel}</p>
         </div>
       </div>
@@ -323,7 +323,7 @@ export default function Layout({ role }) {
 
   useEffect(() => {
     const title = getPageTitle(location.pathname)
-    document.title = title === 'Dan Dorsolar Company Limited' ? 'Dan Dorsolar Company Limited' : `${title} · Dan Dorsolar Company Limited`
+    document.title = title === 'Dan & Dor Solar Company Ltd.' ? 'Dan & Dor Solar Company Ltd.' : `${title} · Dan & Dor Solar Company Ltd.`
   }, [location.pathname])
 
   // Hide the bottom tab bar while typing (keyboard open) so it doesn't float
@@ -409,13 +409,13 @@ export default function Layout({ role }) {
 
             <div className="flex-1 flex items-center justify-center gap-2.5 min-w-0 px-2">
               <div className="w-9 h-9 rounded-xl overflow-hidden bg-black flex-shrink-0 shadow-sm">
-                <img src="/logo.png" alt="Dan Dorsolar Company Limited" className="w-full h-full object-cover" />
+                <img src="/logo.png" alt="Dan & Dor Solar Company Ltd." className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-col items-start min-w-0">
                 <p className="text-white font-bold text-sm leading-tight truncate">
                   {getPageTitle(location.pathname)}
                 </p>
-                <p className="text-orange-300/70 text-[10px] font-medium leading-tight">Dan Dorsolar Company Limited</p>
+                <p className="text-orange-300/70 text-[10px] font-medium leading-tight">Dan & Dor Solar Company Ltd.</p>
               </div>
             </div>
 
@@ -503,7 +503,7 @@ export default function Layout({ role }) {
         onClose={() => setLogoutModal(false)}
         onConfirm={handleLogout}
         title="Sign Out"
-        message="Are you sure you want to sign out of Dan Dorsolar Company Limited?"
+        message="Are you sure you want to sign out of Dan & Dor Solar Company Ltd.?"
         confirmText="Sign Out"
         cancelText="Cancel"
         confirmVariant="danger"

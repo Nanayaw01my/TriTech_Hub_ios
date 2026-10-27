@@ -287,7 +287,7 @@ export default function CustomerProfile() {
             </svg>
           </div>
           <div>
-            <p className="text-sm font-semibold text-orange-500">Call Dan Dorsolar Company Limited</p>
+            <p className="text-sm font-semibold text-orange-500">Call Dan & Dor Solar Company Ltd.</p>
             <p className="text-xs text-gray-500">Mon – Sat, 8am – 6pm</p>
           </div>
           <svg className="w-4 h-4 text-gray-400 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">

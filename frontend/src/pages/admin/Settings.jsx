@@ -11,7 +11,7 @@ export default function AdminSettings() {
   const { user, updateUser } = useAuth()
 
   const [settings, setSettings] = useState({
-    business_name: 'Dan Dorsolar Company Limited',
+    business_name: 'Dan & Dor Solar Company Ltd.',
     contact_email: '',
     contact_phone: '',
     contact_address: '',

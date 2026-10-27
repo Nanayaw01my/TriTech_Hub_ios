@@ -6,7 +6,7 @@ import Skeleton from './Skeleton'
 /**
  * Shows the Device Owner enrollment QR for a sold phone. Staff scan this on a
  * freshly factory-reset Android phone (tap the welcome screen 6 times) to install
- * the Dan Dorsolar lock agent and pair it to this sale.
+ * the Dan & Dor Solar lock agent and pair it to this sale.
  */
 export default function EnrollDeviceModal({ deviceId, deviceLabel, isOpen, onClose }) {
   const [loading, setLoading] = useState(true)

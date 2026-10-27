@@ -15,7 +15,7 @@ export default function AdminCustomerDetail() {
   const navigate = useNavigate()
   const [customer, setCustomer] = useState(null)
   const [plan, setPlan] = useState(null)
-  const [settings, setSettings] = useState({ business_name: 'Dan Dorsolar Company Limited', contact_phone: '' })
+  const [settings, setSettings] = useState({ business_name: 'Dan & Dor Solar Company Ltd.', contact_phone: '' })
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [lockModal, setLockModal] = useState(false)
@@ -54,7 +54,7 @@ export default function AdminCustomerDetail() {
     api.get('/admin/settings').then(r => {
       const s = r.data?.data || r.data
       if (s?.business_name || s?.contact_phone) {
-        setSettings({ business_name: s.business_name || 'Dan Dorsolar Company Limited', contact_phone: s.contact_phone || '' })
+        setSettings({ business_name: s.business_name || 'Dan & Dor Solar Company Ltd.', contact_phone: s.contact_phone || '' })
       }
     }).catch(() => {})
   }, [id])
@@ -701,7 +701,7 @@ function LockDeviceModal({ isOpen, onClose, onConfirm, action, customer, device,
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
               <p className="text-xs font-bold text-orange-700 uppercase tracking-wide mb-2">Automatic lock</p>
               <p className="text-sm text-orange-900 leading-relaxed">
-                This sends a lock command to the phone’s Dan Dorsolar agent. The phone shows a
+                This sends a lock command to the phone’s Dan & Dor Solar agent. The phone shows a
                 full-screen lock the customer can’t dismiss. It applies <span className="font-semibold">instantly if the
                 phone is online</span>, otherwise the next time it connects (usually within ~15 minutes).
               </p>

@@ -15,14 +15,14 @@ async function seed() {
 
   await User.create([
     {
-      name: 'Dan Dorsolar Admin',
+      name: 'Dan & Dor Solar Admin',
       email: 'Lawrencesarpong2003@gmail.com',
       password: await bcrypt.hash('admin123', salt),
       role: 'admin',
       is_active: true,
     },
     {
-      name: 'Dan Dorsolar Staff',
+      name: 'Dan & Dor Solar Staff',
       email: 'staff@tritech.com',
       password: await bcrypt.hash('staff123', salt),
       role: 'staff',

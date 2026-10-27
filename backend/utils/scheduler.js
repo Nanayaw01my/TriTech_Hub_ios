@@ -109,7 +109,7 @@ const checkOverduePayments = async () => {
 
         logger.info('[Scheduler] Marking device %s as locked for overdue plan %s (customer: %s)', device._id, plan._id, customer.full_name);
 
-        // Send the lock command to the phone via the Dan Dorsolar lock agent.
+        // Send the lock command to the phone via the Dan & Dor Solar lock agent.
         // The agent applies it instantly (FCM push) or on its next check-in.
         let mdmResult = 'skipped (not enrolled)';
         try {

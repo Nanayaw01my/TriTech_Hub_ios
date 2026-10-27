@@ -5,7 +5,7 @@ export default function Terms() {
   return (
     <LegalLayout title="Terms & Agreement" lastUpdated="July 2026">
       <p>
-        These Terms &amp; Agreement ("Terms") govern your use of the Dan Dorsolar Company Limited
+        These Terms &amp; Agreement ("Terms") govern your use of the Dan & Dor Solar Company Ltd.
         platform and any device purchased through our hire-purchase (installment) plan.
         By registering an account, purchasing a device, or making a payment, you agree to
         these Terms.
@@ -14,7 +14,7 @@ export default function Terms() {
       <Section heading="1. Hire-Purchase Agreement">
         <p>
           Devices are sold on a hire-purchase (installment) basis. <strong>Ownership of the
-          device remains with Dan Dorsolar Company Limited until the full purchase price has been paid.</strong>
+          device remains with Dan & Dor Solar Company Ltd. until the full purchase price has been paid.</strong>
           You are granted possession and use of the device while payments are up to date.
         </p>
       </Section>
@@ -31,13 +31,13 @@ export default function Terms() {
       <Section heading="3. Device Management &amp; Remote Locking">
         <p>
           Devices sold under this plan are enrolled in our device management system. You agree
-          that Dan Dorsolar Company Limited may <strong>remotely lock or restrict the device if a payment is
+          that Dan & Dor Solar Company Ltd. may <strong>remotely lock or restrict the device if a payment is
           overdue</strong>, and unlock it once the outstanding amount is paid. You agree not to
           remove, disable, or tamper with the device management profile while any balance is owed.
         </p>
         <p>
           You also acknowledge and consent that, while any balance is owed, the device management
-          software may <strong>record and report the device's location</strong> to Dan Dorsolar
+          software may <strong>record and report the device's location</strong> to Dan & Dor Solar
           Company Limited to help protect and recover the device. Location data is used only for
           account and device-protection purposes and stops being collected once the device is fully
           paid off.
@@ -46,7 +46,7 @@ export default function Terms() {
 
       <Section heading="4. Default, Late Payment &amp; Repossession">
         <p>
-          If you fail to make payments as agreed, your device may be locked, and Dan Dorsolar Company Limited
+          If you fail to make payments as agreed, your device may be locked, and Dan & Dor Solar Company Ltd.
           reserves the right to recover the device and/or pursue the outstanding balance, including
           from your guarantor. Any fees for late payment will be as communicated to you.
         </p>
@@ -84,7 +84,7 @@ export default function Terms() {
 
       <Section heading="9. Contact">
         <p>
-          For questions about these Terms, contact Dan Dorsolar Company Limited at{' '}
+          For questions about these Terms, contact Dan & Dor Solar Company Ltd. at{' '}
           <span className="font-semibold text-gray-900">support@tritechhub.online</span>{' '}
           or through the contact details provided at registration.
         </p>

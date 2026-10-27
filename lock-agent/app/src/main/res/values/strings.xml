@@ -1,9 +1,9 @@
 <resources>
-    <string name="app_name">Dan Dorsolar</string>
-    <string name="admin_label">Dan Dorsolar Device Protection</string>
-    <string name="admin_description">Lets Dan Dorsolar Company Limited lock this device while it is on an installment plan.</string>
+    <string name="app_name">Dan &amp; Dor Solar</string>
+    <string name="admin_label">Dan &amp; Dor Solar Device Protection</string>
+    <string name="admin_description">Lets Dan &amp; Dor Solar Company Ltd. lock this device while it is on an installment plan.</string>
 
-    <string name="status_title">Dan Dorsolar</string>
+    <string name="status_title">Dan &amp; Dor Solar</string>
     <string name="status_subtitle">Device Protection</string>
     <string name="status_enrolled">This device is protected and linked to your account.</string>
     <string name="status_not_enrolled">This device is not yet enrolled.</string>
@@ -18,7 +18,7 @@
 
     <!-- "Awaiting Activation" first page: stock phones / sales not yet activated. -->
     <string name="pending_title">Awaiting Activation</string>
-    <string name="pending_message">Your purchase is being reviewed by %1$s. This phone will unlock automatically as soon as your account is activated.</string>
+    <string name="pending_message">Your purchase is being reviewed by %1$s — this phone will unlock automatically as soon as your account is activated.</string>
     <string name="pending_check">Check status</string>
     <string name="pending_still">Not activated yet — please wait, or call us.</string>
     <string name="lock_still">Still locked — please complete your payment.</string>

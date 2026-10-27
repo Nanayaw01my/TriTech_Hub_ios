@@ -113,7 +113,7 @@ export default function Login() {
             </svg>
           </div>
           <div className="flex-1">
-            <p className="text-gray-900 text-sm font-bold">Install Dan Dorsolar</p>
+            <p className="text-gray-900 text-sm font-bold">Install Dan & Dor Solar</p>
             <p className="text-xs text-gray-600">Quick access from your home screen</p>
           </div>
           <div className="flex gap-2 flex-shrink-0">
@@ -140,11 +140,11 @@ export default function Login() {
           <div className="flex justify-center mb-5">
             <div className="w-full max-w-[200px] rounded-2xl overflow-hidden border border-white/15 bg-black shadow-lg">
               {logoError ? (
-                <span className="block text-white text-2xl font-black text-center py-7">Dan Dorsolar</span>
+                <span className="block text-white text-2xl font-black text-center py-7">Dan & Dor Solar</span>
               ) : (
                 <img
                   src="/logo.png"
-                  alt="Dan Dorsolar Company Limited"
+                  alt="Dan & Dor Solar Company Ltd."
                   onLoad={() => setLogoLoaded(true)}
                   onError={() => setLogoError(true)}
                   className="w-full h-auto object-contain"
@@ -241,7 +241,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-xs text-white/60 mt-5">
-          © {new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.
+          © {new Date().getFullYear()} Dan & Dor Solar Company Ltd. All rights reserved.
         </p>
       </div>
     </div>

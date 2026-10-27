@@ -3,7 +3,7 @@ const { MailerSend, EmailParams, Sender, Recipient } = require('mailersend');
 const getClient = () => new MailerSend({ apiKey: process.env.MAILERSEND_API_KEY });
 
 const FROM_EMAIL = process.env.EMAIL_FROM_ADDRESS || 'noreply@tritechhub.online';
-const FROM_NAME  = process.env.EMAIL_FROM_NAME    || 'Dan Dorsolar Company Limited';
+const FROM_NAME  = process.env.EMAIL_FROM_NAME    || 'Dan & Dor Solar Company Ltd.';
 
 const send = async ({ to, toName, subject, html, text }) => {
   const ms         = getClient();
@@ -24,7 +24,7 @@ const sendPasswordResetEmail = async (email, name, resetUrl) => {
   await send({
     to: email,
     toName: name,
-    subject: 'Your Dan Dorsolar Company Limited password reset link',
+    subject: 'Your Dan & Dor Solar Company Ltd. password reset link',
     html: `
       <!DOCTYPE html><html><head>
       <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -42,7 +42,7 @@ const sendPasswordResetEmail = async (email, name, resetUrl) => {
       </style>
       </head><body>
       <div class="container">
-        <div class="header"><h1>Dan Dorsolar Company Limited</h1></div>
+        <div class="header"><h1>Dan & Dor Solar Company Ltd.</h1></div>
         <div class="body">
           <h2>Hello, ${name}!</h2>
           <p>We received a request to reset the password for your account.</p>
@@ -52,10 +52,10 @@ const sendPasswordResetEmail = async (email, name, resetUrl) => {
           <p style="word-break:break-all;background:#f4f4f4;padding:10px;border-radius:4px;font-size:13px">${resetUrl}</p>
           <div class="warning"><strong>Security Notice:</strong> If you did not request a password reset, please ignore this email.</div>
         </div>
-        <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.</p><p>Contact support if you need help.</p></div>
+        <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan & Dor Solar Company Ltd. All rights reserved.</p><p>Contact support if you need help.</p></div>
       </div>
       </body></html>`,
-    text: `Hello, ${name}!\n\nReset your password (valid 30 minutes):\n${resetUrl}\n\nIf you did not request this, ignore this email.\n\n© ${new Date().getFullYear()} Dan Dorsolar Company Limited`,
+    text: `Hello, ${name}!\n\nReset your password (valid 30 minutes):\n${resetUrl}\n\nIf you did not request this, ignore this email.\n\n© ${new Date().getFullYear()} Dan & Dor Solar Company Ltd.`,
   });
 };
 
@@ -117,10 +117,10 @@ const sendPaymentConfirmationEmail = async (email, name, amount, planDetails) =>
             : `<p>Your next payment of <strong>${fmtAmount}</strong> is due on <strong>${fmtNextDue}</strong>.</p>`
           }
         </div>
-        <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.</p><p>Keep this email as your payment receipt.</p></div>
+        <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan & Dor Solar Company Ltd. All rights reserved.</p><p>Keep this email as your payment receipt.</p></div>
       </div>
       </body></html>`,
-    text: `Hello, ${name}!\n\nPayment of ${fmtAmount} received.\n\nReference: ${reference}\nDevice: ${deviceModel}\nAmount Paid: ${fmtAmount}\nRemaining Balance: ${fmtBalance}\n${!isPaidOff ? `Payments Left: ${paymentsLeft}\nNext Due: ${fmtNextDue}` : 'Your device is fully paid off!'}\n\n© ${new Date().getFullYear()} Dan Dorsolar Company Limited`,
+    text: `Hello, ${name}!\n\nPayment of ${fmtAmount} received.\n\nReference: ${reference}\nDevice: ${deviceModel}\nAmount Paid: ${fmtAmount}\nRemaining Balance: ${fmtBalance}\n${!isPaidOff ? `Payments Left: ${paymentsLeft}\nNext Due: ${fmtNextDue}` : 'Your device is fully paid off!'}\n\n© ${new Date().getFullYear()} Dan & Dor Solar Company Ltd.`,
   });
 };
 
@@ -128,7 +128,7 @@ const sendLockNotificationEmail = async (email, name, deviceModel) => {
   await send({
     to: email,
     toName: name,
-    subject: `Your ${deviceModel} has been locked — Dan Dorsolar Company Limited`,
+    subject: `Your ${deviceModel} has been locked — Dan & Dor Solar Company Ltd.`,
     html: `
       <!DOCTYPE html><html><head>
       <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -152,17 +152,17 @@ const sendLockNotificationEmail = async (email, name, deviceModel) => {
           <p>Your payment was due more than <strong>48 hours ago</strong>. As per your installment agreement, we have remotely locked your device.</p>
           <div class="action">
             <strong>How to Unlock:</strong>
-            <p style="margin:8px 0 0">Make your overdue installment payment through the Dan Dorsolar Company Limited app. Once confirmed, your device will be unlocked within minutes.</p>
+            <p style="margin:8px 0 0">Make your overdue installment payment through the Dan & Dor Solar Company Ltd. app. Once confirmed, your device will be unlocked within minutes.</p>
           </div>
           <div class="contact">
             <strong>Need Help?</strong>
             <p style="margin:8px 0 0">Contact our support team if you believe this is an error or need assistance.</p>
           </div>
         </div>
-        <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.</p><p>Contact our support team if you need help.</p></div>
+        <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan & Dor Solar Company Ltd. All rights reserved.</p><p>Contact our support team if you need help.</p></div>
       </div>
       </body></html>`,
-    text: `Hello, ${name}!\n\nYour ${deviceModel} has been locked due to an overdue installment payment.\n\nTo unlock, make your payment through the Dan Dorsolar Company Limited app. Contact support if you need help.\n\n© ${new Date().getFullYear()} Dan Dorsolar Company Limited`,
+    text: `Hello, ${name}!\n\nYour ${deviceModel} has been locked due to an overdue installment payment.\n\nTo unlock, make your payment through the Dan & Dor Solar Company Ltd. app. Contact support if you need help.\n\n© ${new Date().getFullYear()} Dan & Dor Solar Company Ltd.`,
   });
 };
 
@@ -195,7 +195,7 @@ const sendPaymentReminderEmail = async (email, name, details) => {
       </head><body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0">
         <div style="max-width:580px;margin:40px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.1)">
           <div style="background:${headerColor};padding:28px 30px;text-align:center">
-            <h1 style="color:#fff;margin:0;font-size:22px">Dan Dorsolar Company Limited</h1>
+            <h1 style="color:#fff;margin:0;font-size:22px">Dan & Dor Solar Company Ltd.</h1>
             <p style="color:#fff;opacity:.85;margin:6px 0 0;font-size:15px">
               ${isOverdue ? 'Overdue Payment Reminder' : 'Payment Reminder'}
             </p>
@@ -229,22 +229,22 @@ const sendPaymentReminderEmail = async (email, name, details) => {
             <div style="background:${isOverdue ? '#fef2f2' : '#fff7ed'};border:1px solid ${isOverdue ? '#fecaca' : '#fed7aa'};border-radius:8px;padding:14px;font-size:14px;color:${isOverdue ? '#991b1b' : '#166534'}">
               <strong>${isOverdue ? 'Action Required:' : 'How to Pay:'}</strong>
               ${isOverdue
-                ? ' Log in to the Dan Dorsolar Company Limited app and make your payment immediately to prevent your device from being locked.'
-                : ' Log in to the Dan Dorsolar Company Limited app and tap "Make Payment" to complete your installment.'
+                ? ' Log in to the Dan & Dor Solar Company Ltd. app and make your payment immediately to prevent your device from being locked.'
+                : ' Log in to the Dan & Dor Solar Company Ltd. app and tap "Make Payment" to complete your installment.'
               }
             </div>
           </div>
           <div style="background:#f9fafb;padding:14px 30px;text-align:center;font-size:12px;color:#9ca3af;border-top:1px solid #eee">
-            &copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited · Powered by Ittek Solutions
+            &copy; ${new Date().getFullYear()} Dan & Dor Solar Company Ltd. · Powered by Ittek Solutions
           </div>
         </div>
       </body></html>`,
-    text: `Hello, ${name}!\n\nPayment reminder for your ${deviceModel}.\n\nAmount Due: ${fmtAmount}\nDue Date: ${fmtDue}\nRemaining Balance: ${fmtBalance}\n\nLog in to the app to make your payment.\n\n© ${new Date().getFullYear()} Dan Dorsolar Company Limited`,
+    text: `Hello, ${name}!\n\nPayment reminder for your ${deviceModel}.\n\nAmount Due: ${fmtAmount}\nDue Date: ${fmtDue}\nRemaining Balance: ${fmtBalance}\n\nLog in to the app to make your payment.\n\n© ${new Date().getFullYear()} Dan & Dor Solar Company Ltd.`,
   });
 };
 
 async function sendAdminSaleNotificationEmail(adminEmail, sale) {
-  const businessName = process.env.BUSINESS_NAME || 'Dan Dorsolar Company Limited';
+  const businessName = process.env.BUSINESS_NAME || 'Dan & Dor Solar Company Ltd.';
   const freqLabel    = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' }[sale.frequency] || sale.frequency;
   const now = new Date().toLocaleString('en-GH', {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
@@ -288,7 +288,7 @@ async function sendAdminSaleNotificationEmail(adminEmail, sale) {
 }
 
 async function sendAdminPaymentReminderEmail(adminEmail, customers) {
-  const businessName = process.env.BUSINESS_NAME || 'Dan Dorsolar Company Limited';
+  const businessName = process.env.BUSINESS_NAME || 'Dan & Dor Solar Company Ltd.';
 
   const rows = customers.map(c => `
     <tr>
@@ -336,7 +336,7 @@ async function sendAdminPaymentReminderEmail(adminEmail, customers) {
 }
 
 async function sendAdminOverdueAlertEmail(adminEmail, customers) {
-  const businessName = process.env.BUSINESS_NAME || 'Dan Dorsolar Company Limited';
+  const businessName = process.env.BUSINESS_NAME || 'Dan & Dor Solar Company Ltd.';
 
   const rows = customers.map(c => `
     <tr>
@@ -388,7 +388,7 @@ const sendCustomerWelcomeEmail = async (email, name, accountNumber) => {
   await send({
     to: email,
     toName: name,
-    subject: `Welcome to Dan Dorsolar Company Limited — Your account is ready`,
+    subject: `Welcome to Dan & Dor Solar Company Ltd. — Your account is ready`,
     html: `
       <!DOCTYPE html><html><head>
       <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -404,7 +404,7 @@ const sendCustomerWelcomeEmail = async (email, name, accountNumber) => {
       </style>
       </head><body>
       <div class="container">
-        <div class="header"><h1>Welcome to Dan Dorsolar Company Limited</h1></div>
+        <div class="header"><h1>Welcome to Dan & Dor Solar Company Ltd.</h1></div>
         <div class="body">
           <h2>Hello, ${name}!</h2>
           <p>Your installment account has been created. Here are your account details:</p>
@@ -416,10 +416,10 @@ const sendCustomerWelcomeEmail = async (email, name, accountNumber) => {
           <p>You can log in to track your installment balance, make payments, and view your payment history.</p>
           <p>If you have any questions, contact our support team.</p>
         </div>
-        <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.</p></div>
+        <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan & Dor Solar Company Ltd. All rights reserved.</p></div>
       </div>
       </body></html>`,
-    text: `Welcome to Dan Dorsolar Company Limited!\n\nHello, ${name}!\n\nYour account has been created.\nAccount Number: ${accountNumber}\nLogin at: tritechhub.online\n\nUse your email and password provided by our staff to log in.\n\n© ${new Date().getFullYear()} Dan Dorsolar Company Limited`,
+    text: `Welcome to Dan & Dor Solar Company Ltd.!\n\nHello, ${name}!\n\nYour account has been created.\nAccount Number: ${accountNumber}\nLogin at: tritechhub.online\n\nUse your email and password provided by our staff to log in.\n\n© ${new Date().getFullYear()} Dan & Dor Solar Company Ltd.`,
   });
 };
 
@@ -427,7 +427,7 @@ const sendDeviceUnlockedEmail = async (email, name, deviceModel) => {
   await send({
     to: email,
     toName: name,
-    subject: `Your ${deviceModel} has been unlocked — Dan Dorsolar Company Limited`,
+    subject: `Your ${deviceModel} has been unlocked — Dan & Dor Solar Company Ltd.`,
     html: `
       <!DOCTYPE html><html><head>
       <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -449,10 +449,10 @@ const sendDeviceUnlockedEmail = async (email, name, deviceModel) => {
           <p>Your device is now fully functional. Keep up with your installment schedule to avoid future interruptions.</p>
           <p>Log in at <a href="https://tritechhub.online">tritechhub.online</a> to view your remaining balance and payment history.</p>
         </div>
-        <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.</p></div>
+        <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan & Dor Solar Company Ltd. All rights reserved.</p></div>
       </div>
       </body></html>`,
-    text: `Hello, ${name}!\n\nYour ${deviceModel} has been unlocked. Thank you for your payment!\n\nLog in at tritechhub.online to track your remaining balance.\n\n© ${new Date().getFullYear()} Dan Dorsolar Company Limited`,
+    text: `Hello, ${name}!\n\nYour ${deviceModel} has been unlocked. Thank you for your payment!\n\nLog in at tritechhub.online to track your remaining balance.\n\n© ${new Date().getFullYear()} Dan & Dor Solar Company Ltd.`,
   });
 };
 
@@ -460,7 +460,7 @@ const sendAdminLoginOTPEmail = async (email, name, otp) => {
   return send({
     to: email,
     toName: name || 'Admin',
-    subject: 'Your Dan Dorsolar Login Code',
+    subject: 'Your Dan & Dor Solar Login Code',
     html: `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
       body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb}
       .wrap{max-width:480px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
@@ -472,7 +472,7 @@ const sendAdminLoginOTPEmail = async (email, name, otp) => {
       .footer{background:#f3f4f6;padding:16px 24px;text-align:center;color:#9ca3af;font-size:12px}
     </style></head><body>
     <div class="wrap">
-      <div class="header"><h1>Dan Dorsolar Company Limited</h1></div>
+      <div class="header"><h1>Dan & Dor Solar Company Ltd.</h1></div>
       <div class="body">
         <p style="color:#374151">Hello <strong>${name || 'Admin'}</strong>,</p>
         <p style="color:#6b7280">Your login verification code is:</p>
@@ -480,10 +480,10 @@ const sendAdminLoginOTPEmail = async (email, name, otp) => {
         <p style="color:#6b7280;font-size:14px">This code expires in <strong>10 minutes</strong>. Never share it with anyone.</p>
         <p style="color:#6b7280;font-size:14px">If you did not attempt to log in, please change your password immediately.</p>
       </div>
-      <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.</p></div>
+      <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan & Dor Solar Company Ltd. All rights reserved.</p></div>
     </div>
     </body></html>`,
-    text: `Hello ${name || 'Admin'},\n\nYour Dan Dorsolar login code is: ${otp}\n\nThis code expires in 10 minutes. Do not share it.\n\n© ${new Date().getFullYear()} Dan Dorsolar Company Limited`,
+    text: `Hello ${name || 'Admin'},\n\nYour Dan & Dor Solar login code is: ${otp}\n\nThis code expires in 10 minutes. Do not share it.\n\n© ${new Date().getFullYear()} Dan & Dor Solar Company Ltd.`,
   });
 };
 
@@ -501,7 +501,7 @@ const sendBackupEmail = async (email, backupJson, filename) => {
   const params = new EmailParams()
     .setFrom(sentFrom)
     .setTo(recipients)
-    .setSubject(`Dan Dorsolar Company Limited Daily Backup — ${filename}`)
+    .setSubject(`Dan & Dor Solar Company Ltd. Daily Backup — ${filename}`)
     .setHtml(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
       body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb}
       .wrap{max-width:480px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
@@ -519,7 +519,7 @@ const sendBackupEmail = async (email, backupJson, filename) => {
         <div class="stat">Customers, Devices, Installment Plans, Payments, Audit Logs, and Staff Users</div>
         <p style="font-size:12px;color:#6b7280">Store this backup securely. It contains all system data and should be treated as sensitive.</p>
       </div>
-      <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan Dorsolar Company Limited. All rights reserved.</p></div>
+      <div class="footer"><p>&copy; ${new Date().getFullYear()} Dan & Dor Solar Company Ltd. All rights reserved.</p></div>
     </div>
     </body></html>`)
     .addAttachment(attachment);

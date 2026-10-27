@@ -121,7 +121,7 @@ export default function StaffAbout() {
         </Section>
 
         <div className="text-center py-4">
-          <p className="text-xs text-gray-400 font-medium">Dan Dorsolar Company Limited · Powered by Ittek Solutions</p>
+          <p className="text-xs text-gray-400 font-medium">Dan & Dor Solar Company Ltd. · Powered by Ittek Solutions</p>
         </div>
       </div>
     </div>

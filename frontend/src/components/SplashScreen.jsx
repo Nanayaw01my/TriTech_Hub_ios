@@ -141,7 +141,7 @@ export default function SplashScreen({ onDone }) {
           ) : (
             <img
               src="/logo.png"
-              alt="Dan Dorsolar"
+              alt="Dan & Dor Solar"
               onLoad={() => setLogoLoaded(true)}
               onError={() => setLogoError(true)}
               className="absolute inset-0 w-full h-full object-cover"
@@ -162,7 +162,7 @@ export default function SplashScreen({ onDone }) {
         <h1 className="font-black tracking-tight leading-none">
           <span className="block text-white text-[clamp(1.7rem,7vw,2.6rem)]"
                 style={{ textShadow: '0 2px 30px rgba(0,0,0,0.6)' }}>
-            Dan Dorsolar
+            Dan & Dor Solar
           </span>
           <span
             className="block text-[clamp(1.9rem,8vw,3rem)] mt-1"

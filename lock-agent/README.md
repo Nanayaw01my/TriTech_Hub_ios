@@ -1,4 +1,4 @@
-# Dan Dorsolar Lock Agent (Android)
+# Dan & Dor Solar Lock Agent (Android)
 
 A custom **Device Owner** app that is installed on each Android phone sold on an
 installment plan. The backend can remotely **lock** (full-screen, un-dismissable)
@@ -21,7 +21,7 @@ adding users, safe boot). It replaces the old iOS SimpleMDM/Lost Mode mechanism.
    when the app is opened) it calls `POST /api/agent/heartbeat` to read the
    *desired* lock state.
 3. **Lock.** When an account goes overdue, the backend sets the desired state to
-   `locked`. The agent shows a full-screen Dan Dorsolar lock (kiosk / lock-task
+   `locked`. The agent shows a full-screen Dan & Dor Solar lock (kiosk / lock-task
    mode) that can't be dismissed, and keeps factory reset disabled.
 4. **Unlock.** When the customer pays, the backend sets `unlocked`; the agent
    leaves kiosk mode and the phone is normal again.
@@ -67,7 +67,7 @@ Only set these if you want to change defaults:
 
 ```
 PUBLIC_BACKEND_URL=https://tritechhub.online   # your domain (used in the QR)
-BUSINESS_NAME=Dan Dorsolar Company Limited
+BUSINESS_NAME=Dan & Dor Solar Company Ltd.
 BUSINESS_PHONE=+233XXXXXXXXX
 AGENT_APK_URL=...        # override to host the APK elsewhere
 AGENT_APK_CHECKSUM=...   # override the committed checksum

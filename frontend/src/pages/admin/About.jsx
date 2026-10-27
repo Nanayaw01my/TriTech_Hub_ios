@@ -50,13 +50,13 @@ export default function AdminAbout() {
       }}>
         <p className="text-orange-300 text-xs font-bold uppercase tracking-widest mb-1">Admin Portal</p>
         <h1 className="text-white text-2xl font-black">About the System</h1>
-        <p className="text-orange-200/70 text-sm mt-1">Dan Dorsolar Company Limited · Full Reference Guide</p>
+        <p className="text-orange-200/70 text-sm mt-1">Dan & Dor Solar Company Ltd. · Full Reference Guide</p>
       </div>
 
       {/* Desktop header */}
       <div className="hidden lg:block pt-6 pb-4 px-0">
         <h1 className="text-2xl font-black text-gray-900">About the System</h1>
-        <p className="text-gray-500 text-sm mt-1">Dan Dorsolar Company Limited · Admin Reference Guide</p>
+        <p className="text-gray-500 text-sm mt-1">Dan & Dor Solar Company Ltd. · Admin Reference Guide</p>
       </div>
 
       <div className="px-4 lg:px-0 -mt-5 lg:mt-0">
@@ -64,7 +64,7 @@ export default function AdminAbout() {
         {/* Overview */}
         <Section title="System Overview">
           <p className="text-sm text-gray-600 leading-relaxed mb-3">
-            Dan Dorsolar Company Limited is an Android installment management platform. Staff register customers with a device and payment plan.
+            Dan & Dor Solar Company Ltd. is an Android installment management platform. Staff register customers with a device and payment plan.
             Customers pay in installments via Mobile Money or card. You manage everything from this admin portal.
           </p>
           <div className="grid grid-cols-3 gap-2 mt-2">
@@ -130,7 +130,7 @@ export default function AdminAbout() {
 
         {/* Version */}
         <div className="text-center py-4">
-          <p className="text-xs text-gray-400 font-medium">Dan Dorsolar Company Limited · Powered by Ittek Solutions</p>
+          <p className="text-xs text-gray-400 font-medium">Dan & Dor Solar Company Ltd. · Powered by Ittek Solutions</p>
         </div>
       </div>
     </div>

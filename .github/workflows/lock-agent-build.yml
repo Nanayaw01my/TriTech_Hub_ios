@@ -82,7 +82,7 @@ jobs:
         run: |
           cp lock-agent/app/build/outputs/apk/release/app-release.apk dandorsolar-lock-agent.apk
           gh release view lock-agent >/dev/null 2>&1 || \
-            gh release create lock-agent --title "Dan Dorsolar Lock Agent" \
+            gh release create lock-agent --title "Dan & Dor Solar Lock Agent" \
               --notes "Latest lock agent APK (auto-published)." --target "$GITHUB_SHA"
           # Upload under the exact filename the QR points at.
           gh release upload lock-agent dandorsolar-lock-agent.apk --clobber
