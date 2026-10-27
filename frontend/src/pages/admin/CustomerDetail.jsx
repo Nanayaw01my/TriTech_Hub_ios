@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { saveBlob } from '../../utils/download'
+import { displayEmail } from '../../utils/customerEmail'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import StatusBadge from '../../components/StatusBadge'
 import ProgressBar from '../../components/ProgressBar'
@@ -255,7 +256,7 @@ export default function AdminCustomerDetail() {
 
       {/* ── PERSONAL DETAILS ─────────────────────────────────── */}
       <Section title="Personal Details">
-        <Row label="Email" value={customer.email} />
+        <Row label="Email" value={displayEmail(customer.email) || '— (none)'} />
         <Row label="Phone" value={customer.phone} />
         {customer.ghana_card_id && <Row label="Ghana Card ID" value={customer.ghana_card_id} mono />}
         {customer.occupation && <Row label="Occupation" value={customer.occupation} />}

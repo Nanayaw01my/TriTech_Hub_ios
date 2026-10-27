@@ -13,6 +13,7 @@ const { v4: uuidv4 } = require('uuid');
 const logger = require('../utils/logger');
 const { uploadBase64 } = require('../utils/cloudinary');
 const { processSuccessfulPayment } = require('./paymentController');
+const { placeholderEmail, isPlaceholderEmail } = require('../utils/customerEmail');
 
 // Upload a base64-encoded image to Cloudinary, return the secure URL (or null).
 const saveBase64Image = async (base64String, fieldName, customerId = '') => {
@@ -334,19 +335,23 @@ const addCustomer = async (req, res) => {
       });
     }
 
-    // --- 3. Check email uniqueness ---
-    const existingEmail = await User.findOne({ email: email.toLowerCase().trim() });
+    // --- 3. Check email uniqueness (email is optional) ---
+    const cleanEmail = email ? String(email).toLowerCase().trim() : '';
+    const existingEmail = cleanEmail ? await User.findOne({ email: cleanEmail }) : null;
     if (existingEmail) {
       return res.status(409).json({ success: false, message: 'An account with this email already exists.' });
     }
 
     // --- 4. Generate account number ---
     const accountNumber = await generateAccountNumber();
+    // No email given → internal stand-in address (never emailed; they log in
+    // with their account number).
+    const customerEmail = cleanEmail || placeholderEmail(accountNumber);
 
     // --- 5. Create User account ---
     const newUser = await User.create({
       name: full_name.trim(),
-      email: email.toLowerCase().trim(),
+      email: customerEmail,
       password: customerPassword,
       phone: phone?.trim(),
       role: 'customer',
@@ -380,7 +385,7 @@ const addCustomer = async (req, res) => {
     const newCustomer = await Customer.create({
       user_id: newUser._id,
       full_name: full_name.trim(),
-      email: email.toLowerCase().trim(),
+      email: customerEmail,
       phone: phone?.trim(),
       ghana_card_id,
       photos,
@@ -520,7 +525,7 @@ const addCustomer = async (req, res) => {
         }
 
         // Welcome email + SMS to customer
-        if (newCustomer.email) {
+        if (newCustomer.email && !isPlaceholderEmail(newCustomer.email)) {
           try {
             await sendCustomerWelcomeEmail(newCustomer.email, newCustomer.full_name, newUser.account_number);
             logger.info('[Sale notify] Welcome email sent to:', newCustomer.email);
@@ -533,7 +538,8 @@ const addCustomer = async (req, res) => {
             newCustomer.phone,
             newCustomer.full_name,
             newUser.account_number,
-            process.env.FRONTEND_URL || 'dandorsolar.site'
+            process.env.FRONTEND_URL || 'dandorsolar.site',
+            password ? null : customerPassword // send the PIN only if we generated it
           ).catch(e => logger.error('[Sale notify] Welcome SMS failed:', e.message));
         }
       } catch (err) {

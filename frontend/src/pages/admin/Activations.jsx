@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import Skeleton from '../../components/Skeleton'
 import ConfirmModal from '../../components/ConfirmModal'
 import { formatDistanceToNow } from 'date-fns'
+import { displayEmail } from '../../utils/customerEmail'
 
 const GHS = (n) => `GH₵${Number(n || 0).toLocaleString()}`
 
@@ -80,7 +81,7 @@ export default function Activations() {
                     )}
                     <div className="min-w-0">
                       <p className="font-bold text-gray-900 truncate">{it.customer_name}</p>
-                      <p className="text-xs text-gray-500 truncate">{it.phone} · {it.email}</p>
+                      <p className="text-xs text-gray-500 truncate">{it.phone}{displayEmail(it.email) ? ` · ${displayEmail(it.email)}` : ''}</p>
                     </div>
                   </div>
                   {it.status === 'approved' ? (

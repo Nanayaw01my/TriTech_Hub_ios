@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
+import { displayEmail } from '../../utils/customerEmail'
 import toast from 'react-hot-toast'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import StatusBadge from '../../components/StatusBadge'
@@ -211,7 +212,7 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
             <div className="bg-orange-50 rounded-2xl p-3 mb-4">
               <p className="text-xs text-gray-500">Customer</p>
               <p className="font-bold text-gray-900">{customer.full_name}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{customer.email}</p>
+              {displayEmail(customer.email) && <p className="text-xs text-gray-500 mt-0.5">{displayEmail(customer.email)}</p>}
             </div>
 
             {/* Balance summary */}
@@ -354,7 +355,6 @@ export default function StaffCustomerDetail() {
   const handleCollectDeposit = () => {
     if (!PAYSTACK_PUBLIC_KEY) { toast.error('Paystack public key not configured'); return }
     if (!window.PaystackPop) { toast.error('Payment system not loaded. Refresh and try again.'); return }
-    if (!customer?.email) { toast.error('This customer has no email — Paystack needs one.'); return }
     setDepositBusy(true)
     try {
       const handler = window.PaystackPop.setup({

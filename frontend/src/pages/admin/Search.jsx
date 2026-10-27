@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
+import { displayEmail } from '../../utils/customerEmail'
 
 export default function AdminSearch() {
   const [query, setQuery] = useState('')
@@ -95,7 +96,7 @@ export default function AdminSearch() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm text-gray-900 truncate">{c.full_name}</p>
-                      <p className="text-xs text-gray-500">{c.phone} {c.email ? `· ${c.email}` : ''}</p>
+                      <p className="text-xs text-gray-500">{c.phone} {displayEmail(c.email) ? `· ${displayEmail(c.email)}` : ''}</p>
                     </div>
                     <svg className="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

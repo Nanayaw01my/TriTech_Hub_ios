@@ -48,7 +48,7 @@ export default function Login() {
     e?.preventDefault()
     setError('')
     if (!identifier.trim()) {
-      setError('Please enter your email')
+      setError('Please enter your email or account number')
       setSwipeKey(k => k + 1) // reset the swipe knob
       return
     }

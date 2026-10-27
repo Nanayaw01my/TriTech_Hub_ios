@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import api from '../../api/axios'
+import { displayEmail } from '../../utils/customerEmail'
 import toast from 'react-hot-toast'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import Skeleton from '../../components/Skeleton'
@@ -175,7 +176,7 @@ export default function CustomerProfile() {
           <h2 className="text-xl font-black text-gray-900 mt-3">
             {customer?.full_name || user?.full_name || user?.name}
           </h2>
-          <p className="text-sm text-gray-500">{customer?.email || user?.email}</p>
+          <p className="text-sm text-gray-500">{displayEmail(customer?.email || user?.email) || `Account ${user?.account_number || ''}`}</p>
           <p className="text-sm text-gray-500">{customer?.phone || user?.phone}</p>
         </div>
 

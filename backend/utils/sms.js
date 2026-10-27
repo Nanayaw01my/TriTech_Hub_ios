@@ -129,8 +129,11 @@ const sendAdminSaleSMS = async (adminPhone, sale) => {
   await sendSMS(adminPhone, msg);
 };
 
-const sendCustomerWelcomeSMS = async (phone, name, accountNumber) => {
-  const msg = `Welcome ${name}! Acct: ${accountNumber}. Login at dandorsolar.site with your email & password. -Dan & Dor Solar`;
+// [pin] is included when the system generated the password (the DSR left it
+// blank), otherwise the customer would have no way to know it.
+const sendCustomerWelcomeSMS = async (phone, name, accountNumber, _url, pin = null) => {
+  const creds = pin ? `Acct ${accountNumber} and PIN ${pin}` : `Acct ${accountNumber} and your password`;
+  const msg = `Welcome ${name}! Login at dandorsolar.site with ${creds}. -Dan & Dor Solar`;
   await sendSMS(phone, msg);
 };
 

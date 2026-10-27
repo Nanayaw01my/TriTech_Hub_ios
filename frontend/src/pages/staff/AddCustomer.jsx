@@ -114,7 +114,8 @@ export default function StaffAddCustomer() {
     const e = {}
     if (s === 1) {
       if (!form.full_name.trim()) e.full_name = 'Full name is required'
-      if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Valid email required'
+      // Email is optional (many customers have none) — only check it if given.
+      if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Enter a valid email or leave it blank'
       if (!form.phone.trim()) e.phone = 'Phone number is required'
       if (!form.ghana_card_id.trim()) e.ghana_card_id = 'Ghana Card ID is required'
       // Password is OPTIONAL. Only validate it when one is entered.
@@ -303,12 +304,12 @@ export default function StaffAddCustomer() {
               />
             </FormField>
 
-            <FormField label="Email Address" required error={errors.email}>
+            <FormField label="Email Address (optional)" error={errors.email}>
               <input
                 type="email"
                 value={form.email}
                 onChange={(e) => set('email', e.target.value)}
-                placeholder="customer@example.com"
+                placeholder="Leave blank if the customer has no email"
                 className={inputClass(errors.email)}
                 inputMode="email"
                 autoCapitalize="none"

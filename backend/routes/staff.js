@@ -55,7 +55,8 @@ router.post(
   handleUploadError,
   [
     body('full_name').notEmpty().trim().withMessage('Full name is required.'),
-    body('email').isEmail().normalizeEmail().withMessage('Valid email is required.'),
+    // Email is optional (many customers have none); validated only if given.
+    body('email').optional({ checkFalsy: true }).isEmail().normalizeEmail().withMessage('Enter a valid email or leave it blank.'),
     body('phone').notEmpty().trim().withMessage('Phone number is required.'),
     // Password is OPTIONAL. If given it must be 1-5 chars; if omitted the
     // backend auto-generates one so the customer portal account still exists.

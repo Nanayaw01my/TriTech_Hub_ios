@@ -1,6 +1,7 @@
 const { MailerSend, EmailParams, Sender, Recipient, Attachment } = require('mailersend');
 const nodemailer = require('nodemailer');
 const logger = require('./logger');
+const { isPlaceholderEmail } = require('./customerEmail');
 
 const FROM_EMAIL = process.env.EMAIL_FROM_ADDRESS || 'noreply@dandorsolar.site';
 const FROM_NAME  = process.env.EMAIL_FROM_NAME    || 'Dan & Dor Solar Company Ltd.';
@@ -34,6 +35,8 @@ const describeError = (err) => {
 
 // attachments: [{ filename, content: Buffer }]
 const send = async ({ to, toName, subject, html, text, attachments = [] }) => {
+  // Customers registered without an email have a stand-in address — skip.
+  if (isPlaceholderEmail(to)) return;
   if (process.env.MAILERSEND_API_KEY) {
     const ms = new MailerSend({ apiKey: process.env.MAILERSEND_API_KEY });
     const params = new EmailParams()
