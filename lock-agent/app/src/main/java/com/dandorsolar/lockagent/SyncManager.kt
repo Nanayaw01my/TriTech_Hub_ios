@@ -32,6 +32,7 @@ object SyncManager {
             Prefs.setDeviceId(c, deviceId)
             Prefs.setDeviceSecret(c, j.optString("device_secret"))
             Prefs.setEnrolled(c, true)
+            Prefs.setLastSyncOk(c, System.currentTimeMillis())
             applyServerInfo(c, j)
             Log.i(TAG, "Enrolled successfully")
         } else {
@@ -55,6 +56,7 @@ object SyncManager {
             val res = Api.heartbeat(backend, id, secret, Prefs.appliedLockState(c), fix, Prefs.fcmToken(c).ifEmpty { null })
             val j = res.json
             if (res.ok && j != null) {
+                Prefs.setLastSyncOk(c, System.currentTimeMillis()) // dead-man: fed a heartbeat
                 applyServerInfo(c, j)
                 val desired = j.optString("desired_lock_state", Prefs.desiredLockState(c))
                 Prefs.setDesiredLockState(c, desired)
@@ -75,10 +77,26 @@ object SyncManager {
         if (Prefs.desiredLockState(c) == "released") return
         if (Prefs.appliedLockState(c) == "locked") return
         val deadline = Prefs.paidUntil(c)
-        if (deadline <= 0L) return
-        if (System.currentTimeMillis() > deadline) {
+        if (deadline <= 0L) return // stock / unactivated / released — no enforcement
+        val now = System.currentTimeMillis()
+
+        // 1) Offline self-lock: the installment deadline has passed.
+        if (now > deadline) {
             Log.i(TAG, "Offline deadline passed — self-locking")
             lock(c)
+            return
+        }
+
+        // 2) Dead-man switch: the phone (on an active plan) hasn't reached the
+        //    server for too long — lock so it can't stay dark to dodge commands.
+        val days = Prefs.deadmanDays(c)
+        if (days > 0) {
+            var last = Prefs.lastSyncOk(c)
+            if (last <= 0L) { Prefs.setLastSyncOk(c, now); last = now } // seed, don't lock on first run
+            if (now - last > days.toLong() * 24L * 60L * 60L * 1000L) {
+                Log.i(TAG, "Dead-man: no check-in for $days days — self-locking")
+                lock(c)
+            }
         }
     }
 
@@ -87,6 +105,7 @@ object SyncManager {
         Prefs.setUnlockContact(c, j.optString("unlock_contact"))
         j.optString("business_name").takeIf { it.isNotEmpty() }?.let { Prefs.setBusinessName(c, it) }
         if (j.has("paid_until")) Prefs.setPaidUntil(c, j.optLong("paid_until", 0L))
+        if (j.has("deadman_days")) Prefs.setDeadmanDays(c, j.optInt("deadman_days", 7))
     }
 
     /** Make the phone match [desired] ("locked"/"unlocked"/"released"). Idempotent. */

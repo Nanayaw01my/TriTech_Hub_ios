@@ -1159,6 +1159,43 @@ const activatePlan = async (req, res) => {
   }
 };
 
+// ─── RETURN TO STOCK (post-repossession recovery) ─────────────────────────────
+
+/**
+ * POST /api/admin/devices/:id/return-to-stock
+ * Put a recovered phone back into the enrolled-stock pool so it can be resold.
+ * Clears the customer link and lock, keeps the agent enrollment.
+ */
+const returnDeviceToStock = async (req, res) => {
+  try {
+    const device = await Device.findById(req.params.id);
+    if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
+
+    device.assigned_to = null;
+    device.sold_status = 'available';
+    device.lock_status = 'unlocked';
+    if (!device.agent) device.agent = {};
+    device.agent.desired_lock_state = 'unlocked';
+    device.agent.paid_until = null; // no deadline while back in stock
+    await device.save();
+    if (device.agent?.enrolled) {
+      try { await agent.pushCommand(device); } catch { /* applies on next check-in */ }
+    }
+
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'device_updated',
+      details: { device_id: device._id, returned_to_stock: true },
+      ip_address: req.ip,
+    });
+
+    return res.status(200).json({ success: true, message: 'Phone returned to stock — it can be sold again.' });
+  } catch (error) {
+    logger.error('returnDeviceToStock error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── TRANSACTIONS ─────────────────────────────────────────────────────────────
 
 /**
@@ -1517,9 +1554,18 @@ const getStaffSales = async (req, res) => {
 
     const salesData = await Promise.all(
       staffUsers.map(async (s) => {
+        // Commission is earned on ACTIVATED sales (admin-approved), not on raw
+        // registrations. Count activated installment plans by this DSR.
         const [totalSales, periodSales] = await Promise.all([
-          Customer.countDocuments({ created_by: s._id }),
-          Customer.countDocuments({ created_by: s._id, createdAt: { $gte: periodStart } }),
+          InstallmentPlan.countDocuments({ created_by: s._id, status: { $ne: 'pending' } }),
+          InstallmentPlan.countDocuments({
+            created_by: s._id,
+            status: { $ne: 'pending' },
+            $or: [
+              { activated_at: { $gte: periodStart } },
+              { activated_at: null, createdAt: { $gte: periodStart } },
+            ],
+          }),
         ]);
         const rate = s.commission_per_sale || 100;
         return {
@@ -2243,10 +2289,13 @@ const repossessDevice = async (req, res) => {
     const device = await Device.findById(plan.device_id);
     if (!device) return res.status(404).json({ success: false, message: 'Device not found.' });
 
-    device.lock_status = 'unlocked';
-    device.sold_status = 'available';
-    device.assigned_to = null;
-    await device.save();
+    // LOCK the phone to pressure the customer to surrender it — don't free it
+    // yet. It stays assigned to the customer's record until physically
+    // recovered, then "Return to stock" clears it for resale.
+    let lockResult = null;
+    device.lock_status = 'locked';
+    if (device.agent?.enrolled) lockResult = await agent.lockDevice(device);
+    else await device.save();
 
     plan.status = 'repossessed';
     await plan.save();
@@ -2264,11 +2313,13 @@ const repossessDevice = async (req, res) => {
       ip_address: req.ip,
     });
 
-    logger.info(`Device repossessed: ${device.model} from ${customer.full_name}`);
+    logger.info(`Device repossessed (locked): ${device.model} from ${customer.full_name}`);
 
     return res.status(200).json({
       success: true,
-      message: `Device "${device.model}" has been repossessed and is now available for resale.`,
+      message: lockResult && !lockResult.delivered
+        ? 'Marked repossessed. The phone will lock on its next check-in; use "Return to stock" once you recover it.'
+        : 'Marked repossessed and the phone is being locked. Use "Return to stock" once you recover it.',
     });
   } catch (error) {
     logger.error('repossessDevice error:', error);
@@ -2286,7 +2337,8 @@ const getCommissions = async (req, res) => {
 
     const rows = await Promise.all(staff.map(async (s) => {
       const rate = Number(s.commission_per_sale) || 100;
-      const totalSales = await Customer.countDocuments({ created_by: s._id });
+      // Only activated (approved) sales count toward commission.
+      const totalSales = await InstallmentPlan.countDocuments({ created_by: s._id, status: { $ne: 'pending' } });
       const paidAgg = await CommissionPayout.aggregate([
         { $match: { staff_id: s._id, status: 'success' } },
         { $group: { _id: null, paidCount: { $sum: '$sales_count' }, paidAmount: { $sum: '$amount' } } },
@@ -2329,7 +2381,8 @@ const payCommission = async (req, res) => {
 
     const rate = Number(staff.commission_per_sale) || 100;
 
-    const totalSales = await Customer.countDocuments({ created_by: staff._id });
+    // Only activated (approved) sales count toward commission.
+    const totalSales = await InstallmentPlan.countDocuments({ created_by: staff._id, status: { $ne: 'pending' } });
     const paidAgg = await CommissionPayout.aggregate([
       { $match: { staff_id: staff._id, status: 'success' } },
       { $group: { _id: null, paidCount: { $sum: '$sales_count' } } },
@@ -2447,6 +2500,7 @@ module.exports = {
   releaseCustomerDevice,
   getPendingActivations,
   activatePlan,
+  returnDeviceToStock,
   getTransactions,
   getReports,
   getAuditLogs,

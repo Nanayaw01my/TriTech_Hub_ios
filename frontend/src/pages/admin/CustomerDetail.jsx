@@ -31,6 +31,8 @@ export default function AdminCustomerDetail() {
   const [trackOpen, setTrackOpen] = useState(false)
   const [releaseModal, setReleaseModal] = useState(false)
   const [releaseLoading, setReleaseLoading] = useState(false)
+  const [returnModal, setReturnModal] = useState(false)
+  const [returnLoading, setReturnLoading] = useState(false)
 
   const fetchCustomer = async () => {
     try {
@@ -129,14 +131,29 @@ export default function AdminCustomerDetail() {
   const handleRepossess = async () => {
     setRepossessLoading(true)
     try {
-      await api.post(`/admin/customers/${id}/repossess`)
-      toast.success('Device repossessed and returned to inventory.')
+      const res = await api.post(`/admin/customers/${id}/repossess`)
+      toast.success(res.data?.message || 'Marked repossessed — the phone is being locked.', { duration: 6000 })
       setRepossessModal(false)
-      navigate('/admin/customers')
+      fetchCustomer()
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Repossession failed')
     } finally {
       setRepossessLoading(false)
+    }
+  }
+
+  const handleReturnToStock = async () => {
+    setReturnLoading(true)
+    try {
+      const devId = (plan?.device_id?._id) || plan?.device_id || customer?.device?._id
+      await api.post(`/admin/devices/${devId}/return-to-stock`)
+      toast.success('Phone returned to stock — it can be sold again.')
+      setReturnModal(false)
+      fetchCustomer()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not return to stock')
+    } finally {
+      setReturnLoading(false)
     }
   }
 
@@ -427,7 +444,7 @@ export default function AdminCustomerDetail() {
               {reminderLoading ? 'Sending…' : 'Send Payment Reminder'}
             </button>
           )}
-          {plan?.status === 'defaulted' && (
+          {plan && !['completed', 'repossessed', 'pending'].includes(plan.status) && (
             <button
               onClick={() => setRepossessModal(true)}
               className="w-full py-3 px-4 rounded-xl border-2 border-red-200 text-red-700 font-semibold text-sm
@@ -437,6 +454,18 @@ export default function AdminCustomerDetail() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Repossess Device
+            </button>
+          )}
+          {plan?.status === 'repossessed' && (
+            <button
+              onClick={() => setReturnModal(true)}
+              className="w-full py-3 px-4 rounded-xl border-2 border-green-200 text-green-700 font-semibold text-sm
+                         hover:bg-green-50 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Return Phone to Stock
             </button>
           )}
           <button
@@ -549,10 +578,21 @@ export default function AdminCustomerDetail() {
         onClose={() => setRepossessModal(false)}
         onConfirm={handleRepossess}
         title="Repossess Device"
-        message={`Return ${device?.model || 'the device'} to inventory? This marks the plan as closed and makes the device available for resale.`}
+        message={`Lock ${device?.model || 'this phone'} and mark the plan repossessed? The phone stays locked (pressuring the customer to surrender it). Once you physically recover it, use "Return Phone to Stock" to resell it.`}
         confirmText="Repossess"
         confirmVariant="danger"
         loading={repossessLoading}
+      />
+
+      {/* Return to Stock Modal */}
+      <ConfirmModal
+        isOpen={returnModal}
+        onClose={() => setReturnModal(false)}
+        onConfirm={handleReturnToStock}
+        title="Return Phone to Stock"
+        message={`Put ${device?.model || 'this phone'} back into your enrolled-stock pool so it can be sold again? This clears the customer link and unlocks it. Do this only after you have physically recovered the phone.`}
+        confirmText="Return to Stock"
+        loading={returnLoading}
       />
 
       {/* Image Viewer */}

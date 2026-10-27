@@ -41,6 +41,10 @@ async function lockInfoFor(device) {
     // stores this and locks itself once its own clock passes it, even with no
     // internet.
     paid_until: device.agent?.paid_until ? new Date(device.agent.paid_until).getTime() : 0,
+    // Dead-man switch: if the phone (on an active plan) can't check in for this
+    // many days, it locks itself — stops a customer from dodging commands by
+    // keeping the phone permanently offline. 0 disables it.
+    deadman_days: Number(process.env.DEADMAN_DAYS) || 7,
   };
 }
 

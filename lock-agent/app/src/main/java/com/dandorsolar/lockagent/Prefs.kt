@@ -49,4 +49,12 @@ object Prefs {
      */
     fun paidUntil(c: Context): Long = p(c).getLong("paid_until", 0L)
     fun setPaidUntil(c: Context, v: Long) = p(c).edit().putLong("paid_until", v).apply()
+
+    /** Dead-man switch: epoch millis of the last successful server check-in, and
+     *  how many days of silence trigger a self-lock (0 = disabled). */
+    fun lastSyncOk(c: Context): Long = p(c).getLong("last_sync_ok", 0L)
+    fun setLastSyncOk(c: Context, v: Long) = p(c).edit().putLong("last_sync_ok", v).apply()
+
+    fun deadmanDays(c: Context): Int = p(c).getInt("deadman_days", 7)
+    fun setDeadmanDays(c: Context, v: Int) = p(c).edit().putInt("deadman_days", v).apply()
 }
