@@ -204,6 +204,28 @@ export default function StockEnrollment() {
               <button onClick={load} className="mt-4 text-sm font-semibold text-orange-600 hover:text-orange-700">Refresh</button>
             </div>
 
+            {/* What phones reported while being set up — shows where a failed setup stopped */}
+            {info?.traces?.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
+                <h3 className="text-sm font-bold text-gray-900 mb-2">Recent setup steps from phones</h3>
+                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                  {info.traces.map((t) => (
+                    <div key={t._id} className="text-xs flex gap-2">
+                      <span className="text-gray-400 flex-shrink-0 w-16">{formatDistanceToNow(new Date(t.createdAt), { addSuffix: false })}</span>
+                      <span className="min-w-0">
+                        <span className="font-semibold text-gray-800">{t.model || 'Phone'}</span>
+                        {t.android_version ? <span className="text-gray-400"> · Android {t.android_version}</span> : null}
+                        <span className="text-gray-400"> · {t.app_version}</span>
+                        <br />
+                        <span className={`font-mono ${/fail|error|not_enrolled/.test(t.stage + t.detail) ? 'text-red-600' : 'text-gray-600'}`}>{t.stage}</span>
+                        {t.detail ? <span className="text-gray-500 font-mono break-all"> {t.detail}</span> : null}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Inventory */}
             <div className="flex gap-2 mb-2 flex-wrap">
               {['available', 'all'].map((t) => (

@@ -266,4 +266,33 @@ const ack = async (req, res) => {
   }
 };
 
-module.exports = { enroll, heartbeat, commands, ack };
+/**
+ * POST /api/agent/trace — enrollment breadcrumb from a phone during QR setup
+ * (before it has a device secret). Only accepted with a valid enrollment token.
+ */
+const trace = async (req, res) => {
+  try {
+    const b = req.body || {};
+    const token = String(b.enrollment_token || '');
+    const settings = await Settings.getSingleton();
+    const valid = token && (token === settings.stock_enrollment_token ||
+      await Device.exists({ 'agent.enrollment_token': token }));
+    if (!valid) return res.status(403).json({ success: false });
+    const AgentTrace = require('../models/AgentTrace');
+    await AgentTrace.create({
+      stage: String(b.stage || '').slice(0, 60),
+      detail: String(b.detail || '').slice(0, 300),
+      model: String(b.model || '').slice(0, 80),
+      android_version: String(b.android_version || '').slice(0, 20),
+      app_version: String(b.app_version || '').slice(0, 20),
+      device_ref: String(b.device_id || '').slice(-6),
+    });
+    logger.info('[agent] trace %s %s: %s', b.model, b.stage, b.detail || '');
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    logger.error('[agent] trace error: %s', error.message);
+    return res.status(500).json({ success: false });
+  }
+};
+
+module.exports = { enroll, heartbeat, commands, ack, trace };

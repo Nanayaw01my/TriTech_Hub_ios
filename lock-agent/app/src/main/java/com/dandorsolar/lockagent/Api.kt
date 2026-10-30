@@ -87,6 +87,22 @@ object Api {
         return request("POST", "$backend/api/agent/ack", body, authHeaders(deviceId, secret))
     }
 
+    /** POST /api/agent/trace — enrollment breadcrumb (which setup step was reached). */
+    fun trace(
+        backend: String, token: String, stage: String, detail: String, model: String,
+        androidVersion: String, appVersion: String, deviceId: String
+    ): Result {
+        val body = JSONObject()
+            .put("enrollment_token", token)
+            .put("stage", stage)
+            .put("detail", detail)
+            .put("model", model)
+            .put("android_version", androidVersion)
+            .put("app_version", appVersion)
+            .put("device_id", deviceId)
+        return request("POST", "$backend/api/agent/trace", body, emptyMap())
+    }
+
     private fun authHeaders(deviceId: String, secret: String) =
         mapOf("x-device-id" to deviceId, "x-device-secret" to secret)
 }

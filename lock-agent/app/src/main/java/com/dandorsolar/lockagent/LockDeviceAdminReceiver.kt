@@ -23,5 +23,6 @@ class LockDeviceAdminReceiver : DeviceAdminReceiver() {
     override fun onEnabled(context: Context, intent: Intent) {
         super.onEnabled(context, intent)
         Policy.applyBasePolicies(context)
+        Trace.send(context, "admin_enabled", "owner=${Policy.isOwner(context)}")
     }
 }

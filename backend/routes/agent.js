@@ -1,6 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { enroll, heartbeat, commands, ack } = require('../controllers/agentController');
+const { enroll, heartbeat, commands, ack, trace } = require('../controllers/agentController');
 
 const router = express.Router();
 
@@ -25,5 +25,6 @@ router.post('/enroll', enrollLimiter, enroll);
 router.post('/heartbeat', pollLimiter, heartbeat);
 router.get('/commands', pollLimiter, commands);
 router.post('/ack', pollLimiter, ack);
+router.post('/trace', enrollLimiter, trace);
 
 module.exports = router;

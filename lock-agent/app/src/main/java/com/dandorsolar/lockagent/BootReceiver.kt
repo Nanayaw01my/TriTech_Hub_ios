@@ -9,6 +9,10 @@ import android.content.Intent
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         App.scheduleSync(context)
+        // Setup was interrupted by a restart before we enrolled: finish now.
+        if (!Prefs.enrolled(context) && Prefs.enrollmentToken(context).isNotEmpty()) {
+            Trace.send(context, "boot_not_enrolled", "owner=${Policy.isOwner(context)} ${intent.action?.substringAfterLast('.')}")
+        }
         // Re-show the lock OR the "Awaiting Activation" page straight after boot.
         val applied = Prefs.appliedLockState(context)
         val desired = Prefs.desiredLockState(context)

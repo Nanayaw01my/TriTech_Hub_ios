@@ -15,11 +15,11 @@ object SyncManager {
     const val ACTION_UNLOCK = "com.dandorsolar.lockagent.UNLOCK"
 
     /** First-time pairing: trade the enrollment token for a device secret. */
-    fun tryEnroll(c: Context) {
-        if (Prefs.enrolled(c)) return
+    fun tryEnroll(c: Context): String {
+        if (Prefs.enrolled(c)) return "already"
         val backend = Prefs.backendUrl(c)
         val token = Prefs.enrollmentToken(c)
-        if (backend.isEmpty() || token.isEmpty()) return
+        if (backend.isEmpty() || token.isEmpty()) return "no_token"
 
         val deviceId = DeviceInfo.androidId(c)
         val res = Api.enroll(
@@ -36,9 +36,10 @@ object SyncManager {
             Prefs.setDesiredLockState(c, j.optString("desired_lock_state", Prefs.desiredLockState(c)))
             applyServerInfo(c, j)
             Log.i(TAG, "Enrolled successfully")
-        } else {
-            Log.w(TAG, "Enroll failed (code ${res.code})")
+            return "ok"
         }
+        Log.w(TAG, "Enroll failed (code ${res.code})")
+        return "failed_${res.code}"
     }
 
     /** One sync cycle: heartbeat, read desired state, apply it, then enforce the

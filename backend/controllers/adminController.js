@@ -997,6 +997,8 @@ const getStockEnrollment = async (req, res) => {
     }
     const available = await Device.countDocuments({ 'agent.enrolled': true, assigned_to: null });
     const enrolledTotal = await Device.countDocuments({ 'agent.enrolled': true });
+    // Recent enrollment steps reported by phones (to see where a setup failed).
+    const traces = await require('../models/AgentTrace').find().sort({ createdAt: -1 }).limit(30).lean().catch(() => []);
     return res.status(200).json({
       success: true,
       data: {
@@ -1004,6 +1006,7 @@ const getStockEnrollment = async (req, res) => {
         checksum: payload['android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM'],
         apk_url: payload['android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION'],
         qr,
+        traces,
         available_count: available,
         enrolled_total: enrolledTotal,
       },
