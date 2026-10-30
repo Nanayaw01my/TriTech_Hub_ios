@@ -20,6 +20,7 @@ const { sendLockNotificationEmail, sendDeviceUnlockedEmail } = require('../utils
 const agent = require('../utils/androidAgent');
 const { uploadBase64 } = require('../utils/cloudinary');
 const { activatePlanNow } = require('../utils/planActivation');
+const { mergeAllDuplicates } = require('../utils/deviceMerge');
 const logger = require('../utils/logger');
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
@@ -1023,7 +1024,7 @@ const getEnrolledDevices = async (req, res) => {
     const filter = { 'agent.enrolled': true };
     if (onlyAvailable) filter.assigned_to = null;
     const devices = await Device.find(filter)
-      .select('model imei serial_number agent assigned_to held_by lock_status createdAt')
+      .select('model imei serial_number price price_set_by_admin agent assigned_to held_by lock_status createdAt')
       .populate({ path: 'assigned_to', select: 'full_name' })
       .populate({ path: 'held_by', select: 'name staff_id' })
       .sort({ createdAt: -1 })
@@ -1043,6 +1044,7 @@ const getEnrolledDevices = async (req, res) => {
       // when the IMEI isn't known.
       device_code: d.agent?.device_id ? String(d.agent.device_id).slice(-6) : '',
       held_by: d.held_by ? { _id: d.held_by._id, name: d.held_by.name, staff_id: d.held_by.staff_id || '' } : null,
+      price: d.price_set_by_admin ? d.price || 0 : 0,
       enrolled_at: d.createdAt,
     }));
     return res.status(200).json({ success: true, data: { devices: mapped, total: mapped.length } });
@@ -1382,6 +1384,64 @@ const assignStock = async (req, res) => {
     });
   } catch (error) {
     logger.error('assignStock error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * POST /api/admin/devices/price  { device_ids: [...], price }
+ * Set the selling price on enrolled stock phones. DSRs selling these phones
+ * get this price filled in and can't change it. price 0 = let the DSR enter it.
+ */
+const setStockPrice = async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.device_ids) ? req.body.device_ids.filter(Boolean) : [];
+    const price = Number(req.body?.price);
+    if (!ids.length) return res.status(400).json({ success: false, message: 'Select at least one phone.' });
+    if (!Number.isFinite(price) || price < 0) return res.status(400).json({ success: false, message: 'Enter a valid price.' });
+    const r = await Device.updateMany(
+      { _id: { $in: ids }, 'agent.enrolled': true, assigned_to: null },
+      { $set: { price, price_set_by_admin: price > 0 } }
+    );
+    const updated = r.matchedCount || 0;
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'device_updated',
+      details: { stock_price: price, device_ids: ids, updated },
+      ip_address: req.ip,
+    }).catch(() => {});
+    const skipped = ids.length - updated;
+    return res.status(200).json({
+      success: true,
+      message: `${price > 0 ? `Price GH₵${price.toLocaleString()} set on` : 'Price cleared on'} ${updated} phone(s).${skipped > 0 ? ` ${skipped} skipped (already sold).` : ''}`,
+      data: { updated },
+    });
+  } catch (error) {
+    logger.error('setStockPrice error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * POST /api/admin/devices/merge-duplicates
+ * Merge enrolled records that are the same phone (same IMEI) into one.
+ */
+const mergeDuplicateDevices = async (req, res) => {
+  try {
+    const { groups, removed } = await mergeAllDuplicates();
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'device_updated',
+      details: { merged_duplicates: removed, imei_groups: groups },
+      ip_address: req.ip,
+    }).catch(() => {});
+    return res.status(200).json({
+      success: true,
+      message: removed > 0 ? `Merged ${removed} duplicate record(s) across ${groups} phone(s).` : 'No duplicate phones found.',
+      data: { groups, removed },
+    });
+  } catch (error) {
+    logger.error('mergeDuplicateDevices error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -2931,6 +2991,8 @@ module.exports = {
   approvePlan,
   updateStaffIdentity,
   assignStock,
+  setStockPrice,
+  mergeDuplicateDevices,
   getPaystackBanks,
   setStaffPayout,
   removeStaffPayout,

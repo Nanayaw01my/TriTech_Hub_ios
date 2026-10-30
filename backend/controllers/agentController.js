@@ -12,6 +12,7 @@ const LocationPing = require('../models/LocationPing');
 const Settings = require('../models/Settings');
 const logger = require('../utils/logger');
 const agent = require('../utils/androidAgent');
+const { mergeDevicesByImei } = require('../utils/deviceMerge');
 
 const POLL_INTERVAL_SECONDS = Number(process.env.AGENT_POLL_SECONDS || 900);
 
@@ -71,6 +72,12 @@ const enroll = async (req, res) => {
     let device;
     if (isStock) {
       device = await Device.findOne({ 'agent.device_id': device_id });
+      // A factory reset gives the phone a new id, but the IMEI is the same:
+      // reuse its existing record instead of creating a duplicate.
+      if (!device && imei) {
+        device = await Device.findOne({ imei: String(imei).trim(), 'agent.enrolled': true })
+          .sort({ assigned_to: -1, 'agent.last_heartbeat': -1 });
+      }
       if (!device) {
         device = new Device({
           model: model || 'Android phone',
@@ -124,6 +131,12 @@ const enroll = async (req, res) => {
       ip_address: req.ip,
     }).catch(() => {});
 
+    // Fold any older records of this same phone (same IMEI) into one.
+    if (device.imei) {
+      const kept = await mergeDevicesByImei(device.imei);
+      if (kept) device = kept;
+    }
+
     logger.info('[agent] Enrolled device %s (agent id %s)', device._id, device_id);
     const info = await lockInfoFor(device);
     return res.status(200).json({ success: true, device_secret, ...info });
@@ -159,7 +172,8 @@ const heartbeat = async (req, res) => {
     const device = await authDevice(req, res);
     if (!device) return;
     const { fcm_token, lock_state, android_version, app_version, lat, lng, accuracy, loc_at, imei } = req.body || {};
-    if (imei && !device.imei) device.imei = String(imei).trim();
+    const newImei = imei && !device.imei ? String(imei).trim() : null;
+    if (newImei) device.imei = newImei;
     device.agent.last_heartbeat = new Date();
     if (fcm_token && fcm_token !== device.agent.fcm_token) device.agent.fcm_token = fcm_token;
     if (android_version) device.agent.android_version = android_version;
@@ -180,7 +194,13 @@ const heartbeat = async (req, res) => {
       }).catch(() => {});
     }
     await device.save();
-    const info = await lockInfoFor(device);
+    // First time this phone reports its IMEI: fold any duplicate records into one.
+    let current = device;
+    if (newImei) {
+      const kept = await mergeDevicesByImei(newImei);
+      if (kept && String(kept._id) !== String(device._id)) current = kept;
+    }
+    const info = await lockInfoFor(current);
     return res.status(200).json({ success: true, ...info });
   } catch (error) {
     logger.error('[agent] heartbeat error: %s', error.message);

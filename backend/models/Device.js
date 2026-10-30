@@ -22,6 +22,12 @@ const DeviceSchema = new mongoose.Schema(
       required: [true, 'Device price is required'],
       min: [0, 'Price cannot be negative'],
     },
+    // Price set by the admin on this phone (Enroll Stock). When true, the
+    // DSR's sale uses this price and can't change it.
+    price_set_by_admin: {
+      type: Boolean,
+      default: false,
+    },
     serial_number: {
       type: String,
       unique: true,

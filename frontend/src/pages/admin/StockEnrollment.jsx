@@ -23,6 +23,8 @@ export default function StockEnrollment() {
   const [staffList, setStaffList] = useState([])
   const [giveTo, setGiveTo] = useState('')
   const [assigning, setAssigning] = useState(false)
+  const [priceInput, setPriceInput] = useState('')
+  const [merging, setMerging] = useState(false)
 
   useEffect(() => {
     api.get('/admin/staff?limit=100')
@@ -50,6 +52,40 @@ export default function StockEnrollment() {
     }
   }
 
+  // Set the selling price on the ticked phones. DSRs get it filled in and locked.
+  const setPrice = async () => {
+    if (!selected.length) { toast.error('Tick the phones first.'); return }
+    const price = Number(priceInput)
+    if (priceInput === '' || !Number.isFinite(price) || price < 0) { toast.error('Enter a price.'); return }
+    setAssigning(true)
+    try {
+      const res = await api.post('/admin/devices/price', { device_ids: selected, price })
+      toast.success(res.data?.message || 'Price set.')
+      setSelected([])
+      setPriceInput('')
+      setSelecting(false)
+      load()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not set the price')
+    } finally {
+      setAssigning(false)
+    }
+  }
+
+  // Fold records that are the same phone (same IMEI) into one.
+  const mergeDuplicates = async () => {
+    setMerging(true)
+    try {
+      const res = await api.post('/admin/devices/merge-duplicates')
+      toast.success(res.data?.message || 'Done.')
+      load()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not merge duplicates')
+    } finally {
+      setMerging(false)
+    }
+  }
+
   const load = useCallback(async () => {
     setLoading(true)
     try {
@@ -69,6 +105,9 @@ export default function StockEnrollment() {
   useEffect(() => { load() }, [load])
 
   const shown = devices.filter((x) => (tab === 'available' ? !x.assigned : true))
+  // Same IMEI on more than one record = the same phone enrolled twice.
+  const imeiCount = devices.reduce((acc, x) => { if (x.imei) acc[x.imei] = (acc[x.imei] || 0) + 1; return acc }, {})
+  const duplicateCount = Object.values(imeiCount).reduce((n, c) => n + (c > 1 ? c - 1 : 0), 0)
   // Who is holding the unsold phones (office vs each DSR).
   const holders = devices.filter((x) => !x.assigned).reduce((acc, x) => {
     const k = x.held_by?.name || 'Office'
@@ -175,9 +214,20 @@ export default function StockEnrollment() {
               ))}
               <button onClick={() => { setSelecting((v) => !v); setSelected([]) }}
                 className={`ml-auto px-4 py-2 rounded-xl text-sm font-semibold border-2 ${selecting ? 'border-orange-500 bg-orange-50 text-orange-600' : 'border-gray-200 bg-white text-gray-700'}`}>
-                {selecting ? 'Cancel' : 'Give phones to DSR'}
+                {selecting ? 'Cancel' : 'Select phones'}
               </button>
             </div>
+            {duplicateCount > 0 && (
+              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-2">
+                <p className="flex-1 text-xs text-amber-800">
+                  {duplicateCount} phone{duplicateCount > 1 ? 's are' : ' is'} listed twice (same IMEI, re-enrolled after a reset).
+                </p>
+                <button onClick={mergeDuplicates} disabled={merging}
+                  className="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-bold disabled:opacity-50">
+                  {merging ? 'Merging…' : 'Merge duplicates'}
+                </button>
+              </div>
+            )}
             {Object.keys(holders).length > 0 && (
               <p className="text-xs text-gray-500 mb-3">
                 Unsold phones: {Object.entries(holders).map(([k, n]) => `${k} ${n}`).join(' · ')}
@@ -185,7 +235,7 @@ export default function StockEnrollment() {
             )}
             {selecting && (
               <p className="text-xs text-orange-700 bg-orange-50 rounded-xl px-3 py-2 mb-3">
-                Tick the phones you're handing over, then choose the DSR at the bottom. Only that DSR will see them when selling.
+                Tick phones, then at the bottom either set their selling price or give them to a DSR. Only that DSR will see them when selling, and the price you set is the price they sell at.
               </p>
             )}
 
@@ -214,7 +264,13 @@ export default function StockEnrollment() {
                         <p className="font-bold text-gray-900 text-sm truncate">{d.model}</p>
                         <p className="text-xs text-gray-400 font-mono truncate">
                           {d.imei ? `IMEI ${d.imei}` : d.serial_number ? `SN ${d.serial_number}` : d.device_code ? `ID …${d.device_code}` : '—'}
+                          {d.imei && imeiCount[d.imei] > 1 && <span className="ml-1 font-sans font-semibold text-amber-600">· duplicate</span>}
                         </p>
+                        {!d.assigned && (
+                          <p className={`text-[11px] font-bold mt-0.5 ${d.price > 0 ? 'text-gray-800' : 'text-amber-600'}`}>
+                            {d.price > 0 ? `GH₵${Number(d.price).toLocaleString()}` : 'No price set'}
+                          </p>
+                        )}
                         {!d.assigned && (
                           <p className={`text-[11px] font-semibold mt-0.5 ${d.held_by ? 'text-blue-600' : 'text-gray-400'}`}>
                             {d.held_by ? `With ${d.held_by.name}${d.held_by.staff_id ? ` (${d.held_by.staff_id})` : ''}` : 'At office'}
@@ -263,11 +319,19 @@ export default function StockEnrollment() {
       </div>
 
       {/* Room so the last phone can scroll above the action bar */}
-      {selecting && <div className="h-40" />}
+      {selecting && <div className="h-56" />}
       {selecting && (
         <div className="fixed left-0 right-0 bottom-24 lg:bottom-6 z-40 px-4">
           <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl border border-gray-200 p-3 flex flex-wrap items-center gap-2">
-            <span className="text-sm font-bold text-gray-800">{selected.length} selected</span>
+            <span className="text-sm font-bold text-gray-800 w-full">{selected.length} selected</span>
+            <input type="number" inputMode="numeric" min="0" value={priceInput}
+              onChange={(e) => setPriceInput(e.target.value)} placeholder="Price GH₵"
+              className="flex-1 min-w-[110px] px-3 py-2 border border-gray-200 rounded-xl text-sm" />
+            <button onClick={setPrice} disabled={assigning || !selected.length}
+              className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-bold disabled:opacity-50">
+              Set price
+            </button>
+            <div className="basis-full h-0" />
             <select value={giveTo} onChange={(e) => setGiveTo(e.target.value)}
               className="flex-1 min-w-[140px] px-3 py-2 border border-gray-200 rounded-xl text-sm">
               <option value="">Choose DSR…</option>

@@ -187,19 +187,24 @@ const precheckCustomer = async (req, res) => {
         return res.status(409).json({ success: false, message: 'A device with this UDID already exists.' });
       }
     }
+    let price = Number(device_price) || 0;
     if (device_id) {
       const d = await Device.findById(device_id);
       if (!d) {
         return res.status(400).json({ success: false, message: 'Selected device not found. Please choose another.' });
       }
+      if (d.price_set_by_admin && d.price > 0) price = d.price;
     } else if (!device_model) {
       return res.status(400).json({ success: false, message: 'Please select a device.' });
+    }
+    if (!(price > 0)) {
+      return res.status(400).json({ success: false, message: 'Enter the selling price.' });
     }
     const dp = Number(down_payment) || 0;
     if (dp <= 0) {
       return res.status(400).json({ success: false, message: 'A deposit (down payment) is required.' });
     }
-    if (dp >= Number(device_price)) {
+    if (dp >= price) {
       return res.status(400).json({ success: false, message: 'Down payment must be less than the device price.' });
     }
 
@@ -323,7 +328,8 @@ const addCustomer = async (req, res) => {
       if (picked.agent?.enrolled && !picked.assigned_to) {
         // Selling a pre-enrolled stock phone — use it directly.
         device = picked;
-        device.price = Number(device_price) || device.price || 0;
+        // The admin's price for this phone wins over what the DSR typed.
+        if (!(device.price_set_by_admin && device.price > 0)) device.price = Number(device_price) || device.price || 0;
         device.sold_status = 'sold';
         if (cleanSerial) device.serial_number = cleanSerial;
         if (cleanUdid) device.udid = cleanUdid;
@@ -711,7 +717,7 @@ const updateSale = async (req, res) => {
       if (udid !== undefined) device.udid = udid || undefined;
     }
     if (!device) return res.status(400).json({ success: false, message: 'Please select a device.' });
-    if (devicePrice > 0) device.price = devicePrice;
+    if (devicePrice > 0 && !(device.price_set_by_admin && device.price > 0)) device.price = devicePrice;
     await device.save();
 
     // --- Plan terms (provisional schedule; the real one starts on activation) ---
@@ -889,12 +895,14 @@ const getEnrolledStock = async (req, res) => {
   try {
     // Only phones the admin handed to this DSR.
     const devices = await Device.find({ 'agent.enrolled': true, assigned_to: null, held_by: req.user._id })
-      .select('model imei serial_number agent createdAt')
+      .select('model imei serial_number price price_set_by_admin agent createdAt')
       .sort({ createdAt: -1 })
       .lean();
     const mapped = devices.map((d) => ({
       _id: d._id,
       model: d.model,
+      price: d.price || 0,
+      price_set_by_admin: !!(d.price_set_by_admin && d.price > 0),
       imei: d.imei || '',
       serial_number: d.serial_number || '',
       device_code: d.agent?.device_id ? String(d.agent.device_id).slice(-6) : '',
@@ -1047,7 +1055,8 @@ const makePaymentForCustomer = async (req, res) => {
 
 const getAvailableDevices = async (req, res) => {
   try {
-    const devices = await Device.find({ assigned_to: null })
+    // Catalog models only — enrolled stock phones are sold from the stock picker.
+    const devices = await Device.find({ assigned_to: null, 'agent.enrolled': { $ne: true } })
       .select('model color storage price serial_number udid')
       .sort({ model: 1 });
     return res.status(200).json({ success: true, data: { devices } });

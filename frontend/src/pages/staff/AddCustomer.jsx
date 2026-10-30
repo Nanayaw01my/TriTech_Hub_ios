@@ -145,6 +145,11 @@ export default function StaffAddCustomer() {
   const districts = form.region ? (GHANA_REGIONS[form.region] || []) : []
 
   // Payment preview calculations
+  // The admin priced this phone (Enroll Stock, or the catalog) — DSR can't change it.
+  const priceLocked = sellMode === 'stock'
+    ? !!enrolledStock.find(d => d._id === form.device_id)?.price_set_by_admin
+    : Number(availableDevices.find(d => d._id === form.device_id)?.price) > 0
+
   const preview = useMemo(() => {
     const price = Number(form.device_price) || 0
     const down = Number(form.down_payment) || 0
@@ -207,10 +212,10 @@ export default function StaffAddCustomer() {
     if (s === 4) {
       if (sellMode === 'stock') {
         if (!form.device_id) e.device_model = 'Pick a phone from enrolled stock'
-        if (!form.device_price || Number(form.device_price) <= 0) e.device_price = 'Enter the selling price'
       } else {
         if (!form.device_model) e.device_model = 'Select a device model'
       }
+      if (form.device_model && (!form.device_price || Number(form.device_price) <= 0)) e.device_price = 'Enter the selling price'
       // A deposit is required. It's collected via Paystack after admin approval.
       const dp = Number(form.down_payment) || 0
       if (dp <= 0) e.down_payment = 'A deposit (down payment) is required'
@@ -783,6 +788,7 @@ export default function StaffAddCustomer() {
                             const d = enrolledStock.find(i => i._id === e.target.value)
                             set('device_id', d ? d._id : '')
                             set('device_model', d ? d.model : '')
+                            set('device_price', d?.price_set_by_admin ? String(d.price) : '')
                             set('serial_number', ''); set('udid', '')
                           }}
                           className={selectClass(errors.device_model)}
@@ -790,16 +796,11 @@ export default function StaffAddCustomer() {
                           <option value="">Select a phone…</option>
                           {enrolledStock.map(d => (
                             <option key={d._id} value={d._id}>
-                              {d.model}{d.imei ? ` · IMEI ${d.imei}` : d.device_code ? ` · ID …${d.device_code}` : ''}{d.online ? '' : ' (offline)'}
+                              {d.model}{d.imei ? ` · IMEI ${d.imei}` : d.device_code ? ` · ID …${d.device_code}` : ''}{d.price_set_by_admin ? ` — GHS ${Number(d.price).toLocaleString()}` : ''}{d.online ? '' : ' (offline)'}
                             </option>
                           ))}
                         </select>
                       )}
-                    </FormField>
-                    <FormField label="Selling Price (GHS)" required error={errors.device_price}>
-                      <input type="number" value={form.device_price}
-                        onChange={(e) => set('device_price', e.target.value)}
-                        placeholder="Enter the price" className={inputClass(errors.device_price)} inputMode="numeric" min="0" />
                     </FormField>
                   </>
                 ) : (
@@ -814,11 +815,11 @@ export default function StaffAddCustomer() {
                       </div>
                     ) : (
                       <select
-                        value={form.device_model}
+                        value={form.device_id || availableDevices.find(i => i.model === form.device_model)?._id || ''}
                         onChange={(e) => {
                           const d = availableDevices.find(i => i._id === e.target.value)
                           set('device_model', d ? d.model : '')
-                          set('device_price', d ? String(d.price) : '')
+                          set('device_price', d && d.price > 0 ? String(d.price) : '')
                           set('device_id', d ? d._id : '')
                         }}
                         className={selectClass(errors.device_model)}
@@ -833,6 +834,16 @@ export default function StaffAddCustomer() {
                     )}
                   </FormField>
                 )}
+
+                {form.device_model && (priceLocked ? (
+                  <p className="text-xs text-gray-500 -mt-1">Price set by the admin — it can't be changed here.</p>
+                ) : (
+                  <FormField label="Selling Price (GHS)" required error={errors.device_price}>
+                    <input type="number" value={form.device_price}
+                      onChange={(e) => set('device_price', e.target.value)}
+                      placeholder="Enter the price" className={inputClass(errors.device_price)} inputMode="numeric" min="0" />
+                  </FormField>
+                ))}
 
                 {form.device_model && (
                   <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-2xl border border-orange-200">
