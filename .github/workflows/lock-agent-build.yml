@@ -111,24 +111,34 @@ jobs:
       - name: Publish APK to backend/downloads
         working-directory: ${{ github.workspace }}
         run: |
-          mkdir -p backend/downloads
-          cp lock-agent/app/build/outputs/apk/release/app-release.apk backend/downloads/dandorsolar-lock-agent.apk
-          printf '%s' "$CHECKSUM" > backend/downloads/agent-checksum.txt
+          # Stage this build's files, then commit them on top of the LATEST branch
+          # (another build may have published meanwhile). Never let an older build
+          # overwrite a newer one.
+          OUT="$RUNNER_TEMP/agent-out"; mkdir -p "$OUT"
+          cp lock-agent/app/build/outputs/apk/release/app-release.apk "$OUT/dandorsolar-lock-agent.apk"
+          printf '%s' "$CHECKSUM" > "$OUT/agent-checksum.txt"
           # For phone self-update: the version number + file hash the phone checks.
-          printf '%s' "$VERSION_CODE" > backend/downloads/agent-version.txt
-          sha256sum backend/downloads/dandorsolar-lock-agent.apk | cut -d' ' -f1 | tr -d '\n' > backend/downloads/agent-apk-sha256.txt
+          printf '%s' "$VERSION_CODE" > "$OUT/agent-version.txt"
+          sha256sum "$OUT/dandorsolar-lock-agent.apk" | cut -d' ' -f1 | tr -d '\n' > "$OUT/agent-apk-sha256.txt"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f backend/downloads/dandorsolar-lock-agent.apk backend/downloads/agent-checksum.txt \
-            backend/downloads/agent-version.txt backend/downloads/agent-apk-sha256.txt
-          if git diff --cached --quiet; then
-            echo "No APK changes."
-          else
-            git commit -m "ci: publish lock-agent APK + checksum to backend/downloads"
-            # Another build may have pushed meanwhile — replay on top of it.
-            git pull --rebase origin "${{ github.ref_name }}"
-            git push origin HEAD:${{ github.ref_name }}
-          fi
+          for attempt in 1 2 3; do
+            git fetch -q origin "${{ github.ref_name }}"
+            git checkout -q -B publish "origin/${{ github.ref_name }}"
+            PUBLISHED=$(cat backend/downloads/agent-version.txt 2>/dev/null || echo 0)
+            if [ "${PUBLISHED:-0}" -ge "$VERSION_CODE" ] 2>/dev/null; then
+              echo "A newer build ($PUBLISHED) is already published — not overwriting it with $VERSION_CODE."
+              exit 0
+            fi
+            mkdir -p backend/downloads
+            cp "$OUT"/* backend/downloads/
+            git add -f backend/downloads/dandorsolar-lock-agent.apk backend/downloads/agent-checksum.txt \
+              backend/downloads/agent-version.txt backend/downloads/agent-apk-sha256.txt
+            git commit -q -m "ci: publish lock-agent APK v$VERSION_CODE to backend/downloads"
+            if git push origin HEAD:${{ github.ref_name }}; then break; fi
+            echo "Push raced with another commit — retrying ($attempt)"
+            sleep 5
+          done
           # Move the stable "agent-latest" tag to this commit. The backend's
           # download URL is pinned to this tag (no slash, always-on via raw), so
           # the link and the checksum always come from the SAME build — they can
