@@ -50,6 +50,12 @@ const DEPLOY_SHA = (
 ).trim();
 function agentApkUrl() {
   if (process.env.AGENT_APK_URL) return process.env.AGENT_APK_URL.trim();
+  // Served from this server's own /downloads (the same deploy that holds the
+  // matching checksum), so downloads show in our logs. Set AGENT_APK_SOURCE=github
+  // to use the commit-pinned GitHub raw URL instead.
+  if (process.env.AGENT_APK_SOURCE !== 'github') {
+    return `${BACKEND_URL.replace(/\/$/, '')}/downloads/${APK_FILENAME}`;
+  }
   const ref = DEPLOY_SHA || 'agent-latest';
   return `https://raw.githubusercontent.com/${AGENT_REPO}/${ref}/backend/downloads/${APK_FILENAME}`;
 }
@@ -263,7 +269,10 @@ function buildProvisioningPayload(enrollmentToken, opts = {}) {
   // Prefer the domain the admin is actually on (passed as opts.baseUrl), so the
   // phone downloads the agent + talks to the backend at a URL that really works,
   // even if PUBLIC_BACKEND_URL isn't set. AGENT_APK_URL env still overrides.
-  const base = (opts.baseUrl || BACKEND_URL).replace(/\/+$/, '');
+  let base = (opts.baseUrl || BACKEND_URL).replace(/\/+$/, '');
+  // Behind Render's proxy the request can look like plain http; Android apps
+  // can't use cleartext http, so always hand the phone https (except localhost).
+  if (/^http:\/\//i.test(base) && !/localhost|127\.0\.0\.1/.test(base)) base = base.replace(/^http:/i, 'https:');
   const apkUrl = agentApkUrl(); // commit-pinned raw URL written by CI
   return {
     'android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME': AGENT_RECEIVER,

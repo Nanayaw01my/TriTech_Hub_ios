@@ -274,10 +274,24 @@ app.use(express.static(frontendDist));
 // this app's own domain so the enrollment QR can point at it. Must come before
 // the SPA catch-all, and sets the APK content type so Android can install it.
 const downloadsPath = path.join(__dirname, 'downloads');
+// Log every APK download (a phone fetching the lock app during QR setup), so a
+// failed enrollment shows whether the phone ever reached the file.
+app.use('/downloads', (req, res, next) => {
+  if (req.path.endsWith('.apk')) {
+    const started = Date.now();
+    res.on('finish', () => {
+      logger.info('[download] %s %s -> %d (%s bytes, %dms) range=%s ua=%s',
+        req.method, req.path, res.statusCode, res.getHeader('content-length') || '?',
+        Date.now() - started, req.headers.range || '-', (req.headers['user-agent'] || '-').slice(0, 120));
+    });
+  }
+  next();
+});
 app.use('/downloads', express.static(downloadsPath, {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.apk')) {
       res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+      res.setHeader('Cache-Control', 'no-cache');
     }
   },
 }));
