@@ -19,6 +19,10 @@ object Frp {
     /** Enforce exactly [ids] (numeric Google account IDs). Empty = FRP off. */
     fun apply(c: Context, ids: List<String>) {
         if (!Policy.isOwner(c)) return
+        // Never during the setup wizard: changing FRP while Google's setup is
+        // still running can make it fail with "Can't set up device". A later
+        // sync applies it once setup has finished.
+        if (!setupComplete(c)) return
         val key = ids.sorted().joinToString(",")
         // Idempotent: only touch the policy when the accounts change (or last try failed).
         if (key == Prefs.frpApplied(c) && Prefs.frpStatus(c) != "failed") return
@@ -35,6 +39,10 @@ object Frp {
         Prefs.setFrpApplied(c, "")
         Prefs.setFrpStatus(c, "off")
     }
+
+    private fun setupComplete(c: Context): Boolean = runCatching {
+        android.provider.Settings.Secure.getInt(c.contentResolver, "user_setup_complete", 1) == 1
+    }.getOrDefault(true)
 
     private fun set(c: Context, ids: List<String>): String {
         val dpm = Policy.dpm(c); val admin = Policy.admin(c)
