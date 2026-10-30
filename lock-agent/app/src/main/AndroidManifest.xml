@@ -11,8 +11,10 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
-    <!-- Self-update: install newer builds of this app (silently, as Device Owner). -->
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- No REQUEST_INSTALL_PACKAGES: self-update installs silently because we're
+         Device Owner (Android waives that permission for Device Owners), and
+         declaring it makes Google Play Protect block the app during enrollment
+         on newer phones ("App blocked to protect your device"). -->
 
     <application
         android:name=".App"
