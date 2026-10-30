@@ -60,11 +60,16 @@ jobs:
 
       - name: Sign with the permanent release key
         run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > release.p12
+          # Tolerate copy/paste debris (spaces, line breaks, invisible characters,
+          # a pasted "Value:" label): keep only the base64 text, and take the
+          # 32-character hex password out of whatever was pasted.
+          printf '%s' "$KEYSTORE_BASE64" | tr -cd 'A-Za-z0-9+/=' | base64 -d > release.p12
+          PASS=$(printf '%s' "$KEYSTORE_PASSWORD" | LC_ALL=C grep -oE '[0-9a-f]{32}' | head -n1)
+          [ -n "$PASS" ] || PASS="$KEYSTORE_PASSWORD"
           APKSIGNER="$ANDROID_HOME/build-tools/34.0.0/apksigner"
           "$APKSIGNER" sign \
-            --ks release.p12 --ks-pass pass:"$KEYSTORE_PASSWORD" \
-            --ks-key-alias "${KEY_ALIAS:-dandorsolar}" --key-pass pass:"${KEY_PASSWORD:-$KEYSTORE_PASSWORD}" \
+            --ks release.p12 --ks-pass pass:"$PASS" \
+            --ks-key-alias dandorsolar --key-pass pass:"$PASS" \
             --v1-signing-enabled true --v2-signing-enabled true \
             app/build/outputs/apk/release/app-release.apk
           rm -f release.p12
