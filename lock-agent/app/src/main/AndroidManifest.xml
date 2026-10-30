@@ -44,12 +44,15 @@
             android:theme="@style/Theme.LockAgent.Fullscreen" />
 
         <!-- Device Owner provisioning (Android 10+): choose fully-managed mode.
-             These provisioning activities are launched by the system setup
-             wizard, so they must NOT be permission-protected (only the device
-             admin receiver below carries BIND_DEVICE_ADMIN). -->
+             Both provisioning activities are guarded by BIND_DEVICE_ADMIN, as
+             in Google's reference DPC: newer Android (13+, e.g. Samsung A08/A18,
+             Tecno Spark 50) only launches DPC activities protected this way and
+             otherwise fails with "Can't set up device". The system's setup
+             (ManagedProvisioning) holds this permission, so older phones work too. -->
         <activity
             android:name=".GetProvisioningModeActivity"
             android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
             android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
             <intent-filter>
                 <action android:name="android.app.action.GET_PROVISIONING_MODE" />
@@ -61,6 +64,7 @@
         <activity
             android:name=".PolicyComplianceActivity"
             android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
             android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
             <intent-filter>
                 <action android:name="android.app.action.ADMIN_POLICY_COMPLIANCE" />
