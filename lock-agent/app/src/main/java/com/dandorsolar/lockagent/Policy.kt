@@ -52,6 +52,13 @@ object Policy {
                 )
             }
         }
+        // Once enrolled, close the USB/computer route: no USB debugging, so the
+        // phone can't be un-managed with a computer. (Left open until enrolled,
+        // because computer enrollment needs it.)
+        if (Prefs.enrolled(c)) {
+            runCatching { dpm.addUserRestriction(admin, UserManager.DISALLOW_DEBUGGING_FEATURES) }
+            runCatching { dpm.setGlobalSetting(admin, android.provider.Settings.Global.ADB_ENABLED, "0") }
+        }
         // A persistent note on the system lock screen.
         runCatching { dpm.setDeviceOwnerLockScreenInfo(admin, Prefs.businessName(c)) }
     }
@@ -73,6 +80,7 @@ object Policy {
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_SAFE_BOOT) }
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_OUTGOING_BEAM) }
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_CONFIG_DATE_TIME) }
+        runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_DEBUGGING_FEATURES) }
         runCatching { dpm.setDeviceOwnerLockScreenInfo(admin, null) }
         runCatching { dpm.setLockTaskPackages(admin, arrayOf()) }
         // Relinquish Device Owner last — after this we lose management powers.

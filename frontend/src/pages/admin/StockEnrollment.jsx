@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import api from '../../api/axios'
+import { saveBlob } from '../../utils/download'
 import toast from 'react-hot-toast'
 import Skeleton from '../../components/Skeleton'
 import LocationModal from '../../components/LocationModal'
@@ -25,6 +26,21 @@ export default function StockEnrollment() {
   const [assigning, setAssigning] = useState(false)
   const [priceInput, setPriceInput] = useState('')
   const [merging, setMerging] = useState(false)
+  const [scriptBusy, setScriptBusy] = useState(false)
+
+  // Windows file that enrolls a USB-connected phone (when Play Protect blocks the QR).
+  const downloadScript = async () => {
+    setScriptBusy(true)
+    try {
+      const res = await api.get('/admin/stock-enrollment/computer-script', { responseType: 'blob' })
+      await saveBlob(res.data, 'enroll-phone.bat')
+      toast.success('Downloaded enroll-phone.bat — keep it private.')
+    } catch (err) {
+      toast.error('Could not download the enrollment file')
+    } finally {
+      setScriptBusy(false)
+    }
+  }
 
   useEffect(() => {
     api.get('/admin/staff?limit=100')
@@ -203,6 +219,31 @@ export default function StockEnrollment() {
               </ol>
               <button onClick={load} className="mt-4 text-sm font-semibold text-orange-600 hover:text-orange-700">Refresh</button>
             </div>
+
+            {/* Computer (USB) enrollment — for new phones where Google Play Protect blocks the QR */}
+            <details className="bg-white rounded-2xl shadow-card p-5 mb-4 group">
+              <summary className="cursor-pointer list-none flex items-center justify-between">
+                <span>
+                  <span className="block text-base font-bold text-gray-900">Enroll with computer</span>
+                  <span className="block text-xs text-gray-500">For new phones (e.g. Tecno Spark 50, Samsung A08/A18) where the QR says "App blocked to protect your device".</span>
+                </span>
+                <span className="text-orange-600 text-sm font-semibold group-open:hidden">Show</span>
+              </summary>
+              <ol className="mt-4 space-y-2 text-sm text-gray-600 list-decimal list-inside">
+                <li><span className="font-semibold text-gray-800">Factory reset</span> the phone. During setup connect to Wi-Fi and <span className="font-semibold text-gray-800">skip every sign-in</span> (no Google, Samsung or other account).</li>
+                <li>On the phone: <span className="font-semibold text-gray-800">Settings → Security → Google Play Protect</span> → turn <span className="font-semibold text-gray-800">off</span> "Scan apps with Play Protect".</li>
+                <li>Turn on <span className="font-semibold text-gray-800">Developer options</span>: Settings → About phone → tap <span className="font-semibold text-gray-800">Build number</span> 7 times.</li>
+                <li>In <span className="font-semibold text-gray-800">Developer options</span>: turn on <span className="font-semibold text-gray-800">USB debugging</span>, and turn off <span className="font-semibold text-gray-800">Verify apps over USB</span> if you see it.</li>
+                <li>On this Windows computer, <span className="font-semibold text-gray-800">download the file below</span> and double-click it (if Windows warns, choose More info → Run anyway).</li>
+                <li>Plug in the phone with a USB cable and tap <span className="font-semibold text-gray-800">Allow</span> on "Allow USB debugging?". The file does the rest and says <span className="font-semibold text-gray-800">DONE</span>.</li>
+                <li>The phone shows <span className="font-semibold text-gray-800">"Awaiting Activation"</span> and appears below. USB debugging is switched off automatically.</li>
+              </ol>
+              <button onClick={downloadScript} disabled={scriptBusy}
+                className="mt-4 w-full py-2.5 rounded-xl bg-gray-900 text-white text-sm font-bold disabled:opacity-50">
+                {scriptBusy ? 'Preparing…' : 'Download enroll-phone.bat (Windows)'}
+              </button>
+              <p className="mt-2 text-[11px] text-gray-400">The file contains your stock enrollment key — don't share it. Use the same file for every phone.</p>
+            </details>
 
             {/* What phones reported while being set up — shows where a failed setup stopped */}
             {info?.traces?.length > 0 && (

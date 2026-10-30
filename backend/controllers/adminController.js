@@ -1427,6 +1427,37 @@ const setStockPrice = async (req, res) => {
   }
 };
 
+// ─── COMPUTER (USB) ENROLLMENT ────────────────────────────────────────────────
+
+/**
+ * GET /api/admin/stock-enrollment/computer-script
+ * Windows .bat that enrolls a USB-connected phone into stock (for new phones
+ * where Google Play Protect blocks QR setup). Carries the stock enrollment
+ * token, so it's admin-only.
+ */
+const getComputerEnrollScript = async (req, res) => {
+  try {
+    const settings = await Settings.getSingleton();
+    if (!settings.stock_enrollment_token) {
+      settings.stock_enrollment_token = 'stk_' + crypto.randomBytes(18).toString('hex');
+      await settings.save();
+    }
+    const base = (process.env.PUBLIC_BACKEND_URL || agent.config.BACKEND_URL).replace(/\/+$/, '').replace(/^http:/i, 'https:');
+    const { buildEnrollScript } = require('../utils/computerEnroll');
+    const script = buildEnrollScript({
+      token: settings.stock_enrollment_token,
+      backend: base,
+      apkUrl: `${base}/downloads/dandorsolar-lock-agent.apk`,
+    });
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', 'attachment; filename="enroll-phone.bat"');
+    return res.status(200).send(script);
+  } catch (error) {
+    logger.error('getComputerEnrollScript error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── FACTORY RESET PROTECTION ─────────────────────────────────────────────────
 
 /** Accept "1234…", "people/1234…" or the API explorer's JSON; return the digits. */
@@ -3087,6 +3118,7 @@ module.exports = {
   getFrp,
   addFrpAccount,
   removeFrpAccount,
+  getComputerEnrollScript,
   getPaystackBanks,
   setStaffPayout,
   removeStaffPayout,
