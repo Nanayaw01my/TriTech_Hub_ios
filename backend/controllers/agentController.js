@@ -275,13 +275,15 @@ const trace = async (req, res) => {
     const b = req.body || {};
     const token = String(b.enrollment_token || '');
     const settings = await Settings.getSingleton();
-    const valid = token && (token === settings.stock_enrollment_token ||
-      await Device.exists({ 'agent.enrollment_token': token }));
+    // A phone reports its very first step before it has the QR's token, so a
+    // missing token is accepted (rate-limited, auto-deleted); a wrong one isn't.
+    const valid = !token || token === settings.stock_enrollment_token ||
+      await Device.exists({ 'agent.enrollment_token': token });
     if (!valid) return res.status(403).json({ success: false });
     const AgentTrace = require('../models/AgentTrace');
     await AgentTrace.create({
       stage: String(b.stage || '').slice(0, 60),
-      detail: String(b.detail || '').slice(0, 300),
+      detail: (String(b.detail || '') + (token ? '' : ' (no token yet)')).slice(0, 300),
       model: String(b.model || '').slice(0, 80),
       android_version: String(b.android_version || '').slice(0, 20),
       app_version: String(b.app_version || '').slice(0, 20),

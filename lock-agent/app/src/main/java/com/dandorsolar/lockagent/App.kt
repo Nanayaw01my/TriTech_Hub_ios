@@ -14,6 +14,9 @@ import java.util.concurrent.TimeUnit
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
+        // Report that the app process started (only while not yet enrolled), so a
+        // failed QR setup shows whether our app was ever installed and launched.
+        if (!Prefs.enrolled(this)) Trace.send(this, "app_started", "owner=${Policy.isOwner(this)}")
         Notifications.ensureChannel(this)
         Fcm.init(this)
         Fcm.fetchToken { Prefs.setFcmToken(this, it) }

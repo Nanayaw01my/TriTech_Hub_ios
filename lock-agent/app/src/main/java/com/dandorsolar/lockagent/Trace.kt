@@ -8,11 +8,14 @@ import android.content.Context
  * off the main thread, never throws.
  */
 object Trace {
+    private const val DEFAULT_BACKEND = "https://dandorsolar.site"
+
     fun send(c: Context, stage: String, detail: String = "") {
         val app = c.applicationContext
-        val backend = Prefs.backendUrl(app)
+        // Fall back to the main server so even the very first moment (before the
+        // QR's details reach us) is reported.
+        val backend = Prefs.backendUrl(app).ifEmpty { DEFAULT_BACKEND }
         val token = Prefs.enrollmentToken(app)
-        if (backend.isEmpty() || token.isEmpty()) return
         Thread {
             runCatching {
                 Api.trace(
