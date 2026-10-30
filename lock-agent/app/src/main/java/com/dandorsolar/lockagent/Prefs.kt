@@ -57,4 +57,23 @@ object Prefs {
 
     fun deadmanDays(c: Context): Int = p(c).getInt("deadman_days", 7)
     fun setDeadmanDays(c: Context, v: Int) = p(c).edit().putInt("deadman_days", v).apply()
+
+    /** Factory Reset Protection: the account list last applied + its result. */
+    fun frpApplied(c: Context): String = p(c).getString("frp_applied", "") ?: ""
+    fun setFrpApplied(c: Context, v: String) = p(c).edit().putString("frp_applied", v).apply()
+    fun frpStatus(c: Context): String = p(c).getString("frp_status", "off") ?: "off"
+    fun setFrpStatus(c: Context, v: String) = p(c).edit().putString("frp_status", v).apply()
+
+    /** Self-update: the build the server offered, and our last attempt at it. */
+    fun updateTargetCode(c: Context): Int = p(c).getInt("upd_code", 0)
+    fun updateTargetUrl(c: Context): String = p(c).getString("upd_url", "") ?: ""
+    fun updateTargetSha(c: Context): String = p(c).getString("upd_sha", "") ?: ""
+    fun setUpdateTarget(c: Context, code: Int, url: String, sha: String) =
+        p(c).edit().putInt("upd_code", code).putString("upd_url", url).putString("upd_sha", sha).apply()
+    fun updateTriedVersion(c: Context): Int = p(c).getInt("upd_tried_code", 0)
+    fun updateTriedAt(c: Context): Long = p(c).getLong("upd_tried_at", 0L)
+    fun setUpdateTried(c: Context, code: Int, at: Long) =
+        p(c).edit().putInt("upd_tried_code", code).putLong("upd_tried_at", at).apply()
+    fun updateError(c: Context): String = p(c).getString("upd_error", "") ?: ""
+    fun setUpdateError(c: Context, v: String) = p(c).edit().putString("upd_error", v).apply()
 }

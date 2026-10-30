@@ -1039,6 +1039,8 @@ const getEnrolledDevices = async (req, res) => {
       assigned: !!d.assigned_to,
       customer_name: d.assigned_to?.full_name || null,
       lock_status: d.lock_status,
+      app_version: d.agent?.app_version || null,
+      frp_status: d.agent?.frp_status || null,
       awaiting_activation: d.agent?.desired_lock_state === 'pending_activation',
       // Same ID the Dan & Dor Solar app shows on the phone — tells phones apart
       // when the IMEI isn't known.
@@ -1418,6 +1420,92 @@ const setStockPrice = async (req, res) => {
     });
   } catch (error) {
     logger.error('setStockPrice error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── FACTORY RESET PROTECTION ─────────────────────────────────────────────────
+
+/** Accept "1234…", "people/1234…" or the API explorer's JSON; return the digits. */
+function parseGoogleId(input) {
+  const s = String(input || '');
+  const m = s.match(/people\/(\d{10,30})/) || s.match(/\b(\d{10,30})\b/);
+  return m ? m[1] : null;
+}
+
+async function frpOverview() {
+  const settings = await Settings.getSingleton();
+  const phones = await Device.find({ 'agent.enrolled': true }).select('agent.frp_status agent.version_code').lean();
+  const count = (fn) => phones.filter(fn).length;
+  return {
+    accounts: (settings.frp_accounts || []).map((a) => ({ google_id: a.google_id, email: a.email, added_at: a.added_at })),
+    phones: {
+      total: phones.length,
+      protected: count((d) => ['on', 'on_legacy'].includes(d.agent?.frp_status)),
+      failed: count((d) => ['failed', 'unsupported'].includes(d.agent?.frp_status)),
+      // Old app (no FRP support) — needs the updated app (re-enroll if it can't self-update).
+      old_app: count((d) => !d.agent?.frp_status),
+    },
+  };
+}
+
+/** GET /api/admin/frp — FRP accounts + how many phones have it applied. */
+const getFrp = async (req, res) => {
+  try {
+    return res.status(200).json({ success: true, data: await frpOverview() });
+  } catch (error) {
+    logger.error('getFrp error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/** POST /api/admin/frp  { google_id, email } — add a company FRP account. */
+const addFrpAccount = async (req, res) => {
+  try {
+    const googleId = parseGoogleId(req.body?.google_id);
+    if (!googleId) {
+      return res.status(400).json({ success: false, message: 'Enter the Google account ID (the long number after "people/").' });
+    }
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const settings = await Settings.getSingleton();
+    if ((settings.frp_accounts || []).some((a) => a.google_id === googleId)) {
+      return res.status(409).json({ success: false, message: 'That account is already added.' });
+    }
+    if ((settings.frp_accounts || []).length >= 5) {
+      return res.status(400).json({ success: false, message: 'You can add up to 5 FRP accounts.' });
+    }
+    settings.frp_accounts.push({ google_id: googleId, email });
+    await settings.save();
+    await AuditLog.create({
+      user_id: req.user._id, action: 'settings_updated',
+      details: { frp_account_added: email || googleId }, ip_address: req.ip,
+    }).catch(() => {});
+    agent.pushAll(Device).catch(() => {});
+    return res.status(200).json({ success: true, message: 'FRP account added. Phones apply it on their next check-in.', data: await frpOverview() });
+  } catch (error) {
+    logger.error('addFrpAccount error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/** DELETE /api/admin/frp/:googleId — remove a company FRP account. */
+const removeFrpAccount = async (req, res) => {
+  try {
+    const settings = await Settings.getSingleton();
+    const before = (settings.frp_accounts || []).length;
+    settings.frp_accounts = (settings.frp_accounts || []).filter((a) => a.google_id !== req.params.googleId);
+    if (settings.frp_accounts.length === before) {
+      return res.status(404).json({ success: false, message: 'Account not found.' });
+    }
+    await settings.save();
+    await AuditLog.create({
+      user_id: req.user._id, action: 'settings_updated',
+      details: { frp_account_removed: req.params.googleId }, ip_address: req.ip,
+    }).catch(() => {});
+    agent.pushAll(Device).catch(() => {});
+    return res.status(200).json({ success: true, message: 'FRP account removed.', data: await frpOverview() });
+  } catch (error) {
+    logger.error('removeFrpAccount error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -2993,6 +3081,9 @@ module.exports = {
   assignStock,
   setStockPrice,
   mergeDuplicateDevices,
+  getFrp,
+  addFrpAccount,
+  removeFrpAccount,
   getPaystackBanks,
   setStaffPayout,
   removeStaffPayout,

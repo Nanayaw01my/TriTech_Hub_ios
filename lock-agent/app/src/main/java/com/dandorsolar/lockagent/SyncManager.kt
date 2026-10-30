@@ -61,7 +61,8 @@ object SyncManager {
             val fix = LocationHelper.lastKnown(c)
             val res = Api.heartbeat(
                 backend, id, secret, Prefs.appliedLockState(c), fix,
-                Prefs.fcmToken(c).ifEmpty { null }, DeviceInfo.imei(c)
+                Prefs.fcmToken(c).ifEmpty { null }, DeviceInfo.imei(c),
+                Prefs.frpStatus(c), Prefs.updateError(c)
             )
             val j = res.json
             if (res.ok && j != null) {
@@ -71,6 +72,14 @@ object SyncManager {
                 val desired = j.optString("desired_lock_state", Prefs.desiredLockState(c))
                 Prefs.setDesiredLockState(c, desired)
                 applyDesired(c, desired)
+                // Company FRP accounts (skipped once released — release clears FRP).
+                if (desired != "released" && j.has("frp_accounts")) {
+                    val arr = j.optJSONArray("frp_accounts")
+                    val ids = (0 until (arr?.length() ?: 0)).mapNotNull { arr?.optString(it)?.takeIf { s -> s.isNotBlank() } }
+                    runCatching { Frp.apply(c, ids) }
+                }
+                // Newer app build available? Download + install it in the background.
+                runCatching { Updater.offer(c, j) }
             }
         }
         // Offline: keep holding a not-yet-activated phone on the waiting page.

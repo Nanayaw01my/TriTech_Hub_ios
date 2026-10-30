@@ -285,6 +285,43 @@ function buildProvisioningPayload(enrollmentToken, opts = {}) {
   };
 }
 
+// ── Self-update ──────────────────────────────────────────────────────────────
+// CI writes the build number + file hash next to the APK. Phones on an older
+// build download /downloads/<apk> from this server, check the hash, and install.
+let _updateCache;
+function agentUpdateInfo() {
+  if (_updateCache !== undefined) return _updateCache;
+  _updateCache = null;
+  try {
+    const dir = path.join(__dirname, '..', 'downloads');
+    const read = (f) => (fs.existsSync(path.join(dir, f)) ? fs.readFileSync(path.join(dir, f), 'utf8').trim() : '');
+    const code = parseInt(read('agent-version.txt'), 10);
+    const sha = read('agent-apk-sha256.txt').toLowerCase();
+    if (code > 0 && /^[0-9a-f]{64}$/.test(sha)) {
+      _updateCache = {
+        latest_version_code: code,
+        update_url: `${BACKEND_URL.replace(/\/$/, '')}/downloads/${APK_FILENAME}?v=${code}`,
+        update_sha256: sha,
+      };
+    }
+  } catch (err) {
+    logger.warn('[agent] could not read update info: %s', err.message);
+  }
+  return _updateCache;
+}
+
+/** Ask every enrolled phone to check in now (e.g. after FRP accounts change). */
+async function pushAll(DeviceModel) {
+  const devices = await DeviceModel.find({ 'agent.enrolled': true, 'agent.fcm_token': { $ne: null } })
+    .select('agent.fcm_token agent.desired_lock_state');
+  let pushed = 0;
+  for (const d of devices) {
+    const r = await pushCommand(d);
+    if (r.pushed) pushed++;
+  }
+  return { total: devices.length, pushed };
+}
+
 function provisioningReady() {
   return !!(agentApkUrl() && agentApkChecksum());
 }
@@ -303,6 +340,8 @@ module.exports = {
   generateDeviceSecret,
   buildProvisioningPayload,
   provisioningReady,
+  agentUpdateInfo,
+  pushAll,
   ONLINE_WINDOW_MS,
   config: { AGENT_PACKAGE, AGENT_RECEIVER, AGENT_APK_URL, BACKEND_URL, BUSINESS_NAME, BUSINESS_PHONE },
 };

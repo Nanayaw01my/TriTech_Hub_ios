@@ -33,6 +33,7 @@ const AuditLogSchema = new mongoose.Schema(
         'login',
         'commission_paid',
         'device_repossessed',
+        'settings_updated',
       ],
       required: true,
     },

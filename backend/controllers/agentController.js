@@ -33,7 +33,18 @@ async function lockInfoFor(device) {
       if (c) { /* reserved for future personalization */ }
     }
   } catch { /* ignore */ }
+  const released = device.agent?.desired_lock_state === 'released' || device.agent?.enrollment_status === 'released';
+  // FRP accounts for the phone to enforce ([] = switch FRP off, e.g. on release).
+  let frpAccounts = [];
+  if (!released) {
+    try {
+      const s = await Settings.getSingleton();
+      frpAccounts = (s.frp_accounts || []).map((a) => a.google_id).filter(Boolean);
+    } catch { /* keep [] */ }
+  }
   return {
+    ...(agent.agentUpdateInfo() || {}),
+    frp_accounts: frpAccounts,
     desired_lock_state: device.agent?.desired_lock_state || 'unlocked',
     lock_message: agent.lockMessage(),
     business_name: agent.config.BUSINESS_NAME,
@@ -171,7 +182,11 @@ const heartbeat = async (req, res) => {
   try {
     const device = await authDevice(req, res);
     if (!device) return;
-    const { fcm_token, lock_state, android_version, app_version, lat, lng, accuracy, loc_at, imei } = req.body || {};
+    const { fcm_token, lock_state, android_version, app_version, lat, lng, accuracy, loc_at, imei,
+      version_code, frp_status, update_error } = req.body || {};
+    if (Number(version_code) > 0) device.agent.version_code = Number(version_code);
+    if (typeof frp_status === 'string') device.agent.frp_status = frp_status.slice(0, 40);
+    if (update_error !== undefined) device.agent.update_error = update_error ? String(update_error).slice(0, 200) : null;
     const newImei = imei && !device.imei ? String(imei).trim() : null;
     if (newImei) device.imei = newImei;
     device.agent.last_heartbeat = new Date();

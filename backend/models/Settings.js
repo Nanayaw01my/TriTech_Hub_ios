@@ -19,6 +19,17 @@ const SettingsSchema = new mongoose.Schema(
     // Reusable token embedded in the "Stock Enrollment" QR. Scanning it on any
     // factory-reset phone enrols that phone into the unassigned stock pool.
     stock_enrollment_token: { type: String, default: null },
+    // Factory Reset Protection: company Google accounts. After a recovery-mode
+    // reset, an enrolled phone can only be set up again by signing in with one
+    // of these. google_id is the account's numeric Google ID (what Android needs).
+    frp_accounts: {
+      type: [{
+        google_id: { type: String, required: true, trim: true },
+        email: { type: String, trim: true, lowercase: true, default: '' },
+        added_at: { type: Date, default: Date.now },
+      }],
+      default: [],
+    },
   },
   { timestamps: true }
 );

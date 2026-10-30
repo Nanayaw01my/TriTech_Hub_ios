@@ -11,8 +11,9 @@ android {
         applicationId "com.dandorsolar.lockagent"
         minSdk 26
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        // CI passes -PVERSION_CODE (rises every build) so phones can self-update.
+        versionCode((project.findProperty('VERSION_CODE') ?: '1') as Integer)
+        versionName((project.findProperty('VERSION_NAME') ?: '1.0') as String)
 
         // Firebase Cloud Messaging (instant lock/unlock), project
         // "dan-and-dor-solar". These are the public client values from

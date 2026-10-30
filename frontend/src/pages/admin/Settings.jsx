@@ -7,6 +7,7 @@ import Button from '../../components/Modern/Button'
 import Card from '../../components/Modern/Card'
 import Input from '../../components/Modern/Input'
 import useLogo, { setLogo } from '../../hooks/useLogo'
+import FrpCard from './FrpCard'
 
 export default function AdminSettings() {
   const { user, updateUser } = useAuth()
@@ -263,6 +264,9 @@ export default function AdminSettings() {
             </div>
           </div>
         </Card>
+
+        {/* Factory Reset Protection */}
+        <FrpCard />
 
         {/* Business Settings */}
         <Card padding="p-6 sm:p-8" className="mb-6 shadow-lg">

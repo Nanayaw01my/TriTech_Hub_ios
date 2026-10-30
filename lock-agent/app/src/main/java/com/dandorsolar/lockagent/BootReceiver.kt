@@ -4,7 +4,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 
-/** After a reboot: re-arm the lock immediately so it can't be bypassed, then sync. */
+/** After a reboot or a self-update: re-arm the lock immediately so it can't be
+ *  bypassed, then sync. */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         App.scheduleSync(context)

@@ -79,6 +79,12 @@ const DeviceSchema = new mongoose.Schema(
       app_version: { type: String, default: null },
       android_version: { type: String, default: null },
       model_reported: { type: String, default: null },
+      // Build number of the app on the phone (self-update compares against it).
+      version_code: { type: Number, default: null },
+      update_error: { type: String, default: null },
+      // Factory Reset Protection as reported by the phone: on / on_legacy /
+      // off / failed / unsupported. null = old app that doesn't support FRP.
+      frp_status: { type: String, default: null },
       // Last-known GPS location reported by the phone.
       location: {
         lat: { type: Number, default: null },

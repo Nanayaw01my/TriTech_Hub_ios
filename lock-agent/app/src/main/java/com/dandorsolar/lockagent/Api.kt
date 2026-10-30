@@ -60,14 +60,18 @@ object Api {
     /** POST /api/agent/heartbeat — report applied state + location, receive desired state. */
     fun heartbeat(
         backend: String, deviceId: String, secret: String, appliedState: String,
-        fix: LocationHelper.Fix? = null, fcmToken: String? = null, imei: String? = null
+        fix: LocationHelper.Fix? = null, fcmToken: String? = null, imei: String? = null,
+        frpStatus: String? = null, updateError: String? = null
     ): Result {
         val body = JSONObject()
             .put("lock_state", appliedState)
             .put("android_version", android.os.Build.VERSION.RELEASE)
             .put("app_version", BuildConfig.VERSION_NAME)
+            .put("version_code", BuildConfig.VERSION_CODE)
         if (!fcmToken.isNullOrBlank()) body.put("fcm_token", fcmToken)
         if (!imei.isNullOrBlank()) body.put("imei", imei)
+        if (frpStatus != null) body.put("frp_status", frpStatus)
+        if (updateError != null) body.put("update_error", updateError)
         if (fix != null) {
             body.put("lat", fix.lat)
                 .put("lng", fix.lng)

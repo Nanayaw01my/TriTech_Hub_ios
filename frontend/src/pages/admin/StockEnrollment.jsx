@@ -266,6 +266,10 @@ export default function StockEnrollment() {
                           {d.imei ? `IMEI ${d.imei}` : d.serial_number ? `SN ${d.serial_number}` : d.device_code ? `ID …${d.device_code}` : '—'}
                           {d.imei && imeiCount[d.imei] > 1 && <span className="ml-1 font-sans font-semibold text-amber-600">· duplicate</span>}
                         </p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          {d.app_version ? `App ${d.app_version}` : 'App (old)'}
+                          {d.frp_status === 'on' || d.frp_status === 'on_legacy' ? ' · FRP on' : d.frp_status === 'failed' ? ' · FRP failed' : ''}
+                        </p>
                         {!d.assigned && (
                           <p className={`text-[11px] font-bold mt-0.5 ${d.price > 0 ? 'text-gray-800' : 'text-amber-600'}`}>
                             {d.price > 0 ? `GH₵${Number(d.price).toLocaleString()}` : 'No price set'}

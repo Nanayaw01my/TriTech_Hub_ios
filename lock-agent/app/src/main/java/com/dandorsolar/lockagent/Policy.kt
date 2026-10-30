@@ -66,6 +66,8 @@ object Policy {
     fun releaseDevice(c: Context) {
         if (!isOwner(c)) return
         val dpm = dpm(c); val admin = admin(c)
+        // Turn off company FRP first, so the customer is never asked for our account.
+        runCatching { Frp.clear(c) }
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_FACTORY_RESET) }
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_ADD_USER) }
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_SAFE_BOOT) }

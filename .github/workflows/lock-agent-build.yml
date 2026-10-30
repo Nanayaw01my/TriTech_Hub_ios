@@ -41,19 +41,33 @@ jobs:
           unzip -q gradle-8.7-bin.zip -d "$HOME/gradle"
           echo "$HOME/gradle/gradle-8.7/bin" >> "$GITHUB_PATH"
 
+      # Each build gets a higher version number, so phones know there's an update.
       - name: Build release APK
-        run: gradle assembleRelease --no-daemon
-
-      - name: Sign with release keystore (optional)
-        if: ${{ env.KEYSTORE_BASE64 != '' }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > release.jks
+          VERSION_CODE=$((100 + ${{ github.run_number }}))
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          gradle assembleRelease --no-daemon -PVERSION_CODE=$VERSION_CODE -PVERSION_NAME=1.$VERSION_CODE
+
+      # Every build MUST be signed with the same permanent key: phones only
+      # accept a self-update signed like the app they already have. A build
+      # signed with a throwaway key would strand every phone on the old version.
+      - name: Require the permanent signing key
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::error::Add the KEYSTORE_BASE64 and KEYSTORE_PASSWORD repository secrets (Settings → Secrets and variables → Actions) — the app compiled, but it is not published without the key."
+            exit 1
+          fi
+
+      - name: Sign with the permanent release key
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > release.p12
           APKSIGNER="$ANDROID_HOME/build-tools/34.0.0/apksigner"
           "$APKSIGNER" sign \
-            --ks release.jks --ks-pass pass:"$KEYSTORE_PASSWORD" \
-            --ks-key-alias "$KEY_ALIAS" --key-pass pass:"$KEY_PASSWORD" \
+            --ks release.p12 --ks-pass pass:"$KEYSTORE_PASSWORD" \
+            --ks-key-alias "${KEY_ALIAS:-dandorsolar}" --key-pass pass:"${KEY_PASSWORD:-$KEYSTORE_PASSWORD}" \
             --v1-signing-enabled true --v2-signing-enabled true \
             app/build/outputs/apk/release/app-release.apk
+          rm -f release.p12
 
       - name: Compute provisioning signature checksum
         run: |
@@ -95,9 +109,13 @@ jobs:
           mkdir -p backend/downloads
           cp lock-agent/app/build/outputs/apk/release/app-release.apk backend/downloads/dandorsolar-lock-agent.apk
           printf '%s' "$CHECKSUM" > backend/downloads/agent-checksum.txt
+          # For phone self-update: the version number + file hash the phone checks.
+          printf '%s' "$VERSION_CODE" > backend/downloads/agent-version.txt
+          sha256sum backend/downloads/dandorsolar-lock-agent.apk | cut -d' ' -f1 | tr -d '\n' > backend/downloads/agent-apk-sha256.txt
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f backend/downloads/dandorsolar-lock-agent.apk backend/downloads/agent-checksum.txt
+          git add -f backend/downloads/dandorsolar-lock-agent.apk backend/downloads/agent-checksum.txt \
+            backend/downloads/agent-version.txt backend/downloads/agent-apk-sha256.txt
           if git diff --cached --quiet; then
             echo "No APK changes."
           else
