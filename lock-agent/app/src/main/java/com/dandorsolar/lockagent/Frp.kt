@@ -16,20 +16,23 @@ object Frp {
     private const val TAG = "DDAgent"
     private const val GMS = "com.google.android.gms"
 
-    /** Enforce exactly [ids] (numeric Google account IDs). Empty = FRP off. */
-    fun apply(c: Context, ids: List<String>) {
-        if (!Policy.isOwner(c)) return
+    /** Enforce exactly [ids] (numeric Google account IDs). Empty = FRP off.
+     *  Returns true when the FRP status changed (so it's worth reporting soon). */
+    fun apply(c: Context, ids: List<String>): Boolean {
+        if (!Policy.isOwner(c)) return false
         // Never during the setup wizard: changing FRP while Google's setup is
         // still running can make it fail with "Can't set up device". A later
         // sync applies it once setup has finished.
-        if (!setupComplete(c)) return
+        if (!setupComplete(c)) return false
         val key = ids.sorted().joinToString(",")
         // Idempotent: only touch the policy when the accounts change (or last try failed).
-        if (key == Prefs.frpApplied(c) && Prefs.frpStatus(c) != "failed") return
+        if (key == Prefs.frpApplied(c) && Prefs.frpStatus(c) != "failed") return false
+        val before = Prefs.frpStatus(c)
         val status = set(c, ids)
         Prefs.setFrpApplied(c, key)
         Prefs.setFrpStatus(c, status)
         Log.i(TAG, "FRP ${ids.size} account(s): $status")
+        return status != before
     }
 
     /** Switch FRP off — done before handing the phone to the customer. */

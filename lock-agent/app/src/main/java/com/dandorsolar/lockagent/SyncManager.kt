@@ -77,7 +77,9 @@ object SyncManager {
                 if (desired != "released" && j.has("frp_accounts")) {
                     val arr = j.optJSONArray("frp_accounts")
                     val ids = (0 until (arr?.length() ?: 0)).mapNotNull { arr?.optString(it)?.takeIf { s -> s.isNotBlank() } }
-                    runCatching { Frp.apply(c, ids) }
+                    // FRP status changed: check in again shortly so the admin sees it
+                    // (this check-in already reported the old status).
+                    if (runCatching { Frp.apply(c, ids) }.getOrDefault(false)) App.syncLater(c, 1)
                 }
                 // Newer app build available? Download + install it in the background.
                 runCatching { Updater.offer(c, j) }
