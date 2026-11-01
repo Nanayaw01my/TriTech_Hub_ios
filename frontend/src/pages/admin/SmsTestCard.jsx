@@ -9,7 +9,7 @@ export default function SmsTestCard() {
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState(null)
 
-  // provider: null = normal (NkomoSMS, Arkesel as backup) | 'arkesel' = Arkesel only
+  // provider: null = normal (Arkesel, NkomoSMS as backup) | 'nkomo' = NkomoSMS only
   const send = async (provider = null) => {
     if (!phone.trim()) { toast.error('Enter a phone number.'); return }
     setBusy(true)
@@ -56,17 +56,17 @@ export default function SmsTestCard() {
           {busy ? 'Sending…' : 'Send test SMS'}
         </button>
       </div>
-      <button type="button" onClick={() => send('arkesel')} disabled={busy}
+      <button type="button" onClick={() => send('nkomo')} disabled={busy}
         className="mt-2 w-full px-4 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-60">
-        Send via Arkesel instead
+        Send via NkomoSMS instead
       </button>
       {result && (
         <div className="mt-4 space-y-2">
           <p className={`text-sm font-bold ${result.ok ? 'text-green-700' : 'text-red-700'}`}>
             {result.ok ? `Sent via ${result.provider} to ${result.phone}. Check the phone.` : (result.error || 'Not sent — see below.')}
           </p>
-          {result.nkomo && providerRow('NkomoSMS (main)', result.nkomo)}
-          {result.arkesel && providerRow('Arkesel (backup)', result.arkesel)}
+          {result.arkesel && providerRow('Arkesel (main)', result.arkesel)}
+          {result.nkomo && providerRow('NkomoSMS (backup)', result.nkomo)}
         </div>
       )}
     </Card>

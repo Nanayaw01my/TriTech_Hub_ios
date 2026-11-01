@@ -8,13 +8,14 @@ const Payment = require('../models/Payment');
 const AuditLog = require('../models/AuditLog');
 const { generateAccountNumber } = require('../utils/accountGenerator');
 const { initializePayment } = require('../utils/paystack');
-const { sendAdminSaleNotificationEmail, sendCustomerWelcomeEmail } = require('../utils/email');
-const { sendAdminSaleSMS, sendAdminSaleWhatsApp, sendCustomerWelcomeSMS } = require('../utils/sms');
+const { sendAdminSaleNotificationEmail } = require('../utils/email');
+const { sendAdminSaleSMS, sendAdminSaleWhatsApp } = require('../utils/sms');
+const Settings = require('../models/Settings');
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../utils/logger');
 const { uploadBase64 } = require('../utils/cloudinary');
 const { processSuccessfulPayment } = require('./paymentController');
-const { placeholderEmail, isPlaceholderEmail } = require('../utils/customerEmail');
+const { placeholderEmail } = require('../utils/customerEmail');
 
 // Upload a base64-encoded image to Cloudinary, return the secure URL (or null).
 const saveBase64Image = async (base64String, fieldName, customerId = '') => {
@@ -411,6 +412,7 @@ const addCustomer = async (req, res) => {
     // --- 7. Create Customer record ---
     const newCustomer = await Customer.create({
       user_id: newUser._id,
+      pin_pending: !password,
       full_name: full_name.trim(),
       email: customerEmail,
       phone: phone?.trim(),
@@ -536,38 +538,26 @@ const addCustomer = async (req, res) => {
           }
         }
 
-        // SMS + WhatsApp notification to admin
-        const adminPhone = process.env.ADMIN_PHONE || adminUser?.phone;
-        if (adminPhone) {
-          await sendAdminSaleSMS(adminPhone, salePayload).catch(e =>
-            logger.error('[Sale notify] SMS failed:', e.message)
+        // SMS to the company number (Settings → Business Information → contact
+        // phone), so every new sale gets reviewed. Falls back to ADMIN_PHONE /
+        // the admin's own phone if no company number is set.
+        const settings = await Settings.getSingleton().catch(() => null);
+        const companyPhone = settings?.contact_phone || process.env.ADMIN_PHONE || adminUser?.phone;
+        if (companyPhone) {
+          await sendAdminSaleSMS(companyPhone, salePayload).catch(e =>
+            logger.error('[Sale notify] SMS failed: %s', e.message)
           );
-          logger.info('[Sale notify] SMS sent to:', adminPhone);
-
-          await sendAdminSaleWhatsApp(adminPhone, salePayload).catch(e =>
-            logger.error('[Sale notify] WhatsApp failed:', e.message)
+          logger.info('[Sale notify] Sale alert SMS sent to company number %s', companyPhone);
+          await sendAdminSaleWhatsApp(companyPhone, salePayload).catch(e =>
+            logger.error('[Sale notify] WhatsApp failed: %s', e.message)
           );
-          logger.info('[Sale notify] WhatsApp sent to:', adminPhone);
+        } else {
+          logger.warn('[Sale notify] No company phone set (Settings → Business Information) — sale alert SMS not sent.');
         }
 
-        // Welcome email + SMS to customer
-        if (newCustomer.email && !isPlaceholderEmail(newCustomer.email)) {
-          try {
-            await sendCustomerWelcomeEmail(newCustomer.email, newCustomer.full_name, newUser.account_number);
-            logger.info('[Sale notify] Welcome email sent to:', newCustomer.email);
-          } catch (e) {
-            logger.error('[Sale notify] Welcome email failed:', e?.message || e);
-          }
-        }
-        if (newCustomer.phone) {
-          await sendCustomerWelcomeSMS(
-            newCustomer.phone,
-            newCustomer.full_name,
-            newUser.account_number,
-            process.env.FRONTEND_URL || 'dandorsolar.site',
-            password ? null : customerPassword // send the PIN only if we generated it
-          ).catch(e => logger.error('[Sale notify] Welcome SMS failed:', e.message));
-        }
+        // The customer is NOT texted here: they get their login and payment
+        // details only once the sale is approved and the deposit is paid
+        // (see planActivation.activatePlanNow).
       } catch (err) {
         logger.error('[Sale notify] Notification error:', err.message);
       }
@@ -770,7 +760,11 @@ const updateSale = async (req, res) => {
     user.name = customer.full_name;
     user.email = customer.email;
     if (b.phone) user.phone = String(b.phone).trim();
-    if (b.password) user.password = String(b.password);
+    if (b.password) {
+      user.password = String(b.password);
+      customer.pin_pending = false; // the DSR set a password; no PIN to issue
+      await customer.save();
+    }
     await user.save();
 
     await AuditLog.create({

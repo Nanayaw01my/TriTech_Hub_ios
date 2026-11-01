@@ -20,74 +20,76 @@ const formatPhone = (phone) => {
   return digits;
 };
 
-// ── Arkesel SMS (fallback only) ───────────────────────────────────────────────
+// ── Senders ──────────────────────────────────────────────────────────────────
+// Each returns { ok, retry }. retry=false means "don't try the other provider"
+// (sent, or a timeout where the message may already have gone out — retrying
+// would double-send).
 const sendSMSViaArkesel = async (phone, message) => {
-  if (!ARKESEL_API_KEY) {
-    logger.error(`[SMS] Not sent to ${phone}: NkomoSMS failed and Arkesel (ARKESEL_API_KEY) is not set up.`);
-    return null;
-  }
+  if (!ARKESEL_API_KEY) return { ok: false, retry: true, reason: 'ARKESEL_API_KEY not set' };
   try {
     const res = await axios.post(
       'https://sms.arkesel.com/api/v2/sms/send',
       { sender: SENDER_ID, message, recipients: [phone] },
-      { headers: { 'api-key': ARKESEL_API_KEY }, timeout: 15000 }
+      { headers: { 'api-key': ARKESEL_API_KEY }, timeout: 20000 }
     );
-    logger.info(`[SMS] Arkesel fallback sent to ${phone}: %s`, JSON.stringify(res.data));
-    return res.data;
+    if (res.data?.status === 'success') {
+      logger.info(`[SMS] Arkesel sent to ${phone}: %s`, JSON.stringify(res.data));
+      return { ok: true, retry: false };
+    }
+    logger.error(`[SMS] Arkesel rejected for ${phone}: %s`, JSON.stringify(res.data));
+    return { ok: false, retry: true };
   } catch (err) {
-    logger.error(`[SMS] Arkesel fallback failed for ${phone}: %s`, err.response?.data ? JSON.stringify(err.response.data) : err.message);
-    return null;
+    if (err.code === 'ECONNABORTED' || /timeout/i.test(err.message || '')) {
+      logger.warn(`[SMS] Arkesel slow to respond for ${phone} — assuming sent, NOT retrying (avoids double SMS)`);
+      return { ok: false, retry: false };
+    }
+    logger.error(`[SMS] Arkesel failed for ${phone} (%s): %s`, err.response?.status || '-',
+      err.response?.data ? JSON.stringify(err.response.data) : err.message);
+    return { ok: false, retry: true };
   }
 };
 
-// ── Primary SMS sender: NkomoSMS (v3 Bearer → HTTP API → Arkesel fallback) ─────
+const sendSMSViaNkomo = async (phone, message) => {
+  if (!NKOMO_API_TOKEN) return { ok: false, retry: true, reason: 'NKOMOSMS_API_TOKEN not set' };
+  try {
+    const res = await axios.post(
+      NKOMO_SEND_URL,
+      { api_token: NKOMO_API_TOKEN, recipient: phone, sender_id: NKOMO_SENDER_ID, type: 'plain', message },
+      { headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, timeout: 30000 }
+    );
+    if (res.data && res.data.status === 'error') {
+      logger.error(`[SMS] NkomoSMS rejected for ${phone}: %s`, res.data.message);
+      return { ok: false, retry: true };
+    }
+    logger.info(`[SMS] NkomoSMS sent to ${phone}: %s`, JSON.stringify(res.data));
+    return { ok: true, retry: false };
+  } catch (err) {
+    if (err.code === 'ECONNABORTED' || /timeout/i.test(err.message || '')) {
+      logger.warn(`[SMS] NkomoSMS slow to respond for ${phone} — assuming sent, NOT retrying (avoids double SMS)`);
+      return { ok: false, retry: false };
+    }
+    logger.error(`[SMS] NkomoSMS failed for ${phone} (%s): %s`, err.response?.status || '-',
+      err.response?.data ? JSON.stringify(err.response.data) : err.message);
+    return { ok: false, retry: true };
+  }
+};
+
+// ── Primary SMS sender: Arkesel first, NkomoSMS as the backup ──────────────────
+// (Arkesel's sender name is approved on Ghana's networks; NkomoSMS reported
+// "Delivered" for messages MTN never delivered.)
 const sendSMS = async (to, message) => {
   const phone = formatPhone(to);
   if (!phone) {
     logger.warn('[SMS] Invalid phone: %s', to);
     return;
   }
-
-  if (!NKOMO_API_TOKEN) {
-    logger.warn('[SMS] NKOMOSMS_API_TOKEN not set — falling back to Arkesel');
-    return sendSMSViaArkesel(phone, message);
+  const first = await sendSMSViaArkesel(phone, message);
+  if (first.ok || !first.retry) return first;
+  const second = await sendSMSViaNkomo(phone, message);
+  if (!second.ok && second.retry) {
+    logger.error(`[SMS] NOT sent to ${phone}: both Arkesel and NkomoSMS failed or aren't set up.`);
   }
-
-  // Primary: NkomoSMS — POST with api_token in the JSON body (per their docs)
-  try {
-    const res = await axios.post(
-      NKOMO_SEND_URL,
-      {
-        api_token: NKOMO_API_TOKEN,
-        recipient: phone,
-        sender_id: NKOMO_SENDER_ID,
-        type: 'plain',
-        message,
-      },
-      {
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        timeout: 30000,
-      }
-    );
-    // NkomoSMS returns { status: 'success' | 'error', ... }
-    if (res.data && res.data.status === 'error') {
-      // NkomoSMS explicitly refused the message — safe to fall back to Arkesel.
-      logger.error(`[SMS] NkomoSMS rejected for ${phone}: ${res.data.message} — trying Arkesel...`);
-      return sendSMSViaArkesel(phone, message);
-    }
-    logger.info(`[SMS] NkomoSMS sent to ${phone}: %s`, JSON.stringify(res.data));
-    return res.data;
-  } catch (err) {
-    // A timeout does NOT mean the message failed — NkomoSMS may have already
-    // sent it. Falling back here would double-send, so we don't.
-    if (err.code === 'ECONNABORTED' || /timeout/i.test(err.message || '')) {
-      logger.warn(`[SMS] NkomoSMS slow to respond for ${phone} — assuming sent, NOT falling back (avoids double SMS)`);
-      return null;
-    }
-    // Genuine failure (network error or HTTP error status) — fall back to Arkesel.
-    logger.warn(`[SMS] NkomoSMS failed for ${phone} (${err.response?.status}): ${err.response?.data ? JSON.stringify(err.response.data) : err.message} — trying Arkesel...`);
-    return sendSMSViaArkesel(phone, message);
-  }
+  return second;
 };
 
 // WhatsApp is opt-in. It's OFF by default because Arkesel delivers it as a
@@ -125,11 +127,30 @@ const sendWhatsApp = async (to, message) => {
 
 // ─── SMS functions ────────────────────────────────────────────────────────────
 
+// New sale registered by a DSR — alert the company number so it gets reviewed.
 const sendAdminSaleSMS = async (adminPhone, sale) => {
   const branch = sale.branch ? `, ${sale.branch} Branch` : '';
-  const freq   = sale.frequency === 'monthly' ? 'month' : sale.frequency === 'weekly' ? 'week' : 'day';
-  const msg = `Dan & Dor Solar Sale Alert\n${sale.deviceModel} sold by ${sale.staffName}${branch}.\nCustomer: ${sale.customerName} (${sale.customerPhone || 'N/A'})\nPrice: GHS ${Number(sale.totalPrice).toLocaleString()} | Down: GHS ${Number(sale.downPayment).toLocaleString()}\nPlan: GHS ${Number(sale.installmentAmount).toLocaleString()} x ${sale.totalPayments} payments/${freq}`;
+  const freq   = sale.frequency === 'monthly' ? 'monthly' : sale.frequency === 'weekly' ? 'weekly' : 'daily';
+  const msg = `Dan & Dor Solar - NEW SALE TO REVIEW\n${sale.deviceModel} by ${sale.staffName}${sale.staffId ? ` (${sale.staffId})` : ''}${branch}.\nCustomer: ${sale.customerName} (${sale.customerPhone || 'N/A'})\nPrice GHS ${Number(sale.totalPrice).toLocaleString()}, deposit GHS ${Number(sale.downPayment).toLocaleString()}\nPlan: ${sale.totalPayments} ${freq} x GHS ${Number(sale.installmentAmount).toLocaleString()}\nReview it in Activations.`;
   await sendSMS(adminPhone, msg);
+};
+
+// Sent once the sale is approved AND the deposit is paid (plan started): the
+// customer's login plus what to pay and when.
+const sendCustomerActivatedSMS = async (phone, name, d) => {
+  const per = d.frequency === 'weekly' ? 'week' : d.frequency === 'monthly' ? 'month' : 'day';
+  const due = d.firstDueDate ? new Date(d.firstDueDate).toLocaleDateString('en-GH', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  const creds = d.pin ? `Acct ${d.accountNumber}, PIN ${d.pin}` : `Acct ${d.accountNumber} and your password`;
+  const msg = `Congrats ${name}! Your ${d.deviceModel || 'phone'} plan is active. Pay GHS ${Number(d.installmentAmount).toLocaleString()} per ${per}${due ? `, first due ${due}` : ''}. Login at dandorsolar.site: ${creds}. -Dan & Dor Solar`;
+  await sendSMS(phone, msg);
+};
+
+// The day before the due date: the phone locks tomorrow unless they pay.
+const sendLockTomorrowSMS = async (phone, name, d) => {
+  const due = d.dueDate ? new Date(d.dueDate).toLocaleDateString('en-GH', { weekday: 'short', day: 'numeric', month: 'short' }) : 'tomorrow';
+  const call = d.contact ? ` or call ${d.contact}` : '';
+  const msg = `Hi ${name}, your payment of GHS ${Number(d.amount).toLocaleString()} is due tomorrow (${due}). Pay today at dandorsolar.site${call} to avoid your phone being locked. -Dan & Dor Solar`;
+  await sendSMS(phone, msg);
 };
 
 // [pin] is included when the system generated the password (the DSR left it
@@ -227,8 +248,24 @@ const diagnoseSMS = async (to, message, only = null) => {
   };
   if (!phone) return { ...out, ok: false, error: 'Invalid phone number.' };
 
-  // only = 'arkesel' skips NkomoSMS (to test Arkesel directly); 'nkomo' skips Arkesel.
-  if (NKOMO_API_TOKEN && only !== 'arkesel') {
+  // Same order as real messages: Arkesel first, NkomoSMS as backup.
+  // only = 'nkomo' tests NkomoSMS directly; 'arkesel' skips the backup.
+  if (ARKESEL_API_KEY && only !== 'nkomo') {
+    try {
+      const res = await axios.post(
+        'https://sms.arkesel.com/api/v2/sms/send',
+        { sender: SENDER_ID, message, recipients: [phone] },
+        { headers: { 'api-key': ARKESEL_API_KEY }, timeout: 20000 }
+      );
+      out.arkesel.response = res.data;
+      out.arkesel.ok = res.data?.status === 'success';
+    } catch (err) {
+      out.arkesel.ok = false;
+      out.arkesel.http_status = err.response?.status || null;
+      out.arkesel.error = err.response?.data || err.message;
+    }
+  }
+  if (!out.arkesel.ok && NKOMO_API_TOKEN && only !== 'arkesel') {
     try {
       const res = await axios.post(
         NKOMO_SEND_URL,
@@ -243,29 +280,16 @@ const diagnoseSMS = async (to, message, only = null) => {
       out.nkomo.error = err.response?.data || err.message;
     }
   }
-  if (!out.nkomo.ok && ARKESEL_API_KEY && only !== 'nkomo') {
-    try {
-      const res = await axios.post(
-        'https://sms.arkesel.com/api/v2/sms/send',
-        { sender: SENDER_ID, message, recipients: [phone] },
-        { headers: { 'api-key': ARKESEL_API_KEY }, timeout: 15000 }
-      );
-      out.arkesel.response = res.data;
-      out.arkesel.ok = res.data?.status === 'success';
-    } catch (err) {
-      out.arkesel.ok = false;
-      out.arkesel.http_status = err.response?.status || null;
-      out.arkesel.error = err.response?.data || err.message;
-    }
-  }
-  out.ok = !!(out.nkomo.ok || out.arkesel.ok);
-  out.provider = out.nkomo.ok ? 'NkomoSMS' : out.arkesel.ok ? 'Arkesel' : null;
+  out.ok = !!(out.arkesel.ok || out.nkomo.ok);
+  out.provider = out.arkesel.ok ? 'Arkesel' : out.nkomo.ok ? 'NkomoSMS' : null;
   logger.info('[SMS] Test to %s: %s', phone, JSON.stringify(out));
   return out;
 };
 
 module.exports = {
   diagnoseSMS,
+  sendCustomerActivatedSMS,
+  sendLockTomorrowSMS,
   sendSMS,
   sendWhatsApp,
   sendPasswordResetOTP,

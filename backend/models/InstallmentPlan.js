@@ -113,6 +113,11 @@ const InstallmentPlanSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Due date the "your phone locks tomorrow" SMS was last sent for (one per due date).
+    lock_reminder_for: {
+      type: Date,
+      default: null,
+    },
     close_reason: {
       type: String,
       enum: [null, 'phone_released', 'customer_deleted'],

@@ -6,7 +6,8 @@ const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
 const Payment = require('../models/Payment');
 const { sendLockNotificationEmail, sendAdminPaymentReminderEmail, sendAdminOverdueAlertEmail, sendPaymentReminderEmail } = require('./email');
-const { sendPaymentReminderSMS, sendPaymentReminderWhatsApp, sendDeviceLockedSMS, sendDeviceLockedWhatsApp } = require('./sms');
+const { sendPaymentReminderSMS, sendPaymentReminderWhatsApp, sendDeviceLockedSMS, sendDeviceLockedWhatsApp, sendLockTomorrowSMS } = require('./sms');
+const Settings = require('../models/Settings');
 const agent = require('./androidAgent');
 const logger = require('./logger');
 
@@ -208,60 +209,66 @@ const checkOverduePayments = async () => {
 };
 
 /**
- * Check for payments due within the next 48 hours and email the admin a reminder.
+ * The day before a payment is due (= the day before the phone would lock),
+ * text the customer once: "pay today or your phone locks tomorrow". Plans
+ * paid ahead have a later due date, so they aren't reminded. Ghana time = UTC.
  */
 const checkUpcomingPayments = async () => {
-  logger.info('[Scheduler] Running checkUpcomingPayments job...');
+  logger.info('[Scheduler] Running checkUpcomingPayments job (lock-tomorrow reminders)...');
 
   try {
     const now = new Date();
-    const in48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+    const startTomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+    const endTomorrow = new Date(startTomorrow.getTime() + 24 * 60 * 60 * 1000);
 
     const upcomingPlans = await InstallmentPlan.find({
       status: 'active',
-      next_due_date: { $gte: now, $lte: in48Hours },
+      next_due_date: { $gte: startTomorrow, $lt: endTomorrow },
     })
       .populate({ path: 'device_id', select: 'model' })
-      .populate({ path: 'customer_id', select: 'full_name phone email user_id' });
+      .populate({ path: 'customer_id', select: 'full_name phone email user_id deleted_at' });
 
-    if (upcomingPlans.length === 0) {
-      logger.info('[Scheduler] No upcoming payments in the next 48 hours.');
+    // One reminder per due date (safe if the job runs twice).
+    const validPlans = upcomingPlans.filter((p) =>
+      p.device_id && p.customer_id && !p.customer_id.deleted_at &&
+      !(p.lock_reminder_for && new Date(p.lock_reminder_for).getTime() === new Date(p.next_due_date).getTime()));
+
+    if (validPlans.length === 0) {
+      logger.info('[Scheduler] No payments due tomorrow.');
       return;
     }
 
-    const validPlans = upcomingPlans.filter((p) => p.device_id && p.customer_id);
+    const settings = await Settings.getSingleton().catch(() => null);
+    const contact = settings?.contact_phone || agent.config.BUSINESS_PHONE || '';
 
-    // Email each customer individually about their upcoming payment
     for (const plan of validPlans) {
       const customer = plan.customer_id;
       try {
+        if (customer.phone) {
+          await sendLockTomorrowSMS(customer.phone, customer.full_name, {
+            amount: plan.installment_amount, dueDate: plan.next_due_date, contact,
+          });
+          logger.info('[Scheduler] Lock-tomorrow SMS sent to %s', customer.full_name);
+        }
+
         let customerEmail = customer.email;
         if (!customerEmail && customer.user_id) {
           const userRecord = await User.findById(customer.user_id).select('email');
           customerEmail = userRecord?.email;
         }
-        const reminderDetails = {
-          deviceModel: plan.device_id.model,
-          installmentAmount: plan.installment_amount,
-          remainingBalance: plan.remaining_balance,
-          nextDueDate: plan.next_due_date,
-          isOverdue: false,
-        };
-
-        if (customerEmail) {
-          await sendPaymentReminderEmail(customerEmail, customer.full_name, reminderDetails);
-          logger.info('[Scheduler] Upcoming payment email sent to %s', customer.full_name);
+        if (customerEmail && !/@customer\.dandorsolar\.site$/i.test(customerEmail)) {
+          await sendPaymentReminderEmail(customerEmail, customer.full_name, {
+            deviceModel: plan.device_id.model,
+            installmentAmount: plan.installment_amount,
+            remainingBalance: plan.remaining_balance,
+            nextDueDate: plan.next_due_date,
+            isOverdue: false,
+          }).catch((e) => logger.error('[Scheduler] Reminder email failed for %s: %s', customer.full_name, e.message));
         }
 
-        if (customer.phone) {
-          await sendPaymentReminderSMS(customer.phone, customer.full_name, reminderDetails)
-            .catch(e => logger.error('[Scheduler] Reminder SMS failed for %s: %s', customer.full_name, e.message));
-          await sendPaymentReminderWhatsApp(customer.phone, customer.full_name, reminderDetails)
-            .catch(e => logger.error('[Scheduler] Reminder WhatsApp failed for %s: %s', customer.full_name, e.message));
-          logger.info('[Scheduler] Upcoming payment SMS+WhatsApp sent to %s', customer.full_name);
-        }
-      } catch (emailErr) {
-        logger.error('[Scheduler] Failed to send reminder to %s: %s', customer.full_name, emailErr.message);
+        await InstallmentPlan.updateOne({ _id: plan._id }, { $set: { lock_reminder_for: plan.next_due_date } });
+      } catch (err) {
+        logger.error('[Scheduler] Failed to send reminder to %s: %s', customer.full_name, err.message);
       }
     }
 
@@ -277,7 +284,7 @@ const checkUpcomingPayments = async () => {
 
     if (reminderList.length > 0 && process.env.ADMIN_EMAIL) {
       await sendAdminPaymentReminderEmail(process.env.ADMIN_EMAIL, reminderList);
-      logger.info('[Scheduler] Admin payment reminder sent for %d upcoming payment(s).', reminderList.length);
+      logger.info('[Scheduler] Admin payment reminder sent for %d payment(s) due tomorrow.', reminderList.length);
     }
   } catch (error) {
     logger.error('[Scheduler] Fatal error in checkUpcomingPayments: %s', error.message);
@@ -341,7 +348,7 @@ const dailyBackup = async () => {
 /**
  * Start all cron jobs.
  * - Every hour: check for overdue installment plans and lock devices.
- * - Daily at 8 AM: email admin about payments due in the next 48 hours.
+ * - Daily at 8 AM: text customers whose payment is due tomorrow (phone locks then).
  * - Daily at 2 AM: create and email a backup of all system data.
  */
 const startScheduler = () => {
@@ -354,12 +361,12 @@ const startScheduler = () => {
 
   logger.info('[Scheduler] Overdue payment checker scheduled: every hour.');
 
-  // Run daily at 8:00 AM to remind admin about upcoming payments
+  // Run daily at 8:00 AM (Ghana time): 'your phone locks tomorrow' reminders
   cron.schedule('0 8 * * *', async () => {
     await checkUpcomingPayments();
   });
 
-  logger.info('[Scheduler] Upcoming payment reminder scheduled: daily at 08:00.');
+  logger.info('[Scheduler] Lock-tomorrow reminder scheduled: daily at 08:00.');
 
   // Run daily at 2:00 AM to create and email a system backup
   cron.schedule('0 2 * * *', async () => {

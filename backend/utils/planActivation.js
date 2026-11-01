@@ -14,7 +14,8 @@ const AuditLog = require('../models/AuditLog');
 const agent = require('./androidAgent');
 const logger = require('./logger');
 const User = require('../models/User');
-const { sendSMS, sendPaymentReminderSMS } = require('./sms');
+const { sendSMS, sendCustomerActivatedSMS } = require('./sms');
+const { isPlaceholderEmail } = require('./customerEmail');
 
 const addPeriod = (date, frequency, n) => {
   const d = new Date(date);
@@ -84,17 +85,38 @@ async function activatePlanNow(plan, { userId = null, ip = null } = {}) {
     ip_address: ip,
   }).catch((err) => logger.warn('[activate] audit failed: %s', err.message));
 
-  // Tell the customer their plan is running (fire-and-forget).
+  // The sale is approved and paid: NOW the customer gets their welcome text —
+  // login details plus what to pay and when (fire-and-forget). This is the
+  // first message the customer receives; nothing is sent at registration.
   ;(async () => {
     try {
-      const customer = await Customer.findById(plan.customer_id).select('full_name phone');
-      if (customer?.phone) {
-        await sendPaymentReminderSMS(customer.phone, customer.full_name, {
-          deviceModel: '', installmentAmount: plan.installment_amount,
-          remainingBalance: plan.remaining_balance, nextDueDate, isOverdue: false,
-        }).catch(() => {});
+      const customer = await Customer.findById(plan.customer_id);
+      if (!customer) return;
+      const user = await User.findById(customer.user_id);
+      // The DSR left the password blank: issue a fresh PIN now and send it.
+      let pin = null;
+      if (customer.pin_pending && user) {
+        pin = String(Math.floor(10000 + Math.random() * 90000));
+        user.password = pin;
+        await user.save();
+        customer.pin_pending = false;
+        await customer.save();
       }
-    } catch { /* ignore */ }
+      const device = await Device.findById(plan.device_id).select('model').lean();
+      if (customer.phone) {
+        await sendCustomerActivatedSMS(customer.phone, customer.full_name, {
+          accountNumber: user?.account_number, pin, deviceModel: device?.model,
+          installmentAmount: plan.installment_amount, frequency: plan.frequency, firstDueDate: nextDueDate,
+        }).catch((e) => logger.error('[activate] welcome SMS failed: %s', e.message));
+      }
+      if (customer.email && !isPlaceholderEmail(customer.email)) {
+        const { sendCustomerWelcomeEmail } = require('./email');
+        await sendCustomerWelcomeEmail(customer.email, customer.full_name, user?.account_number)
+          .catch((e) => logger.error('[activate] welcome email failed: %s', e.message));
+      }
+    } catch (err) {
+      logger.error('[activate] customer welcome failed: %s', err.message);
+    }
   })();
 
   return { nextDueDate };

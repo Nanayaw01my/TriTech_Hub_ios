@@ -113,6 +113,13 @@ const CustomerSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    // True when the system generated the login PIN (the DSR left the password
+    // blank). The customer is only texted their login once the plan starts, so
+    // a fresh PIN is issued then.
+    pin_pending: {
+      type: Boolean,
+      default: false,
+    },
     // Set when the admin deletes the customer: hidden from lists and counts,
     // record kept for the audit trail.
     deleted_at: {
