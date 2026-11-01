@@ -574,6 +574,12 @@ const startServer = async () => {
   // Bind port FIRST so Render sees the service as alive
   app.listen(PORT, () => {
     logger.info('Dan & Dor Solar Company Ltd. API — port %d — env: %s', PORT, process.env.NODE_ENV || 'development');
+    // Say plainly at startup whether customer data is protected by a real key.
+    if (require('./utils/encryption').hasRealKey()) {
+      logger.info('[security] Encryption: ENCRYPTION_KEY is set ✓ — customer data is protected with your key.');
+    } else {
+      logger.warn('[security] Encryption: ENCRYPTION_KEY is NOT set or invalid (must be 64 characters, 0-9 a-f) — using the public default key!');
+    }
   });
 
   // Then connect to MongoDB (retries in background)
