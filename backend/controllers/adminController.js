@@ -1438,7 +1438,9 @@ const testSms = async (req, res) => {
     const phone = String(req.body?.phone || req.user?.phone || '').trim();
     if (!phone) return res.status(400).json({ success: false, message: 'Enter a phone number.' });
     const { diagnoseSMS } = require('../utils/sms');
-    const result = await diagnoseSMS(phone, 'Test SMS from Dan & Dor Solar. If you received this, SMS is working.');
+    const only = ['arkesel', 'nkomo'].includes(req.body?.provider) ? req.body.provider : null;
+    const via = only === 'arkesel' ? ' (via Arkesel)' : only === 'nkomo' ? ' (via NkomoSMS)' : '';
+    const result = await diagnoseSMS(phone, `Test SMS from Dan & Dor Solar${via}. If you received this, SMS is working.`, only);
     return res.status(200).json({
       success: true,
       message: result.ok ? `Sent via ${result.provider}. Check the phone.` : 'SMS was NOT sent — see the details.',

@@ -9,12 +9,13 @@ export default function SmsTestCard() {
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState(null)
 
-  const send = async () => {
+  // provider: null = normal (NkomoSMS, Arkesel as backup) | 'arkesel' = Arkesel only
+  const send = async (provider = null) => {
     if (!phone.trim()) { toast.error('Enter a phone number.'); return }
     setBusy(true)
     setResult(null)
     try {
-      const res = await api.post('/admin/sms/test', { phone })
+      const res = await api.post('/admin/sms/test', { phone, provider })
       setResult(res.data?.data || null)
       if (res.data?.data?.ok) toast.success(res.data.message)
       else toast.error(res.data?.message || 'SMS was not sent.')
@@ -50,11 +51,15 @@ export default function SmsTestCard() {
       <div className="flex gap-2">
         <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0244000000"
           className="flex-1 min-w-0 px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:border-orange-500 outline-none" />
-        <button type="button" onClick={send} disabled={busy}
+        <button type="button" onClick={() => send()} disabled={busy}
           className="px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-orange-600 hover:bg-orange-500 disabled:opacity-60">
           {busy ? 'Sending…' : 'Send test SMS'}
         </button>
       </div>
+      <button type="button" onClick={() => send('arkesel')} disabled={busy}
+        className="mt-2 w-full px-4 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-60">
+        Send via Arkesel instead
+      </button>
       {result && (
         <div className="mt-4 space-y-2">
           <p className={`text-sm font-bold ${result.ok ? 'text-green-700' : 'text-red-700'}`}>

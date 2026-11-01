@@ -218,7 +218,7 @@ const sendPaymentConfirmedWhatsApp = async (phone, name, amount, details) => {
  * each provider answered, so a misconfiguration (missing key, unapproved
  * sender ID, no credit) is visible instead of silent.
  */
-const diagnoseSMS = async (to, message) => {
+const diagnoseSMS = async (to, message, only = null) => {
   const phone = formatPhone(to);
   const out = {
     phone,
@@ -227,7 +227,8 @@ const diagnoseSMS = async (to, message) => {
   };
   if (!phone) return { ...out, ok: false, error: 'Invalid phone number.' };
 
-  if (NKOMO_API_TOKEN) {
+  // only = 'arkesel' skips NkomoSMS (to test Arkesel directly); 'nkomo' skips Arkesel.
+  if (NKOMO_API_TOKEN && only !== 'arkesel') {
     try {
       const res = await axios.post(
         NKOMO_SEND_URL,
@@ -242,7 +243,7 @@ const diagnoseSMS = async (to, message) => {
       out.nkomo.error = err.response?.data || err.message;
     }
   }
-  if (!out.nkomo.ok && ARKESEL_API_KEY) {
+  if (!out.nkomo.ok && ARKESEL_API_KEY && only !== 'nkomo') {
     try {
       const res = await axios.post(
         'https://sms.arkesel.com/api/v2/sms/send',
