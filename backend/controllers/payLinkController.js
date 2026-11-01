@@ -17,6 +17,25 @@ const logger = require('../utils/logger');
 
 const PAYABLE = ['active', 'defaulted'];
 
+// dandorsolar.site/p/demo — a sample page (made-up customer) for the admin's
+// test SMS, so the link can be checked before any real customer exists.
+const DEMO_TOKEN = 'demo';
+const demoInfo = () => ({
+  demo: true,
+  first_name: 'Ama',
+  device_model: 'TECNO KN4 (sample)',
+  status: 'defaulted',
+  payable: true,
+  locked: true,
+  overdue: true,
+  amount_due: 40,
+  installment_amount: 10,
+  late_fees: 10,
+  frequency: 'daily',
+  remaining_balance: 1170,
+  next_due_date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+});
+
 async function loadByToken(token) {
   if (!/^[A-Za-z0-9]{6,32}$/.test(String(token || ''))) return null;
   const plan = await InstallmentPlan.findOne({ pay_token: token });
@@ -30,6 +49,7 @@ async function loadByToken(token) {
 /** GET /api/pay/:token — what's owed (first name only; nothing sensitive). */
 const getPayInfo = async (req, res) => {
   try {
+    if (req.params.token === DEMO_TOKEN) return res.status(200).json({ success: true, data: demoInfo() });
     const ctx = await loadByToken(req.params.token);
     if (!ctx) return res.status(404).json({ success: false, message: 'This payment link is not valid.' });
     const { plan, customer, device } = ctx;
@@ -60,6 +80,12 @@ const getPayInfo = async (req, res) => {
 /** POST /api/pay/:token/initialize { amount? } — start a Paystack checkout. */
 const initPayLink = async (req, res) => {
   try {
+    if (req.params.token === DEMO_TOKEN) {
+      return res.status(400).json({
+        success: false,
+        message: 'This is a sample page, so no money is taken. For a real customer, this button opens Paystack to pay by Mobile Money or card.',
+      });
+    }
     const ctx = await loadByToken(req.params.token);
     if (!ctx) return res.status(404).json({ success: false, message: 'This payment link is not valid.' });
     const { plan, customer, device } = ctx;

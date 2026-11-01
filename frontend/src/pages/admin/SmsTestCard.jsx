@@ -73,7 +73,9 @@ export default function SmsTestCard() {
             <p className="text-sm text-gray-700">
               Pay-now link for <span className="font-semibold">{result.link_for}</span>:{' '}
               <a href={result.pay_link} target="_blank" rel="noopener noreferrer" className="text-orange-600 font-semibold underline break-all">{result.pay_link}</a>
-              <span className="block text-xs text-amber-700 mt-1">Paying through it pays this customer's real plan.</span>
+              {!result.pay_link.endsWith('/p/demo') && (
+                <span className="block text-xs text-amber-700 mt-1">Paying through it pays this customer's real plan.</span>
+              )}
             </p>
           )}
           {result.arkesel && providerRow('Arkesel (main)', result.arkesel)}

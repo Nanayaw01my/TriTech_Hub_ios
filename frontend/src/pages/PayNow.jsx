@@ -91,6 +91,11 @@ export default function PayNow() {
                 </div>
               )}
 
+              {info.demo && (
+                <p className="mb-4 p-3 rounded-2xl bg-blue-50 text-blue-800 text-xs font-semibold">
+                  Sample page — this is how a customer's Pay-now link looks. No money is taken here.
+                </p>
+              )}
               <p className="text-gray-500 text-sm">Hi {info.first_name},</p>
               <p className="text-gray-900 font-bold text-lg">{info.device_model}</p>
 

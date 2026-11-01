@@ -1460,9 +1460,14 @@ const testSms = async (req, res) => {
       payLink = await require('../utils/payLink').ensurePayLink(plan);
       linkFor = cust.full_name;
     }
-    const text = payLink
-      ? `Test SMS from Dan & Dor Solar${via}. Pay-now link for ${linkFor.split(' ')[0]}: ${payLink}`
-      : `Test SMS from Dan & Dor Solar${via}. If you received this, SMS is working.`;
+    // No customer given: include the sample Pay-now page so the link can be checked.
+    if (!payLink) {
+      payLink = `${require('../utils/payLink').shortHost()}/p/demo`;
+      linkFor = 'a sample customer (no money is taken)';
+    }
+    const text = linkFor.startsWith('a sample')
+      ? `Test SMS from Dan & Dor Solar${via}. SMS is working. Sample Pay-now link: ${payLink}`
+      : `Test SMS from Dan & Dor Solar${via}. Pay-now link for ${linkFor.split(' ')[0]}: ${payLink}`;
     const result = await diagnoseSMS(phone, text, only);
     if (payLink) { result.pay_link = `https://${payLink}`; result.link_for = linkFor; }
     return res.status(200).json({
