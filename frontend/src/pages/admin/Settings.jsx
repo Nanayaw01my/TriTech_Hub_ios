@@ -8,6 +8,7 @@ import Card from '../../components/Modern/Card'
 import Input from '../../components/Modern/Input'
 import useLogo, { setLogo } from '../../hooks/useLogo'
 import FrpCard from './FrpCard'
+import SmsTestCard from './SmsTestCard'
 
 export default function AdminSettings() {
   const { user, updateUser } = useAuth()
@@ -267,6 +268,9 @@ export default function AdminSettings() {
 
         {/* Factory Reset Protection */}
         <FrpCard />
+
+        {/* SMS check */}
+        <SmsTestCard />
 
         {/* Business Settings */}
         <Card padding="p-6 sm:p-8" className="mb-6 shadow-lg">

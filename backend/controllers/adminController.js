@@ -1427,6 +1427,29 @@ const setStockPrice = async (req, res) => {
   }
 };
 
+// ─── SMS CHECK ────────────────────────────────────────────────────────────────
+
+/**
+ * POST /api/admin/sms/test  { phone }
+ * Sends one test SMS and returns each provider's exact answer.
+ */
+const testSms = async (req, res) => {
+  try {
+    const phone = String(req.body?.phone || req.user?.phone || '').trim();
+    if (!phone) return res.status(400).json({ success: false, message: 'Enter a phone number.' });
+    const { diagnoseSMS } = require('../utils/sms');
+    const result = await diagnoseSMS(phone, 'Test SMS from Dan & Dor Solar. If you received this, SMS is working.');
+    return res.status(200).json({
+      success: true,
+      message: result.ok ? `Sent via ${result.provider}. Check the phone.` : 'SMS was NOT sent — see the details.',
+      data: result,
+    });
+  } catch (error) {
+    logger.error('testSms error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── COMPUTER (USB) ENROLLMENT ────────────────────────────────────────────────
 
 /**
@@ -3119,6 +3142,7 @@ module.exports = {
   addFrpAccount,
   removeFrpAccount,
   getComputerEnrollScript,
+  testSms,
   getPaystackBanks,
   setStaffPayout,
   removeStaffPayout,

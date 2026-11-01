@@ -34,6 +34,7 @@ const {
   addFrpAccount,
   removeFrpAccount,
   getComputerEnrollScript,
+  testSms,
   getPaystackBanks,
   setStaffPayout,
   removeStaffPayout,
@@ -105,6 +106,7 @@ router.post('/customers/:id/unlock', [param('id').isMongoId()], unlockCustomerDe
 router.post('/customers/:id/release', [param('id').isMongoId()], releaseCustomerDevice);
 router.get('/stock-enrollment', getStockEnrollment);
 router.get('/stock-enrollment/computer-script', getComputerEnrollScript);
+router.post('/sms/test', testSms);
 router.get('/enrolled-devices', getEnrolledDevices);
 router.get('/activations', getPendingActivations);
 router.post('/plans/:id/approve', [param('id').isMongoId()], approvePlan);

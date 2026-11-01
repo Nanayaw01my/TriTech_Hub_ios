@@ -22,17 +22,20 @@ const formatPhone = (phone) => {
 
 // ── Arkesel SMS (fallback only) ───────────────────────────────────────────────
 const sendSMSViaArkesel = async (phone, message) => {
-  if (!ARKESEL_API_KEY) return null;
+  if (!ARKESEL_API_KEY) {
+    logger.error(`[SMS] Not sent to ${phone}: NkomoSMS failed and Arkesel (ARKESEL_API_KEY) is not set up.`);
+    return null;
+  }
   try {
     const res = await axios.post(
       'https://sms.arkesel.com/api/v2/sms/send',
       { sender: SENDER_ID, message, recipients: [phone] },
       { headers: { 'api-key': ARKESEL_API_KEY }, timeout: 15000 }
     );
-    logger.info(`[SMS] Arkesel fallback sent to ${phone}:`, JSON.stringify(res.data));
+    logger.info(`[SMS] Arkesel fallback sent to ${phone}: %s`, JSON.stringify(res.data));
     return res.data;
   } catch (err) {
-    logger.error(`[SMS] Arkesel fallback failed for ${phone}:`, err.response?.data ? JSON.stringify(err.response.data) : err.message);
+    logger.error(`[SMS] Arkesel fallback failed for ${phone}: %s`, err.response?.data ? JSON.stringify(err.response.data) : err.message);
     return null;
   }
 };
@@ -41,7 +44,7 @@ const sendSMSViaArkesel = async (phone, message) => {
 const sendSMS = async (to, message) => {
   const phone = formatPhone(to);
   if (!phone) {
-    logger.warn('[SMS] Invalid phone:', to);
+    logger.warn('[SMS] Invalid phone: %s', to);
     return;
   }
 
@@ -72,7 +75,7 @@ const sendSMS = async (to, message) => {
       logger.error(`[SMS] NkomoSMS rejected for ${phone}: ${res.data.message} — trying Arkesel...`);
       return sendSMSViaArkesel(phone, message);
     }
-    logger.info(`[SMS] NkomoSMS sent to ${phone}:`, JSON.stringify(res.data));
+    logger.info(`[SMS] NkomoSMS sent to ${phone}: %s`, JSON.stringify(res.data));
     return res.data;
   } catch (err) {
     // A timeout does NOT mean the message failed — NkomoSMS may have already
@@ -210,7 +213,58 @@ const sendPaymentConfirmedWhatsApp = async (phone, name, amount, details) => {
   await sendWhatsApp(phone, msg);
 };
 
+/**
+ * Admin "Send test SMS": tries NkomoSMS, then Arkesel, and returns exactly what
+ * each provider answered, so a misconfiguration (missing key, unapproved
+ * sender ID, no credit) is visible instead of silent.
+ */
+const diagnoseSMS = async (to, message) => {
+  const phone = formatPhone(to);
+  const out = {
+    phone,
+    nkomo: { configured: !!NKOMO_API_TOKEN, sender_id: NKOMO_SENDER_ID },
+    arkesel: { configured: !!ARKESEL_API_KEY, sender_id: SENDER_ID },
+  };
+  if (!phone) return { ...out, ok: false, error: 'Invalid phone number.' };
+
+  if (NKOMO_API_TOKEN) {
+    try {
+      const res = await axios.post(
+        NKOMO_SEND_URL,
+        { api_token: NKOMO_API_TOKEN, recipient: phone, sender_id: NKOMO_SENDER_ID, type: 'plain', message },
+        { headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, timeout: 30000 }
+      );
+      out.nkomo.response = res.data;
+      out.nkomo.ok = !!res.data && res.data.status !== 'error';
+    } catch (err) {
+      out.nkomo.ok = false;
+      out.nkomo.http_status = err.response?.status || null;
+      out.nkomo.error = err.response?.data || err.message;
+    }
+  }
+  if (!out.nkomo.ok && ARKESEL_API_KEY) {
+    try {
+      const res = await axios.post(
+        'https://sms.arkesel.com/api/v2/sms/send',
+        { sender: SENDER_ID, message, recipients: [phone] },
+        { headers: { 'api-key': ARKESEL_API_KEY }, timeout: 15000 }
+      );
+      out.arkesel.response = res.data;
+      out.arkesel.ok = res.data?.status === 'success';
+    } catch (err) {
+      out.arkesel.ok = false;
+      out.arkesel.http_status = err.response?.status || null;
+      out.arkesel.error = err.response?.data || err.message;
+    }
+  }
+  out.ok = !!(out.nkomo.ok || out.arkesel.ok);
+  out.provider = out.nkomo.ok ? 'NkomoSMS' : out.arkesel.ok ? 'Arkesel' : null;
+  logger.info('[SMS] Test to %s: %s', phone, JSON.stringify(out));
+  return out;
+};
+
 module.exports = {
+  diagnoseSMS,
   sendSMS,
   sendWhatsApp,
   sendPasswordResetOTP,
