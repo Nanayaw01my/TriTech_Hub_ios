@@ -4,10 +4,10 @@ name: Build Dan & Dor Solar App APK
 # publishes it to backend/downloads/dandorsolar-app.apk, so it can be downloaded
 # from https://dandorsolar.site/downloads/dandorsolar-app.apk after a redeploy.
 #
-# Signing: set the repo secrets APP_KEYSTORE_BASE64, APP_KEYSTORE_PASSWORD,
-# APP_KEY_ALIAS and APP_KEY_PASSWORD to sign every build with the same key, so
-# new versions install over old ones. Without them a temporary key is used and
-# people must uninstall the old app before installing a new build.
+# Signing: every build is signed with the company's permanent key (the same
+# KEYSTORE_BASE64 / KEYSTORE_PASSWORD secrets as the lock agent), so new
+# versions install straight over old ones. APP_KEYSTORE_* secrets, if set,
+# override it. There is no temporary-key fallback: a build without a key fails.
 on:
   workflow_dispatch:
 
@@ -21,6 +21,8 @@ jobs:
       APP_KEYSTORE_PASSWORD: ${{ secrets.APP_KEYSTORE_PASSWORD }}
       APP_KEY_ALIAS: ${{ secrets.APP_KEY_ALIAS }}
       APP_KEY_PASSWORD: ${{ secrets.APP_KEY_PASSWORD }}
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,13 +68,18 @@ jobs:
           if [ -n "$APP_KEYSTORE_BASE64" ]; then
             echo "$APP_KEYSTORE_BASE64" | base64 -d > app.jks
             KS_PASS="$APP_KEYSTORE_PASSWORD"; ALIAS="$APP_KEY_ALIAS"; KEY_PASS="$APP_KEY_PASSWORD"
-            echo "SIGNING=stable key (repo secret)" >> "$GITHUB_ENV"
+            echo "SIGNING=permanent key (APP_KEYSTORE secret)" >> "$GITHUB_ENV"
+          elif [ -n "$KEYSTORE_BASE64" ]; then
+            # Company permanent key (same as the lock agent). Tolerate copy/paste
+            # debris in the secrets, as the lock-agent build does.
+            printf '%s' "$KEYSTORE_BASE64" | tr -cd 'A-Za-z0-9+/=' | base64 -d > app.jks
+            KS_PASS=$(printf '%s' "$KEYSTORE_PASSWORD" | LC_ALL=C grep -oE '[0-9a-f]{32}' | head -n1)
+            [ -n "$KS_PASS" ] || KS_PASS="$KEYSTORE_PASSWORD"
+            ALIAS=dandorsolar; KEY_PASS="$KS_PASS"
+            echo "SIGNING=permanent company key" >> "$GITHUB_ENV"
           else
-            KS_PASS=temp-pass; ALIAS=temp; KEY_PASS=temp-pass
-            keytool -genkeypair -keystore app.jks -storepass "$KS_PASS" -keypass "$KEY_PASS" \
-              -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
-              -dname "CN=Dan & Dor Solar, O=Dan & Dor Solar Company Ltd., C=GH"
-            echo "SIGNING=TEMPORARY key — uninstall the old app before installing this build" >> "$GITHUB_ENV"
+            echo "::error::No signing key. Add KEYSTORE_BASE64 and KEYSTORE_PASSWORD repo secrets."
+            exit 1
           fi
           "$BT/apksigner" sign --ks app.jks --ks-pass pass:"$KS_PASS" \
             --ks-key-alias "$ALIAS" --key-pass pass:"$KEY_PASS" \
