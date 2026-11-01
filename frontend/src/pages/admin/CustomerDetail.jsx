@@ -436,6 +436,9 @@ export default function AdminCustomerDetail() {
             <InfoCell label="Frequency" value={<span className="capitalize">{plan.payment_frequency || plan.frequency || 'N/A'}</span>} />
             <InfoCell label="Amount Paid" value={`GHS ${Number(plan.amount_paid || 0).toLocaleString()}`} />
             <InfoCell label="Remaining" value={`GHS ${Number(plan.remaining_balance || 0).toLocaleString()}`} valueClass="text-red-600" />
+            {(plan.penalty_balance || 0) > 0 && (
+              <InfoCell label="Late fees owed" value={`GHS ${Number(plan.penalty_balance).toLocaleString()}`} valueClass="text-red-600" />
+            )}
             {plan.start_date && (
               <InfoCell label="Start Date" value={format(new Date(plan.start_date), 'dd MMM yyyy')} />
             )}

@@ -1440,7 +1440,31 @@ const testSms = async (req, res) => {
     const { diagnoseSMS } = require('../utils/sms');
     const only = ['arkesel', 'nkomo'].includes(req.body?.provider) ? req.body.provider : null;
     const via = only === 'arkesel' ? ' (via Arkesel)' : only === 'nkomo' ? ' (via NkomoSMS)' : '';
-    const result = await diagnoseSMS(phone, `Test SMS from Dan & Dor Solar${via}. If you received this, SMS is working.`, only);
+
+    // Optional: include a customer's Pay-now link (find them by phone or account number).
+    let payLink = null;
+    let linkFor = null;
+    const who = String(req.body?.customer || '').trim();
+    if (who) {
+      let cust = null;
+      const acct = await User.findOne({ account_number: who.toUpperCase() }).select('_id').lean();
+      if (acct) cust = await Customer.findOne({ user_id: acct._id, deleted_at: null }).lean();
+      if (!cust) {
+        const digits = who.replace(/\D/g, '');
+        const local = digits.startsWith('233') ? '0' + digits.slice(3) : digits;
+        cust = await Customer.findOne({ phone: { $in: [who, local, digits, '+' + digits] }, deleted_at: null }).lean();
+      }
+      if (!cust) return res.status(404).json({ success: false, message: 'No customer found with that phone or account number.' });
+      const plan = await InstallmentPlan.findOne({ customer_id: cust._id, status: { $in: ['active', 'defaulted'] } });
+      if (!plan) return res.status(400).json({ success: false, message: `${cust.full_name} has no active plan to pay.` });
+      payLink = await require('../utils/payLink').ensurePayLink(plan);
+      linkFor = cust.full_name;
+    }
+    const text = payLink
+      ? `Test SMS from Dan & Dor Solar${via}. Pay-now link for ${linkFor.split(' ')[0]}: ${payLink}`
+      : `Test SMS from Dan & Dor Solar${via}. If you received this, SMS is working.`;
+    const result = await diagnoseSMS(phone, text, only);
+    if (payLink) { result.pay_link = `https://${payLink}`; result.link_for = linkFor; }
     return res.status(200).json({
       success: true,
       message: result.ok ? `Sent via ${result.provider}. Check the phone.` : 'SMS was NOT sent — see the details.',
@@ -1930,6 +1954,7 @@ const resetCustomerPassword = async (req, res) => {
 const SETTINGS_ALLOWED_KEYS = [
   'business_name', 'contact_email', 'contact_phone', 'contact_address',
   'whatsapp_number', 'lock_grace_period_hours', 'installment_frequencies', 'currency',
+  'late_fee_per_day',
 ];
 
 const getSettings = async (req, res) => {
@@ -1951,6 +1976,11 @@ const updateSettings = async (req, res) => {
     const updates = {};
     for (const key of SETTINGS_ALLOWED_KEYS) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+    if ('late_fee_per_day' in updates) {
+      const fee = Number(updates.late_fee_per_day);
+      if (updates.late_fee_per_day === '' || !Number.isFinite(fee) || fee < 0) delete updates.late_fee_per_day;
+      else updates.late_fee_per_day = Math.round(fee * 100) / 100;
     }
 
     // Company logo: `logo` is a new image (data: URL) to upload; `logo_url: null`
@@ -2428,7 +2458,8 @@ const lockCustomerDevice = async (req, res) => {
     if (customer.phone) {
       const linkPlan = await InstallmentPlan.findOne({ customer_id: customer._id, status: { $in: ['active', 'defaulted'] } }).catch(() => null);
       const payLink = linkPlan ? await require('../utils/payLink').ensurePayLink(linkPlan).catch(() => null) : null;
-      sendDeviceLockedSMS(customer.phone, customer.full_name, device.model, payLink).catch(e =>
+      const lateFee = (await Settings.getSingleton().catch(() => null))?.late_fee_per_day;
+      sendDeviceLockedSMS(customer.phone, customer.full_name, device.model, payLink, lateFee).catch(e =>
         logger.error('[SMS] Lock notification failed:', e.message)
       );
       sendDeviceLockedWhatsApp(customer.phone, customer.full_name, device.model).catch(e =>

@@ -102,6 +102,7 @@ export default function PayNow() {
                   <div className="mt-5 text-center">
                     <p className="text-xs text-gray-500 uppercase tracking-wider">Amount due now</p>
                     <p className="text-4xl font-black text-orange-600 mt-1">{ghs(info.amount_due)}</p>
+                    {info.late_fees > 0 && <p className="text-xs font-semibold text-red-600 mt-1">Includes {ghs(info.late_fees)} late fees</p>}
                     {!info.overdue && info.next_due_date && <p className="text-xs text-gray-500 mt-1">Due {fmtDate(info.next_due_date)}</p>}
                   </div>
 
@@ -127,7 +128,7 @@ export default function PayNow() {
                   </button>
 
                   <p className="mt-5 text-xs text-gray-400 text-center">Mobile Money (MTN, Telecel, AirtelTigo) or card — secured by Paystack.</p>
-                  <p className="mt-1 text-xs text-gray-400 text-center">Balance left: {ghs(info.remaining_balance)}</p>
+                  <p className="mt-1 text-xs text-gray-400 text-center">Balance left: {ghs(info.remaining_balance)}{info.late_fees > 0 ? ` + ${ghs(info.late_fees)} late fees` : ''}</p>
                 </>
               ) : (
                 <p className="mt-5 text-center text-green-700 font-semibold">

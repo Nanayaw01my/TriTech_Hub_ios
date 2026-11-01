@@ -8,6 +8,9 @@ const SettingsSchema = new mongoose.Schema(
     contact_address: { type: String, trim: true, default: '' },
     whatsapp_number: { type: String, trim: true, default: '' },
     lock_grace_period_hours: { type: Number, default: 48 },
+    // Late fee (GHS) added for each extra day a locked/overdue payment stays
+    // unpaid after the due day. 0 = no late fees.
+    late_fee_per_day: { type: Number, default: 10, min: 0 },
     installment_frequencies: { type: [String], default: ['daily', 'weekly', 'monthly'] },
     currency: { type: String, trim: true, default: 'GHS' },
     maintenance_mode: { type: Boolean, default: false },

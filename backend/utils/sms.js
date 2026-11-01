@@ -176,9 +176,10 @@ const sendPaymentReminderSMS = async (phone, name, details) => {
   await sendSMS(phone, msg);
 };
 
-const sendDeviceLockedSMS = async (phone, name, deviceModel, link = null) => {
+const sendDeviceLockedSMS = async (phone, name, deviceModel, link = null, lateFee = null) => {
+  const fee = Number(lateFee) > 0 ? ` today to avoid a GHS ${money(lateFee)}/day late fee` : ' now';
   const msg = link
-    ? `Hi ${firstName(name)}, your ${deviceModel} is locked for an overdue payment. Pay now to unlock it: ${link} -Dan & Dor Solar`
+    ? `Hi ${firstName(name)}, your ${deviceModel} is locked for an overdue payment. Pay${fee}: ${link} -Dan & Dor Solar`
     : `Hi ${name}, your ${deviceModel} has been locked. Pay at dandorsolar.site to unlock. -Dan & Dor Solar`;
   await sendSMS(phone, msg);
 };

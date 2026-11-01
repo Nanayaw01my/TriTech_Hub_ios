@@ -299,6 +299,14 @@ export default function AdminSettings() {
               value={settings.whatsapp_number}
               onChange={(e) => setSettings(s => ({ ...s, whatsapp_number: e.target.value }))}
             />
+            <Input
+              label="Late fee per day (GHS)"
+              type="number"
+              value={settings.late_fee_per_day ?? 10}
+              onChange={(e) => setSettings(s => ({ ...s, late_fee_per_day: e.target.value === '' ? '' : Number(e.target.value) }))}
+              placeholder="10"
+            />
+            <p className="-mt-3 text-xs text-gray-500">Added for each extra day a locked phone stays unpaid after its due day (the due day itself is free). 0 = no late fees.</p>
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">Address</label>
               <textarea

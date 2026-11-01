@@ -63,7 +63,11 @@ const processSuccessfulPayment = async ({
   // the installment amount. So GHS 30 on a GHS 10 daily plan covers 3 days, a
   // payment ahead buys that much time, and a part-payment is credited to the
   // balance but doesn't move the due date until it adds up to an installment.
-  const newRemainingBalance = Math.max(0, Math.round((plan.remaining_balance - amountGHS) * 100) / 100);
+  // Late fees are paid first; the rest goes to the balance.
+  const penaltyOwed = Math.max(0, Number(plan.penalty_balance) || 0);
+  const penaltyPaid = Math.min(penaltyOwed, amountGHS);
+  const newPenaltyBalance = Math.round((penaltyOwed - penaltyPaid) * 100) / 100;
+  const newRemainingBalance = Math.max(0, Math.round((plan.remaining_balance - (amountGHS - penaltyPaid)) * 100) / 100);
   const financed = Math.max(0, (plan.total_price || 0) - (plan.down_payment || 0));
   const per = Number(plan.installment_amount) || 0;
   const totalInstallments = plan.total_payments || 0;
@@ -101,11 +105,13 @@ const processSuccessfulPayment = async ({
   }
   // Caught up = the next due date is in the future. Only then is a locked
   // phone unlocked (otherwise the hourly check would lock it again at once).
-  const caughtUp = isCompleted || new Date(nextDueDate) > new Date();
+  // Late fees must be cleared too before a locked phone is unlocked.
+  const caughtUp = isCompleted || (newPenaltyBalance <= 0.009 && new Date(nextDueDate) > new Date());
 
   const planUpdateData = {
     payments_made: newPaymentsMade,
     remaining_balance: newRemainingBalance,
+    penalty_balance: newPenaltyBalance,
     next_due_date: isCompleted ? plan.end_date : nextDueDate,
     // A payment on a sale still awaiting admin activation is recorded, but must
     // NOT activate the plan — only the admin's Activate does that.
@@ -116,6 +122,11 @@ const processSuccessfulPayment = async ({
   };
 
   await InstallmentPlan.findByIdAndUpdate(plan._id, planUpdateData);
+  if (penaltyPaid > 0) {
+    await Payment.updateOne({ _id: payment._id }, {
+      $set: { notes: `${notes ? `${notes} · ` : ''}Includes GHS ${penaltyPaid.toFixed(2)} late fees` },
+    }).catch(() => {});
+  }
 
   // If plan is completed, unlock the device
   let deviceUnlocked = false;

@@ -45,6 +45,7 @@ const getPayInfo = async (req, res) => {
         overdue: payable && plan.next_due_date && new Date(plan.next_due_date) < new Date(),
         amount_due: payable ? amountDue(plan) : 0,
         installment_amount: plan.installment_amount,
+        late_fees: Math.max(0, plan.penalty_balance || 0),
         frequency: plan.frequency,
         remaining_balance: plan.remaining_balance,
         next_due_date: plan.next_due_date,
@@ -68,8 +69,9 @@ const initPayLink = async (req, res) => {
     const requested = Number(req.body?.amount);
     const amount = Number.isFinite(requested) && requested > 0 ? Math.round(requested * 100) / 100 : amountDue(plan);
     if (amount < 1) return res.status(400).json({ success: false, message: 'The minimum payment is GHS 1.' });
-    if (amount > plan.remaining_balance + 0.009) {
-      return res.status(400).json({ success: false, message: `The most you can pay is GHS ${plan.remaining_balance.toLocaleString()} (the full balance).` });
+    const maxPay = (plan.remaining_balance || 0) + (plan.penalty_balance || 0);
+    if (amount > maxPay + 0.009) {
+      return res.status(400).json({ success: false, message: `The most you can pay is GHS ${maxPay.toLocaleString()} (the full balance).` });
     }
 
     const user = await User.findById(customer.user_id).select('email account_number').lean();

@@ -120,6 +120,22 @@ const InstallmentPlanSchema = new mongoose.Schema(
       default: undefined,
       index: { unique: true, sparse: true },
     },
+    // Late fees: GHS late_fee_per_day for each extra day overdue after the due
+    // day. Paid before installments; the phone unlocks only when they're cleared.
+    penalty_balance: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    penalties_total: {
+      type: Number,
+      default: 0,
+    },
+    // Last day (UTC midnight) a late fee was charged for, so each day is charged once.
+    last_penalty_date: {
+      type: Date,
+      default: null,
+    },
     // Due date the "your phone locks tomorrow" SMS was last sent for (one per due date).
     lock_reminder_for: {
       type: Date,

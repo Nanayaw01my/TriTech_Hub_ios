@@ -9,6 +9,7 @@ const { sendLockNotificationEmail, sendAdminPaymentReminderEmail, sendAdminOverd
 const { sendPaymentReminderSMS, sendPaymentReminderWhatsApp, sendDeviceLockedSMS, sendDeviceLockedWhatsApp, sendLockTomorrowSMS } = require('./sms');
 const Settings = require('../models/Settings');
 const { ensurePayLink, amountDue } = require('./payLink');
+const { applyLateFees } = require('./lateFees');
 const agent = require('./androidAgent');
 const logger = require('./logger');
 
@@ -169,7 +170,8 @@ const checkOverduePayments = async () => {
             logger.info('[Scheduler] Lock notification email sent to %s', customerEmail);
           }
           if (customer.phone) {
-            await sendDeviceLockedSMS(customer.phone, customer.full_name, device.model, await ensurePayLink(plan).catch(() => null))
+            await sendDeviceLockedSMS(customer.phone, customer.full_name, device.model, await ensurePayLink(plan).catch(() => null),
+              (await Settings.getSingleton().catch(() => null))?.late_fee_per_day)
               .catch(e => logger.error('[Scheduler] Lock SMS failed: %s', e.message));
             await sendDeviceLockedWhatsApp(customer.phone, customer.full_name, device.model)
               .catch(e => logger.error('[Scheduler] Lock WhatsApp failed: %s', e.message));
@@ -363,6 +365,14 @@ const startScheduler = () => {
   });
 
   logger.info('[Scheduler] Overdue payment checker scheduled: every hour.');
+
+  // Just after midnight (Ghana time): add the day's late fees to overdue plans.
+  // Also run once shortly after start-up, to catch up if the server was asleep.
+  cron.schedule('5 0 * * *', async () => {
+    await applyLateFees().catch((e) => logger.error('[LateFee] %s', e.message));
+  });
+  setTimeout(() => applyLateFees().catch((e) => logger.error('[LateFee] %s', e.message)), 60 * 1000);
+  logger.info('[Scheduler] Late fees scheduled: daily at 00:05.');
 
   // Run daily at 8:00 AM (Ghana time): 'your phone locks tomorrow' reminders
   cron.schedule('0 8 * * *', async () => {

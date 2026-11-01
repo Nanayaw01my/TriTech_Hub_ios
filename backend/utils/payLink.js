@@ -51,6 +51,8 @@ function amountDue(plan) {
   let due = dueItems.length ? dueItems.length * per - credit : per;
   if (due <= 0) due = per;
   due = Math.min(remaining, due);
+  // Plus any late fees (paid first).
+  due += Math.max(0, Number(plan.penalty_balance) || 0);
   return Math.round(due * 100) / 100;
 }
 
