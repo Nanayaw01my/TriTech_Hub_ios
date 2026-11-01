@@ -1,3 +1,4 @@
+const { planTerms } = require('../utils/planTerms');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const Customer = require('../models/Customer');
@@ -262,10 +263,14 @@ const addCustomer = async (req, res) => {
       // accept payment_frequency (frontend) or frequency
       payment_frequency,
       frequency: frequencyField,
-      duration,
     } = req.body;
 
-    const frequency = payment_frequency || frequencyField || 'monthly';
+    // Plans run a fixed 4 months; the customer picks daily or weekly payments.
+    const terms = planTerms(payment_frequency || frequencyField || 'daily');
+    if (!terms) {
+      return res.status(400).json({ success: false, message: 'Choose daily or weekly payments.' });
+    }
+    const frequency = terms.frequency;
 
     // --- 1. Password is optional ---
     // If the DSR supplies one it must be 1-5 chars. If omitted, auto-generate a
@@ -439,9 +444,8 @@ const addCustomer = async (req, res) => {
       });
     }
 
-    // Use staff-selected duration; fall back to sensible defaults
-    const frequencyDefaults = { daily: 90, weekly: 13, monthly: 12 };
-    const totalPayments = (Number(duration) > 0) ? Number(duration) : (frequencyDefaults[frequency] || 12);
+    // Fixed 4-month plan: 120 daily or 17 weekly payments.
+    const totalPayments = terms.totalPayments;
 
     // Calculate installment amount (round to 2 decimal places)
     const installmentAmount = Math.ceil((remainingBalance / totalPayments) * 100) / 100;
@@ -721,9 +725,11 @@ const updateSale = async (req, res) => {
     await device.save();
 
     // --- Plan terms (provisional schedule; the real one starts on activation) ---
-    const frequency = b.payment_frequency || b.frequency || plan.frequency || 'monthly';
-    const frequencyDefaults = { daily: 90, weekly: 13, monthly: 12 };
-    const totalPayments = Number(b.duration) > 0 ? Number(b.duration) : (frequencyDefaults[frequency] || 12);
+    // Fixed 4-month plan: 120 daily or 17 weekly payments.
+    const terms = planTerms(b.payment_frequency || b.frequency || plan.frequency || 'daily');
+    if (!terms) return res.status(400).json({ success: false, message: 'Choose daily or weekly payments.' });
+    const frequency = terms.frequency;
+    const totalPayments = terms.totalPayments;
     const totalPrice = device.price;
     const remaining = totalPrice - downPayment;
     if (remaining < 0) return res.status(400).json({ success: false, message: 'Deposit cannot exceed the device price.' });

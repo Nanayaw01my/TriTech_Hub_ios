@@ -5,7 +5,7 @@ import CameraCapture from '../../components/CameraCapture'
 import SignaturePad from '../../components/SignaturePad'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import toast from 'react-hot-toast'
-import { addDays, addWeeks, addMonths, format } from 'date-fns'
+import { addDays, addWeeks, format } from 'date-fns'
 import { displayEmail } from '../../utils/customerEmail'
 
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || ''
@@ -32,13 +32,10 @@ const GHANA_REGIONS = {
 
 const STEPS = ['Personal Info', 'Photos', 'Address & Income', 'Device & Plan']
 
-const DURATION_OPTIONS = {
-  daily:   [30, 60, 90, 120, 180],
-  weekly:  [4, 8, 13, 26, 52],
-  monthly: [3, 6, 12, 18, 24],
-}
-
-const DEFAULT_DURATION = { daily: 90, weekly: 13, monthly: 12 }
+// Every plan runs a fixed 4 months; the customer picks daily or weekly payments.
+// (Same numbers as the server: backend/utils/planTerms.js)
+const PLAN_MONTHS = 4
+const PLAN_PAYMENTS = { daily: 120, weekly: 17 }
 
 // Edit mode: a photo already stored for this sale. Ghana Card images are hidden
 // from DSRs for privacy, so they're marked ON_FILE instead of shown.
@@ -67,7 +64,7 @@ const initForm = {
   region: '', district: '', location: '', landmark: '', gps_address: '',
   guarantor_name: '', guarantor_phone: '', guarantor_ghana_card_id: '', guarantor_relationship: '',
   // Step 4
-  device_id: '', device_model: '', device_price: '', serial_number: '', udid: '', down_payment: '', payment_frequency: 'monthly', duration: 12,
+  device_id: '', device_model: '', device_price: '', serial_number: '', udid: '', down_payment: '', payment_frequency: 'daily', duration: PLAN_PAYMENTS.daily,
 }
 
 export default function StaffAddCustomer() {
@@ -125,7 +122,9 @@ export default function StaffAddCustomer() {
             guarantor_ghana_card_id: c.guarantor?.ghana_card_id || '', guarantor_relationship: c.guarantor?.relationship || '',
             device_id: enrolled ? dev._id : '', device_model: dev.model || '', device_price: plan?.total_price || dev.price || '',
             serial_number: dev.serial_number || '', udid: dev.udid || '',
-            down_payment: plan?.down_payment || '', payment_frequency: plan?.frequency || 'monthly', duration: plan?.total_payments || 12,
+            down_payment: plan?.down_payment || '',
+            payment_frequency: PLAN_PAYMENTS[plan?.frequency] ? plan.frequency : 'daily',
+            duration: PLAN_PAYMENTS[plan?.frequency] || PLAN_PAYMENTS.daily,
           }))
           if (!['pending', 'returned'].includes(plan?.status)) {
             toast.error('This sale has already been approved and can no longer be edited.')
@@ -155,7 +154,7 @@ export default function StaffAddCustomer() {
     const down = Number(form.down_payment) || 0
     const remaining = Math.max(0, price - down)
     const freq = form.payment_frequency
-    const numPayments = Number(form.duration) || DEFAULT_DURATION[freq] || 12
+    const numPayments = PLAN_PAYMENTS[freq] || PLAN_PAYMENTS.daily
 
     let installmentAmount = 0
     let firstDueDate = null
@@ -166,12 +165,9 @@ export default function StaffAddCustomer() {
       if (freq === 'daily') {
         firstDueDate = addDays(new Date(), 1)
         finalDate = addDays(new Date(), numPayments)
-      } else if (freq === 'weekly') {
+      } else {
         firstDueDate = addWeeks(new Date(), 1)
         finalDate = addWeeks(new Date(), numPayments)
-      } else {
-        firstDueDate = addMonths(new Date(), 1)
-        finalDate = addMonths(new Date(), numPayments)
       }
     }
 
@@ -902,15 +898,15 @@ export default function StaffAddCustomer() {
                   </>
                 )}
 
-                <FormField label="Payment Frequency">
-                  <div className="grid grid-cols-3 gap-2">
-                    {['daily', 'weekly', 'monthly'].map(freq => (
+                <FormField label={`How the customer pays (${PLAN_MONTHS}-month plan)`}>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['daily', 'weekly'].map(freq => (
                       <button
                         key={freq}
                         type="button"
                         onClick={() => {
                           set('payment_frequency', freq)
-                          set('duration', DEFAULT_DURATION[freq])
+                          set('duration', PLAN_PAYMENTS[freq])
                         }}
                         className={`py-3 px-2 rounded-2xl border-2 text-sm font-semibold capitalize transition-all
                           ${form.payment_frequency === freq
@@ -924,28 +920,15 @@ export default function StaffAddCustomer() {
                   </div>
                 </FormField>
 
-                <FormField label="Plan Duration">
-                  <div className="flex flex-wrap gap-2">
-                    {DURATION_OPTIONS[form.payment_frequency].map(d => {
-                      const unit = form.payment_frequency === 'daily' ? 'days'
-                        : form.payment_frequency === 'weekly' ? 'wks' : 'mths'
-                      return (
-                        <button
-                          key={d}
-                          type="button"
-                          onClick={() => set('duration', d)}
-                          className={`px-4 py-2.5 rounded-2xl border-2 text-sm font-semibold transition-all
-                            ${form.duration === d
-                              ? 'border-orange-500 bg-orange-50 text-orange-600'
-                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                            }`}
-                        >
-                          {d} {unit}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </FormField>
+                {/* Breakdown of the fixed 4-month plan for the chosen frequency */}
+                <div className="p-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm text-gray-700">
+                  <span className="font-semibold">{PLAN_MONTHS} months</span> ={' '}
+                  <span className="font-semibold">{PLAN_PAYMENTS[form.payment_frequency]} {form.payment_frequency === 'daily' ? 'daily' : 'weekly'} payments</span>
+                  {preview.installmentAmount > 0 && (
+                    <> of <span className="font-bold text-orange-600">GHS {preview.installmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></>
+                  )}
+                  {preview.installmentAmount > 0 ? '' : <span className="text-gray-400"> — enter the price and deposit to see the amount</span>}
+                </div>
               </div>
             </div>
 

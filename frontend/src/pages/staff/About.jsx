@@ -75,7 +75,7 @@ export default function StaffAbout() {
           <Step num="3" title="Select a Device"
             desc="Choose the phone the customer is buying from the available catalog. Only phones not assigned to anyone will appear." />
           <Step num="4" title="Set the Payment Plan"
-            desc="Enter the total price, down payment amount, number of installments, and how often they pay (weekly / biweekly / monthly). The system calculates the installment amount automatically." />
+            desc="Every plan runs 4 months. Enter the deposit and choose how the customer pays: daily (120 payments) or weekly (17 payments). The system works out the amount per payment automatically." />
           <Step num="5" title="Submit"
             desc="The customer account is created with a unique account number. They receive their login details. The device is now assigned to them." />
         </Section>
