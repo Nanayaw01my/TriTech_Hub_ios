@@ -81,10 +81,22 @@ const getPayInfo = async (req, res) => {
 const initPayLink = async (req, res) => {
   try {
     if (req.params.token === DEMO_TOKEN) {
-      return res.status(400).json({
-        success: false,
-        message: 'This is a sample page, so no money is taken. For a real customer, this button opens Paystack to pay by Mobile Money or card.',
+      // Sample page: optionally a real GHS 1 test payment to the business's own
+      // Paystack account, to see the real checkout. Not linked to any customer.
+      if (req.body?.real_test !== true) {
+        return res.status(400).json({ success: false, demo: true, message: 'This is a sample page, so no money is taken.' });
+      }
+      const reference = `DDT-${uuidv4().replace(/-/g, '').substring(0, 16).toUpperCase()}`;
+      const base = (process.env.FRONTEND_URL || process.env.PUBLIC_BACKEND_URL || 'https://dandorsolar.site').replace(/\/+$/, '');
+      const ps = await initializePayment({
+        email: 'paytest@customer.dandorsolar.site',
+        amount: 1,
+        reference,
+        callback_url: `${base}/p/${DEMO_TOKEN}?reference=${reference}`,
+        metadata: { type: 'demo_test', via: 'pay_link_demo' },
       });
+      if (!ps.status) return res.status(502).json({ success: false, message: 'Could not open Paystack. Please try again.' });
+      return res.status(200).json({ success: true, data: { authorization_url: ps.data.authorization_url, reference, amount: 1 } });
     }
     const ctx = await loadByToken(req.params.token);
     if (!ctx) return res.status(404).json({ success: false, message: 'This payment link is not valid.' });
@@ -134,6 +146,17 @@ const initPayLink = async (req, res) => {
 /** GET /api/pay/:token/verify/:reference — confirm and record the payment. */
 const verifyPayLink = async (req, res) => {
   try {
+    if (req.params.token === DEMO_TOKEN) {
+      const ps = await verifyPayment(req.params.reference).catch(() => null);
+      const st = ps?.data?.status;
+      if (st === 'success' && ps.data.metadata?.type === 'demo_test') {
+        return res.status(200).json({ success: true, data: { demo: true, amount: ps.data.amount / 100 } });
+      }
+      if (st === 'pending' || st === 'ongoing') {
+        return res.status(200).json({ success: true, payment_pending: true, message: 'Approve the Mobile Money prompt on your phone.' });
+      }
+      return res.status(400).json({ success: false, message: `Test payment not completed (${st || 'unknown'}).` });
+    }
     const ctx = await loadByToken(req.params.token);
     if (!ctx) return res.status(404).json({ success: false, message: 'This payment link is not valid.' });
     let ps;

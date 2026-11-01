@@ -24,6 +24,7 @@ export default function PayNow() {
   const [amount, setAmount] = useState('')
   const [starting, setStarting] = useState(false)
   const [result, setResult] = useState(null) // after returning from Paystack
+  const [demoPopup, setDemoPopup] = useState(false)
 
   const load = () =>
     api.get(`/pay/${token}`)
@@ -46,8 +47,22 @@ export default function PayNow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, reference])
 
+  // Sample page: open a real GHS 1 Paystack test (to the business's own account).
+  const startDemoTest = async () => {
+    setStarting(true)
+    try {
+      const res = await api.post(`/pay/${token}/initialize`, { real_test: true })
+      window.location.href = res.data.data.authorization_url
+    } catch (err) {
+      setDemoPopup(false)
+      setError(err?.response?.data?.message || 'Could not open Paystack. Please try again.')
+      setStarting(false)
+    }
+  }
+
   const pay = async () => {
     setError('')
+    if (info?.demo) { setDemoPopup(true); return }
     const body = other ? { amount: Number(amount) } : {}
     if (other && !(Number(amount) >= 1)) { setError('Enter an amount of at least GHS 1.'); return }
     setStarting(true)
@@ -80,7 +95,12 @@ export default function PayNow() {
             <>
               {result && (
                 <div className={`mb-5 p-4 rounded-2xl text-sm ${result.ok && !result.payment_pending ? 'bg-green-50 text-green-800' : result.payment_pending ? 'bg-amber-50 text-amber-800' : 'bg-red-50 text-red-700'}`}>
-                  {result.ok && !result.payment_pending ? (
+                  {result.ok && !result.payment_pending && result.demo ? (
+                    <>
+                      <p className="font-bold text-base">Test payment of GHS {Number(result.amount || 1).toFixed(2)} received ✓</p>
+                      <p className="mt-1">Paystack works. This test isn't linked to any customer.</p>
+                    </>
+                  ) : result.ok && !result.payment_pending ? (
                     <>
                       <p className="font-bold text-base">Payment received ✓</p>
                       <p className="mt-1">Thank you! {result.completed ? 'Your phone is fully paid — it is now yours.' : result.unlocked ? 'Your phone is being unlocked now.' : result.caught_up === false ? 'You still have an amount overdue — pay the rest to unlock your phone.' : `Next payment due ${fmtDate(result.next_due_date)}.`}</p>
@@ -144,6 +164,28 @@ export default function PayNow() {
           )}
         </div>
       </div>
+
+      {demoPopup && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4" onClick={() => !starting && setDemoPopup(false)}>
+          <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <p className="text-lg font-black text-gray-900">This is a sample page</p>
+            <p className="mt-2 text-sm text-gray-600">
+              No customer is charged here. For a real customer, this button opens <span className="font-semibold">Paystack</span> to pay by Mobile Money or card.
+            </p>
+            <p className="mt-3 text-sm text-gray-600">
+              Want to see the real Paystack screen? Make a <span className="font-semibold">GHS 1.00 test payment</span> — it goes to your own business account (less Paystack's fee) and isn't linked to any customer.
+            </p>
+            <button onClick={startDemoTest} disabled={starting}
+              className="mt-5 w-full py-3.5 rounded-2xl bg-orange-600 hover:bg-orange-500 text-white font-bold disabled:opacity-60">
+              {starting ? 'Opening Paystack…' : 'Open Paystack — GHS 1.00 test'}
+            </button>
+            <button onClick={() => setDemoPopup(false)} disabled={starting}
+              className="mt-2 w-full py-3 rounded-2xl border border-gray-200 text-gray-700 font-semibold">
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -502,6 +502,12 @@ const paystackWebhook = async (req, res) => {
       // Respond to Paystack quickly (200) then process
       res.status(200).json({ success: true, message: 'Webhook received.' });
 
+      // Admin's GHS 1 test from the sample Pay-now page — not a customer payment.
+      if (metadata.type === 'demo_test') {
+        logger.info(`Webhook: sample-page test payment ${paystackData.reference} (GHS ${paystackData.amount / 100}) — not linked to any customer.`);
+        return;
+      }
+
       // A sale's DEPOSIT (collected by the DSR after approval) activates the
       // plan instead of counting as an installment.
       if (metadata.type === 'down_payment') {
