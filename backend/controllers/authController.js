@@ -430,12 +430,17 @@ const forgotPasswordSMS = async (req, res) => {
 
     const user = await findUserByPhone(phone);
 
-    // Always return success to prevent enumeration
+    // Say plainly when no account has this number — otherwise people wait for
+    // a code that never comes. (Sending is rate-limited per IP.)
     if (!user) {
-      return res.status(200).json({
-        success: true,
-        message: 'If an account with that number exists, a code has been sent.',
+      logger.info('[reset] Code requested for %s — no account uses this number.', formatted);
+      return res.status(404).json({
+        success: false,
+        message: 'No account uses this phone number. Check the number, or ask the office to add your phone to your account.',
       });
+    }
+    if (user.is_active === false) {
+      return res.status(403).json({ success: false, message: 'This account is disabled. Please contact the office.' });
     }
 
     // Invalidate existing OTPs for this phone
@@ -451,11 +456,18 @@ const forgotPasswordSMS = async (req, res) => {
       expires_at: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
     });
 
+    let sent = null;
     try {
-      await sendPasswordResetOTP(formatted, otp);
+      sent = await sendPasswordResetOTP(formatted, otp);
     } catch (smsErr) {
-      logger.error('OTP SMS error:', smsErr.message);
+      logger.error('[reset] OTP SMS error: %s', smsErr.message);
     }
+    // Both SMS providers refused/failed: tell the user instead of "code sent".
+    if (!sent || (!sent.ok && sent.retry)) {
+      logger.error('[reset] Could not send the reset code to %s (account %s).', formatted, user._id);
+      return res.status(502).json({ success: false, message: "We couldn't send the code right now. Please try again in a minute." });
+    }
+    logger.info('[reset] Reset code sent to %s (account %s).', formatted, user._id);
 
     await AuditLog.create({
       user_id: user._id,
@@ -466,7 +478,7 @@ const forgotPasswordSMS = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'If an account with that number exists, a code has been sent.',
+      message: `Code sent to ${phone}. It is valid for 10 minutes.`,
     });
   } catch (error) {
     logger.error('forgotPasswordSMS error:', error);
@@ -486,17 +498,30 @@ const resetPasswordOTP = async (req, res) => {
     }
 
     const formatted = formatPhone(phone);
-    const hashedOtp = crypto.createHash('sha256').update(otp.trim()).digest('hex');
+    const hashedOtp = crypto.createHash('sha256').update(String(otp).trim()).digest('hex');
 
+    // The latest live code for this phone (older ones are cancelled on resend).
     const record = await PasswordReset.findOne({
       phone: formatted,
-      token: hashedOtp,
       used: false,
       expires_at: { $gt: new Date() },
-    });
+    }).sort({ created_at: -1 });
 
     if (!record) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired code. Please request a new one.' });
+      return res.status(400).json({ success: false, message: 'This code is no longer valid (expired or replaced). Please request a new one.' });
+    }
+    if (record.token !== hashedOtp) {
+      // Wrong code: count it, and cancel the code after 5 wrong tries.
+      record.attempts = (record.attempts || 0) + 1;
+      if (record.attempts >= 5) record.used = true;
+      await record.save();
+      const left = 5 - record.attempts;
+      return res.status(400).json({
+        success: false,
+        message: left > 0
+          ? `Wrong code. ${left} ${left === 1 ? 'try' : 'tries'} left.`
+          : 'Too many wrong codes. Please request a new code.',
+      });
     }
 
     const foundUser = await findUserByPhone(phone);

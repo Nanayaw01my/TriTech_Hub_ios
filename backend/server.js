@@ -250,10 +250,20 @@ const maintenanceGuard = async (req, res, next) => {
 // ─── API ROUTES ───────────────────────────────────────────────────────────────
 
 app.use('/api/auth/login', authLimiter);
+// Separate limits for SENDING a reset (code/link) and USING one, so a couple of
+// resends don't also block entering the code. Wrong codes are also capped per
+// code (see authController.resetPasswordOTP).
+const passwordResetUseLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many attempts. Please wait an hour and request a new code.' },
+});
 app.use('/api/auth/forgot-password', passwordResetLimiter);
 app.use('/api/auth/forgot-password-sms', passwordResetLimiter);
-app.use('/api/auth/reset-password', passwordResetLimiter);
-app.use('/api/auth/reset-password-otp', passwordResetLimiter);
+app.use('/api/auth/reset-password', passwordResetUseLimiter);
+app.use('/api/auth/reset-password-otp', passwordResetUseLimiter);
 app.use('/api/payment', paymentLimiter);
 
 app.use('/api/auth', require('./routes/auth'));

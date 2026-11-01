@@ -27,6 +27,11 @@ const PasswordResetSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Wrong codes entered; the code is cancelled after 5.
+    attempts: {
+      type: Number,
+      default: 0,
+    },
     created_at: {
       type: Date,
       default: Date.now,

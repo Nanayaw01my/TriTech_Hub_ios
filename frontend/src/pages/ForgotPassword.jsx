@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
@@ -15,16 +15,25 @@ export default function ForgotPassword() {
   const [resetLoading, setResetLoading] = useState(false)
   const [error, setError] = useState('')
   const [resetDone, setResetDone] = useState(false)
+  const [cooldown, setCooldown] = useState(0) // seconds until "Resend code" is allowed
+
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [cooldown])
 
   const handleSendOTP = async (e) => {
-    e.preventDefault()
+    e?.preventDefault?.()
     setError('')
     if (!phone.trim()) { setError('Please enter your phone number'); return }
     setSmsLoading(true)
     try {
-      await api.post('/auth/forgot-password-sms', { phone: phone.trim() })
+      const res = await api.post('/auth/forgot-password-sms', { phone: phone.trim() })
       setOtpSent(true)
-      toast.success('Code sent! Check your phone.')
+      setOtp('')
+      setCooldown(60)
+      toast.success(res.data?.message || 'Code sent! Check your phone.')
     } catch (err) {
       const msg = err?.response?.data?.message || 'Failed to send code. Please try again.'
       setError(msg)
@@ -136,6 +145,17 @@ export default function ForgotPassword() {
                 className="text-orange-600 font-semibold hover:underline">
                 Change number
               </button>
+            </p>
+            <p className="-mt-4 mb-6 text-sm text-gray-500">
+              Didn't get it?{' '}
+              {cooldown > 0 ? (
+                <span className="text-gray-400">Resend in {cooldown}s</span>
+              ) : (
+                <button type="button" onClick={handleSendOTP} disabled={smsLoading}
+                  className="text-orange-600 font-semibold hover:underline disabled:opacity-50">
+                  {smsLoading ? 'Sending…' : 'Resend code'}
+                </button>
+              )}
             </p>
             <form onSubmit={handleResetOTP} className="space-y-4" noValidate>
               {error && (
