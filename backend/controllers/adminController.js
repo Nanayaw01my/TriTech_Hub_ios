@@ -2280,6 +2280,7 @@ const sendCustomerReminder = async (req, res) => {
 
     if (customer.phone) {
       try {
+        reminderDetails.link = await require('../utils/payLink').ensurePayLink(plan).catch(() => null);
         await sendPaymentReminderSMS(customer.phone, customer.full_name, reminderDetails);
         smsSent = true;
       } catch (smsErr) {
@@ -2425,7 +2426,9 @@ const lockCustomerDevice = async (req, res) => {
     });
 
     if (customer.phone) {
-      sendDeviceLockedSMS(customer.phone, customer.full_name, device.model).catch(e =>
+      const linkPlan = await InstallmentPlan.findOne({ customer_id: customer._id, status: { $in: ['active', 'defaulted'] } }).catch(() => null);
+      const payLink = linkPlan ? await require('../utils/payLink').ensurePayLink(linkPlan).catch(() => null) : null;
+      sendDeviceLockedSMS(customer.phone, customer.full_name, device.model, payLink).catch(e =>
         logger.error('[SMS] Lock notification failed:', e.message)
       );
       sendDeviceLockedWhatsApp(customer.phone, customer.full_name, device.model).catch(e =>

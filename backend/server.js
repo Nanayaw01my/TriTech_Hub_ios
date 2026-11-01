@@ -264,6 +264,7 @@ app.use('/api/payment', require('./routes/payment'));
 app.use('/api/webhooks', require('./routes/webhook'));
 app.use('/api/app', require('./routes/app'));
 app.use('/api/agent', require('./routes/agent'));
+app.use('/api/pay', require('./routes/pay'));
 
 // ─── SERVE REACT FRONTEND ─────────────────────────────────────────────────────
 

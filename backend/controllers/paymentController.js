@@ -58,31 +58,50 @@ const processSuccessfulPayment = async ({
     notes,
   });
 
-  // Update installment plan
-  const newPaymentsMade = plan.payments_made + 1;
-  const newRemainingBalance = Math.max(0, plan.remaining_balance - amountGHS);
-  const isCompleted = newPaymentsMade >= plan.total_payments || newRemainingBalance <= 0;
+  // Update installment plan. The money paid decides how far the plan moves:
+  // installments covered = everything paid toward the balance so far divided by
+  // the installment amount. So GHS 30 on a GHS 10 daily plan covers 3 days, a
+  // payment ahead buys that much time, and a part-payment is credited to the
+  // balance but doesn't move the due date until it adds up to an installment.
+  const newRemainingBalance = Math.max(0, Math.round((plan.remaining_balance - amountGHS) * 100) / 100);
+  const financed = Math.max(0, (plan.total_price || 0) - (plan.down_payment || 0));
+  const per = Number(plan.installment_amount) || 0;
+  const totalInstallments = plan.total_payments || 0;
+  const coveredByMoney = per > 0
+    ? Math.floor((financed - newRemainingBalance + 0.01) / per)
+    : (plan.payments_made || 0) + 1;
+  const newPaymentsMade = Math.min(totalInstallments, Math.max(plan.payments_made || 0, coveredByMoney));
+  const isCompleted = newRemainingBalance <= 0.009 || newPaymentsMade >= totalInstallments;
 
-  // Calculate next due date
-  let nextDueDate = plan.next_due_date;
-  if (!isCompleted) {
-    nextDueDate = new Date(plan.next_due_date);
-    if (plan.frequency === 'daily') {
-      nextDueDate.setDate(nextDueDate.getDate() + 1);
-    } else if (plan.frequency === 'weekly') {
-      nextDueDate.setDate(nextDueDate.getDate() + 7);
-    } else {
-      nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+  const addPeriods = (date, n) => {
+    const d = new Date(date);
+    if (plan.frequency === 'daily') d.setDate(d.getDate() + n);
+    else if (plan.frequency === 'weekly') d.setDate(d.getDate() + n * 7);
+    else d.setMonth(d.getMonth() + n);
+    return d;
+  };
+
+  // Mark every installment the money now covers as paid; the next due date is
+  // the first one still unpaid.
+  const scheduleUpdate = [...(plan.schedule || [])];
+  for (let i = 0; i < Math.min(newPaymentsMade, scheduleUpdate.length); i++) {
+    if (!scheduleUpdate[i].paid) {
+      scheduleUpdate[i].paid = true;
+      scheduleUpdate[i].payment_id = payment._id;
     }
   }
-
-  // Mark the earliest unpaid schedule item as paid
-  const scheduleUpdate = [...(plan.schedule || [])];
-  const unpaidIndex = scheduleUpdate.findIndex((s) => !s.paid);
-  if (unpaidIndex !== -1) {
-    scheduleUpdate[unpaidIndex].paid = true;
-    scheduleUpdate[unpaidIndex].payment_id = payment._id;
+  let nextDueDate = plan.next_due_date;
+  if (!isCompleted) {
+    if (scheduleUpdate[newPaymentsMade]?.due_date) {
+      nextDueDate = new Date(scheduleUpdate[newPaymentsMade].due_date);
+    } else {
+      // No schedule (older plans): move on by the number of installments covered.
+      nextDueDate = addPeriods(plan.next_due_date, newPaymentsMade - (plan.payments_made || 0));
+    }
   }
+  // Caught up = the next due date is in the future. Only then is a locked
+  // phone unlocked (otherwise the hourly check would lock it again at once).
+  const caughtUp = isCompleted || new Date(nextDueDate) > new Date();
 
   const planUpdateData = {
     payments_made: newPaymentsMade,
@@ -90,7 +109,9 @@ const processSuccessfulPayment = async ({
     next_due_date: isCompleted ? plan.end_date : nextDueDate,
     // A payment on a sale still awaiting admin activation is recorded, but must
     // NOT activate the plan — only the admin's Activate does that.
-    status: isCompleted ? 'completed' : (['pending', 'returned', 'approved'].includes(plan.status) ? plan.status : 'active'),
+    status: isCompleted ? 'completed'
+      : (['pending', 'returned', 'approved'].includes(plan.status) ? plan.status
+        : (plan.status === 'defaulted' && !caughtUp ? 'defaulted' : 'active')),
     schedule: scheduleUpdate,
   };
 
@@ -126,7 +147,7 @@ const processSuccessfulPayment = async ({
         total_paid: plan.total_price,
       },
     });
-  } else if (device && device.lock_status === 'locked' && !isCompleted && !['pending', 'returned', 'approved'].includes(plan.status)) {
+  } else if (device && device.lock_status === 'locked' && !isCompleted && caughtUp && !['pending', 'returned', 'approved'].includes(plan.status)) {
     // Unlock the phone after a payment if it was locked for a late payment.
     try {
       const devDoc = await Device.findById(device._id);
@@ -145,7 +166,7 @@ const processSuccessfulPayment = async ({
     // Reactivate defaulted plan back to active
     await InstallmentPlan.findByIdAndUpdate(plan._id, { status: 'active' });
     deviceUnlocked = true;
-  } else if (device && !isCompleted && !['pending', 'returned', 'approved'].includes(plan.status)) {
+  } else if (device && !isCompleted && device.lock_status !== 'locked' && !['pending', 'returned', 'approved'].includes(plan.status)) {
     // On-time payment (phone wasn't locked): just push the offline deadline
     // forward so the self-lock failsafe tracks the next due date.
     try {
@@ -224,6 +245,8 @@ const processSuccessfulPayment = async ({
     deviceUnlocked,
     newRemainingBalance,
     newPaymentsMade,
+    nextDueDate: isCompleted ? null : nextDueDate,
+    caughtUp,
   };
 };
 

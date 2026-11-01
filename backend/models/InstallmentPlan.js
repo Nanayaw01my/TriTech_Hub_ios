@@ -113,6 +113,13 @@ const InstallmentPlanSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Secret for the customer's "Pay now" link (dandorsolar.site/p/<token>),
+    // sent in reminder texts. Lets them pay by MoMo/card without logging in.
+    pay_token: {
+      type: String,
+      default: undefined,
+      index: { unique: true, sparse: true },
+    },
     // Due date the "your phone locks tomorrow" SMS was last sent for (one per due date).
     lock_reminder_for: {
       type: Date,

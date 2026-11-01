@@ -146,10 +146,15 @@ const sendCustomerActivatedSMS = async (phone, name, d) => {
 };
 
 // The day before the due date: the phone locks tomorrow unless they pay.
+const firstName = (name) => String(name || '').trim().split(/\s+/)[0] || 'Customer';
+const money = (n) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+// d.link = the customer's "Pay now" link (dandorsolar.site/p/<token>).
 const sendLockTomorrowSMS = async (phone, name, d) => {
   const due = d.dueDate ? new Date(d.dueDate).toLocaleDateString('en-GH', { weekday: 'short', day: 'numeric', month: 'short' }) : 'tomorrow';
-  const call = d.contact ? ` or call ${d.contact}` : '';
-  const msg = `Hi ${name}, your payment of GHS ${Number(d.amount).toLocaleString()} is due tomorrow (${due}). Pay today at dandorsolar.site${call} to avoid your phone being locked. -Dan & Dor Solar`;
+  const msg = d.link
+    ? `Hi ${firstName(name)}, GHS ${money(d.amount)} is due tomorrow (${due}). Pay now to avoid your phone being locked: ${d.link} -Dan & Dor Solar`
+    : `Hi ${firstName(name)}, GHS ${money(d.amount)} is due tomorrow (${due}). Pay today at dandorsolar.site${d.contact ? ` or call ${d.contact}` : ''} to avoid your phone being locked. -Dan & Dor Solar`;
   await sendSMS(phone, msg);
 };
 
@@ -162,16 +167,19 @@ const sendCustomerWelcomeSMS = async (phone, name, accountNumber, _url, pin = nu
 };
 
 const sendPaymentReminderSMS = async (phone, name, details) => {
-  const { installmentAmount, nextDueDate, isOverdue } = details;
+  const { installmentAmount, nextDueDate, isOverdue, link } = details;
   const due = nextDueDate ? new Date(nextDueDate).toLocaleDateString('en-GH') : 'N/A';
+  const where = link ? `Pay now: ${link}` : 'Pay at dandorsolar.site';
   const msg = isOverdue
-    ? `URGENT ${name}: GHS ${Number(installmentAmount).toLocaleString()} overdue (${due}). Pay now at dandorsolar.site to avoid lock. -Dan & Dor Solar`
-    : `Hi ${name}, GHS ${Number(installmentAmount).toLocaleString()} due ${due}. Pay at dandorsolar.site -Dan & Dor Solar`;
+    ? `URGENT ${name}: GHS ${Number(installmentAmount).toLocaleString()} overdue (${due}). ${where} to avoid lock. -Dan & Dor Solar`
+    : `Hi ${name}, GHS ${Number(installmentAmount).toLocaleString()} due ${due}. ${where} -Dan & Dor Solar`;
   await sendSMS(phone, msg);
 };
 
-const sendDeviceLockedSMS = async (phone, name, deviceModel) => {
-  const msg = `Hi ${name}, your ${deviceModel} has been locked. Pay at dandorsolar.site to unlock. -Dan & Dor Solar`;
+const sendDeviceLockedSMS = async (phone, name, deviceModel, link = null) => {
+  const msg = link
+    ? `Hi ${firstName(name)}, your ${deviceModel} is locked for an overdue payment. Pay now to unlock it: ${link} -Dan & Dor Solar`
+    : `Hi ${name}, your ${deviceModel} has been locked. Pay at dandorsolar.site to unlock. -Dan & Dor Solar`;
   await sendSMS(phone, msg);
 };
 

@@ -13,6 +13,7 @@ import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Terms from './pages/Terms'
+import PayNow from './pages/PayNow'
 import Privacy from './pages/Privacy'
 
 // Admin pages
@@ -124,6 +125,7 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/terms" element={<Terms />} />
+      <Route path="/p/:token" element={<PayNow />} />
       <Route path="/privacy" element={<Privacy />} />
 
       {/* Admin routes (superadmin has full admin access too) */}
