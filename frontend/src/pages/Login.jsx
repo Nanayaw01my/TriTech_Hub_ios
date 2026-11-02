@@ -1,3 +1,4 @@
+import PublicFooter from '../components/PublicFooter'
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -249,17 +250,10 @@ export default function Login() {
             </a>
           )}
 
-          {/* Footer links */}
-          <p className="text-center text-xs text-white/70 mt-5">
-            <Link to="/terms" className="text-orange-300 font-semibold underline underline-offset-2 hover:text-white">Terms</Link>
-            <span className="text-white/40 mx-2">•</span>
-            <Link to="/privacy" className="text-orange-300 font-semibold underline underline-offset-2 hover:text-white">Privacy Policy</Link>
-          </p>
         </div>
 
-        <p className="text-center text-xs text-white/60 mt-5">
-          © {new Date().getFullYear()} Dan & Dor Solar Company Ltd. All rights reserved.
-        </p>
+        {/* Company details + Terms, Privacy, Refunds, Cookies, Delete my data */}
+        <PublicFooter dark />
       </div>
     </div>
   )

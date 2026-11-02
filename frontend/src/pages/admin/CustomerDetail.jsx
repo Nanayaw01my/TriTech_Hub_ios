@@ -234,6 +234,25 @@ export default function AdminCustomerDetail() {
         Back to Customers
       </button>
 
+      {/* The customer asked for their data to be deleted (from their Profile). */}
+      {customer.deletion_requested_at && (
+        <div className="mb-4 p-4 rounded-2xl bg-red-50 border border-red-200 text-sm text-red-800">
+          <p className="font-bold">Data deletion requested on {format(new Date(customer.deletion_requested_at), 'dd MMM yyyy')}</p>
+          <p className="mt-1">
+            Reply within 30 days. If the plan is paid off or closed, use <span className="font-semibold">Delete customer</span> below.
+            If a balance is still owed, keep the plan's data until it's paid or closed, and tell the customer.
+          </p>
+        </div>
+      )}
+
+      {/* Consent record from registration */}
+      {customer.consents?.accepted_at && (
+        <p className="mb-3 text-xs text-gray-500">
+          Agreed at registration on {format(new Date(customer.consents.accepted_at), 'dd MMM yyyy')}: Terms &amp; Privacy, 18+, phone management
+          {customer.consents.late_fee_per_day != null ? ` and late fee GHS ${customer.consents.late_fee_per_day}/day` : ''}.
+        </p>
+      )}
+
       {/* ── HEADER CARD ─────────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-card p-5 mb-4">
         <div className="flex items-start gap-4">

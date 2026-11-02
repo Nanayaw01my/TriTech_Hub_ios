@@ -120,6 +120,20 @@ const CustomerSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // What the customer agreed to at registration (recorded by the DSR).
+    consents: {
+      terms: { type: Boolean, default: false },
+      adult: { type: Boolean, default: false },
+      device_management: { type: Boolean, default: false },
+      late_fee_per_day: { type: Number, default: null },
+      accepted_at: { type: Date, default: null },
+      recorded_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    },
+    // The customer asked for their data to be deleted (handled by the admin).
+    deletion_requested_at: {
+      type: Date,
+      default: null,
+    },
     // Set when the admin deletes the customer: hidden from lists and counts,
     // record kept for the audit trail.
     deleted_at: {

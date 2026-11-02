@@ -14,6 +14,10 @@ import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Terms from './pages/Terms'
 import PayNow from './pages/PayNow'
+import CookieNotice from './components/CookieNotice'
+import Refund from './pages/Refund'
+import Cookies from './pages/Cookies'
+import DataDeletion from './pages/DataDeletion'
 import Privacy from './pages/Privacy'
 
 // Admin pages
@@ -126,6 +130,9 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/p/:token" element={<PayNow />} />
+      <Route path="/refunds" element={<Refund />} />
+      <Route path="/cookies" element={<Cookies />} />
+      <Route path="/data-deletion" element={<DataDeletion />} />
       <Route path="/privacy" element={<Privacy />} />
 
       {/* Admin routes (superadmin has full admin access too) */}
@@ -204,6 +211,7 @@ export default function App() {
         <AuthProvider>
           <AppRoutes />
         </AuthProvider>
+        <CookieNotice />
       </BrowserRouter>
     </ErrorBoundary>
   )

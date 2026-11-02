@@ -243,4 +243,45 @@ const getProfile = async (req, res) => {
   }
 };
 
-module.exports = { getDashboard, getPayments, makePayment, getProfile };
+/**
+ * POST /api/customer/data-deletion
+ * The customer asks for their personal data to be deleted. Recorded on the
+ * customer (the admin sees it on their page and decides — data needed for an
+ * unpaid plan is kept until it's paid or closed) and the office is texted.
+ */
+const requestDataDeletion = async (req, res) => {
+  try {
+    const customer = await Customer.findOne({ user_id: req.user._id });
+    if (!customer) return res.status(404).json({ success: false, message: 'Customer profile not found.' });
+    if (customer.deletion_requested_at) {
+      return res.status(200).json({ success: true, message: 'Your request was already received. We will reply within 30 days.', data: { requested_at: customer.deletion_requested_at } });
+    }
+    customer.deletion_requested_at = new Date();
+    await customer.save();
+    const AuditLog = require('../models/AuditLog');
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'customer_updated',
+      details: { event: 'data_deletion_requested', customer_id: customer._id },
+      ip_address: req.ip,
+    }).catch(() => {});
+    // Let the office know (best-effort).
+    try {
+      const Settings = require('../models/Settings');
+      const s = await Settings.getSingleton();
+      const to = s.contact_phone || process.env.ADMIN_PHONE;
+      if (to) {
+        const { sendSMS } = require('../utils/sms');
+        await sendSMS(to, `Dan & Dor Solar: ${customer.full_name} asked for their data to be deleted. See their page in Customers.`);
+      }
+    } catch (e) {
+      logger.warn('Data deletion notify failed: %s', e.message);
+    }
+    return res.status(200).json({ success: true, message: 'Request received. We will reply within 30 days.', data: { requested_at: customer.deletion_requested_at } });
+  } catch (error) {
+    logger.error('requestDataDeletion error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+module.exports = { getDashboard, getPayments, makePayment, getProfile, requestDataDeletion };

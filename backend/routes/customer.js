@@ -7,6 +7,7 @@ const {
   getPayments,
   makePayment,
   getProfile,
+  requestDataDeletion,
 } = require('../controllers/customerController');
 const { getPublicSettings } = require('../controllers/adminController');
 
@@ -54,5 +55,6 @@ router.post(
  * Customer profile with photos.
  */
 router.get('/profile', getProfile);
+router.post('/data-deletion', requestDataDeletion);
 
 module.exports = router;

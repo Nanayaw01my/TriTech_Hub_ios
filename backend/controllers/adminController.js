@@ -2560,6 +2560,8 @@ const getPublicSettings = async () => {
     whatsapp_number: s.whatsapp_number,
     contact_address: s.contact_address,
     logo_url: s.logo_url || null,
+    // Shown on the sale form, Terms and Pay page so the fee is never hidden.
+    late_fee_per_day: s.late_fee_per_day ?? 10,
   };
 };
 

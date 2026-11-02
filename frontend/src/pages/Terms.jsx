@@ -1,92 +1,125 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import LegalLayout, { Section } from '../components/LegalLayout'
+import useBusinessInfo from '../hooks/useBusinessInfo'
 
 export default function Terms() {
+  const b = useBusinessInfo()
+  const fee = Number(b.late_fee_per_day ?? 10)
   return (
-    <LegalLayout title="Terms & Agreement" lastUpdated="July 2026">
+    <LegalLayout title="Terms & Agreement" lastUpdated="November 2026">
       <p>
-        These Terms &amp; Agreement ("Terms") govern your use of the Dan & Dor Solar Company Ltd.
-        platform and any device purchased through our hire-purchase (installment) plan.
-        By registering an account, purchasing a device, or making a payment, you agree to
-        these Terms.
+        These Terms &amp; Agreement ("Terms") govern your use of the Dan &amp; Dor Solar Company Ltd.
+        ("we", "us") platform and any phone bought from us on hire purchase (paying in installments).
+        By registering, receiving a phone or making a payment, you agree to these Terms.
       </p>
 
-      <Section heading="1. Hire-Purchase Agreement">
+      <Section heading="1. Who can buy">
+        <p>You must be <strong>18 years or older</strong> and hold a valid Ghana Card. We do not sell on hire purchase to children.</p>
+      </Section>
+
+      <Section heading="2. Hire-purchase plan">
         <p>
-          Devices are sold on a hire-purchase (installment) basis. <strong>Ownership of the
-          device remains with Dan & Dor Solar Company Ltd. until the full purchase price has been paid.</strong>
-          You are granted possession and use of the device while payments are up to date.
+          The phone remains the property of Dan &amp; Dor Solar Company Ltd. <strong>until the full price is paid</strong>.
+          You may use it while your payments are up to date.
+        </p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Deposit:</strong> paid after we approve your application. The phone is activated once it is paid.</li>
+          <li><strong>Plan length:</strong> 4 months. You choose to pay <strong>daily (120 payments)</strong> or <strong>weekly (17 payments)</strong>.</li>
+          <li>The price, deposit, amount per payment and every due date are shown to you before you agree and in your account.</li>
+          <li>You may pay ahead or pay the full balance early at any time, with no extra charge.</li>
+        </ul>
+      </Section>
+
+      <Section heading="3. Payments">
+        <p>
+          Pay on or before each due date through our approved channels (Mobile Money or card via our payment
+          partner Paystack, or at our office). Payments are applied first to any late fees, then to your
+          installments in date order. We text you a reminder the day before a payment is due.
         </p>
       </Section>
 
-      <Section heading="2. Payment Obligations">
+      <Section heading="4. Late payment, late fees and locking">
+        <ul className="list-disc pl-5 space-y-1">
+          <li>If a payment is not made by its due date, <strong>the phone is locked</strong> on that day. Emergency calls remain possible.</li>
+          {fee > 0 ? (
+            <li>
+              The due day itself is free. From the next day, a <strong>late fee of GHS {fee.toLocaleString()} is added for each
+              extra day</strong> the payment remains unpaid.
+            </li>
+          ) : (
+            <li>No late fees are currently charged.</li>
+          )}
+          <li>The phone is unlocked as soon as the overdue amount and any late fees are paid.</li>
+          <li>There are <strong>no other fees</strong> beyond the price, deposit and late fees described here.</li>
+        </ul>
+      </Section>
+
+      <Section heading="5. Device management, location and reset protection">
         <p>
-          You agree to pay the agreed down payment and installment amounts on or before each
-          due date, according to the schedule shown in your account. Payments are made through
-          approved channels (Mobile Money and card, via our payment partner). You are responsible
-          for keeping your account up to date.
+          Phones sold on this plan run our device-management app. You agree that, while any balance is owed, we may:
+        </p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>lock and unlock the phone as described above;</li>
+          <li>record the phone's <strong>location</strong> to protect and recover it;</li>
+          <li>prevent factory reset, and protect the phone with our company Google account so it cannot be set up again after a forced reset.</li>
+        </ul>
+        <p>
+          You agree not to remove, disable or tamper with the app, or to reset or flash the phone, while a balance is owed.
+          When you finish paying, <strong>we release the phone completely</strong>: the app removes itself, location
+          collection stops and the phone is fully yours.
         </p>
       </Section>
 
-      <Section heading="3. Device Management &amp; Remote Locking">
+      <Section heading="6. Default and recovery">
         <p>
-          Devices sold under this plan are enrolled in our device management system. You agree
-          that Dan & Dor Solar Company Ltd. may <strong>remotely lock or restrict the device if a payment is
-          overdue</strong>, and unlock it once the outstanding amount is paid. You agree not to
-          remove, disable, or tamper with the device management profile while any balance is owed.
-        </p>
-        <p>
-          You also acknowledge and consent that, while any balance is owed, the device management
-          software may <strong>record and report the device's location</strong> to Dan & Dor Solar
-          Company Limited to help protect and recover the device. Location data is used only for
-          account and device-protection purposes and stops being collected once the device is fully
-          paid off.
+          If payments stop, we may keep the phone locked, contact you and your guarantor, recover the phone
+          and/or pursue the outstanding balance as permitted by Ghanaian law.
         </p>
       </Section>
 
-      <Section heading="4. Default, Late Payment &amp; Repossession">
+      <Section heading="7. Guarantor">
         <p>
-          If you fail to make payments as agreed, your device may be locked, and Dan & Dor Solar Company Ltd.
-          reserves the right to recover the device and/or pursue the outstanding balance, including
-          from your guarantor. Any fees for late payment will be as communicated to you.
+          Your guarantor agrees to be responsible for the outstanding balance if you default. You confirm your
+          guarantor has agreed to this.
         </p>
       </Section>
 
-      <Section heading="5. Guarantor Responsibility">
+      <Section heading="8. Your responsibilities">
         <p>
-          Where a guarantor is provided, the guarantor accepts responsibility for the outstanding
-          balance if you default on your payments. You confirm that your guarantor has consented
-          to act in this capacity.
+          Give accurate information; keep the phone in good condition; do not sell, pawn or give away the phone
+          before it is fully paid; tell us promptly about loss, theft or damage.
         </p>
       </Section>
 
-      <Section heading="6. Your Responsibilities">
+      <Section heading="9. Refunds">
+        <p>See our <Link to="/refunds" className="text-orange-700 font-semibold underline">Refund Policy</Link>.</p>
+      </Section>
+
+      <Section heading="10. Your data">
         <p>
-          You agree to: provide accurate personal and identification information; keep the device
-          in good condition; not sell, pledge, or transfer the device before full payment; and
-          notify us promptly of any loss, theft, or damage.
+          How we use your information is explained in our{' '}
+          <Link to="/privacy" className="text-orange-700 font-semibold underline">Privacy Policy</Link>.
         </p>
       </Section>
 
-      <Section heading="7. Suspension &amp; Termination">
+      <Section heading="11. Suspension and termination">
         <p>
-          We may suspend or terminate access to your account for breach of these Terms, fraud, or
-          non-payment. Termination does not remove your obligation to pay any outstanding balance.
+          We may suspend or close your account for breach of these Terms, fraud or non-payment. This does not
+          cancel any amount you still owe.
         </p>
       </Section>
 
-      <Section heading="8. Governing Law">
-        <p>
-          These Terms are governed by the laws of the Republic of Ghana. Any disputes shall be
-          subject to the jurisdiction of the Ghanaian courts.
-        </p>
+      <Section heading="12. Governing law">
+        <p>These Terms are governed by the laws of the Republic of Ghana, and disputes are subject to the Ghanaian courts.</p>
       </Section>
 
-      <Section heading="9. Contact">
+      <Section heading="13. Contact">
         <p>
-          For questions about these Terms, contact Dan & Dor Solar Company Ltd. at{' '}
-          <span className="font-semibold text-gray-900">support@dandorsolar.site</span>{' '}
-          or through the contact details provided at registration.
+          {b.business_name || 'Dan & Dor Solar Company Ltd.'}
+          {b.contact_address ? `, ${b.contact_address}` : ''}.{' '}
+          {b.contact_phone ? <>Phone {b.contact_phone}. </> : null}
+          Email <span className="font-semibold text-gray-900">{b.contact_email || 'support@dandorsolar.site'}</span>.
         </p>
       </Section>
     </LegalLayout>

@@ -1,10 +1,11 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import useLogo from '../hooks/useLogo'
+import PublicFooter from './PublicFooter'
 
 /**
- * Shared wrapper for public legal pages (Terms, Privacy).
- * Green & white theme to match the login screen.
+ * Shared wrapper for public legal pages (Terms, Privacy, Refunds, Cookies,
+ * Data deletion). Ends with the company details footer.
  */
 export default function LegalLayout({ title, lastUpdated, children }) {
   const logo = useLogo()
@@ -26,18 +27,11 @@ export default function LegalLayout({ title, lastUpdated, children }) {
           {children}
         </div>
 
-        {/* Footer nav */}
-        <div className="flex items-center justify-center gap-4 mt-6 text-sm">
-          <Link to="/login" className="text-orange-600 font-semibold hover:text-orange-500">← Back to login</Link>
-          <span className="text-gray-300">•</span>
-          <Link to="/terms" className="text-gray-500 hover:text-gray-700">Terms</Link>
-          <span className="text-gray-300">•</span>
-          <Link to="/privacy" className="text-gray-500 hover:text-gray-700">Privacy</Link>
+        <div className="text-center mt-6 text-sm">
+          <Link to="/login" className="text-orange-700 font-semibold hover:text-orange-600">← Back to login</Link>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
-          © {new Date().getFullYear()} Dan & Dor Solar Company Ltd. All rights reserved.
-        </p>
+        <PublicFooter />
       </div>
     </div>
   )

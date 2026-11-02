@@ -234,9 +234,10 @@ body {
   @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
 }
 
-/* Focus visible for accessibility */
+/* Focus visible for accessibility: keyboard users always see where they are,
+   even on elements styled with focus:outline-none (hence !important). */
 :focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 3px solid #ea580c !important;
   outline-offset: 2px;
 }
 
@@ -304,4 +305,10 @@ body.keyboard-open .form-action-bar {
 }
 @media (prefers-reduced-motion: reduce) {
   .skeleton::after { animation: none; }
+}
+
+/* Readability (WCAG AA contrast): Tailwind's gray-400 text (#9ca3af) is too
+   faint on white (~2.5:1). Use a darker grey (~4.8:1) everywhere it's used for text. */
+.text-gray-400 {
+  color: #6b7280;
 }

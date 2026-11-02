@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import api from '../api/axios'
 import useLogo from '../hooks/useLogo'
+import PublicFooter from '../components/PublicFooter'
 
 const ghs = (n) => `GHS ${Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-GH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : '')
@@ -163,6 +164,7 @@ export default function PayNow() {
             </>
           )}
         </div>
+        <PublicFooter />
       </div>
 
       {demoPopup && (

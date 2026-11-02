@@ -16,6 +16,21 @@ export default function CustomerProfile() {
   const [viewingPhoto, setViewingPhoto] = useState(null)
   const [copied, setCopied] = useState(false)
   const [logoutModal, setLogoutModal] = useState(false)
+  const [deleteModal, setDeleteModal] = useState(false)
+  const [deletionRequested, setDeletionRequested] = useState(null)
+
+  // Ask for personal data to be deleted (see /data-deletion).
+  const requestDeletion = async () => {
+    try {
+      const res = await api.post('/customer/data-deletion')
+      setDeletionRequested(res.data?.data?.requested_at || new Date().toISOString())
+      toast.success(res.data?.message || 'Request received.')
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not send the request.')
+    } finally {
+      setDeleteModal(false)
+    }
+  }
   const [loggingOut, setLoggingOut] = useState(false)
   const [bizInfo, setBizInfo] = useState({ contact_phone: '', whatsapp_number: '' })
 
@@ -317,6 +332,21 @@ export default function CustomerProfile() {
         </a>
       </div>
 
+      {/* Data deletion request */}
+      <div className="bg-white rounded-2xl p-4 border border-gray-100 text-sm">
+        <p className="font-bold text-gray-900">Your data</p>
+        {(deletionRequested || customer?.deletion_requested_at) ? (
+          <p className="mt-1 text-gray-600">Deletion requested on {new Date(deletionRequested || customer.deletion_requested_at).toLocaleDateString('en-GH')}. We will reply within 30 days.</p>
+        ) : (
+          <>
+            <p className="mt-1 text-gray-600">You can ask us to delete your personal data. Data needed for an unpaid plan is kept until it is paid or closed. <a href="/data-deletion" className="text-orange-700 font-semibold underline">Learn more</a></p>
+            <button onClick={() => setDeleteModal(true)} className="mt-3 w-full py-3 rounded-2xl border border-red-200 text-red-700 font-semibold hover:bg-red-50">
+              Request data deletion
+            </button>
+          </>
+        )}
+      </div>
+
       {/* Sign Out */}
       <button
         onClick={() => setLogoutModal(true)}
@@ -351,6 +381,15 @@ export default function CustomerProfile() {
           </button>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={deleteModal}
+        onClose={() => setDeleteModal(false)}
+        onConfirm={requestDeletion}
+        title="Request data deletion?"
+        message="We will review your request and reply within 30 days. If you still owe on your phone, the data needed for the plan is kept until it is paid or closed."
+        confirmText="Send request"
+      />
 
       {/* Logout Confirm */}
       <ConfirmModal

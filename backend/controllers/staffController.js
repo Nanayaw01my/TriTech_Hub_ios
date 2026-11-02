@@ -289,6 +289,15 @@ const addCustomer = async (req, res) => {
       customerPassword = String(Math.floor(10000 + Math.random() * 90000)); // 5-digit PIN
     }
 
+    // --- 1a. Customer consents (Terms & Privacy, 18+, phone management + late fees) ---
+    const consents = req.body.consents || {};
+    if (!consents.terms || !consents.adult || !consents.device_management) {
+      return res.status(400).json({
+        success: false,
+        message: 'The customer must accept the Terms & Privacy Policy, confirm they are 18 or older, and agree to how the phone is managed (locking, location, reset protection, late fees).',
+      });
+    }
+
     // --- 1b. Guarantor details are all required ---
     if (!guarantor_name || !guarantor_phone || !guarantor_ghana_card_id || !guarantor_relationship) {
       return res.status(400).json({
@@ -413,6 +422,14 @@ const addCustomer = async (req, res) => {
     const newCustomer = await Customer.create({
       user_id: newUser._id,
       pin_pending: !password,
+      consents: {
+        terms: true,
+        adult: true,
+        device_management: true,
+        late_fee_per_day: (await Settings.getSingleton().catch(() => null))?.late_fee_per_day ?? null,
+        accepted_at: new Date(),
+        recorded_by: req.user._id,
+      },
       full_name: full_name.trim(),
       email: customerEmail,
       phone: phone?.trim(),

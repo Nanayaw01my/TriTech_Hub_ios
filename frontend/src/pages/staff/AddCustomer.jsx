@@ -1,3 +1,4 @@
+import useBusinessInfo from '../../hooks/useBusinessInfo'
 import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../../api/axios'
@@ -57,6 +58,7 @@ function OnFile({ value }) {
 const initForm = {
   // Step 1
   full_name: '', email: '', phone: '', ghana_card_id: '', password: '', confirm_password: '', agreed: false,
+  adult: false, device_consent: false,
   // Step 2 - photos
   ghana_card_front: null, ghana_card_back: null, customer_photo: null, guarantor_photo: null, proof_of_income: null, signature: null,
   // Step 3
@@ -81,6 +83,7 @@ export default function StaffAddCustomer() {
   const [availableDevices, setAvailableDevices] = useState([])
   const [devicesLoading, setDevicesLoading] = useState(false)
   const [enrolledStock, setEnrolledStock] = useState([])
+  const business = useBusinessInfo() // late fee for the consent text and preview
   const [sellMode, setSellMode] = useState('stock') // 'stock' | 'manual'
 
   useEffect(() => {
@@ -111,7 +114,7 @@ export default function StaffAddCustomer() {
           setForm(f => ({
             ...f,
             full_name: c.full_name || '', email: displayEmail(c.email), phone: c.phone || '', ghana_card_id: c.ghana_card_id || '',
-            password: '', confirm_password: '', agreed: true,
+            password: '', confirm_password: '', agreed: true, adult: true, device_consent: true,
             ghana_card_front: ON_FILE, ghana_card_back: ON_FILE,
             customer_photo: ph.customer_photo || null, guarantor_photo: ph.guarantor_photo || null,
             signature: ph.signature || null, proof_of_income: c.proof_of_income || null,
@@ -186,6 +189,8 @@ export default function StaffAddCustomer() {
       if (form.password && form.password.length > 5) e.password = 'Password must be 5 characters or less'
       if (form.password && form.password !== form.confirm_password) e.confirm_password = 'Passwords do not match'
       if (!form.agreed) e.agreed = 'The customer must accept the Terms & Privacy Policy'
+      if (!form.adult) e.adult = 'Hire purchase is only for customers aged 18 or older'
+      if (!form.device_consent) e.device_consent = 'The customer must agree to how the phone is managed and to late fees'
     }
     if (s === 2) {
       if (!form.ghana_card_front) e.ghana_card_front = 'Ghana Card front photo is required'
@@ -265,6 +270,8 @@ export default function StaffAddCustomer() {
     payment_frequency: form.payment_frequency,
     duration: Number(form.duration),
     down_payment_reference: paystackRef || undefined,
+    // What the customer agreed to (stored with the sale as a consent record).
+    consents: { terms: !!form.agreed, adult: !!form.adult, device_management: !!form.device_consent },
   })
 
   // Create the customer record. When called with a Paystack reference the backend
@@ -475,6 +482,26 @@ export default function StaffAddCustomer() {
               </span>
             </label>
             {errors.agreed && <p className="text-xs text-red-500 mt-1.5">{errors.agreed}</p>}
+
+            <label className="mt-3 flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" checked={form.adult} onChange={(e) => set('adult', e.target.checked)}
+                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500 flex-shrink-0" />
+              <span className="text-sm text-gray-600">The customer is <strong>18 years or older</strong> (checked on their Ghana Card).</span>
+            </label>
+            {errors.adult && <p className="text-xs text-red-500 mt-1.5">{errors.adult}</p>}
+
+            <label className="mt-3 flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" checked={form.device_consent} onChange={(e) => set('device_consent', e.target.checked)}
+                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500 flex-shrink-0" />
+              <span className="text-sm text-gray-600">
+                The customer understands and agrees that, until the phone is fully paid: it is <strong>locked</strong> if a
+                payment is missed; its <strong>location</strong> is recorded; it is <strong>protected against reset</strong>;
+                and {business.late_fee_per_day > 0
+                  ? <>a <strong>late fee of GHS {Number(business.late_fee_per_day).toLocaleString()} per extra day</strong> is added after a missed due day</>
+                  : <>no late fees are charged</>}. The phone is fully released when paid off.
+              </span>
+            </label>
+            {errors.device_consent && <p className="text-xs text-red-500 mt-1.5">{errors.device_consent}</p>}
           </div>
         </div>
       )}
@@ -936,7 +963,7 @@ export default function StaffAddCustomer() {
             {form.device_model && Number(form.down_payment) > 0 && (
               <div className="lg:hidden bg-white rounded-2xl border-2 border-orange-200 p-4 space-y-2.5">
                 <h3 className="text-sm font-bold text-gray-800 mb-3">Payment Preview</h3>
-                <PaymentPreviewRows preview={preview} frequency={form.payment_frequency} />
+                <PaymentPreviewRows preview={preview} frequency={form.payment_frequency} lateFee={business.late_fee_per_day} />
               </div>
             )}
           </div>
@@ -953,7 +980,7 @@ export default function StaffAddCustomer() {
                 <h3 className="text-sm font-bold text-gray-800">Payment Preview</h3>
               </div>
               {form.device_model && Number(form.down_payment) > 0 ? (
-                <PaymentPreviewRows preview={preview} frequency={form.payment_frequency} />
+                <PaymentPreviewRows preview={preview} frequency={form.payment_frequency} lateFee={business.late_fee_per_day} />
               ) : (
                 <div className="py-6 text-center">
                   <p className="text-sm text-gray-400">Select a device and enter a down payment to see the payment breakdown.</p>
@@ -1030,7 +1057,7 @@ function PreviewRow({ label, value, highlight, bold }) {
   )
 }
 
-function PaymentPreviewRows({ preview, frequency }) {
+function PaymentPreviewRows({ preview, frequency, lateFee = 0 }) {
   return (
     <div className="space-y-2.5">
       <PreviewRow label="Total Price" value={`GHS ${preview.price.toLocaleString()}`} />
@@ -1048,6 +1075,11 @@ function PaymentPreviewRows({ preview, frequency }) {
       )}
       {preview.finalDate && (
         <PreviewRow label="Final Payment Date" value={format(preview.finalDate, 'dd MMM yyyy')} />
+      )}
+      {lateFee > 0 && (
+        <p className="pt-2 text-xs text-gray-600 border-t border-gray-100">
+          Late fee: <span className="font-semibold">GHS {Number(lateFee).toLocaleString()} per extra day</span> after a missed due day. No other fees.
+        </p>
       )}
     </div>
   )

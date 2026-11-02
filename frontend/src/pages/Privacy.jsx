@@ -1,85 +1,96 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import LegalLayout, { Section } from '../components/LegalLayout'
+import useBusinessInfo from '../hooks/useBusinessInfo'
 
 export default function Privacy() {
+  const b = useBusinessInfo()
   return (
-    <LegalLayout title="Privacy Policy" lastUpdated="July 2026">
+    <LegalLayout title="Privacy Policy" lastUpdated="November 2026">
       <p>
-        This Privacy Policy explains how Dan & Dor Solar Company Ltd. collects, uses, stores, and protects
-        your personal information when you use our platform and hire-purchase services. We are
-        committed to handling your data responsibly and in line with the Ghana Data Protection
-        Act, 2012 (Act 843).
+        This policy explains what personal information {b.business_name || 'Dan & Dor Solar Company Ltd.'} collects,
+        why, who we share it with and your rights. We handle personal data in line with Ghana's
+        <strong> Data Protection Act, 2012 (Act 843)</strong>.
       </p>
 
-      <Section heading="1. Information We Collect">
-        <p>To provide our services, we collect:</p>
+      <Section heading="1. What we collect — and only what we need">
         <ul className="list-disc pl-5 space-y-1">
-          <li>Identity details — full name, email, phone number, and Ghana Card ID (including card photos)</li>
-          <li>Guarantor details — name, phone, Ghana Card ID, and relationship</li>
-          <li>Location and income information provided at registration</li>
-          <li>Device information — model, serial number, and identifiers for the phone you purchase</li>
-          <li>Payment information processed through our payment partner</li>
-          <li>A photo and signature captured during registration</li>
+          <li><strong>Identity:</strong> full name, phone number, optional email, Ghana Card number and photos of the card, your photo and signature — to verify who you are.</li>
+          <li><strong>Guarantor:</strong> name, phone, Ghana Card number, relationship and photo — required for hire purchase.</li>
+          <li><strong>Address and income:</strong> region, town, landmark, GPS address, occupation and proof of income — to assess your application.</li>
+          <li><strong>Phone details:</strong> model, IMEI/serial number, app version and the phone's check-ins — to manage and protect the phone.</li>
+          <li><strong>Location of the phone</strong> while a balance is owed — to protect and recover it. It stops when the phone is paid off and released.</li>
+          <li><strong>Payments:</strong> amounts, dates and references. Card and Mobile Money details are handled by Paystack; we never see your card number or PIN.</li>
         </ul>
+        <p>Staff (DSRs) also provide their name, phone, Ghana Card and photos for identification and commission payouts.</p>
       </Section>
 
-      <Section heading="2. How We Use Your Information">
-        <p>We use your information to:</p>
+      <Section heading="2. How we use it">
         <ul className="list-disc pl-5 space-y-1">
-          <li>Verify your identity and assess your installment application</li>
-          <li>Manage your account, installment plan, and payment schedule</li>
-          <li>Process payments and send receipts and reminders</li>
-          <li>Manage and, where necessary, remotely lock/unlock your device</li>
-          <li>Communicate with you by SMS, WhatsApp, or email</li>
+          <li>Verify identity and approve hire-purchase applications.</li>
+          <li>Run your plan: schedules, payments, receipts, reminders and late fees.</li>
+          <li>Lock, unlock, locate and finally release your phone as described in our Terms.</li>
+          <li>Send service messages by SMS and email (payment reminders, confirmations, account codes).</li>
+          <li>Prevent fraud and meet legal and accounting duties.</li>
         </ul>
+        <p>We do <strong>not</strong> sell your data, show you ads or send marketing messages.</p>
       </Section>
 
-      <Section heading="3. How We Protect Your Data">
+      <Section heading="3. Who we share it with">
+        <p>Only these service providers, and only what each needs to do its job:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Paystack</strong> — payments (Mobile Money and card) and staff commission payouts.</li>
+          <li><strong>Arkesel</strong> and <strong>NkomoSMS</strong> — sending SMS messages.</li>
+          <li><strong>Google Firebase</strong> — instantly delivering lock/unlock commands to the phone.</li>
+          <li><strong>Cloudinary</strong> — secure storage of ID and registration photos.</li>
+          <li><strong>MongoDB Atlas</strong> and <strong>Render</strong> — secure hosting of our database and website.</li>
+          <li>Our email provider — sending receipts and account emails.</li>
+        </ul>
+        <p>We may also disclose information where required by law or a court order.</p>
+      </Section>
+
+      <Section heading="4. How we protect it">
         <p>
-          Sensitive fields such as phone numbers and Ghana Card IDs are <strong>encrypted</strong>
-          in our systems. Access is restricted by role — for example, Ghana Card ID images are
-          visible only to administrators, not to field staff. We apply reasonable technical and
-          organizational measures to protect your data against unauthorized access.
+          All connections use HTTPS. Passwords are stored hashed. Sensitive fields such as phone numbers and Ghana Card
+          numbers are <strong>encrypted</strong> in our database. Access is limited by role — for example, field staff
+          cannot see Ghana Card images.
         </p>
       </Section>
 
-      <Section heading="4. Sharing With Third Parties">
+      <Section heading="5. How long we keep it">
         <p>
-          We do not sell your personal data. We share limited data only with trusted service
-          providers who help us operate, such as our payment processor (to take payments), our
-          SMS/messaging provider (to send notifications), our secure image storage provider, and
-          our device-management provider (to manage the device). These providers are only given
-          the data needed to perform their service.
+          While your plan is active, and afterwards only as long as needed for accounting, tax, legal or dispute
+          purposes. Location history is kept only while the phone is under a plan. Setup logs from phones are deleted
+          after 7 days.
         </p>
       </Section>
 
-      <Section heading="5. Data Retention">
+      <Section heading="6. Your rights">
         <p>
-          We keep your information for as long as your account and installment plan are active, and
-          thereafter only as long as needed to meet legal, accounting, or dispute-resolution
-          requirements.
+          You can ask to see the data we hold about you, correct it, or delete it where we are not required by law to
+          keep it. See <Link to="/data-deletion" className="text-orange-700 font-semibold underline">Delete my data</Link>.
+          You can also complain to Ghana's Data Protection Commission.
         </p>
       </Section>
 
-      <Section heading="6. Your Rights">
-        <p>
-          You have the right to access the personal data we hold about you, request corrections to
-          inaccurate data, and request deletion where we are not legally required to retain it. To
-          exercise these rights, contact us using the details below.
-        </p>
+      <Section heading="7. Children">
+        <p>Our services are only for people aged 18 and over. We do not knowingly collect data from children.</p>
       </Section>
 
-      <Section heading="7. Changes to This Policy">
-        <p>
-          We may update this Privacy Policy from time to time. Material changes will be communicated
-          through the platform. Continued use after changes means you accept the updated policy.
-        </p>
+      <Section heading="8. Cookies">
+        <p>We only use essential browser storage to keep you logged in. See our <Link to="/cookies" className="text-orange-700 font-semibold underline">Cookie Policy</Link>.</p>
       </Section>
 
-      <Section heading="8. Contact">
+      <Section heading="9. Changes">
+        <p>We may update this policy. We will show the new date at the top and tell you about important changes.</p>
+      </Section>
+
+      <Section heading="10. Contact">
         <p>
-          For privacy questions or data requests, contact Dan & Dor Solar Company Ltd. at{' '}
-          <span className="font-semibold text-gray-900">support@dandorsolar.site</span>.
+          {b.business_name || 'Dan & Dor Solar Company Ltd.'}
+          {b.contact_address ? `, ${b.contact_address}` : ''}.{' '}
+          {b.contact_phone ? <>Phone {b.contact_phone}. </> : null}
+          Email <span className="font-semibold text-gray-900">{b.contact_email || 'support@dandorsolar.site'}</span>.
         </p>
       </Section>
     </LegalLayout>
