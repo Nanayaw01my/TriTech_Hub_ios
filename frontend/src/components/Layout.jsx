@@ -458,6 +458,12 @@ export default function Layout({ role }) {
           <div className="lg:px-8 lg:py-2">
             <Outlet />
           </div>
+          {/* Phones: room below every page so the floating bottom menu (which sits
+              above the iPhone home bar) never covers the last buttons. */}
+          {!keyboardOpen && (
+            <div className="lg:hidden" aria-hidden="true"
+                 style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }} />
+          )}
         </main>
       </div>
 
