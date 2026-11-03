@@ -24,6 +24,36 @@ function safeEqual(a, b) {
   return crypto.timingSafeEqual(ba, bb);
 }
 
+/**
+ * Self-heal the phone's state from its real sale. If the phone is still on the
+ * "Awaiting Activation" page (or held as stock) but one of its sales is
+ * already ACTIVE (deposit paid) — e.g. after duplicate sales were made and
+ * deleted — show the right state now: unlocked, or locked if overdue.
+ */
+async function reconcileWithSale(device) {
+  try {
+    if (device.agent?.desired_lock_state !== 'pending_activation') return false;
+    const plan = await InstallmentPlan.findOne({
+      device_id: device._id,
+      status: { $in: ['active', 'defaulted'] },
+    }).sort({ activated_at: -1, createdAt: -1 });
+    if (!plan) return false;
+    const customer = await Customer.findOne({ _id: plan.customer_id, deleted_at: null }).select('_id').lean();
+    if (!customer) return false;
+    const overdue = plan.status === 'defaulted' || (plan.next_due_date && new Date(plan.next_due_date) < new Date());
+    device.assigned_to = customer._id;
+    device.sold_status = 'sold';
+    device.agent.desired_lock_state = overdue ? 'locked' : 'unlocked';
+    device.agent.paid_until = agent.computePaidUntil(plan.next_due_date);
+    if (overdue) device.lock_status = 'locked';
+    logger.info('[agent] Reconciled device %s with active plan %s -> %s', device._id, plan._id, device.agent.desired_lock_state);
+    return true;
+  } catch (err) {
+    logger.warn('[agent] reconcile failed for %s: %s', device._id, err.message);
+    return false;
+  }
+}
+
 /** Resolve the unlock contact + a tailored lock message for a device. */
 async function lockInfoFor(device) {
   let contact = agent.config.BUSINESS_PHONE;
@@ -125,10 +155,15 @@ const enroll = async (req, res) => {
     // Until the admin activates a sale for this phone it shows the "Awaiting
     // Activation" first page: stock phones (unassigned) and phones whose sale
     // is still pending. Activation (activatePlan) releases it.
+    // An active (deposit-paid) sale on this phone always wins — a newer
+    // duplicate sale still awaiting approval must not put it back on hold.
     let awaiting = !device.assigned_to;
     if (!awaiting) {
-      const plan = await InstallmentPlan.findOne({ device_id: device._id }).sort({ createdAt: -1 }).lean();
-      awaiting = ['pending', 'returned', 'approved'].includes(plan?.status);
+      const activePlan = await InstallmentPlan.exists({ device_id: device._id, status: { $in: ['active', 'defaulted'] } });
+      if (!activePlan) {
+        const plan = await InstallmentPlan.findOne({ device_id: device._id }).sort({ createdAt: -1 }).lean();
+        awaiting = ['pending', 'returned', 'approved'].includes(plan?.status);
+      }
     }
     if (awaiting) {
       device.agent.desired_lock_state = 'pending_activation';
@@ -208,6 +243,7 @@ const heartbeat = async (req, res) => {
         lat: latN, lng: lngN, accuracy: Number(accuracy) || null, at,
       }).catch(() => {});
     }
+    await reconcileWithSale(device);
     await device.save();
     // First time this phone reports its IMEI: fold any duplicate records into one.
     let current = device;
@@ -229,6 +265,7 @@ const commands = async (req, res) => {
     const device = await authDevice(req, res);
     if (!device) return;
     device.agent.last_heartbeat = new Date();
+    await reconcileWithSale(device);
     await device.save();
     const info = await lockInfoFor(device);
     return res.status(200).json({ success: true, ...info });
