@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from '../../utils/paymentMethod'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
@@ -423,7 +424,7 @@ export default function CustomerDashboard() {
                   <div className="text-right flex-shrink-0">
                     <p className="text-sm font-black text-orange-500">+ GHS {Number(p.amount || 0).toLocaleString()}</p>
                     <p className="text-xs text-gray-400">
-                      {p.payment_method === 'paystack' ? 'MoMo / Card' : p.payment_method || 'Mobile Money'}
+                      {paymentMethodLabel(p.payment_method)}
                     </p>
                   </div>
                 </div>

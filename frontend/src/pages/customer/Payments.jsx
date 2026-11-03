@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from '../../utils/paymentMethod'
 import React, { useState, useEffect, useCallback } from 'react'
 import api from '../../api/axios'
 import toast from 'react-hot-toast'
@@ -195,7 +196,7 @@ export default function CustomerPayments() {
                     <StatusBadge status={p.status || 'paid'} />
                   </div>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {p.payment_method === 'paystack' ? 'Mobile Money / Card' : p.payment_method || 'Mobile Money'}
+                    {paymentMethodLabel(p.payment_method)}
                   </p>
                   {(p.reference || p.paystack_reference) && (
                     <p className="text-xs font-mono text-gray-400 truncate mt-0.5">

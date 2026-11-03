@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from '../../utils/paymentMethod'
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
@@ -35,6 +36,28 @@ export default function AdminCustomerDetail() {
   const [deleteModal, setDeleteModal] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [releaseLoading, setReleaseLoading] = useState(false)
+  // Record a payment received outside Paystack (cash / MoMo to the company / bank)
+  const [payOpen, setPayOpen] = useState(false)
+  const [payAmount, setPayAmount] = useState('')
+  const [payMethod, setPayMethod] = useState('manual_cash')
+  const [payNote, setPayNote] = useState('')
+  const [paySaving, setPaySaving] = useState(false)
+
+  const recordPayment = async () => {
+    const amt = Number(payAmount)
+    if (!(amt > 0)) { toast.error('Enter the amount received.'); return }
+    setPaySaving(true)
+    try {
+      const res = await api.post(`/admin/customers/${id}/record-payment`, { amount: amt, method: payMethod, note: payNote })
+      toast.success(res.data?.message || 'Payment recorded.', { duration: 6000 })
+      setPayOpen(false); setPayAmount(''); setPayNote(''); setPayMethod('manual_cash')
+      fetchCustomer()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not record the payment.')
+    } finally {
+      setPaySaving(false)
+    }
+  }
   const [returnModal, setReturnModal] = useState(false)
   const [returnLoading, setReturnLoading] = useState(false)
 
@@ -495,6 +518,18 @@ export default function AdminCustomerDetail() {
               {reminderLoading ? 'Sending…' : 'Send Payment Reminder'}
             </button>
           )}
+          {plan && ['active', 'defaulted'].includes(plan.status) && (plan.remaining_balance || 0) > 0 && (
+            <button
+              onClick={() => { setPayAmount(''); setPayOpen(true) }}
+              className="w-full py-3 px-4 rounded-xl bg-green-600 text-white font-semibold text-sm
+                         hover:bg-green-700 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Record Payment
+            </button>
+          )}
           {plan && ['active', 'defaulted'].includes(plan.status) && (
             <button
               onClick={() => setRepossessModal(true)}
@@ -568,7 +603,7 @@ export default function AdminCustomerDetail() {
                       ? format(new Date(tx.payment_date || tx.created_at), 'dd MMM yyyy, HH:mm')
                       : ''}
                     {' · '}
-                    <span className="capitalize">{(tx.payment_method || tx.method || '').replace('_', ' ')}</span>
+                    <span>{paymentMethodLabel(tx.payment_method || tx.method)}</span>
                   </p>
                   {tx.paystack_reference && (
                     <p className="font-mono">Ref: {tx.paystack_reference}</p>
@@ -669,6 +704,53 @@ export default function AdminCustomerDetail() {
       />
 
       {/* Image Viewer */}
+      {payOpen && plan && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4" onClick={() => !paySaving && setPayOpen(false)}>
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-black text-gray-900">Record a payment</h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Money {customer?.full_name?.split(' ')[0]} paid outside the Pay-now link. It's applied like any payment: late fees first, then
+              installments; the phone unlocks once they're up to date.
+            </p>
+            <p className="text-sm text-gray-700 mt-3">
+              Owes: <span className="font-bold">GHS {Number(plan.remaining_balance || 0).toLocaleString()}</span>
+              {(plan.penalty_balance || 0) > 0 && <> + <span className="font-bold text-red-600">GHS {Number(plan.penalty_balance).toLocaleString()} late fees</span></>}
+              {' '}· installment GHS {Number(plan.installment_amount || 0).toLocaleString()}
+            </p>
+
+            <label className="block text-sm font-semibold text-gray-700 mt-4">Amount received (GHS)</label>
+            <input type="number" inputMode="decimal" min="1" value={payAmount} onChange={(e) => setPayAmount(e.target.value)}
+              placeholder={String(plan.installment_amount || '')}
+              className="mt-1 w-full px-4 py-3 border-2 border-gray-200 rounded-2xl text-lg focus:border-orange-500 outline-none" />
+
+            <label className="block text-sm font-semibold text-gray-700 mt-4">How they paid</label>
+            <div className="mt-1 grid grid-cols-3 gap-2">
+              {[['manual_cash', 'Cash'], ['manual_momo', 'MoMo to us'], ['manual_bank', 'Bank']].map(([v, l]) => (
+                <button key={v} type="button" onClick={() => setPayMethod(v)}
+                  className={`py-2.5 rounded-xl border-2 text-sm font-semibold ${payMethod === v ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-600'}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            <label className="block text-sm font-semibold text-gray-700 mt-4">Note (optional)</label>
+            <input type="text" value={payNote} onChange={(e) => setPayNote(e.target.value)} maxLength={200}
+              placeholder="e.g. MoMo ref 1234567, paid at office"
+              className="mt-1 w-full px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:border-orange-500 outline-none" />
+
+            <button onClick={recordPayment} disabled={paySaving}
+              className="mt-5 w-full py-3.5 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-bold disabled:opacity-60">
+              {paySaving ? 'Recording…' : `Record ${Number(payAmount) > 0 ? `GHS ${Number(payAmount).toLocaleString()}` : 'payment'}`}
+            </button>
+            <button onClick={() => setPayOpen(false)} disabled={paySaving}
+              className="mt-2 w-full py-3 rounded-2xl border border-gray-200 text-gray-700 font-semibold">
+              Cancel
+            </button>
+            <p className="mt-3 text-xs text-gray-500">Only record money you have actually received. It's logged with your name.</p>
+          </div>
+        </div>
+      )}
+
       {imageModal && (
         <div
           className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4"

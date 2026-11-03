@@ -1427,6 +1427,86 @@ const setStockPrice = async (req, res) => {
   }
 };
 
+// ─── RECORD A PAYMENT (admin) ─────────────────────────────────────────────────
+
+/**
+ * POST /api/admin/customers/:id/record-payment  { amount, method, note }
+ * The admin records money received outside Paystack — cash at the office,
+ * Mobile Money sent to the company number, or a bank transfer — for ANY
+ * customer. Applied exactly like an online payment: late fees first, then
+ * installments; the due date moves and the phone unlocks once caught up.
+ */
+const ADMIN_PAYMENT_METHODS = { manual_cash: 'Cash', manual_momo: 'Mobile Money', manual_bank: 'Bank transfer' };
+const recordAdminPayment = async (req, res) => {
+  try {
+    const amt = Math.round(Number(req.body?.amount) * 100) / 100;
+    const method = ADMIN_PAYMENT_METHODS[req.body?.method] ? req.body.method : 'manual_cash';
+    const note = String(req.body?.note || '').trim().slice(0, 200);
+    if (!Number.isFinite(amt) || amt <= 0) {
+      return res.status(400).json({ success: false, message: 'Enter a valid amount.' });
+    }
+    const customer = await Customer.findById(req.params.id).lean();
+    if (!customer || customer.deleted_at) return res.status(404).json({ success: false, message: 'Customer not found.' });
+    const plan = await InstallmentPlan.findOne({ customer_id: customer._id }).sort({ createdAt: -1 }).lean();
+    if (!plan) return res.status(404).json({ success: false, message: 'This customer has no plan.' });
+    if (['pending', 'returned', 'approved'].includes(plan.status)) {
+      return res.status(400).json({
+        success: false,
+        message: plan.status === 'approved'
+          ? 'The deposit must be paid through Paystack first (it starts the plan). Installments can be recorded after that.'
+          : 'This sale is still waiting for approval — no payments can be recorded yet.',
+      });
+    }
+    if (!['active', 'defaulted'].includes(plan.status) || plan.remaining_balance <= 0) {
+      return res.status(400).json({ success: false, message: 'This plan has nothing left to pay.' });
+    }
+    const maxPay = (plan.remaining_balance || 0) + (plan.penalty_balance || 0);
+    if (amt > maxPay + 0.009) {
+      return res.status(400).json({ success: false, message: `That's more than they owe (GHS ${maxPay.toLocaleString()} including late fees).` });
+    }
+
+    const device = plan.device_id ? await Device.findById(plan.device_id).lean() : null;
+    const { processSuccessfulPayment } = require('./paymentController');
+    const result = await processSuccessfulPayment({
+      paystackData: { amount: Math.round(amt * 100), paid_at: Date.now(), reference: null, status: method },
+      customer,
+      plan,
+      device,
+      paidBy: { user_id: req.user._id, user_role: req.user.role, name: req.user.name },
+      recordedBy: req.user._id,
+      notes: `${ADMIN_PAYMENT_METHODS[method]} recorded by ${req.user.name || 'admin'}${note ? ` — ${note}` : ''}`,
+      method,
+    });
+    await AuditLog.create({
+      user_id: req.user._id,
+      action: 'manual_payment',
+      target_user_id: customer.user_id,
+      details: { customer_id: customer._id, plan_id: plan._id, amount: amt, method, note: note || undefined },
+      ip_address: req.ip,
+    }).catch(() => {});
+
+    return res.status(200).json({
+      success: true,
+      message: result.isCompleted
+        ? `GHS ${amt.toLocaleString()} recorded — the phone is fully paid and will be released.`
+        : result.deviceUnlocked
+          ? `GHS ${amt.toLocaleString()} recorded — the phone is being unlocked.`
+          : result.caughtUp === false
+            ? `GHS ${amt.toLocaleString()} recorded. They still owe money, so the phone stays locked.`
+            : `GHS ${amt.toLocaleString()} recorded.`,
+      data: {
+        remaining_balance: result.newRemainingBalance,
+        next_due_date: result.nextDueDate,
+        completed: result.isCompleted,
+        unlocked: result.deviceUnlocked,
+      },
+    });
+  } catch (error) {
+    logger.error('recordAdminPayment error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── SMS CHECK ────────────────────────────────────────────────────────────────
 
 /**
@@ -2745,7 +2825,7 @@ const generateReceipt = async (req, res) => {
         doc.fillColor(darkText);
         doc.text(p.payment_date ? new Date(p.payment_date).toLocaleDateString('en-GH') : '—', cols[0], rowY, { width: 105 });
         doc.text(`GHS ${Number(p.amount).toLocaleString()}`, cols[1], rowY, { width: 115 });
-        doc.text(p.payment_method === 'manual_cash' ? 'Cash' : 'Paystack', cols[2], rowY, { width: 95 });
+        doc.text({ manual_cash: 'Cash', manual_momo: 'MoMo (office)', manual_bank: 'Bank transfer' }[p.payment_method] || 'Paystack', cols[2], rowY, { width: 95 });
         doc.text(p.paystack_reference || '—', cols[3], rowY, { width: 95 });
         doc.text('Paid', cols[4], rowY, { width: 60 });
         rowY += 18;
@@ -3186,6 +3266,7 @@ module.exports = {
   removeFrpAccount,
   getComputerEnrollScript,
   testSms,
+  recordAdminPayment,
   getPaystackBanks,
   setStaffPayout,
   removeStaffPayout,

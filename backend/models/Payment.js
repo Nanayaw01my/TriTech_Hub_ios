@@ -23,7 +23,9 @@ const PaymentSchema = new mongoose.Schema(
     },
     payment_method: {
       type: String,
-      enum: ['paystack', 'manual_cash'],
+      // manual_* = recorded by staff/admin for money received outside Paystack:
+      // cash, Mobile Money sent to the company number, or a bank transfer.
+      enum: ['paystack', 'manual_cash', 'manual_momo', 'manual_bank'],
       required: true,
     },
     paystack_reference: {

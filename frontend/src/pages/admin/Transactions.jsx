@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from '../../utils/paymentMethod'
 import React, { useState, useEffect, useCallback } from 'react'
 import api from '../../api/axios'
 import { saveBlob } from '../../utils/download'
@@ -47,7 +48,7 @@ export default function AdminTransactions() {
       // Fallback: build CSV from current page data
       const csvHeader = 'Date,Customer,Amount,Method,Reference,Status\n'
       const csvRows = transactions.map(tx =>
-        `"${tx.created_at ? format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm') : ''}","${tx.customer_name || ''}","${tx.amount}","${tx.payment_method || tx.method || ''}","${tx.reference || ''}","${tx.status || ''}"`
+        `"${tx.created_at ? format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm') : ''}","${tx.customer_name || ''}","${tx.amount}","${paymentMethodLabel(tx.payment_method || tx.method)}","${tx.reference || ''}","${tx.status || ''}"`
       ).join('\n')
       const blob = new Blob([csvHeader + csvRows], { type: 'text/csv' })
       await saveBlob(blob, `transactions_${dateFrom}_${dateTo}.csv`)
@@ -165,7 +166,7 @@ export default function AdminTransactions() {
                     </div>
                     <p className="text-xs text-gray-500 truncate">
                       {tx.created_at ? format(new Date(tx.created_at), 'dd MMM yyyy, HH:mm') : ''} •{' '}
-                      {tx.payment_method || tx.method || 'Mobile Money'}
+                      {paymentMethodLabel(tx.payment_method || tx.method)}
                     </p>
                     {tx.reference && (
                       <p className="text-xs font-mono text-gray-400 truncate">{tx.reference}</p>

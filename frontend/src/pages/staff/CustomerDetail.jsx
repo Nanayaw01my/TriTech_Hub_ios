@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from '../../utils/paymentMethod'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
@@ -608,7 +609,7 @@ export default function StaffCustomerDetail() {
                     {tx.payment_date || tx.createdAt
                       ? format(new Date(tx.payment_date || tx.createdAt), 'dd MMM yyyy · h:mm a')
                       : ''}
-                    {tx.payment_method && ` · ${tx.payment_method}`}
+                    {tx.payment_method && ` · ${paymentMethodLabel(tx.payment_method)}`}
                   </p>
                   {tx.paystack_reference && (
                     <p className="text-xs font-mono text-gray-400 mt-0.5">
