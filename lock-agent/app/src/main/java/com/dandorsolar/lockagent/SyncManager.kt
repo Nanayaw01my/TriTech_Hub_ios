@@ -132,7 +132,10 @@ object SyncManager {
         j.optString("lock_message").takeIf { it.isNotEmpty() }?.let { Prefs.setLockMessage(c, it) }
         Prefs.setUnlockContact(c, j.optString("unlock_contact"))
         j.optString("business_name").takeIf { it.isNotEmpty() }?.let { Prefs.setBusinessName(c, it) }
-        if (j.has("paid_until")) Prefs.setPaidUntil(c, j.optLong("paid_until", 0L))
+        if (j.has("paid_until")) {
+            Prefs.setPaidUntil(c, j.optLong("paid_until", 0L))
+            Deadline.schedule(c) // offline alarm at the new deadline
+        }
         if (j.has("deadman_days")) Prefs.setDeadmanDays(c, j.optInt("deadman_days", 7))
     }
 

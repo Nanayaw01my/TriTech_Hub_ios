@@ -21,6 +21,7 @@ class App : Application() {
         Fcm.init(this)
         Fcm.fetchToken { Prefs.setFcmToken(this, it) }
         scheduleSync(this)
+        Deadline.schedule(this) // offline deadline checks (no network needed)
     }
 
     companion object {

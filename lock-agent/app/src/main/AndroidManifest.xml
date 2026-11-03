@@ -113,6 +113,11 @@
             android:exported="true"
             android:permission="android.permission.DUMP" />
 
+        <!-- Offline payment deadline: locks at the due time with no internet. -->
+        <receiver
+            android:name=".DeadlineReceiver"
+            android:exported="false" />
+
         <!-- Result of a self-update install. -->
         <receiver
             android:name=".UpdateStatusReceiver"

@@ -9,6 +9,12 @@ import android.content.Intent
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         App.scheduleSync(context)
+        // Offline checks: lock right away if the deadline passed while the
+        // phone was off, and re-arm the deadline alarm (alarms don't survive reboot).
+        // (Before the phone's first unlock after boot, app storage may not be
+        // readable yet; the normal boot broadcast that follows does the check.)
+        runCatching { Deadline.checkNow(context) }
+        runCatching { Deadline.schedule(context) }
         // Setup was interrupted by a restart before we enrolled: finish now.
         if (!Prefs.enrolled(context) && Prefs.enrollmentToken(context).isNotEmpty()) {
             Trace.send(context, "boot_not_enrolled", "owner=${Policy.isOwner(context)} ${intent.action?.substringAfterLast('.')}")
