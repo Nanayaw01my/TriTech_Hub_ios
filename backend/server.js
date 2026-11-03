@@ -165,6 +165,7 @@ app.get('/health', (req, res) => {
 // ─── DB STATUS ────────────────────────────────────────────────────────────────
 
 app.get('/api/dbstatus', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') return res.status(404).json({ success: false });
   const mongoose = require('mongoose');
   const User = require('./models/User');
   const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
@@ -373,6 +374,9 @@ app.use((err, req, res, next) => {
  * Seed the database with default admin, staff, and sample devices on first run.
  */
 const seedDatabase = async () => {
+  // Never create built-in accounts (with passwords written in this public code)
+  // or sample devices on the live site.
+  if (process.env.NODE_ENV === 'production') return;
   try {
     const User = require('./models/User');
     const Device = require('./models/Device');
@@ -560,6 +564,35 @@ const migrateEncryptionKey = async () => {
   }
 };
 
+// Accounts created by old code with passwords written in the (public) source —
+// admin123, staff123 and the built-in superadmin password — are switched off so
+// nobody can log in with them. The main admin can switch one back on with a
+// new password (Settings → Admins → Reset password, then Switch on).
+const disableDefaultPasswordAccounts = async () => {
+  try {
+    const User = require('./models/User');
+    const bcrypt = require('bcryptjs');
+    const PUBLIC_PASSWORDS = ['admin123', 'staff123', 'Yaw292004'];
+    const candidates = await User.find({ is_active: true, role: { $in: ['superadmin', 'admin', 'staff'] } }).select('+password email role');
+    let n = 0;
+    for (const u of candidates) {
+      if (!u.password) continue;
+      let weak = false;
+      for (const pw of PUBLIC_PASSWORDS) {
+        if (await bcrypt.compare(pw, u.password)) { weak = true; break; }
+      }
+      if (weak) {
+        await User.updateOne({ _id: u._id }, { $set: { is_active: false } });
+        logger.warn('[security] Switched off %s (%s): it used a public default password.', u.email, u.role);
+        n++;
+      }
+    }
+    if (n) logger.warn('[security] %d account(s) with public default passwords were switched off.', n);
+  } catch (err) {
+    logger.error('[security] default-password check failed: %s', err.message);
+  }
+};
+
 // One-off: DSR commission per phone is GHS 85 (was a GHS 100 default). Moves
 // DSRs still on the old default; recorded so it never re-runs and a rate the
 // admin later sets deliberately is left alone.
@@ -599,6 +632,7 @@ const startServer = async () => {
     await migrateCompanyName();
     await migrateEncryptionKey();
     await migrateCommission85();
+    await disableDefaultPasswordAccounts();
     // Sales stuck on a plain copy of a phone (from duplicate sales) -> real phone.
     await require('./utils/deviceMerge').relinkCopiesToEnrolledPhones()
       .catch((e) => logger.warn('[merge] relink skipped: %s', e.message));

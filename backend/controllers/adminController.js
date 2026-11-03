@@ -1444,22 +1444,18 @@ const setStockPrice = async (req, res) => {
 };
 
 // ─── ADMIN ACCOUNTS ───────────────────────────────────────────────────────────
-// Full admins. The MAIN admin (the superadmin, else the first admin created)
-// is the only one who can add admins, switch them off or reset their
-// passwords, and can never be switched off.
-
-const mainAdmin = async () =>
-  (await User.findOne({ role: 'superadmin' }).sort({ createdAt: 1 }).select('_id').lean()) ||
-  (await User.findOne({ role: 'admin' }).sort({ createdAt: 1 }).select('_id').lean());
+// Full admins. Any active admin can add admins, switch others off/on and reset
+// their passwords. Nobody can switch themselves off, and at least one admin
+// always stays active.
 
 const requireMainAdmin = async (req, res) => {
-  const main = await mainAdmin();
-  if (!main || String(main._id) !== String(req.user._id)) {
-    res.status(403).json({ success: false, message: 'Only the main admin can manage admin accounts.' });
+  if (!['admin', 'superadmin'].includes(req.user?.role)) {
+    res.status(403).json({ success: false, message: 'Only admins can manage admin accounts.' });
     return null;
   }
-  return main;
+  return { _id: req.user._id };
 };
+const mainAdmin = async () => null;
 
 /** GET /api/admin/admins */
 const getAdmins = async (req, res) => {
@@ -1470,8 +1466,8 @@ const getAdmins = async (req, res) => {
     return res.status(200).json({
       success: true,
       data: {
-        admins: admins.map((a) => ({ ...a, is_main: String(a._id) === String(main?._id), is_you: String(a._id) === String(req.user._id) })),
-        can_manage: String(main?._id) === String(req.user._id),
+        admins: admins.map((a) => ({ ...a, is_main: false, is_you: String(a._id) === String(req.user._id) })),
+        can_manage: ['admin', 'superadmin'].includes(req.user.role),
       },
     });
   } catch (error) {
@@ -1513,8 +1509,12 @@ const updateAdmin = async (req, res) => {
     if (!admin) return res.status(404).json({ success: false, message: 'Admin not found.' });
     const changes = {};
     if (typeof req.body?.is_active === 'boolean') {
-      if (String(admin._id) === String(main._id) && req.body.is_active === false) {
-        return res.status(400).json({ success: false, message: 'The main admin cannot be switched off.' });
+      if (String(admin._id) === String(req.user._id) && req.body.is_active === false) {
+        return res.status(400).json({ success: false, message: "You can't switch off your own account." });
+      }
+      if (req.body.is_active === false) {
+        const others = await User.countDocuments({ _id: { $ne: admin._id }, role: { $in: ['admin', 'superadmin'] }, is_active: true });
+        if (others < 1) return res.status(400).json({ success: false, message: 'At least one admin must stay active.' });
       }
       admin.is_active = req.body.is_active;
       changes.is_active = req.body.is_active;

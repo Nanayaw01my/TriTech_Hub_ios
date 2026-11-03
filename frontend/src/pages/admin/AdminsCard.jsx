@@ -3,7 +3,7 @@ import api from '../../api/axios'
 import toast from 'react-hot-toast'
 import Card from '../../components/Modern/Card'
 
-/** Admin accounts: the main admin adds admins, switches them off/on and resets passwords. */
+/** Admin accounts: admins add admins, switch others off/on and reset their passwords. */
 export default function AdminsCard() {
   const [admins, setAdmins] = useState([])
   const [canManage, setCanManage] = useState(false)
@@ -59,8 +59,8 @@ export default function AdminsCard() {
     <Card padding="p-6 sm:p-8" className="mb-6 shadow-lg">
       <h2 className="text-gray-900 text-lg font-bold mb-1">Admins</h2>
       <p className="text-sm text-gray-500 mb-4">
-        People who can log in to this admin portal. Admins have full access; every action is logged with their name.
-        {!canManage && ' Only the main admin can add or change admins.'}
+        People who can log in to this admin portal. Admins have full access and can add or switch off other admins;
+        every action is logged with their name. You can't switch off your own account.
       </p>
 
       <div className="space-y-2 mb-5">
