@@ -33,6 +33,18 @@ function safeEqual(a, b) {
 async function reconcileWithSale(device) {
   try {
     if (device.agent?.desired_lock_state !== 'pending_activation') return false;
+    // A sale may point at a plain copy of this phone (same IMEI) made by
+    // duplicate sales — move it onto this real phone first.
+    if (device.imei && !(await InstallmentPlan.exists({ device_id: device._id, status: { $in: ['active', 'defaulted'] } }))) {
+      const copies = await Device.find({ _id: { $ne: device._id }, imei: device.imei, 'agent.enrolled': { $ne: true } }).select('_id').lean();
+      if (copies.length) {
+        const copyPlan = await InstallmentPlan.findOne({ device_id: { $in: copies.map((c) => c._id) }, status: { $in: ['active', 'defaulted'] } })
+          .sort({ activated_at: -1 });
+        if (copyPlan && await Customer.exists({ _id: copyPlan.customer_id, deleted_at: null })) {
+          await require('../utils/deviceMerge').relinkSaleToEnrolledPhone(copyPlan, device);
+        }
+      }
+    }
     const plan = await InstallmentPlan.findOne({
       device_id: device._id,
       status: { $in: ['active', 'defaulted'] },

@@ -599,6 +599,9 @@ const startServer = async () => {
     await migrateCompanyName();
     await migrateEncryptionKey();
     await migrateCommission85();
+    // Sales stuck on a plain copy of a phone (from duplicate sales) -> real phone.
+    await require('./utils/deviceMerge').relinkCopiesToEnrolledPhones()
+      .catch((e) => logger.warn('[merge] relink skipped: %s', e.message));
     startScheduler();
   } catch (error) {
     logger.error('MongoDB init failed: %s', error.message);

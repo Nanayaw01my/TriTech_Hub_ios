@@ -88,4 +88,69 @@ async function mergeAllDuplicates() {
   return { groups: dupes.length, removed };
 }
 
-module.exports = { mergeDevicesByImei, mergeAllDuplicates };
+const OPEN_SALE = ['pending', 'returned', 'approved', 'active', 'defaulted'];
+
+/**
+ * Move a sale that points at a plain "copy" of a phone (a non-enrolled record
+ * with the same IMEI, made by duplicate sales) onto the REAL enrolled phone,
+ * then delete the copy. Returns true if the sale was moved.
+ */
+async function relinkSaleToEnrolledPhone(plan, enrolled) {
+  if (!plan || !enrolled?.agent?.enrolled) return false;
+  if (String(plan.device_id) === String(enrolled._id)) return false;
+  // The real phone mustn't be in another open sale already.
+  const busy = await InstallmentPlan.exists({ _id: { $ne: plan._id }, device_id: enrolled._id, status: { $in: OPEN_SALE } });
+  if (busy) return false;
+  const copyId = plan.device_id;
+  await InstallmentPlan.updateOne({ _id: plan._id }, { $set: { device_id: enrolled._id } });
+
+  enrolled.assigned_to = plan.customer_id;
+  enrolled.sold_status = 'sold';
+  if (['active', 'defaulted'].includes(plan.status)) {
+    const overdue = plan.status === 'defaulted' || (plan.next_due_date && new Date(plan.next_due_date) < new Date());
+    enrolled.agent.desired_lock_state = overdue ? 'locked' : 'unlocked';
+    enrolled.agent.paid_until = require('./androidAgent').computePaidUntil(plan.next_due_date);
+    if (overdue) enrolled.lock_status = 'locked';
+  } else {
+    enrolled.agent.desired_lock_state = 'pending_activation';
+  }
+  await enrolled.save();
+
+  // Remove the copy if nothing else uses it.
+  if (copyId && !(await InstallmentPlan.exists({ device_id: copyId }))) {
+    await Device.deleteOne({ _id: copyId, 'agent.enrolled': { $ne: true } }).catch(() => {});
+  }
+  logger.info('[merge] Sale %s moved from copy %s to enrolled phone %s', plan._id, copyId, enrolled._id);
+  return true;
+}
+
+/**
+ * Find open sales linked to a non-enrolled copy of an enrolled phone (same
+ * IMEI) and move them onto the real phone. Active sales win over pending ones.
+ */
+async function relinkCopiesToEnrolledPhones() {
+  const enrolledPhones = await Device.find({ 'agent.enrolled': true, imei: { $nin: [null, ''] } });
+  let moved = 0;
+  for (const phone of enrolledPhones) {
+    // Already serving an active sale? Leave it.
+    if (await InstallmentPlan.exists({ device_id: phone._id, status: { $in: ['active', 'defaulted'] } })) continue;
+    const copies = await Device.find({ _id: { $ne: phone._id }, imei: phone.imei, 'agent.enrolled': { $ne: true } }).select('_id').lean();
+    if (!copies.length) continue;
+    const ids = copies.map((c) => c._id);
+    const plans = await InstallmentPlan.find({ device_id: { $in: ids }, status: { $in: OPEN_SALE } }).sort({ activated_at: -1, createdAt: 1 });
+    // Only sales whose customer still exists.
+    const Customer = require('../models/Customer');
+    let target = null;
+    for (const p of plans.sort((a, b) => (['active', 'defaulted'].includes(b.status) ? 1 : 0) - (['active', 'defaulted'].includes(a.status) ? 1 : 0))) {
+      if (await Customer.exists({ _id: p.customer_id, deleted_at: null })) { target = p; break; }
+    }
+    if (target && await relinkSaleToEnrolledPhone(target, phone)) {
+      moved++;
+      try { await require('./androidAgent').pushCommand(phone); } catch { /* next check-in */ }
+    }
+  }
+  if (moved) logger.info('[merge] Moved %d sale(s) from phone copies to their enrolled phones.', moved);
+  return { moved };
+}
+
+module.exports = { mergeDevicesByImei, mergeAllDuplicates, relinkSaleToEnrolledPhone, relinkCopiesToEnrolledPhones };
