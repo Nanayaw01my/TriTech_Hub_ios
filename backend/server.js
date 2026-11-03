@@ -573,13 +573,28 @@ const disableDefaultPasswordAccounts = async () => {
     const User = require('./models/User');
     const bcrypt = require('bcryptjs');
     const PUBLIC_PASSWORDS = ['admin123', 'staff123', 'Yaw292004'];
+    // Recovery: REACTIVATE_ADMIN_EMAIL=<email> switches that admin back on.
+    const recover = String(process.env.REACTIVATE_ADMIN_EMAIL || '').trim().toLowerCase();
+    if (recover) {
+      const r = await User.updateOne({ email: recover, role: { $in: ['superadmin', 'admin'] } }, { $set: { is_active: true } });
+      if (r.modifiedCount) logger.warn('[security] %s was switched back on (REACTIVATE_ADMIN_EMAIL). Change its password now, then remove the variable.', recover);
+    }
     const candidates = await User.find({ is_active: true, role: { $in: ['superadmin', 'admin', 'staff'] } }).select('+password email role');
     let n = 0;
     for (const u of candidates) {
       if (!u.password) continue;
+      if (recover && u.email === recover) continue;
       let weak = false;
       for (const pw of PUBLIC_PASSWORDS) {
         if (await bcrypt.compare(pw, u.password)) { weak = true; break; }
+      }
+      // Never switch off the last working admin.
+      if (weak && ['admin', 'superadmin'].includes(u.role)) {
+        const activeAdmins = await User.countDocuments({ is_active: true, role: { $in: ['admin', 'superadmin'] } });
+        if (activeAdmins <= 1) {
+          logger.warn('[security] %s uses a public default password but is the only active admin — left on. CHANGE ITS PASSWORD NOW.', u.email);
+          continue;
+        }
       }
       if (weak) {
         await User.updateOne({ _id: u._id }, { $set: { is_active: false } });
