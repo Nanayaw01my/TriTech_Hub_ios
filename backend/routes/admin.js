@@ -36,6 +36,9 @@ const {
   getComputerEnrollScript,
   testSms,
   recordAdminPayment,
+  getAdmins,
+  addAdmin,
+  updateAdmin,
   getPaystackBanks,
   setStaffPayout,
   removeStaffPayout,
@@ -108,6 +111,9 @@ router.post('/customers/:id/release', [param('id').isMongoId()], releaseCustomer
 router.get('/stock-enrollment', getStockEnrollment);
 router.get('/stock-enrollment/computer-script', getComputerEnrollScript);
 router.post('/sms/test', testSms);
+router.get('/admins', getAdmins);
+router.post('/admins', addAdmin);
+router.put('/admins/:id', [param('id').isMongoId()], updateAdmin);
 router.get('/enrolled-devices', getEnrolledDevices);
 router.get('/activations', getPendingActivations);
 router.post('/plans/:id/approve', [param('id').isMongoId()], approvePlan);

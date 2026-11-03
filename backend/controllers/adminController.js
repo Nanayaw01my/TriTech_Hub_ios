@@ -1443,6 +1443,103 @@ const setStockPrice = async (req, res) => {
   }
 };
 
+// ─── ADMIN ACCOUNTS ───────────────────────────────────────────────────────────
+// Full admins. The MAIN admin (the superadmin, else the first admin created)
+// is the only one who can add admins, switch them off or reset their
+// passwords, and can never be switched off.
+
+const mainAdmin = async () =>
+  (await User.findOne({ role: 'superadmin' }).sort({ createdAt: 1 }).select('_id').lean()) ||
+  (await User.findOne({ role: 'admin' }).sort({ createdAt: 1 }).select('_id').lean());
+
+const requireMainAdmin = async (req, res) => {
+  const main = await mainAdmin();
+  if (!main || String(main._id) !== String(req.user._id)) {
+    res.status(403).json({ success: false, message: 'Only the main admin can manage admin accounts.' });
+    return null;
+  }
+  return main;
+};
+
+/** GET /api/admin/admins */
+const getAdmins = async (req, res) => {
+  try {
+    const main = await mainAdmin();
+    const admins = await User.find({ role: { $in: ['admin', 'superadmin'] } })
+      .select('name email phone is_active createdAt').sort({ createdAt: 1 }).lean();
+    return res.status(200).json({
+      success: true,
+      data: {
+        admins: admins.map((a) => ({ ...a, is_main: String(a._id) === String(main?._id), is_you: String(a._id) === String(req.user._id) })),
+        can_manage: String(main?._id) === String(req.user._id),
+      },
+    });
+  } catch (error) {
+    logger.error('getAdmins error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/** POST /api/admin/admins  { name, email, phone, password } */
+const addAdmin = async (req, res) => {
+  try {
+    if (!(await requireMainAdmin(req, res))) return;
+    const name = String(req.body?.name || '').trim();
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const phone = String(req.body?.phone || '').trim();
+    const password = String(req.body?.password || '');
+    if (!name) return res.status(400).json({ success: false, message: 'Enter their name.' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ success: false, message: 'Enter a valid email — they log in with it.' });
+    if (password.length < 8) return res.status(400).json({ success: false, message: 'The password must be at least 8 characters.' });
+    if (await User.findOne({ email })) return res.status(409).json({ success: false, message: 'That email is already used by another account.' });
+    const admin = await User.create({ name, email, phone: phone || undefined, password, role: 'admin', is_active: true });
+    await AuditLog.create({
+      user_id: req.user._id, action: 'staff_added', target_user_id: admin._id,
+      details: { admin_added: email, name }, ip_address: req.ip,
+    }).catch(() => {});
+    return res.status(201).json({ success: true, message: `${name} can now log in as an admin with ${email}.`, data: { id: admin._id } });
+  } catch (error) {
+    logger.error('addAdmin error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/** PUT /api/admin/admins/:id  { is_active?, password? } — switch on/off, reset password. */
+const updateAdmin = async (req, res) => {
+  try {
+    const main = await requireMainAdmin(req, res);
+    if (!main) return;
+    const admin = await User.findOne({ _id: req.params.id, role: { $in: ['admin', 'superadmin'] } }).select('+password');
+    if (!admin) return res.status(404).json({ success: false, message: 'Admin not found.' });
+    const changes = {};
+    if (typeof req.body?.is_active === 'boolean') {
+      if (String(admin._id) === String(main._id) && req.body.is_active === false) {
+        return res.status(400).json({ success: false, message: 'The main admin cannot be switched off.' });
+      }
+      admin.is_active = req.body.is_active;
+      changes.is_active = req.body.is_active;
+    }
+    if (req.body?.password !== undefined) {
+      const pw = String(req.body.password);
+      if (pw.length < 8) return res.status(400).json({ success: false, message: 'The password must be at least 8 characters.' });
+      admin.password = pw;
+      changes.password_reset = true;
+    }
+    if (!Object.keys(changes).length) return res.status(400).json({ success: false, message: 'Nothing to change.' });
+    await admin.save();
+    await AuditLog.create({
+      user_id: req.user._id, action: 'staff_updated', target_user_id: admin._id,
+      details: { admin: admin.email, ...changes }, ip_address: req.ip,
+    }).catch(() => {});
+    const msg = changes.password_reset ? `Password changed for ${admin.name}.`
+      : changes.is_active ? `${admin.name} can log in again.` : `${admin.name} can no longer log in.`;
+    return res.status(200).json({ success: true, message: msg });
+  } catch (error) {
+    logger.error('updateAdmin error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── RECORD A PAYMENT (admin) ─────────────────────────────────────────────────
 
 /**
@@ -3283,6 +3380,9 @@ module.exports = {
   getComputerEnrollScript,
   testSms,
   recordAdminPayment,
+  getAdmins,
+  addAdmin,
+  updateAdmin,
   getPaystackBanks,
   setStaffPayout,
   removeStaffPayout,
