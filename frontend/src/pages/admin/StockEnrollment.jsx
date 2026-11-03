@@ -54,10 +54,25 @@ export default function StockEnrollment() {
   const assign = async (staffId) => {
     if (!selected.length) { toast.error('Tick the phones first.'); return }
     if (staffId === '') { toast.error('Choose a DSR.'); return }
+    const typedPrice = Number(priceInput)
+    const hasTypedPrice = priceInput !== '' && Number.isFinite(typedPrice) && typedPrice > 0
+    // Giving to a DSR: every phone must have the admin's price (the DSR never
+    // enters one). A price typed in the box is saved together with the hand-over.
+    if (staffId && !hasTypedPrice) {
+      const unpriced = devices.filter((d) => selected.includes(d._id) && !(d.price > 0))
+      if (unpriced.length) {
+        toast.error(`${unpriced.length} of these phone(s) have no price. Type the price in the box, then tap Give.`)
+        return
+      }
+    }
     setAssigning(true)
     try {
+      if (staffId && hasTypedPrice) {
+        await api.post('/admin/devices/price', { device_ids: selected, price: typedPrice })
+      }
       const res = await api.post('/admin/devices/assign', { device_ids: selected, staff_id: staffId })
-      toast.success(res.data?.message || 'Done.')
+      toast.success(`${res.data?.message || 'Done.'}${staffId && hasTypedPrice ? ` Price GH₵${typedPrice.toLocaleString()} set.` : ''}`)
+      setPriceInput('')
       setSelected([])
       setSelecting(false)
       load()

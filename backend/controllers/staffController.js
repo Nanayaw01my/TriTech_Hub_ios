@@ -1,4 +1,14 @@
 const { planTerms } = require('../utils/planTerms');
+
+// The selling price always comes from the admin, never from the DSR: an
+// enrolled stock phone's price set in Enroll Stock, or a catalog model's price
+// from Devices. 0 = not priced yet (the sale can't go ahead).
+const NO_PRICE_MSG = 'This phone has no price yet. Ask the admin to set its price, then try again.';
+const adminPrice = (d) => {
+  if (!d) return 0;
+  if (d.agent?.enrolled) return d.price_set_by_admin && d.price > 0 ? d.price : 0;
+  return d.price > 0 ? d.price : 0;
+};
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const Customer = require('../models/Customer');
@@ -189,18 +199,18 @@ const precheckCustomer = async (req, res) => {
         return res.status(409).json({ success: false, message: 'A device with this UDID already exists.' });
       }
     }
-    let price = Number(device_price) || 0;
+    let price = 0;
     if (device_id) {
       const d = await Device.findById(device_id);
       if (!d) {
         return res.status(400).json({ success: false, message: 'Selected device not found. Please choose another.' });
       }
-      if (d.price_set_by_admin && d.price > 0) price = d.price;
-    } else if (!device_model) {
-      return res.status(400).json({ success: false, message: 'Please select a device.' });
+      price = adminPrice(d);
+    } else {
+      return res.status(400).json({ success: false, message: 'Please select a phone.' });
     }
     if (!(price > 0)) {
-      return res.status(400).json({ success: false, message: 'Enter the selling price.' });
+      return res.status(400).json({ success: false, message: NO_PRICE_MSG });
     }
     const dp = Number(down_payment) || 0;
     if (dp <= 0) {
@@ -340,11 +350,12 @@ const addCustomer = async (req, res) => {
       if (picked.agent?.enrolled && !picked.assigned_to && String(picked.held_by) !== String(req.user._id)) {
         return res.status(403).json({ success: false, message: 'That phone was not given to you. Ask the admin to assign it to you first.' });
       }
+      if (!(adminPrice(picked) > 0)) {
+        return res.status(400).json({ success: false, message: NO_PRICE_MSG });
+      }
       if (picked.agent?.enrolled && !picked.assigned_to) {
-        // Selling a pre-enrolled stock phone — use it directly.
+        // Selling a pre-enrolled stock phone — use it directly, at the admin's price.
         device = picked;
-        // The admin's price for this phone wins over what the DSR typed.
-        if (!(device.price_set_by_admin && device.price > 0)) device.price = Number(device_price) || device.price || 0;
         device.sold_status = 'sold';
         if (cleanSerial) device.serial_number = cleanSerial;
         if (cleanUdid) device.udid = cleanUdid;
@@ -352,20 +363,21 @@ const addCustomer = async (req, res) => {
       } else {
         device = await Device.create({
           model: picked.model, color: picked.color, storage: picked.storage,
-          price: Number(device_price) || picked.price,
+          price: adminPrice(picked),
           imei: picked.imei || null,
           serial_number: cleanSerial, udid: cleanUdid,
           sold_status: 'sold',
         });
       }
     } else {
-      let catalogDevice = await Device.findOne({ model: device_model, sold_status: 'available' });
-      if (!catalogDevice) {
-        catalogDevice = await Device.create({ model: device_model, price: Number(device_price) || 0 });
+      // A model chosen by name: it must be a catalog model the admin priced.
+      const catalogDevice = await Device.findOne({ model: device_model, sold_status: 'available', 'agent.enrolled': { $ne: true } });
+      if (!(adminPrice(catalogDevice) > 0)) {
+        return res.status(400).json({ success: false, message: NO_PRICE_MSG });
       }
       device = await Device.create({
         model: catalogDevice.model, color: catalogDevice.color, storage: catalogDevice.storage,
-        price: Number(device_price) || catalogDevice.price,
+        price: adminPrice(catalogDevice),
         imei: catalogDevice.imei || null,
         serial_number: cleanSerial, udid: cleanUdid,
         sold_status: 'sold',
@@ -651,12 +663,8 @@ const updateSale = async (req, res) => {
     if (!b.guarantor_name || !b.guarantor_phone || !b.guarantor_ghana_card_id || !b.guarantor_relationship) {
       return res.status(400).json({ success: false, message: 'All guarantor details (name, phone, Ghana Card ID, relationship) are required.' });
     }
-    const devicePrice = Number(b.device_price) || 0;
     const downPayment = Number(b.down_payment) || 0;
     if (!(downPayment > 0)) return res.status(400).json({ success: false, message: 'A deposit (down payment) is required.' });
-    if (devicePrice > 0 && downPayment >= devicePrice) {
-      return res.status(400).json({ success: false, message: 'Deposit must be less than the device price.' });
-    }
     const cleanEmail = b.email ? String(b.email).toLowerCase().trim() : '';
     if (cleanEmail && cleanEmail !== user.email) {
       const taken = await User.findOne({ email: cleanEmail, _id: { $ne: user._id } });
@@ -707,18 +715,27 @@ const updateSale = async (req, res) => {
       if (String(picked.held_by) !== String(req.user._id)) {
         return res.status(403).json({ success: false, message: 'That phone was not given to you. Ask the admin to assign it to you first.' });
       }
+      if (!(adminPrice(picked) > 0)) {
+        return res.status(400).json({ success: false, message: NO_PRICE_MSG });
+      }
       const old = device;
       device = picked;
       device.assigned_to = customer._id;
       device.sold_status = 'sold';
       await freeOldDevice(old);
     } else if (!wantId && b.device_model) {
-      // Manual (not enrolled) phone.
+      // Manual (not enrolled) phone: priced from the admin's catalog model.
+      const catalogDevice = await Device.findOne({ model: b.device_model, sold_status: 'available', 'agent.enrolled': { $ne: true }, assigned_to: null });
+      const catalogPrice = adminPrice(catalogDevice);
+      if (!(catalogPrice > 0)) {
+        return res.status(400).json({ success: false, message: NO_PRICE_MSG });
+      }
       if (device && !device.agent?.enrolled) {
         device.model = b.device_model;
+        device.price = catalogPrice;
       } else {
         const old = device;
-        device = new Device({ model: b.device_model, price: devicePrice, sold_status: 'sold', assigned_to: customer._id });
+        device = new Device({ model: b.device_model, price: catalogPrice, sold_status: 'sold', assigned_to: customer._id });
         await device.save();
         await freeOldDevice(old);
       }
@@ -728,7 +745,10 @@ const updateSale = async (req, res) => {
       if (udid !== undefined) device.udid = udid || undefined;
     }
     if (!device) return res.status(400).json({ success: false, message: 'Please select a device.' });
-    if (devicePrice > 0 && !(device.price_set_by_admin && device.price > 0)) device.price = devicePrice;
+    // The price is the admin's (set above for a catalog model; the stock phone's own price).
+    if (device.agent?.enrolled && !(adminPrice(device) > 0)) {
+      return res.status(400).json({ success: false, message: NO_PRICE_MSG });
+    }
     await device.save();
 
     // --- Plan terms (provisional schedule; the real one starts on activation) ---
@@ -739,7 +759,7 @@ const updateSale = async (req, res) => {
     const totalPayments = terms.totalPayments;
     const totalPrice = device.price;
     const remaining = totalPrice - downPayment;
-    if (remaining < 0) return res.status(400).json({ success: false, message: 'Deposit cannot exceed the device price.' });
+    if (remaining <= 0) return res.status(400).json({ success: false, message: 'Deposit must be less than the phone price.' });
     const installmentAmount = Math.ceil((remaining / totalPayments) * 100) / 100;
     const startDate = new Date();
 

@@ -107,7 +107,9 @@ export default function StaffAddCustomer() {
           const dev = plan?.device_id || {}
           const enrolled = !!dev?.agent?.enrolled
           // The sale's own phone isn't "in stock" any more — keep it selectable.
-          setEnrolledStock(enrolled && !stock.some(d => d._id === dev._id) ? [{ _id: dev._id, model: dev.model, imei: dev.imei, online: true }, ...stock] : stock)
+          setEnrolledStock(enrolled && !stock.some(d => d._id === dev._id)
+            ? [{ _id: dev._id, model: dev.model, imei: dev.imei, online: true, price: dev.price, price_set_by_admin: !!dev.price_set_by_admin && dev.price > 0 }, ...stock]
+            : stock)
           setSellMode(enrolled ? 'stock' : 'manual')
           setReviewNote(plan?.review_note || '')
           const ph = c.photos || {}
@@ -216,7 +218,9 @@ export default function StaffAddCustomer() {
       } else {
         if (!form.device_model) e.device_model = 'Select a device model'
       }
-      if (form.device_model && (!form.device_price || Number(form.device_price) <= 0)) e.device_price = 'Enter the selling price'
+      if (form.device_model && (!priceLocked || !form.device_price || Number(form.device_price) <= 0)) {
+        e.device_price = 'This phone has no price yet. Ask the admin to set its price.'
+      }
       // A deposit is required. It's collected via Paystack after admin approval.
       const dp = Number(form.down_payment) || 0
       if (dp <= 0) e.down_payment = 'A deposit (down payment) is required'
@@ -858,14 +862,13 @@ export default function StaffAddCustomer() {
                   </FormField>
                 )}
 
+                {/* The price always comes from the admin; the DSR never enters it. */}
                 {form.device_model && (priceLocked ? (
                   <p className="text-xs text-gray-500 -mt-1">Price set by the admin — it can't be changed here.</p>
                 ) : (
-                  <FormField label="Selling Price (GHS)" required error={errors.device_price}>
-                    <input type="number" value={form.device_price}
-                      onChange={(e) => set('device_price', e.target.value)}
-                      placeholder="Enter the price" className={inputClass(errors.device_price)} inputMode="numeric" min="0" />
-                  </FormField>
+                  <div data-error={errors.device_price || 'no-price'} className="px-4 py-3 rounded-2xl border-2 border-amber-300 bg-amber-50 text-sm text-amber-800 font-medium">
+                    This phone has no price yet. Ask the admin to set its price in Enroll Stock (or Devices), then pick it again.
+                  </div>
                 ))}
 
                 {form.device_model && (
@@ -875,7 +878,7 @@ export default function StaffAddCustomer() {
                     </svg>
                     <div>
                       <p className="font-bold text-orange-500">{form.device_model}</p>
-                      <p className="text-sm text-orange-500">GHS {Number(form.device_price).toLocaleString()}</p>
+                      <p className="text-sm text-orange-500">{Number(form.device_price) > 0 ? `GHS ${Number(form.device_price).toLocaleString()}` : 'No price yet'}</p>
                     </div>
                   </div>
                 )}
