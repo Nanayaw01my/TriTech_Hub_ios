@@ -22,10 +22,29 @@ api.interceptors.request.use(
   }
 )
 
+// No answer from the server (no internet, weak network, timeout): give every
+// screen the same clear message instead of a generic failure.
+export const NETWORK_MESSAGE = 'No internet or the network is weak. Check your connection and try again.'
+export const isNetworkError = (err) => !!err?.response?.data?.network
+
 // Response interceptor - handle 401
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (!error.response) {
+      const slow = error.code === 'ECONNABORTED' || /timeout/i.test(error.message || '')
+      error.response = {
+        status: 0,
+        data: {
+          success: false,
+          network: true,
+          message: slow
+            ? 'The network is too slow — we could not get an answer. Check your connection and try again.'
+            : NETWORK_MESSAGE,
+        },
+      }
+      return Promise.reject(error)
+    }
     if (error.response?.status === 401) {
       // Clear auth data
       localStorage.removeItem('token')

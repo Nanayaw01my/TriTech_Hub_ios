@@ -302,7 +302,23 @@ const deleteCustomer = async (req, res) => {
         await plan.save();
 
         const device = await Device.findById(plan.device_id);
-        if (device && String(device.assigned_to) === String(customer._id)) {
+        // Another open sale uses the same phone (e.g. a duplicate made on a bad
+        // network)? Then the phone stays sold — it moves to that other sale.
+        const otherSale = device ? await InstallmentPlan.findOne({
+          _id: { $ne: plan._id },
+          device_id: device._id,
+          status: { $in: ['pending', 'returned', 'approved', 'active', 'defaulted'] },
+        }).sort({ createdAt: 1 }) : null;
+        let otherCustomer = null;
+        if (otherSale) {
+          otherCustomer = await Customer.findOne({ _id: otherSale.customer_id, deleted_at: null }).select('_id').lean();
+        }
+        if (device && otherCustomer) {
+          if (String(device.assigned_to) === String(customer._id)) {
+            device.assigned_to = otherCustomer._id;
+            await device.save();
+          }
+        } else if (device && String(device.assigned_to) === String(customer._id)) {
           device.assigned_to = null;
           device.held_by = null;
           device.held_since = null;

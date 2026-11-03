@@ -129,6 +129,14 @@ const CustomerSchema = new mongoose.Schema(
       accepted_at: { type: Date, default: null },
       recorded_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     },
+    // Unique id the DSR's app sends with a registration. If the same sale is
+    // sent twice (weak network, retry), the server returns the first one
+    // instead of creating a duplicate customer.
+    client_ref: {
+      type: String,
+      default: undefined,
+      index: { unique: true, sparse: true },
+    },
     // The customer asked for their data to be deleted (handled by the admin).
     deletion_requested_at: {
       type: Date,

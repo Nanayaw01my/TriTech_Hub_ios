@@ -231,7 +231,7 @@ const precheckCustomer = async (req, res) => {
  * POST /api/staff/customers
  * Full customer registration flow.
  */
-const addCustomer = async (req, res) => {
+const addCustomerImpl = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -353,10 +353,22 @@ const addCustomer = async (req, res) => {
       if (!(adminPrice(picked) > 0)) {
         return res.status(400).json({ success: false, message: NO_PRICE_MSG });
       }
+      if (picked.agent?.enrolled && picked.assigned_to) {
+        return res.status(409).json({ success: false, message: 'This phone is already in another sale. Check your customers list.' });
+      }
       if (picked.agent?.enrolled && !picked.assigned_to) {
-        // Selling a pre-enrolled stock phone — use it directly, at the admin's price.
-        device = picked;
-        device.sold_status = 'sold';
+        // Selling a pre-enrolled stock phone — claim it atomically, so two
+        // sales sent at once (e.g. a retry on a weak network) can't both take it.
+        const claimed = await Device.findOneAndUpdate(
+          { _id: picked._id, assigned_to: null, sold_status: { $ne: 'sold' } },
+          { $set: { sold_status: 'sold' } },
+          { new: true }
+        );
+        if (!claimed) {
+          return res.status(409).json({ success: false, message: 'This phone is already in another sale. Check your customers list.' });
+        }
+        req._claimedDeviceId = claimed._id; // released again if this registration fails
+        device = claimed;
         if (cleanSerial) device.serial_number = cleanSerial;
         if (cleanUdid) device.udid = cleanUdid;
         await device.save();
@@ -433,6 +445,7 @@ const addCustomer = async (req, res) => {
     // --- 7. Create Customer record ---
     const newCustomer = await Customer.create({
       user_id: newUser._id,
+      client_ref: saleRef(req) || undefined,
       pin_pending: !password,
       consents: {
         terms: true,
@@ -1136,6 +1149,65 @@ const getStaffStats = async (req, res) => {
   } catch (error) {
     logger.error('getStaffStats error:', error);
     return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ── Duplicate protection for registrations ───────────────────────────────────
+// The DSR's app sends a unique client_ref with each registration and re-sends
+// the SAME ref if it retries (weak network, double tap). The first request
+// creates the sale; any repeat gets that same sale back instead of a copy.
+const saleRef = (req) => {
+  const r = req.body?.client_ref;
+  return typeof r === 'string' && /^[A-Za-z0-9-]{8,64}$/.test(r) ? r : null;
+};
+const salesInFlight = new Map(); // client_ref -> Promise of the first request
+
+const existingSaleResponse = async (res, ref) => {
+  const existing = await Customer.findOne({ client_ref: ref }).populate({ path: 'user_id', select: '-password' }).lean();
+  if (!existing) return false;
+  res.status(200).json({
+    success: true,
+    duplicate: true,
+    message: 'This sale was already registered — no duplicate was created.',
+    data: { customer: existing },
+  });
+  return true;
+};
+
+// If a registration fails after claiming a stock phone, give the phone back.
+const releaseClaimIfFailed = async (req, res) => {
+  if (!req._claimedDeviceId || res.statusCode < 400) return;
+  await Device.updateOne(
+    { _id: req._claimedDeviceId, assigned_to: null, sold_status: 'sold' },
+    { $set: { sold_status: 'available' } }
+  ).catch(() => {});
+};
+
+const addCustomer = async (req, res) => {
+  const ref = saleRef(req);
+  try {
+    if (!ref) {
+      await addCustomerImpl(req, res);
+      await releaseClaimIfFailed(req, res);
+      return;
+    }
+    // Wait for any copy of this sale that's already being saved, then answer
+    // with it. The slot is reserved synchronously, so two copies arriving at
+    // the same moment can't both get through.
+    while (salesInFlight.has(ref)) await salesInFlight.get(ref).catch(() => {});
+    let done;
+    salesInFlight.set(ref, new Promise((r) => { done = r; }));
+    try {
+      if (await existingSaleResponse(res, ref)) return;
+      await addCustomerImpl(req, res);
+      await releaseClaimIfFailed(req, res);
+    } finally {
+      salesInFlight.delete(ref);
+      done();
+    }
+  } catch (error) {
+    logger.error('addCustomer guard error: %s', error.message);
+    if (!res.headersSent) res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
 

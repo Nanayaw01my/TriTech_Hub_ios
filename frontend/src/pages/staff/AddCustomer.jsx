@@ -1,5 +1,5 @@
 import useBusinessInfo from '../../hooks/useBusinessInfo'
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../../api/axios'
 import CameraCapture from '../../components/CameraCapture'
@@ -83,6 +83,10 @@ export default function StaffAddCustomer() {
   const [availableDevices, setAvailableDevices] = useState([])
   const [devicesLoading, setDevicesLoading] = useState(false)
   const [enrolledStock, setEnrolledStock] = useState([])
+  // One id per registration attempt, re-sent on retries (see client_ref).
+  const saleRefRef = useRef(
+    (window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`).replace(/[^A-Za-z0-9-]/g, '')
+  )
   const business = useBusinessInfo() // late fee for the consent text and preview
   const [sellMode, setSellMode] = useState('stock') // 'stock' | 'manual'
 
@@ -276,6 +280,8 @@ export default function StaffAddCustomer() {
     down_payment_reference: paystackRef || undefined,
     // What the customer agreed to (stored with the sale as a consent record).
     consents: { terms: !!form.agreed, adult: !!form.adult, device_management: !!form.device_consent },
+    // Same id on every retry of this registration, so the server never makes a duplicate.
+    client_ref: saleRefRef.current,
   })
 
   // Create the customer record. When called with a Paystack reference the backend
@@ -283,7 +289,8 @@ export default function StaffAddCustomer() {
   const saveCustomer = async (paystackRef = null) => {
     setSubmitting(true)
     try {
-      const res = await api.post('/staff/customers', buildPayload(paystackRef))
+      // Photos make this a big upload: give a slow network up to 2 minutes.
+      const res = await api.post('/staff/customers', buildPayload(paystackRef), { timeout: 120000 })
       toast.success('Sale registered! Waiting for admin approval — then collect the deposit via Paystack.', { duration: 6000 })
       const customerId = res.data?.data?.customer?._id || res.data?.customer?._id
       navigate(`/staff/customers/${customerId}`)
@@ -296,6 +303,8 @@ export default function StaffAddCustomer() {
           `Payment succeeded (Ref: ${paystackRef}) but registration failed: ${d?.message || 'error'}. Save this reference and contact admin — do NOT collect again.`,
           { duration: 15000 }
         )
+      } else if (d?.network) {
+        toast.error(`${d.message} Tapping Register again is safe — it won't create a second customer.`, { duration: 9000 })
       } else {
         toast.error(d?.message || d?.errors?.[0]?.msg || 'Registration failed. Please check all fields and try again.')
       }

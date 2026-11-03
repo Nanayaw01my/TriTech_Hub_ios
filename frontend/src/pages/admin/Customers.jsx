@@ -6,6 +6,7 @@ import LoadingSpinner from '../../components/LoadingSpinner'
 import StatusBadge from '../../components/StatusBadge'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
+import ConfirmModal from '../../components/ConfirmModal'
 
 export default function AdminCustomers() {
   const navigate = useNavigate()
@@ -17,6 +18,23 @@ export default function AdminCustomers() {
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const PER_PAGE = 20
+  const [toDelete, setToDelete] = useState(null) // customer awaiting delete confirmation
+  const [deleting, setDeleting] = useState(false)
+
+  const confirmDelete = async () => {
+    if (!toDelete) return
+    setDeleting(true)
+    try {
+      const res = await api.delete(`/admin/customers/${toDelete._id || toDelete.id}`)
+      toast.success(res.data?.message || 'Customer deleted.')
+      setToDelete(null)
+      fetchCustomers()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not delete the customer.')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   const fetchCustomers = useCallback(async () => {
     setLoading(true)
@@ -192,7 +210,22 @@ export default function AdminCustomers() {
                     {c.device_model && (
                       <p className="text-xs text-gray-400 truncate">{c.device_model}</p>
                     )}
+                    {c.createdAt && (
+                      <p className="text-[11px] text-gray-400">Registered {format(new Date(c.createdAt), 'dd MMM, HH:mm')}</p>
+                    )}
                   </div>
+
+                  {/* Delete (e.g. a duplicate made on a weak network) */}
+                  <button
+                    type="button"
+                    aria-label={`Delete ${c.full_name || c.name}`}
+                    onClick={(e) => { e.stopPropagation(); setToDelete(c) }}
+                    className="p-2 rounded-xl text-red-500 hover:bg-red-50 flex-shrink-0"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
 
                   {/* Right: due date */}
                   <div className="text-right flex-shrink-0 hidden sm:block">
@@ -237,6 +270,14 @@ export default function AdminCustomers() {
         </>
       )}
       </div>{/* end max-w-6xl */}
+      <ConfirmModal
+        isOpen={!!toDelete}
+        onClose={() => !deleting && setToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete this customer?"
+        message={toDelete ? `${toDelete.full_name || toDelete.name} (${toDelete.user_id?.account_number || toDelete.account_number || ''}) will be removed and their sale cancelled. If another sale uses the same phone, the phone stays with that sale; otherwise it goes back to stock. This is kept in the audit log.` : ''}
+        confirmText={deleting ? 'Deleting…' : 'Delete'}
+      />
     </div>
   )
 }
