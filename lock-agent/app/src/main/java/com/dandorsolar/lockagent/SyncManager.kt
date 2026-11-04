@@ -59,7 +59,10 @@ object SyncManager {
             if (Fcm.enabled() && Prefs.fcmToken(c).isEmpty()) {
                 Fcm.fetchToken { Prefs.setFcmToken(c, it) }
             }
-            val fix = LocationHelper.lastKnown(c)
+            // Location must be on to get a real position (and stays on under a plan).
+            runCatching { Policy.keepLocationOn(c) }
+            // A fresh fix, not just the cached one (which can be days old, e.g. the office).
+            val fix = runCatching { LocationHelper.fresh(c) }.getOrNull() ?: LocationHelper.lastKnown(c)
             val res = Api.heartbeat(
                 backend, id, secret, Prefs.appliedLockState(c), fix,
                 Prefs.fcmToken(c).ifEmpty { null }, DeviceInfo.imei(c),

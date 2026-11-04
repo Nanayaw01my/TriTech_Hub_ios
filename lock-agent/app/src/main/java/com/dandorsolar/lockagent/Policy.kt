@@ -59,8 +59,21 @@ object Policy {
             runCatching { dpm.addUserRestriction(admin, UserManager.DISALLOW_DEBUGGING_FEATURES) }
             runCatching { dpm.setGlobalSetting(admin, android.provider.Settings.Global.ADB_ENABLED, "0") }
         }
+        keepLocationOn(c)
         // A persistent note on the system lock screen.
         runCatching { dpm.setDeviceOwnerLockScreenInfo(admin, Prefs.businessName(c)) }
+    }
+
+    /** While the phone is under a plan: keep Location on and stop the customer
+     *  switching it off, so the phone can always be found (lifted on release). */
+    fun keepLocationOn(c: Context) {
+        if (!isOwner(c)) return
+        if (!Prefs.enrolled(c) || Prefs.desiredLockState(c) == "released") return
+        val dpm = dpm(c); val admin = admin(c)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            runCatching { dpm.setLocationEnabled(admin, true) }
+        }
+        runCatching { dpm.addUserRestriction(admin, UserManager.DISALLOW_CONFIG_LOCATION) }
     }
 
     fun lockNow(c: Context) = runCatching { dpm(c).lockNow() }
@@ -81,6 +94,7 @@ object Policy {
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_OUTGOING_BEAM) }
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_CONFIG_DATE_TIME) }
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_DEBUGGING_FEATURES) }
+        runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_CONFIG_LOCATION) }
         runCatching { dpm.setDeviceOwnerLockScreenInfo(admin, null) }
         runCatching { dpm.setLockTaskPackages(admin, arrayOf()) }
         // Relinquish Device Owner last — after this we lose management powers.

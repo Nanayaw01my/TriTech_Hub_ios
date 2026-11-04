@@ -55,6 +55,10 @@ object Prefs {
     fun lastSyncOk(c: Context): Long = p(c).getLong("last_sync_ok", 0L)
     fun setLastSyncOk(c: Context, v: Long) = p(c).edit().putLong("last_sync_ok", v).apply()
 
+    /** When GPS was last asked for a fresh fix (battery: at most hourly). */
+    fun lastGpsAt(c: Context): Long = p(c).getLong("last_gps_at", 0L)
+    fun setLastGpsAt(c: Context, v: Long) = p(c).edit().putLong("last_gps_at", v).apply()
+
     fun deadmanDays(c: Context): Int = p(c).getInt("deadman_days", 7)
     fun setDeadmanDays(c: Context, v: Int) = p(c).edit().putInt("deadman_days", v).apply()
 
