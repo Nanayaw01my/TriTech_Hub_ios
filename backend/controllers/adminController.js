@@ -477,12 +477,12 @@ const addStaff = async (req, res) => {
 
     const staffData = await User.findById(newStaff._id).select('-password');
 
-    // Text the DSR their login details (Staff ID + the password set here).
+    // Text the DSR their login (Staff ID + email; never the password).
     let smsSent = false;
     if (newStaff.phone) {
       try {
         const r = await sendStaffWelcomeSMS(newStaff.phone, newStaff.name, {
-          staffId, email: newStaff.email, password, host: agent.config.BACKEND_URL,
+          staffId, email: newStaff.email, host: agent.config.BACKEND_URL,
         });
         smsSent = !!(r && r.ok);
       } catch (e) {
@@ -493,7 +493,7 @@ const addStaff = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: smsSent
-        ? `Staff member created. Login details sent by SMS to ${newStaff.phone}.`
+        ? `Staff member created. Staff ID ${staffId} sent by SMS to ${newStaff.phone}. Give them the password yourself.`
         : newStaff.phone
           ? `Staff member created, but the SMS to ${newStaff.phone} didn't go through. Give them their Staff ID (${staffId}) and password yourself.`
           : `Staff member created. No phone number, so no SMS was sent. Their Staff ID is ${staffId}.`,

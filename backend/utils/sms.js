@@ -169,7 +169,9 @@ const sendCustomerWelcomeSMS = async (phone, name, accountNumber, _url, pin = nu
 // New DSR account: their login details, so they can sign in straight away.
 const sendStaffWelcomeSMS = async (phone, name, d) => {
   const host = (d.host || 'dandorsolar.site').replace(/^https?:\/\//i, '').replace(/\/+$/, '');
-  const msg = `Welcome ${firstName(name)}! Your Dan & Dor Solar DSR account is ready. Login at ${host} with Staff ID ${d.staffId} (or ${d.email}) and password ${d.password}. Please change your password after logging in. -Dan & Dor Solar`;
+  // No password in the text: the admin gives it in person, or the DSR sets
+  // their own with "Forgot password" (code sent to this phone).
+  const msg = `Welcome ${firstName(name)}! Your Dan & Dor Solar DSR account is ready. Login at ${host} with Staff ID ${d.staffId} (or ${d.email}). Get your password from the admin, or tap "Forgot password" to set your own. -Dan & Dor Solar`;
   return sendSMS(phone, msg);
 };
 
