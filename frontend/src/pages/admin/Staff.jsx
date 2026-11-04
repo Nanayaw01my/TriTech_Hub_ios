@@ -350,7 +350,7 @@ export default function AdminStaff() {
                     <div className="grid grid-cols-3 gap-1 mt-3">
                       <div className="bg-gray-50 rounded-xl px-2 py-2 text-center">
                         <p className="text-xl font-black text-gray-900">{s.period_sales}</p>
-                        <p className="text-[10px] text-gray-400 font-medium uppercase mt-0.5">Sales</p>
+                        <p className="text-[10px] text-gray-500 font-medium uppercase mt-0.5">Sales</p>
                       </div>
                       <div className="bg-gray-50 rounded-xl px-2 py-2 text-center">
                         <p className="text-xs font-bold text-gray-700">GHS {(s.commission_per_sale || 0).toLocaleString()}</p>
@@ -362,7 +362,18 @@ export default function AdminStaff() {
                       </div>
                     </div>
 
-                    <p className="text-xs text-gray-400 mt-2">{s.total_sales} total customers registered (all time)</p>
+                    <div className="mt-2 text-xs text-gray-600 space-y-0.5">
+                      {(s.split_paid_sales || 0) > 0 && (
+                        <p className="text-green-700 font-semibold">✓ {s.split_paid_sales} commission{s.split_paid_sales > 1 ? 's' : ''} paid automatically by Paystack split</p>
+                      )}
+                      {(s.owed_sales || 0) > 0 && (
+                        <p className="text-orange-700 font-semibold">{s.owed_sales} commission{s.owed_sales > 1 ? 's' : ''} to pay by hand</p>
+                      )}
+                      {(s.awaiting_sales || 0) > 0 && (
+                        <p>{s.awaiting_sales} sale{s.awaiting_sales > 1 ? 's' : ''} waiting for approval or deposit</p>
+                      )}
+                      <p className="text-gray-500">{s.total_sales} customer{s.total_sales === 1 ? '' : 's'} registered (all time)</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -512,7 +523,7 @@ export default function AdminStaff() {
 
             {Number(rateValue) > 0 && (
               <p className="text-xs text-orange-600 bg-orange-50 rounded-xl px-3 py-2 mb-4">
-                At {rateModal.period_sales} sales this period → <strong>GHS {(rateModal.period_sales * Number(rateValue)).toLocaleString()}</strong> commission owed
+                At {rateModal.owed_sales ?? rateModal.period_sales} unpaid sales this period → <strong>GHS {((rateModal.owed_sales ?? rateModal.period_sales) * Number(rateValue)).toLocaleString()}</strong> commission owed
               </p>
             )}
 

@@ -2230,19 +2230,23 @@ const getStaffSales = async (req, res) => {
 
     const salesData = await Promise.all(
       staffUsers.map(async (s) => {
-        // Commission is earned on ACTIVATED sales (admin-approved), not on raw
-        // registrations. Count activated installment plans by this DSR.
-        const [totalSales, periodSales] = await Promise.all([
-          InstallmentPlan.countDocuments({ created_by: s._id, status: { $nin: ['pending', 'returned', 'approved', 'cancelled'] }, commission_split_paid: { $ne: true } }),
-          InstallmentPlan.countDocuments({
-            created_by: s._id,
-            status: { $nin: ['pending', 'returned', 'approved', 'cancelled'] }, commission_split_paid: { $ne: true },
-            $or: [
-              { activated_at: { $gte: periodStart } },
-              { activated_at: null, createdAt: { $gte: periodStart } },
-            ],
-          }),
+        // Commission is earned on ACTIVATED sales (deposit paid). Sales whose
+        // commission Paystack already paid by split are shown, but not owed.
+        const NOT_ACTIVE = ['pending', 'returned', 'approved', 'cancelled'];
+        const inPeriod = {
+          $or: [
+            { activated_at: { $gte: periodStart } },
+            { activated_at: null, createdAt: { $gte: periodStart } },
+          ],
+        };
+        const [registered, awaiting, periodSales, splitPaid] = await Promise.all([
+          InstallmentPlan.countDocuments({ created_by: s._id, status: { $ne: 'cancelled' } }),
+          InstallmentPlan.countDocuments({ created_by: s._id, status: { $in: ['pending', 'returned', 'approved'] } }),
+          InstallmentPlan.countDocuments({ created_by: s._id, status: { $nin: NOT_ACTIVE }, ...inPeriod }),
+          InstallmentPlan.countDocuments({ created_by: s._id, status: { $nin: NOT_ACTIVE }, commission_split_paid: true, ...inPeriod }),
         ]);
+        const owedSales = Math.max(0, periodSales - splitPaid);
+        const totalSales = registered;
         const rate = s.commission_per_sale || 85;
         return {
           _id: s._id,
@@ -2252,9 +2256,12 @@ const getStaffSales = async (req, res) => {
           phone: s.phone,
           branch: s.branch || null,
           commission_per_sale: rate,
-          total_sales: totalSales,
-          period_sales: periodSales,
-          commission_owed: periodSales * rate,
+          total_sales: totalSales,        // customers registered (all time, not cancelled)
+          awaiting_sales: awaiting,       // registered, deposit not paid yet
+          period_sales: periodSales,      // activated sales this period
+          split_paid_sales: splitPaid,    // of those, commission paid by Paystack split
+          owed_sales: owedSales,          // of those, commission to pay by hand
+          commission_owed: owedSales * rate,
         };
       })
     );
