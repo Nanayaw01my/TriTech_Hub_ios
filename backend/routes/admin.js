@@ -6,6 +6,7 @@ const {
   getDashboard,
   getCustomers,
   getCustomerDetail,
+  downloadCustomerFile,
   updateCustomer,
   deleteCustomer,
   getStaff,
@@ -241,6 +242,7 @@ router.get('/search', globalSearch);
 
 // ─── PDF RECEIPT ──────────────────────────────────────────────────────────────
 router.get('/customers/:id/receipt', generateReceipt);
+router.get('/customers/:id/file', downloadCustomerFile);
 
 // ─── DANGER ZONE ──────────────────────────────────────────────────────────────
 router.delete('/clear-all-data', clearAllData);

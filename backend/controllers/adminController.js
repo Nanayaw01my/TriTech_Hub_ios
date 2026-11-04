@@ -19,6 +19,7 @@ const { sendSMS, sendStaffWelcomeSMS, sendPaymentReminderSMS,sendDeviceLockedSMS
 const { sendLockNotificationEmail, sendDeviceUnlockedEmail } = require('../utils/email');
 const agent = require('../utils/androidAgent');
 const { uploadBase64 } = require('../utils/cloudinary');
+const { writeCustomerFile } = require('../utils/customerFilePdf');
 const { activatePlanNow } = require('../utils/planActivation');
 const { mergeAllDuplicates } = require('../utils/deviceMerge');
 const logger = require('../utils/logger');
@@ -2854,6 +2855,40 @@ const globalSearch = async (req, res) => {
   }
 };
 
+// ─── CUSTOMER FILE PDF ───────────────────────────────────────────────────────
+
+/**
+ * GET /api/admin/customers/:id/file
+ * One PDF with everything recorded for the customer, photos included.
+ */
+const downloadCustomerFile = async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id)
+      .populate({ path: 'user_id', select: 'account_number email is_active' })
+      .populate({ path: 'created_by', select: 'name email staff_id branch' })
+      .lean();
+    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found.' });
+
+    const [plan, payments, settings] = await Promise.all([
+      InstallmentPlan.findOne({ customer_id: customer._id })
+        .sort({ createdAt: -1 })
+        .populate({ path: 'device_id', select: 'model serial_number imei lock_status agent.app_version agent.last_heartbeat' })
+        .lean(),
+      Payment.find({ customer_id: customer._id }).sort({ payment_date: 1 }).lean(),
+      Settings.getSingleton(),
+    ]);
+
+    logger.info('[customer-file] %s downloaded the file for customer %s', req.user?.email, customer._id);
+    await writeCustomerFile(res, { customer, plan, payments, settings });
+  } catch (error) {
+    logger.error('downloadCustomerFile error:', error);
+    if (!res.headersSent) {
+      return res.status(500).json({ success: false, message: 'Could not make the PDF.' });
+    }
+    res.end();
+  }
+};
+
 // ─── PDF RECEIPT ─────────────────────────────────────────────────────────────
 
 const generateReceipt = async (req, res) => {
@@ -3370,6 +3405,7 @@ module.exports = {
   getDashboard,
   getCustomers,
   getCustomerDetail,
+  downloadCustomerFile,
   updateCustomer,
   deleteCustomer,
   getStaff,

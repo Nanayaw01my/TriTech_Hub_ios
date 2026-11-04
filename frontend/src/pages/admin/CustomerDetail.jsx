@@ -153,6 +153,22 @@ export default function AdminCustomerDetail() {
     }
   }
 
+  const [fileLoading, setFileLoading] = useState(false)
+  const handleDownloadFile = async () => {
+    setFileLoading(true)
+    try {
+      const res = await api.get(`/admin/customers/${id}/file`, { responseType: 'blob', timeout: 120000 })
+      await saveBlob(
+        new Blob([res.data], { type: 'application/pdf' }),
+        `customer-file-${(customer?.full_name || 'customer').replace(/\s+/g, '-')}.pdf`
+      )
+    } catch (err) {
+      toast.error(err?.response?.data?.network ? err.response.data.message : 'Could not download the customer file. Try again.')
+    } finally {
+      setFileLoading(false)
+    }
+  }
+
   const handleDownloadReceipt = async () => {
     try {
       const res = await api.get(`/admin/customers/${id}/receipt`, { responseType: 'blob' })
@@ -554,6 +570,17 @@ export default function AdminCustomerDetail() {
               Return Phone to Stock
             </button>
           )}
+          <button
+            onClick={handleDownloadFile}
+            disabled={fileLoading}
+            className="w-full py-3 px-4 rounded-xl border-2 border-orange-300 bg-orange-50 text-orange-700 font-semibold text-sm
+                       hover:bg-orange-100 transition-colors flex items-center gap-2 disabled:opacity-60"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            {fileLoading ? 'Making the PDF…' : 'Download Customer File (PDF)'}
+          </button>
           <button
             onClick={handleDownloadReceipt}
             className="w-full py-3 px-4 rounded-xl border-2 border-orange-200 text-orange-600 font-semibold text-sm
