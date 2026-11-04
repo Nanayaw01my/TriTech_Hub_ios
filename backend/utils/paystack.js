@@ -117,18 +117,20 @@ const listBanks = async () => {
 const createSubaccount = async ({ business_name, settlement_bank, account_number, description }) => {
   const response = await axios.post(
     `${PAYSTACK_BASE_URL}/subaccount`,
-    // percentage_charge is required by the API but unused: splits set the shares.
-    { business_name, settlement_bank, account_number, percentage_charge: 0, description },
+    // percentage_charge is the main account's default cut if a payment is ever
+    // sent straight to the subaccount. 100 = the DSR gets nothing by default;
+    // their commission only comes from the flat split (GHS share) on deposits.
+    { business_name, settlement_bank, account_number, percentage_charge: 100, description },
     { headers: getHeaders(), timeout: 20000 }
   );
   return response.data?.data;
 };
 
-/** Change where an existing subaccount settles. */
+/** Change where an existing subaccount settles (and keep its default cut safe). */
 const updateSubaccount = async (code, { business_name, settlement_bank, account_number }) => {
   const response = await axios.put(
     `${PAYSTACK_BASE_URL}/subaccount/${encodeURIComponent(code)}`,
-    { business_name, settlement_bank, account_number },
+    { business_name, settlement_bank, account_number, percentage_charge: 100 },
     { headers: getHeaders(), timeout: 20000 }
   );
   return response.data?.data;
@@ -157,11 +159,21 @@ const setSplitShare = async ({ splitId, subaccount, shareGHS }) => {
   return response.data?.data;
 };
 
+/** Set only the default cut on an existing subaccount (see createSubaccount). */
+const setSubaccountSafeDefault = async (code) => {
+  const response = await axios.put(
+    `${PAYSTACK_BASE_URL}/subaccount/${encodeURIComponent(code)}`,
+    { percentage_charge: 100 },
+    { headers: getHeaders(), timeout: 20000 }
+  );
+  return response.data?.data;
+};
+
 /** Paystack's own error message from an axios error, for showing to the admin. */
 const paystackErrorMessage = (err) =>
   err?.response?.data?.message || err?.message || 'Paystack request failed';
 
 module.exports = {
   initializePayment, verifyPayment, listTransactions, createTransferRecipient, initiateTransfer,
-  listBanks, createSubaccount, updateSubaccount, createSplit, setSplitShare, paystackErrorMessage,
+  listBanks, createSubaccount, updateSubaccount, setSubaccountSafeDefault, createSplit, setSplitShare, paystackErrorMessage,
 };

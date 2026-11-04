@@ -608,6 +608,30 @@ const disableDefaultPasswordAccounts = async () => {
   }
 };
 
+// One-off: DSR subaccounts were created with percentage_charge 0, i.e. a payment
+// sent straight to the subaccount would give the DSR 100%. Deposits use the flat
+// split, so nothing was mis-paid, but make the default safe (DSR gets 0% unless
+// the split says otherwise). Recorded so it runs once.
+const migrateSubaccountDefaults = async () => {
+  try {
+    if (!process.env.PAYSTACK_SECRET_KEY) return;
+    const Settings = require('./models/Settings');
+    const User = require('./models/User');
+    const s = await Settings.getSingleton();
+    if ((s.applied_migrations || []).includes('subaccount_safe_default')) return;
+    const { setSubaccountSafeDefault } = require('./utils/paystack');
+    const dsrs = await User.find({ 'payout.subaccount_code': { $nin: [null, ''] } }).select('payout.subaccount_code').lean();
+    let ok = 0, failed = 0;
+    for (const d of dsrs) {
+      try { await setSubaccountSafeDefault(d.payout.subaccount_code); ok++; } catch (e) { failed++; logger.warn('[migrate] subaccount %s: %s', d.payout.subaccount_code, e.response?.data?.message || e.message); }
+    }
+    if (!failed) await Settings.updateOne({ _id: s._id }, { $addToSet: { applied_migrations: 'subaccount_safe_default' } });
+    logger.info('[migrate] DSR subaccounts set to a safe default share: %d ok, %d failed.', ok, failed);
+  } catch (err) {
+    logger.warn('[migrate] subaccount defaults skipped: %s', err.message);
+  }
+};
+
 // One-off: DSR commission per phone is GHS 85 (was a GHS 100 default). Moves
 // DSRs still on the old default; recorded so it never re-runs and a rate the
 // admin later sets deliberately is left alone.
@@ -647,6 +671,7 @@ const startServer = async () => {
     await migrateCompanyName();
     await migrateEncryptionKey();
     await migrateCommission85();
+    await migrateSubaccountDefaults();
     await disableDefaultPasswordAccounts();
     // Sales stuck on a plain copy of a phone (from duplicate sales) -> real phone.
     await require('./utils/deviceMerge').relinkCopiesToEnrolledPhones()
