@@ -80,8 +80,11 @@ export default function AdminStaff() {
     if (!validateForm()) return
     setAddLoading(true)
     try {
-      await api.post('/admin/staff', form)
-      toast.success('Staff member added successfully!')
+      const res = await api.post('/admin/staff', form)
+      const sent = res.data?.data?.sms_sent
+      const msg = res.data?.message || 'Staff member added successfully!'
+      if (sent) toast.success(msg, { duration: 6000 })
+      else toast(msg, { icon: '⚠️', duration: 10000 })
       setShowAddModal(false)
       setForm({ name: '', email: '', phone: '', branch: '', password: '', ghana_card_id: '', ghana_card_front: null, ghana_card_back: null, photo: null })
       setErrors({})

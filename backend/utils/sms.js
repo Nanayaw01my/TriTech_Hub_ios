@@ -166,6 +166,13 @@ const sendCustomerWelcomeSMS = async (phone, name, accountNumber, _url, pin = nu
   await sendSMS(phone, msg);
 };
 
+// New DSR account: their login details, so they can sign in straight away.
+const sendStaffWelcomeSMS = async (phone, name, d) => {
+  const host = (d.host || 'dandorsolar.site').replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+  const msg = `Welcome ${firstName(name)}! Your Dan & Dor Solar DSR account is ready. Login at ${host} with Staff ID ${d.staffId} (or ${d.email}) and password ${d.password}. Please change your password after logging in. -Dan & Dor Solar`;
+  return sendSMS(phone, msg);
+};
+
 const sendPaymentReminderSMS = async (phone, name, details) => {
   const { installmentAmount, nextDueDate, isOverdue, link } = details;
   const due = nextDueDate ? new Date(nextDueDate).toLocaleDateString('en-GH') : 'N/A';
@@ -305,6 +312,7 @@ module.exports = {
   sendAdminSaleSMS,
   sendAdminSaleWhatsApp,
   sendCustomerWelcomeSMS,
+  sendStaffWelcomeSMS,
   sendPaymentReminderSMS,
   sendPaymentReminderWhatsApp,
   sendDeviceLockedSMS,

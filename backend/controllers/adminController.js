@@ -15,7 +15,7 @@ const {
   listBanks, createSubaccount, updateSubaccount, createSplit, setSplitShare, paystackErrorMessage,
 } = require('../utils/paystack');
 const { generateStaffId } = require('../utils/accountGenerator');
-const { sendSMS, sendPaymentReminderSMS, sendDeviceLockedSMS, sendDeviceUnlockedSMS, sendDeviceLockedWhatsApp, sendDeviceUnlockedWhatsApp } = require('../utils/sms');
+const { sendSMS, sendStaffWelcomeSMS, sendPaymentReminderSMS,sendDeviceLockedSMS, sendDeviceUnlockedSMS, sendDeviceLockedWhatsApp, sendDeviceUnlockedWhatsApp } = require('../utils/sms');
 const { sendLockNotificationEmail, sendDeviceUnlockedEmail } = require('../utils/email');
 const agent = require('../utils/androidAgent');
 const { uploadBase64 } = require('../utils/cloudinary');
@@ -477,10 +477,27 @@ const addStaff = async (req, res) => {
 
     const staffData = await User.findById(newStaff._id).select('-password');
 
+    // Text the DSR their login details (Staff ID + the password set here).
+    let smsSent = false;
+    if (newStaff.phone) {
+      try {
+        const r = await sendStaffWelcomeSMS(newStaff.phone, newStaff.name, {
+          staffId, email: newStaff.email, password, host: agent.config.BACKEND_URL,
+        });
+        smsSent = !!(r && r.ok);
+      } catch (e) {
+        logger.warn('[SMS] Staff welcome SMS failed for %s: %s', staffId, e.message);
+      }
+    }
+
     return res.status(201).json({
       success: true,
-      message: 'Staff member created successfully.',
-      data: { staff: staffData },
+      message: smsSent
+        ? `Staff member created. Login details sent by SMS to ${newStaff.phone}.`
+        : newStaff.phone
+          ? `Staff member created, but the SMS to ${newStaff.phone} didn't go through. Give them their Staff ID (${staffId}) and password yourself.`
+          : `Staff member created. No phone number, so no SMS was sent. Their Staff ID is ${staffId}.`,
+      data: { staff: staffData, sms_sent: smsSent },
     });
   } catch (error) {
     logger.error('Admin addStaff error:', error);
