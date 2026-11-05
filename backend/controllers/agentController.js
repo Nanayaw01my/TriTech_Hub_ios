@@ -13,6 +13,7 @@ const Settings = require('../models/Settings');
 const logger = require('../utils/logger');
 const agent = require('../utils/androidAgent');
 const { mergeDevicesByImei } = require('../utils/deviceMerge');
+const { noteBackOnline, handleDeviceEvent } = require('../utils/tamperWatch');
 
 const POLL_INTERVAL_SECONDS = Number(process.env.AGENT_POLL_SECONDS || 900);
 
@@ -236,6 +237,7 @@ const heartbeat = async (req, res) => {
     if (update_error !== undefined) device.agent.update_error = update_error ? String(update_error).slice(0, 200) : null;
     const newImei = imei && !device.imei ? String(imei).trim() : null;
     if (newImei) device.imei = newImei;
+    await noteBackOnline(device);
     device.agent.last_heartbeat = new Date();
     if (fcm_token && fcm_token !== device.agent.fcm_token) device.agent.fcm_token = fcm_token;
     if (android_version) device.agent.android_version = android_version;
@@ -276,6 +278,7 @@ const commands = async (req, res) => {
   try {
     const device = await authDevice(req, res);
     if (!device) return;
+    await noteBackOnline(device);
     device.agent.last_heartbeat = new Date();
     await reconcileWithSale(device);
     await device.save();
@@ -316,6 +319,26 @@ const ack = async (req, res) => {
 };
 
 /**
+ * POST /api/agent/event — the phone reports something worth knowing:
+ * { type: 'shutdown' | 'admin_disable_attempt', detail, at }.
+ * Tamper events are texted to the company numbers.
+ */
+const deviceEvent = async (req, res) => {
+  try {
+    const device = await authDevice(req, res);
+    if (!device) return;
+    const { type, detail, at } = req.body || {};
+    const texted = await handleDeviceEvent(device, type, detail, at);
+    await device.save();
+    logger.info('[agent] event %s from %s%s', type, device.model || device._id, texted ? ' (company texted)' : '');
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    logger.error('[agent] event error: %s', error.message);
+    return res.status(500).json({ success: false });
+  }
+};
+
+/**
  * POST /api/agent/trace — enrollment breadcrumb from a phone during QR setup
  * (before it has a device secret). Only accepted with a valid enrollment token.
  */
@@ -346,4 +369,4 @@ const trace = async (req, res) => {
   }
 };
 
-module.exports = { enroll, heartbeat, commands, ack, trace };
+module.exports = { enroll, heartbeat, commands, ack, trace, deviceEvent };

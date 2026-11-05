@@ -71,6 +71,8 @@ object SyncManager {
             val j = res.json
             if (res.ok && j != null) {
                 synced = true
+                // Tamper/shutdown events that couldn't be sent at the time.
+                runCatching { DeviceEvents.flush(c) }
                 Prefs.setLastSyncOk(c, System.currentTimeMillis()) // dead-man: fed a heartbeat
                 applyServerInfo(c, j)
                 val desired = j.optString("desired_lock_state", Prefs.desiredLockState(c))

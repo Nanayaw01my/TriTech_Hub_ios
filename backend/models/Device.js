@@ -85,6 +85,16 @@ const DeviceSchema = new mongoose.Schema(
       // Factory Reset Protection as reported by the phone: on / on_legacy /
       // off / failed / unsupported. null = old app that doesn't support FRP.
       frp_status: { type: String, default: null },
+      // Tamper watch: when the phone last reported being switched off, when we
+      // texted the company that it went silent (cleared when it checks in
+      // again), and the last tamper event the phone reported.
+      last_shutdown_at: { type: Date, default: null },
+      silent_alert_at: { type: Date, default: null },
+      last_tamper: {
+        type: { type: String, default: null },
+        at: { type: Date, default: null },
+        detail: { type: String, default: null },
+      },
       // Last-known GPS location reported by the phone.
       location: {
         lat: { type: Number, default: null },

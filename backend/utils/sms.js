@@ -132,7 +132,8 @@ const sendAdminSaleSMS = async (adminPhone, sale) => {
   const branch = sale.branch ? `, ${sale.branch} Branch` : '';
   const freq   = sale.frequency === 'monthly' ? 'monthly' : sale.frequency === 'weekly' ? 'weekly' : 'daily';
   const msg = `Dan & Dor Solar - NEW SALE TO REVIEW\n${sale.deviceModel} by ${sale.staffName}${sale.staffId ? ` (${sale.staffId})` : ''}${branch}.\nCustomer: ${sale.customerName} (${sale.customerPhone || 'N/A'})\nPrice GHS ${Number(sale.totalPrice).toLocaleString()}, deposit GHS ${Number(sale.downPayment).toLocaleString()}\nPlan: ${sale.totalPayments} ${freq} x GHS ${Number(sale.installmentAmount).toLocaleString()}\nReview it in Activations.`;
-  await sendSMS(adminPhone, msg);
+  if (adminPhone) await sendSMS(adminPhone, msg);
+  return msg;
 };
 
 // Sent once the sale is approved AND the deposit is paid (plan started): the
@@ -305,6 +306,7 @@ const diagnoseSMS = async (to, message, only = null) => {
 };
 
 module.exports = {
+  formatPhone,
   diagnoseSMS,
   sendCustomerActivatedSMS,
   sendLockTomorrowSMS,

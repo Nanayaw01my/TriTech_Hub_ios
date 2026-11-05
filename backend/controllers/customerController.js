@@ -267,13 +267,8 @@ const requestDataDeletion = async (req, res) => {
     }).catch(() => {});
     // Let the office know (best-effort).
     try {
-      const Settings = require('../models/Settings');
-      const s = await Settings.getSingleton();
-      const to = s.contact_phone || process.env.ADMIN_PHONE;
-      if (to) {
-        const { sendSMS } = require('../utils/sms');
-        await sendSMS(to, `Dan & Dor Solar: ${customer.full_name} asked for their data to be deleted. See their page in Customers.`);
-      }
+      const { sendCompanyAlert } = require('../utils/companyAlert');
+      await sendCompanyAlert(`Dan & Dor Solar: ${customer.full_name} asked for their data to be deleted. See their page in Customers.`, { tag: 'data-deletion' });
     } catch (e) {
       logger.warn('Data deletion notify failed: %s', e.message);
     }

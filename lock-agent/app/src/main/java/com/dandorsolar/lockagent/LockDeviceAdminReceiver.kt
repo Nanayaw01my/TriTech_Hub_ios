@@ -20,6 +20,14 @@ class LockDeviceAdminReceiver : DeviceAdminReceiver() {
         App.syncNow(context)
     }
 
+    /** Someone is trying to take away the app's admin rights (Settings → Device
+     *  admin apps). Android blocks this for the Device Owner; report it anyway. */
+    override fun onDisableRequested(context: Context, intent: Intent): CharSequence {
+        DeviceEvents.report(context, "admin_disable_attempt", "device admin settings")
+        return "This phone is managed by ${Prefs.businessName(context)} until it is fully paid. " +
+            "This attempt has been reported."
+    }
+
     override fun onEnabled(context: Context, intent: Intent) {
         super.onEnabled(context, intent)
         Policy.applyBasePolicies(context)

@@ -13,13 +13,13 @@ object Api {
 
     data class Result(val ok: Boolean, val code: Int, val json: JSONObject?)
 
-    private fun request(method: String, urlStr: String, body: JSONObject?, headers: Map<String, String>): Result {
+    private fun request(method: String, urlStr: String, body: JSONObject?, headers: Map<String, String>, timeout: Int = TIMEOUT): Result {
         var conn: HttpURLConnection? = null
         return try {
             conn = (URL(urlStr).openConnection() as HttpURLConnection).apply {
                 requestMethod = method
-                connectTimeout = TIMEOUT
-                readTimeout = TIMEOUT
+                connectTimeout = timeout
+                readTimeout = timeout
                 setRequestProperty("Accept", "application/json")
                 headers.forEach { (k, v) -> setRequestProperty(k, v) }
                 if (body != null) {
@@ -79,6 +79,15 @@ object Api {
                 .put("loc_at", fix.time)
         }
         return request("POST", "$backend/api/agent/heartbeat", body, authHeaders(deviceId, secret))
+    }
+
+    /** POST /api/agent/event — report a tamper event or a shutdown. */
+    fun event(
+        backend: String, deviceId: String, secret: String, type: String, detail: String,
+        at: Long, timeout: Int = TIMEOUT
+    ): Result {
+        val body = JSONObject().put("type", type).put("detail", detail).put("at", at)
+        return request("POST", "$backend/api/agent/event", body, authHeaders(deviceId, secret), timeout)
     }
 
     /** POST /api/agent/ack — confirm the applied state. */

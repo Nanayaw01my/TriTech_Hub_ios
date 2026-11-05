@@ -118,6 +118,16 @@
             android:name=".DeadlineReceiver"
             android:exported="false" />
 
+        <!-- Phone switching off (Android 8 and older; newer ones register in App). -->
+        <receiver
+            android:name=".ShutdownReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_SHUTDOWN" />
+                <action android:name="android.intent.action.QUICKBOOT_POWEROFF" />
+            </intent-filter>
+        </receiver>
+
         <!-- Result of a self-update install. -->
         <receiver
             android:name=".UpdateStatusReceiver"

@@ -10,6 +10,7 @@ const { sendPaymentReminderSMS, sendPaymentReminderWhatsApp, sendDeviceLockedSMS
 const Settings = require('../models/Settings');
 const { ensurePayLink, amountDue } = require('./payLink');
 const { applyLateFees } = require('./lateFees');
+const { checkSilentPhones } = require('./tamperWatch');
 const agent = require('./androidAgent');
 const logger = require('./logger');
 
@@ -380,6 +381,13 @@ const startScheduler = () => {
   });
 
   logger.info('[Scheduler] Lock-tomorrow reminder scheduled: daily at 08:00.');
+
+  // Every hour at :20 — text the company about sold phones that stopped
+  // checking in (switched off for long, no data, or reset/flashed).
+  cron.schedule('20 * * * *', async () => {
+    await checkSilentPhones().catch((e) => logger.error('[silent-phone] %s', e.message));
+  });
+  logger.info('[Scheduler] Silent-phone check scheduled: every hour.');
 
   // Run daily at 2:00 AM to create and email a system backup
   cron.schedule('0 2 * * *', async () => {

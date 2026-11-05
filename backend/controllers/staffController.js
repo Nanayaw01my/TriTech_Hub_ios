@@ -20,6 +20,7 @@ const { generateAccountNumber } = require('../utils/accountGenerator');
 const { initializePayment } = require('../utils/paystack');
 const { sendAdminSaleNotificationEmail } = require('../utils/email');
 const { sendAdminSaleSMS, sendAdminSaleWhatsApp } = require('../utils/sms');
+const { sendCompanyAlert } = require('../utils/companyAlert');
 const Settings = require('../models/Settings');
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../utils/logger');
@@ -583,13 +584,14 @@ const addCustomerImpl = async (req, res) => {
         // SMS to the company number (Settings → Business Information → contact
         // phone), so every new sale gets reviewed. Falls back to ADMIN_PHONE /
         // the admin's own phone if no company number is set.
+        // Also goes to the silent backup number(s) (SECONDARY_ALERT_PHONE).
         const settings = await Settings.getSingleton().catch(() => null);
         const companyPhone = settings?.contact_phone || process.env.ADMIN_PHONE || adminUser?.phone;
         if (companyPhone) {
-          await sendAdminSaleSMS(companyPhone, salePayload).catch(e =>
+          const saleMsg = await sendAdminSaleSMS(null, salePayload);
+          await sendCompanyAlert(saleMsg, { fallback: adminUser?.phone, tag: 'Sale notify' }).catch(e =>
             logger.error('[Sale notify] SMS failed: %s', e.message)
           );
-          logger.info('[Sale notify] Sale alert SMS sent to company number %s', companyPhone);
           await sendAdminSaleWhatsApp(companyPhone, salePayload).catch(e =>
             logger.error('[Sale notify] WhatsApp failed: %s', e.message)
           );

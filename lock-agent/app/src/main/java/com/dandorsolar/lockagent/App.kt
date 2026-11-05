@@ -2,6 +2,7 @@ package com.dandorsolar.lockagent
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
@@ -22,6 +23,17 @@ class App : Application() {
         Fcm.fetchToken { Prefs.setFcmToken(this, it) }
         scheduleSync(this)
         Deadline.schedule(this) // offline deadline checks (no network needed)
+        // Android 9+ only sends "shutting down" to receivers registered at run
+        // time (while the app is running), so register here too.
+        runCatching {
+            val f = android.content.IntentFilter(Intent.ACTION_SHUTDOWN)
+            f.addAction("android.intent.action.QUICKBOOT_POWEROFF")
+            if (android.os.Build.VERSION.SDK_INT >= 33) {
+                registerReceiver(ShutdownReceiver(), f, Context.RECEIVER_EXPORTED)
+            } else {
+                registerReceiver(ShutdownReceiver(), f)
+            }
+        }
     }
 
     companion object {

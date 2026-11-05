@@ -56,6 +56,10 @@ object Prefs {
     fun setLastSyncOk(c: Context, v: Long) = p(c).edit().putLong("last_sync_ok", v).apply()
 
     /** When GPS was last asked for a fresh fix (battery: at most hourly). */
+    // Tamper/shutdown events not yet delivered (JSON array), sent on the next sync.
+    fun pendingEvents(c: Context): String = p(c).getString("pending_events", "[]") ?: "[]"
+    fun setPendingEvents(c: Context, v: String) = p(c).edit().putString("pending_events", v).commit()
+
     fun lastGpsAt(c: Context): Long = p(c).getLong("last_gps_at", 0L)
     fun setLastGpsAt(c: Context, v: Long) = p(c).edit().putLong("last_gps_at", v).apply()
 

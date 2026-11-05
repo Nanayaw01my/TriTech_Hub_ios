@@ -60,6 +60,12 @@ object Policy {
             runCatching { dpm.setGlobalSetting(admin, android.provider.Settings.Global.ADB_ENABLED, "0") }
         }
         keepLocationOn(c)
+        // The app can't be uninstalled, and (Android 11+) the customer can't
+        // force-stop it or clear its data from Settings.
+        runCatching { dpm.setUninstallBlocked(admin, c.packageName, true) }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            runCatching { dpm.setUserControlDisabledPackages(admin, listOf(c.packageName)) }
+        }
         // A persistent note on the system lock screen.
         runCatching { dpm.setDeviceOwnerLockScreenInfo(admin, Prefs.businessName(c)) }
     }
@@ -95,6 +101,10 @@ object Policy {
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_CONFIG_DATE_TIME) }
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_DEBUGGING_FEATURES) }
         runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_CONFIG_LOCATION) }
+        runCatching { dpm.setUninstallBlocked(admin, c.packageName, false) }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            runCatching { dpm.setUserControlDisabledPackages(admin, emptyList()) }
+        }
         runCatching { dpm.setDeviceOwnerLockScreenInfo(admin, null) }
         runCatching { dpm.setLockTaskPackages(admin, arrayOf()) }
         // Relinquish Device Owner last — after this we lose management powers.
