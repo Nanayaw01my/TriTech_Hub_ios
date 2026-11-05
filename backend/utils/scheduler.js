@@ -11,6 +11,7 @@ const Settings = require('../models/Settings');
 const { ensurePayLink, amountDue } = require('./payLink');
 const { applyLateFees } = require('./lateFees');
 const { checkSilentPhones } = require('./tamperWatch');
+const { sendCompanyAlert } = require('./companyAlert');
 const agent = require('./androidAgent');
 const logger = require('./logger');
 
@@ -298,6 +299,60 @@ const checkUpcomingPayments = async () => {
 };
 
 /**
+ * Two days before payments are due, text the company numbers (main + silent
+ * backup) a list of who has to pay, so staff can call ahead. Each payment is
+ * listed once (company_reminder_for). Ghana time = UTC.
+ */
+const checkCompanyDueSoon = async () => {
+  try {
+    const now = new Date();
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 2));
+    const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    const plans = await InstallmentPlan.find({
+      status: 'active',
+      next_due_date: { $gte: start, $lt: end },
+    })
+      .populate({ path: 'device_id', select: 'model' })
+      .populate({ path: 'customer_id', select: 'full_name phone deleted_at' });
+
+    const list = plans.filter((p) => p.customer_id && !p.customer_id.deleted_at &&
+      !(p.company_reminder_for && new Date(p.company_reminder_for).getTime() === new Date(p.next_due_date).getTime()));
+    if (!list.length) {
+      logger.info('[Scheduler] Company due-soon: no payments due in 2 days.');
+      return 0;
+    }
+
+    const day = start.toLocaleDateString('en-GH', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
+    const money = (n) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const lines = list.map((p) => {
+      const c = p.customer_id;
+      return `${c.full_name}${c.phone ? ` ${c.phone}` : ''} - GHS ${money(amountDue(p))}${p.device_id?.model ? ` (${p.device_id.model})` : ''}`;
+    });
+    const total = list.reduce((s, p) => s + amountDue(p), 0);
+
+    // Long lists go out as several texts of up to 8 names each.
+    const PER_TEXT = 8;
+    const parts = Math.ceil(lines.length / PER_TEXT);
+    for (let i = 0; i < parts; i++) {
+      const chunk = lines.slice(i * PER_TEXT, (i + 1) * PER_TEXT)
+        .map((l, j) => `${i * PER_TEXT + j + 1}. ${l}`).join('\n');
+      const head = `Dan & Dor Solar: ${list.length} payment(s) due ${day} (in 2 days)${parts > 1 ? ` [${i + 1}/${parts}]` : ''}:`;
+      const foot = i === parts - 1 ? `\nTotal GHS ${money(total)}.` : '';
+      await sendCompanyAlert(`${head}\n${chunk}${foot}`, { tag: 'due-soon' });
+    }
+
+    await InstallmentPlan.bulkWrite(list.map((p) => ({
+      updateOne: { filter: { _id: p._id }, update: { $set: { company_reminder_for: p.next_due_date } } },
+    })));
+    logger.info('[Scheduler] Company due-soon text sent for %d payment(s) due %s.', list.length, day);
+    return list.length;
+  } catch (error) {
+    logger.error('[Scheduler] checkCompanyDueSoon: %s', error.message);
+    return 0;
+  }
+};
+
+/**
  * Create and email a daily backup of all system data.
  */
 const dailyBackup = async () => {
@@ -378,9 +433,16 @@ const startScheduler = () => {
   // Run daily at 8:00 AM (Ghana time): 'your phone locks tomorrow' reminders
   cron.schedule('0 8 * * *', async () => {
     await checkUpcomingPayments();
+    // The company's own list of payments due in 2 days.
+    await checkCompanyDueSoon();
   });
 
   logger.info('[Scheduler] Lock-tomorrow reminder scheduled: daily at 08:00.');
+  // If the server was asleep or restarting at 8:00, send the company's
+  // due-soon list once it's up (each payment is only listed once anyway).
+  setTimeout(() => {
+    if (new Date().getUTCHours() >= 8) checkCompanyDueSoon().catch(() => {});
+  }, 2 * 60 * 1000);
 
   // Every hour at :20 — text the company about sold phones that stopped
   // checking in (switched off for long, no data, or reset/flashed).
@@ -402,4 +464,4 @@ const startScheduler = () => {
   }, 10000);
 };
 
-module.exports = { startScheduler, checkOverduePayments, checkUpcomingPayments, dailyBackup };
+module.exports = { startScheduler, checkOverduePayments, checkUpcomingPayments, checkCompanyDueSoon, dailyBackup };

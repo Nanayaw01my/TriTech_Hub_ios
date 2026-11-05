@@ -141,6 +141,12 @@ const InstallmentPlanSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // The due date the company was last told about (2 days ahead), so the
+    // company's due-soon text lists each payment once.
+    company_reminder_for: {
+      type: Date,
+      default: null,
+    },
     close_reason: {
       type: String,
       enum: [null, 'phone_released', 'customer_deleted'],
