@@ -36,6 +36,7 @@ const {
   removeFrpAccount,
   getComputerEnrollScript,
   testSms,
+  testCompanyAlert,
   recordAdminPayment,
   getAdmins,
   addAdmin,
@@ -112,6 +113,7 @@ router.post('/customers/:id/release', [param('id').isMongoId()], releaseCustomer
 router.get('/stock-enrollment', getStockEnrollment);
 router.get('/stock-enrollment/computer-script', getComputerEnrollScript);
 router.post('/sms/test', testSms);
+router.post('/sms/test-company-alert', testCompanyAlert);
 router.get('/admins', getAdmins);
 router.post('/admins', addAdmin);
 router.put('/admins/:id', [param('id').isMongoId()], updateAdmin);

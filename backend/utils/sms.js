@@ -13,8 +13,10 @@ const NKOMO_SEND_URL  = 'https://app.nkomosms.com/api/http/sms/send';
 
 const formatPhone = (phone) => {
   if (!phone) return null;
-  const digits = phone.replace(/\D/g, '');
+  const digits = String(phone).replace(/\D/g, '');
   if (digits.startsWith('233') && digits.length === 12) return digits;
+  // "+233 (0)24 400 0000" style: drop the extra 0 after the country code.
+  if (digits.startsWith('2330') && digits.length === 13) return '233' + digits.slice(4);
   if (digits.startsWith('0') && digits.length === 10) return '233' + digits.slice(1);
   if (digits.length === 9) return '233' + digits;
   return digits;

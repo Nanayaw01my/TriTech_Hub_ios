@@ -1692,6 +1692,48 @@ const testSms = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/admin/sms/test-company-alert
+ * Send a test alert to every company alert number (Settings number + silent
+ * backup numbers) and report what happened to each one.
+ */
+const testCompanyAlert = async (req, res) => {
+  try {
+    const { companyAlertTargets, mask } = require('../utils/companyAlert');
+    const { diagnoseSMS } = require('../utils/sms');
+    const targets = await companyAlertTargets();
+    if (!targets.length) {
+      return res.status(400).json({ success: false, message: 'No company number set. Add one in Settings → Business Information.' });
+    }
+    const text = 'Test alert from Dan & Dor Solar: company alert texts reach this number.';
+    const results = [];
+    for (const t of targets) {
+      // The backup number is kept private: show it partly hidden.
+      const shown = t.role === 'main' ? t.number : mask(t.number);
+      if (!t.valid) {
+        results.push({ role: t.role, number: shown, ok: false, error: 'Not a valid Ghana phone number. Write one number per box, like 0244000000.' });
+        continue;
+      }
+      const r = await diagnoseSMS(t.number, text);
+      results.push({
+        role: t.role, number: shown, ok: r.ok, provider: r.provider,
+        detail: r.ok ? null : (r.arkesel?.response || r.arkesel?.error || r.nkomo?.response || r.nkomo?.error || null),
+      });
+    }
+    const hasMain = targets.some((t) => t.role === 'main');
+    const okCount = results.filter((r) => r.ok).length;
+    return res.status(200).json({
+      success: true,
+      message: !hasMain ? 'No business number in Settings — only the backup number gets alerts.'
+        : `Sent to ${okCount} of ${results.length} number(s).`,
+      data: { results, has_main: hasMain },
+    });
+  } catch (error) {
+    logger.error('testCompanyAlert error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── COMPUTER (USB) ENROLLMENT ────────────────────────────────────────────────
 
 /**
@@ -3439,6 +3481,7 @@ module.exports = {
   removeFrpAccount,
   getComputerEnrollScript,
   testSms,
+  testCompanyAlert,
   recordAdminPayment,
   getAdmins,
   addAdmin,

@@ -27,6 +27,23 @@ export default function SmsTestCard() {
     }
   }
 
+  // Test the company alert numbers (business number + silent backup).
+  const [alertBusy, setAlertBusy] = useState(false)
+  const [alertResult, setAlertResult] = useState(null)
+  const testAlert = async () => {
+    setAlertBusy(true)
+    setAlertResult(null)
+    try {
+      const res = await api.post('/admin/sms/test-company-alert')
+      setAlertResult(res.data?.data || null)
+      toast(res.data?.message || 'Done.', { duration: 6000 })
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not run the alert test.')
+    } finally {
+      setAlertBusy(false)
+    }
+  }
+
   const providerRow = (name, p) => (
     <div className="p-3 rounded-xl border border-gray-200 text-xs space-y-1">
       <p className="font-bold text-gray-900 text-sm">
@@ -82,6 +99,37 @@ export default function SmsTestCard() {
           {result.nkomo && providerRow('NkomoSMS (backup)', result.nkomo)}
         </div>
       )}
+      <div className="mt-5 pt-4 border-t border-gray-100">
+        <p className="text-sm font-bold text-gray-900">Company alert numbers</p>
+        <p className="text-xs text-gray-500 mb-2">
+          Sends a test alert to the business number in Business Information and to the backup number, and shows what happened to each.
+        </p>
+        <button type="button" onClick={testAlert} disabled={alertBusy}
+          className="w-full px-4 py-2.5 rounded-xl text-sm font-bold text-orange-700 border-2 border-orange-200 bg-orange-50 hover:bg-orange-100 disabled:opacity-60">
+          {alertBusy ? 'Sending…' : 'Test company alert'}
+        </button>
+        {alertResult && (
+          <div className="mt-3 space-y-2">
+            {!alertResult.has_main && (
+              <p className="text-sm text-red-700 bg-red-50 rounded-xl px-3 py-2">
+                No business number in Settings → Business Information, so only the backup number gets alerts. Add it there.
+              </p>
+            )}
+            {(alertResult.results || []).map((r, i) => (
+              <div key={i} className="p-3 rounded-xl border border-gray-200 text-xs space-y-1">
+                <p className="font-bold text-gray-900 text-sm">
+                  {r.role === 'main' ? 'Business number' : 'Backup number'} <span className="font-mono">{r.number}</span>{' '}
+                  {r.ok ? <span className="text-green-600">· sent ✓ ({r.provider})</span> : <span className="text-red-600">· NOT sent</span>}
+                </p>
+                {r.error && <p className="text-red-700">{r.error}</p>}
+                {r.detail && (
+                  <pre className="bg-gray-50 rounded-lg p-2 whitespace-pre-wrap break-all text-[11px] text-gray-700">{JSON.stringify(r.detail, null, 1)}</pre>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </Card>
   )
 }
