@@ -6,7 +6,7 @@ const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
 const Payment = require('../models/Payment');
 const { sendLockNotificationEmail, sendAdminPaymentReminderEmail, sendAdminOverdueAlertEmail, sendPaymentReminderEmail } = require('./email');
-const { sendPaymentReminderSMS, sendPaymentReminderWhatsApp, sendDeviceLockedSMS, sendDeviceLockedWhatsApp, sendLockTomorrowSMS } = require('./sms');
+const { sendSMS, sendPaymentReminderSMS, sendPaymentReminderWhatsApp, sendDeviceLockedSMS, sendDeviceLockedWhatsApp, sendLockTomorrowSMS } = require('./sms');
 const Settings = require('../models/Settings');
 const { ensurePayLink, amountDue } = require('./payLink');
 const { applyLateFees } = require('./lateFees');
@@ -21,6 +21,31 @@ const logger = require('./logger');
  * - Status is 'active'
  * - next_due_date is more than 48 hours in the past
  */
+// ─── DSR notifications ───────────────────────────────────────────────────────
+const fmtMoney = (n) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+const firstWord = (name) => String(name || '').trim().split(/\s+/)[0] || 'there';
+
+/** The active DSR (staff) behind a plan, with a phone to text; else null. */
+async function dsrFor(plan) {
+  if (!plan?.created_by) return null;
+  const u = await User.findById(plan.created_by).select('name phone role is_active').lean();
+  return u && u.role === 'staff' && u.is_active !== false && u.phone ? u : null;
+}
+
+/** A DSR's customer missed a payment and the phone was just locked. */
+async function notifyDsrOfLock(plan, customer, device) {
+  const dsr = await dsrFor(plan);
+  if (!dsr) return;
+  const due = plan.next_due_date
+    ? new Date(plan.next_due_date).toLocaleDateString('en-GH', { timeZone: 'UTC', day: 'numeric', month: 'short' })
+    : 'the due date';
+  await sendSMS(dsr.phone,
+    `Hi ${firstWord(dsr.name)}, your customer ${customer.full_name}${customer.phone ? ` (${customer.phone})` : ''} did not pay ` +
+    `GHS ${fmtMoney(amountDue(plan))} due ${due}. Their ${device.model || 'phone'} is now LOCKED. Please call them to pay; ` +
+    `it unlocks as soon as they pay. -Dan & Dor Solar`);
+  logger.info('[Scheduler] DSR %s told that %s was locked.', dsr.name, customer.full_name);
+}
+
 const checkOverduePayments = async () => {
   logger.info('[Scheduler] Running checkOverduePayments job...');
 
@@ -183,6 +208,10 @@ const checkOverduePayments = async () => {
           logger.error('[Scheduler] Failed to send lock notification: %s', emailError.message);
         }
 
+        // Tell the DSR who sold it, so they can call the customer.
+        await notifyDsrOfLock(plan, customer, device).catch((e) =>
+          logger.error('[Scheduler] DSR lock SMS failed: %s', e.message));
+
         // Collect for admin overdue alert
         overdueAdminList.push({
           customerName: customer.full_name,
@@ -300,7 +329,8 @@ const checkUpcomingPayments = async () => {
 
 /**
  * Two days before payments are due, text the company numbers (main + silent
- * backup) a list of who has to pay, so staff can call ahead. Each payment is
+ * backup) a list of who has to pay, and each DSR a list of their own
+ * customers due, so they can call ahead. Each payment is
  * listed once (company_reminder_for). Ghana time = UTC.
  */
 const checkCompanyDueSoon = async () => {
@@ -339,6 +369,35 @@ const checkCompanyDueSoon = async () => {
       const head = `Dan & Dor Solar: ${list.length} payment(s) due ${day} (in 2 days)${parts > 1 ? ` [${i + 1}/${parts}]` : ''}:`;
       const foot = i === parts - 1 ? `\nTotal GHS ${money(total)}.` : '';
       await sendCompanyAlert(`${head}\n${chunk}${foot}`, { tag: 'due-soon' });
+    }
+
+    // Each DSR gets their own customers only.
+    const byDsr = new Map();
+    for (const p of list) {
+      const k = p.created_by ? String(p.created_by) : null;
+      if (!k) continue;
+      if (!byDsr.has(k)) byDsr.set(k, []);
+      byDsr.get(k).push(p);
+    }
+    for (const mine of byDsr.values()) {
+      try {
+        const dsr = await dsrFor(mine[0]);
+        if (!dsr) continue;
+        const rows = mine.map((p) => {
+          const c = p.customer_id;
+          return `${c.full_name}${c.phone ? ` ${c.phone}` : ''} - GHS ${money(amountDue(p))}`;
+        });
+        const n = Math.ceil(rows.length / PER_TEXT);
+        for (let i = 0; i < n; i++) {
+          const chunk = rows.slice(i * PER_TEXT, (i + 1) * PER_TEXT)
+            .map((l, j) => `${i * PER_TEXT + j + 1}. ${l}`).join('\n');
+          const head = `Hi ${firstWord(dsr.name)}, ${rows.length} of your customer(s) must pay on ${day} (in 2 days)${n > 1 ? ` [${i + 1}/${n}]` : ''}. Please remind them:`;
+          await sendSMS(dsr.phone, `${head}\n${chunk}\n-Dan & Dor Solar`);
+        }
+        logger.info('[Scheduler] DSR %s told about %d payment(s) due %s.', dsr.name, rows.length, day);
+      } catch (e) {
+        logger.error('[Scheduler] DSR due-soon SMS failed: %s', e.message);
+      }
     }
 
     await InstallmentPlan.bulkWrite(list.map((p) => ({
@@ -464,4 +523,4 @@ const startScheduler = () => {
   }, 10000);
 };
 
-module.exports = { startScheduler, checkOverduePayments, checkUpcomingPayments, checkCompanyDueSoon, dailyBackup };
+module.exports = { startScheduler, checkOverduePayments, checkUpcomingPayments, checkCompanyDueSoon, notifyDsrOfLock, dailyBackup };
