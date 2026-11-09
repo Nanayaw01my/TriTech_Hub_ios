@@ -15,6 +15,8 @@
     <string name="lock_check_again">Check for payment</string>
     <string name="lock_checking">Checking…</string>
     <string name="lock_call_button">Call us</string>
+    <string name="lock_internet_button">Connect to Wi-Fi / data</string>
+    <string name="lock_no_internet">No internet. Tap \"Connect to Wi-Fi / data\" first.</string>
 
     <!-- "Awaiting Activation" first page: stock phones / sales not yet activated. -->
     <string name="pending_title">Awaiting Activation</string>

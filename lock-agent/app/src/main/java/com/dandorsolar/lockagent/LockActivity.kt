@@ -53,6 +53,7 @@ class LockActivity : AppCompatActivity() {
         setContentView(R.layout.activity_lock)
 
         findViewById<Button>(R.id.btnCheck).setOnClickListener { onCheck() }
+        findViewById<Button>(R.id.btnInternet).setOnClickListener { openInternetSettings() }
         render()
 
         ContextCompat.registerReceiver(
@@ -106,8 +107,45 @@ class LockActivity : AppCompatActivity() {
         runCatching { startLockTask() }
     }
 
+    /** True when the phone has a working internet connection. */
+    private fun online(): Boolean = runCatching {
+        val cm = getSystemService(CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork)
+        caps?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+    }.getOrDefault(true)
+
+    /**
+     * Let the customer turn on Wi-Fi or mobile data from the lock / Awaiting
+     * Activation screen — otherwise a phone with no connection could never
+     * receive its activation or unlock. Opens the Internet panel (Android 10+)
+     * or Wi-Fi settings; the kiosk is widened to Settings only for this and
+     * tightened again when they come back.
+     */
+    private fun openInternetSettings() {
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            Intent(android.provider.Settings.Panel.ACTION_INTERNET_CONNECTIVITY)
+        } else {
+            Intent(android.provider.Settings.ACTION_WIFI_SETTINGS)
+        }
+        runCatching {
+            if (Policy.isOwner(this)) {
+                val pkgs = mutableListOf(packageName)
+                packageManager.resolveActivity(intent, 0)?.activityInfo?.packageName?.let { pkgs.add(it) }
+                packageManager.resolveActivity(Intent(android.provider.Settings.ACTION_WIFI_SETTINGS), 0)
+                    ?.activityInfo?.packageName?.let { if (it !in pkgs) pkgs.add(it) }
+                Policy.dpm(this).setLockTaskPackages(Policy.admin(this), pkgs.toTypedArray())
+            }
+        }
+        val opened = runCatching { startActivity(intent) }.isSuccess
+        if (!opened) runCatching { startActivity(Intent(android.provider.Settings.ACTION_WIFI_SETTINGS)) }
+    }
+
     private fun onCheck() {
         val status = findViewById<TextView>(R.id.tvLockStatus)
+        if (!online()) {
+            status.setText(R.string.lock_no_internet)
+            return
+        }
         status.setText(R.string.lock_checking)
         Thread {
             SyncManager.syncBlocking(applicationContext)
@@ -208,7 +246,7 @@ class LockActivity : AppCompatActivity() {
             render()
             startKiosk()
             handler.removeCallbacks(autoCheck)
-            handler.postDelayed(autoCheck, 15_000L)
+            handler.postDelayed(autoCheck, if (online()) 3_000L else 15_000L)
         }
     }
 

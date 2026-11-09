@@ -73,6 +73,16 @@
         android:backgroundTint="@color/orange_dark"
         android:visibility="gone" />
 
+    <Button
+        android:id="@+id/btnInternet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:paddingHorizontal="28dp"
+        android:text="@string/lock_internet_button"
+        android:textColor="@color/white"
+        android:backgroundTint="@color/orange_dark" />
+
     <TextView
         android:id="@+id/tvLockStatus"
         android:layout_width="wrap_content"
