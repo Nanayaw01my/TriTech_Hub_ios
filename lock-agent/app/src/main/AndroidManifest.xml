@@ -16,6 +16,26 @@
          declaring it makes Google Play Protect block the app during enrollment
          on newer phones ("App blocked to protect your device"). -->
 
+    <!-- Android 11+: lets the lock screen find the phone/dialer apps (Call us)
+         and the Wi-Fi / internet settings (Connect to Wi-Fi), to allow them
+         through the kiosk. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.CALL" />
+            <data android:scheme="tel" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
+        </intent>
+        <intent>
+            <action android:name="android.settings.panel.action.INTERNET_CONNECTIVITY" />
+        </intent>
+        <intent>
+            <action android:name="android.settings.WIFI_SETTINGS" />
+        </intent>
+    </queries>
+
     <application
         android:name=".App"
         android:allowBackup="false"

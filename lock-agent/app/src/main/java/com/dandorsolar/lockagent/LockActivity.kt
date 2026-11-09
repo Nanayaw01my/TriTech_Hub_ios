@@ -133,6 +133,7 @@ class LockActivity : AppCompatActivity() {
                 packageManager.resolveActivity(intent, 0)?.activityInfo?.packageName?.let { pkgs.add(it) }
                 packageManager.resolveActivity(Intent(android.provider.Settings.ACTION_WIFI_SETTINGS), 0)
                     ?.activityInfo?.packageName?.let { if (it !in pkgs) pkgs.add(it) }
+                if ("com.android.settings" !in pkgs) pkgs.add("com.android.settings")
                 Policy.dpm(this).setLockTaskPackages(Policy.admin(this), pkgs.toTypedArray())
             }
         }
@@ -198,25 +199,41 @@ class LockActivity : AppCompatActivity() {
     }
 
     private fun callCompany(number: String) {
-        val tel = "tel:" + number.trim()
-        // Allow the dialer/telecom through lock-task so the call UI can show,
-        // then place the call directly (CALL_PHONE is granted by Device Owner).
+        // One clean number: "024 400 0000 / 020…" → "0244000000".
+        val first = number.split('/', ',', ';', '|').first()
+        val digits = first.filter { it.isDigit() || it == '+' }
+        if (digits.length < 9) return
+        val uri = Uri.fromParts("tel", digits, null)
+
+        // In lock-task (kiosk) mode only allow-listed apps can open. A call goes
+        // through several system apps (dialer, Telecom, the in-call screen), whose
+        // names differ by brand — allow all of them for the call; the list is
+        // tightened again when the customer comes back to this screen.
         runCatching {
-            val dpm = Policy.dpm(this)
-            val admin = Policy.admin(this)
-            val dialer = packageManager.resolveActivity(
-                Intent(Intent.ACTION_DIAL), 0
-            )?.activityInfo?.packageName
-            val pkgs = mutableListOf(packageName)
-            if (dialer != null) pkgs.add(dialer)
-            if (Policy.isOwner(this)) dpm.setLockTaskPackages(admin, pkgs.toTypedArray())
+            if (Policy.isOwner(this)) {
+                val pkgs = linkedSetOf(packageName)
+                listOf(Intent(Intent.ACTION_CALL, uri), Intent(Intent.ACTION_DIAL, uri)).forEach { i ->
+                    packageManager.queryIntentActivities(i, 0).forEach { pkgs.add(it.activityInfo.packageName) }
+                }
+                runCatching {
+                    val tm = getSystemService(TELECOM_SERVICE) as android.telecom.TelecomManager
+                    tm.defaultDialerPackage?.let { pkgs.add(it) }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) tm.systemDialerPackage?.let { pkgs.add(it) }
+                }
+                pkgs.addAll(listOf(
+                    "com.android.server.telecom", "com.android.dialer", "com.android.incallui",
+                    "com.google.android.dialer", "com.samsung.android.dialer", "com.samsung.android.incallui",
+                    "com.android.phone", "com.android.contacts", "com.samsung.android.app.telephonyui"
+                ))
+                Policy.dpm(this).setLockTaskPackages(Policy.admin(this), pkgs.toTypedArray())
+            }
         }
         val placed = runCatching {
-            startActivity(Intent(Intent.ACTION_CALL, Uri.parse(tel)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            startActivity(Intent(Intent.ACTION_CALL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }.isSuccess
         if (!placed) {
             runCatching {
-                startActivity(Intent(Intent.ACTION_DIAL, Uri.parse(tel)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                startActivity(Intent(Intent.ACTION_DIAL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
         }
     }
