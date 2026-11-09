@@ -117,6 +117,21 @@ export default function StockEnrollment() {
     }
   }
 
+  // Phone online but its check-ins refused (key mismatch): accept its key once.
+  const [reconnecting, setReconnecting] = useState(null)
+  const reconnect = async (d) => {
+    setReconnecting(d._id)
+    try {
+      const res = await api.post(`/admin/devices/${d._id}/reconnect`)
+      toast.success(res.data?.message || 'Done.', { duration: 8000 })
+      setDevices((list) => list.map((x) => (x._id === d._id ? { ...x, reconnect_pending: true } : x)))
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not reconnect the phone.')
+    } finally {
+      setReconnecting(null)
+    }
+  }
+
   const load = useCallback(async () => {
     setLoading(true)
     try {
@@ -371,6 +386,23 @@ export default function StockEnrollment() {
                         )}
                       </div>
                     </div>
+                    {d.rejected && (
+                      <div className="mt-2 text-xs text-red-800 bg-red-50 rounded-xl px-3 py-2"
+                        onClick={(e) => e.stopPropagation()}>
+                        <p>
+                          <strong>Online but can't check in</strong> (last tried {d.rejected_at ? formatDistanceToNow(new Date(d.rejected_at), { addSuffix: true }) : 'recently'}).
+                          It won't receive activation, lock or unlock until reconnected.
+                        </p>
+                        {d.reconnect_pending ? (
+                          <p className="mt-1.5 font-semibold text-amber-800">Reconnect requested — waiting for the phone's next check-in.</p>
+                        ) : (
+                          <button type="button" onClick={() => reconnect(d)} disabled={reconnecting === d._id}
+                            className="mt-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-red-600 hover:bg-red-500 disabled:opacity-60">
+                            {reconnecting === d._id ? 'Working…' : 'Reconnect phone'}
+                          </button>
+                        )}
+                      </div>
+                    )}
                     {!selecting && <div className="mt-3 flex gap-2">
                       {d.lock_status === 'locked' ? (
                         <button onClick={() => act(d, 'unlock')} disabled={busyId === d._id}

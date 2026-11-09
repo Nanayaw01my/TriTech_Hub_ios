@@ -1080,6 +1080,10 @@ const getEnrolledDevices = async (req, res) => {
       app_version: d.agent?.app_version || null,
       frp_status: d.agent?.frp_status || null,
       awaiting_activation: d.agent?.desired_lock_state === 'pending_activation',
+      // Online but its check-ins are refused (key mismatch) → offer Reconnect.
+      rejected: !!d.agent?.rejected_at && (!d.agent?.last_heartbeat || new Date(d.agent.rejected_at) > new Date(d.agent.last_heartbeat)),
+      rejected_at: d.agent?.rejected_at || null,
+      reconnect_pending: !!d.agent?.rekey_until && new Date(d.agent.rekey_until) > new Date(),
       // Same ID the Dan & Dor Solar app shows on the phone — tells phones apart
       // when the IMEI isn't known.
       device_code: d.agent?.device_id ? String(d.agent.device_id).slice(-6) : '',
