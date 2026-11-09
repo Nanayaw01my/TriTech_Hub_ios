@@ -76,6 +76,9 @@ const DeviceSchema = new mongoose.Schema(
       // payment. null = no deadline (stock/unactivated/released).
       paid_until: { type: Date, default: null },
       last_heartbeat: { type: Date, default: null },
+      // What the phone itself says it is showing (from its last check-in):
+      // 'pending' = Awaiting Activation page, 'locked', 'unlocked', 'released'.
+      applied_state: { type: String, default: null },
       app_version: { type: String, default: null },
       android_version: { type: String, default: null },
       model_reported: { type: String, default: null },

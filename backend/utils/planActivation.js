@@ -61,7 +61,18 @@ async function activatePlanNow(plan, { userId = null, ip = null } = {}) {
 
   let deadlineResult = null;
   try {
-    const device = await Device.findById(plan.device_id);
+    let device = await Device.findById(plan.device_id);
+    // The sale points at a plain copy of the phone (same IMEI, e.g. from a
+    // duplicate sale): move it onto the real, enrolled phone now, so the
+    // activation reaches the phone instead of waiting for its next check-in.
+    if (device && !device.agent?.enrolled && device.imei) {
+      const real = await Device.findOne({ _id: { $ne: device._id }, imei: device.imei, 'agent.enrolled': true });
+      if (real && await require('./deviceMerge').relinkSaleToEnrolledPhone(plan, real)) {
+        plan.device_id = real._id;
+        device = await Device.findById(real._id);
+        logger.info('[activate] Plan %s moved to the enrolled phone %s', plan._id, real._id);
+      }
+    }
     if (device) {
       device.assigned_to = plan.customer_id;
       device.sold_status = 'sold';

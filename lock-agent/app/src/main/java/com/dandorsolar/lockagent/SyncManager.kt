@@ -151,8 +151,26 @@ object SyncManager {
             "released" -> release(c)
             "locked" -> lock(c)
             "pending_activation" -> awaitActivation(c)
-            else -> unlock(c)
+            // Don't lift a lock while the payment deadline has passed (the
+            // server's own overdue check may not have run yet); it lifts once
+            // the server sends a new deadline after payment.
+            else -> if (deadlinePassed(c)) lock(c) else unlock(c)
         }
+    }
+
+    /** The stored payment deadline exists and is in the past. */
+    fun deadlinePassed(c: Context): Boolean {
+        val d = Prefs.paidUntil(c)
+        return d > 0L && System.currentTimeMillis() > d
+    }
+
+    /** What the phone should be showing right now, all things considered. */
+    fun shouldShowLock(c: Context): Boolean {
+        val desired = Prefs.desiredLockState(c)
+        if (desired == "released") return false
+        val applied = Prefs.appliedLockState(c)
+        return desired == "locked" || desired == "pending_activation" ||
+            applied == "locked" || applied == "pending"
     }
 
     /**

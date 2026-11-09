@@ -210,7 +210,8 @@ const getCustomerDetail = async (req, res) => {
 
     const [plan, payments] = await Promise.all([
       InstallmentPlan.findOne({ customer_id: customer._id })
-        .populate({ path: 'device_id', select: 'model price serial_number udid imei lock_status agent' })
+        // Everything about the phone except its secrets.
+        .populate({ path: 'device_id', select: '-agent.device_secret -agent.enrollment_token' })
         .lean(),
       Payment.find({ customer_id: customer._id })
         .sort({ createdAt: -1 })

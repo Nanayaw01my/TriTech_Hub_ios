@@ -90,6 +90,10 @@ object Api {
         return request("POST", "$backend/api/agent/event", body, authHeaders(deviceId, secret), timeout)
     }
 
+    /** GET /api/agent/commands — light check of the desired state (no location). */
+    fun commands(backend: String, deviceId: String, secret: String, timeout: Int = 10000): Result =
+        request("GET", "$backend/api/agent/commands", null, authHeaders(deviceId, secret), timeout)
+
     /** POST /api/agent/ack — confirm the applied state. */
     fun ack(backend: String, deviceId: String, secret: String, appliedState: String): Result {
         val body = JSONObject().put("applied_state", appliedState)

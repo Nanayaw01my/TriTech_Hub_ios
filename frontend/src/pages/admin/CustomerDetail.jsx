@@ -427,8 +427,13 @@ export default function AdminCustomerDetail() {
             {device.imei && <Row label="IMEI" value={device.imei} mono />}
             <div className="flex justify-between items-center pt-0.5">
               <span className="text-gray-500">Lock Status</span>
-              <StatusBadge status={(device.lock_status === "locked") ? 'locked' : 'unlocked'} />
+              {(device.agent?.desired_lock_state === 'pending_activation' || device.agent?.applied_state === 'pending') ? (
+                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Awaiting activation</span>
+              ) : (
+                <StatusBadge status={(device.lock_status === "locked") ? 'locked' : 'unlocked'} />
+              )}
             </div>
+            <PhoneScreenRow agent={device.agent} />
             <div className="flex justify-between items-center pt-0.5">
               <span className="text-gray-500">Lock Agent</span>
               {device.agent?.enrolled ? (
@@ -941,3 +946,49 @@ function PhotoThumb({ label, src, onView }) {
     </button>
   )
 }
+
+// What the phone itself reported showing at its last check-in, and whether a
+// change (activation, unlock, lock) is still on its way to the phone.
+const SCREEN_NAMES = {
+  pending: 'Awaiting Activation page',
+  locked: 'Lock screen',
+  unlocked: 'Unlocked (normal use)',
+  released: 'Released to customer',
+  release_pending: 'Releasing…',
+}
+const WANT_TO_SCREEN = { pending_activation: 'pending', locked: 'locked', unlocked: 'unlocked', released: 'released' }
+
+function ago(date) {
+  if (!date) return 'never'
+  const mins = Math.round((Date.now() - new Date(date).getTime()) / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins} min ago`
+  const h = Math.round(mins / 60)
+  if (h < 48) return `${h} h ago`
+  return `${Math.round(h / 24)} days ago`
+}
+
+function PhoneScreenRow({ agent }) {
+  if (!agent?.enrolled) return null
+  const shown = agent.applied_state
+  const wanted = WANT_TO_SCREEN[agent.desired_lock_state] || null
+  const waiting = shown && wanted && shown !== wanted && !(wanted === 'released' && shown === 'release_pending')
+  return (
+    <>
+      <div className="flex justify-between items-center pt-0.5">
+        <span className="text-gray-500">Phone shows</span>
+        <span className="text-xs font-semibold text-gray-800 text-right">
+          {shown ? SCREEN_NAMES[shown] || shown : 'Not reported yet (old app)'}
+          <span className="block text-[11px] font-normal text-gray-400">last check-in {ago(agent.last_heartbeat)}</span>
+        </span>
+      </div>
+      {waiting && (
+        <p className="text-xs text-amber-800 bg-amber-50 rounded-xl px-3 py-2 mt-1">
+          Waiting for the phone to pick up the change to <strong>{SCREEN_NAMES[wanted]}</strong>. It needs internet.
+          On the phone, tap <strong>Check status</strong> (or <strong>Check for payment</strong>), or wait a minute or two.
+        </p>
+      )}
+    </>
+  )
+}
+

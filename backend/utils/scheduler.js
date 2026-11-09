@@ -135,10 +135,12 @@ const checkOverduePayments = async () => {
           continue;
         }
 
-        // Skip if device is already locked
+        // The phone may have locked itself at the due time already (it does so
+        // offline). Still finish the job: record the lock on the server, mark
+        // the plan overdue and send the texts. (Each plan is processed once:
+        // it leaves 'active' below.)
         if (device.lock_status === 'locked') {
-          logger.info('[Scheduler] Device %s already marked as locked. Skipping.', device._id);
-          continue;
+          logger.info('[Scheduler] Device %s already locked itself; recording the overdue lock.', device._id);
         }
 
         logger.info('[Scheduler] Marking device %s as locked for overdue plan %s (customer: %s)', device._id, plan._id, customer.full_name);

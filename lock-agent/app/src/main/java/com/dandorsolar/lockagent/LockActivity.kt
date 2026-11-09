@@ -17,6 +17,18 @@ import androidx.core.content.ContextCompat
 /** Full-screen, un-dismissable lock shown while the account is overdue. */
 class LockActivity : AppCompatActivity() {
 
+    // While this screen is showing, ask the server every so often whether the
+    // state changed (sale activated / payment made), so it lifts within a
+    // minute even if the instant push doesn't arrive.
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    @Volatile private var checking = false
+    private val autoCheck = object : Runnable {
+        override fun run() {
+            quickCheck()
+            handler.postDelayed(this, if (isAwaiting()) 45_000L else 120_000L)
+        }
+    }
+
     private val unlockReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             finishUnlock()
@@ -100,7 +112,7 @@ class LockActivity : AppCompatActivity() {
         Thread {
             SyncManager.syncBlocking(applicationContext)
             runOnUiThread {
-                if (Prefs.desiredLockState(applicationContext) == "unlocked") {
+                if (!SyncManager.shouldShowLock(applicationContext)) {
                     finishUnlock()
                 } else {
                     render()
@@ -108,6 +120,43 @@ class LockActivity : AppCompatActivity() {
                 }
             }
         }.start()
+    }
+
+    /** Light server check; does a full sync only when the state changed. */
+    private fun quickCheck() {
+        if (checking) return
+        val app = applicationContext
+        val backend = Prefs.backendUrl(app)
+        val id = Prefs.deviceId(app)
+        val secret = Prefs.deviceSecret(app)
+        if (backend.isEmpty() || id.isEmpty() || secret.isEmpty()) return
+        checking = true
+        Thread {
+            try {
+                val r = Api.commands(backend, id, secret)
+                val desired = r.json?.optString("desired_lock_state").orEmpty()
+                val j = r.json
+                // Sync fully when anything changed: the state (activated /
+                // unlocked by the office) or the deadline (a payment came in).
+                val changed = r.ok && j != null && (
+                    (desired.isNotEmpty() && desired != Prefs.desiredLockState(app)) ||
+                    (j.has("paid_until") && j.optLong("paid_until", 0L) != Prefs.paidUntil(app)))
+                if (changed) {
+                    SyncManager.syncBlocking(app)
+                    runOnUiThread {
+                        if (!SyncManager.shouldShowLock(app)) finishUnlock() else render()
+                    }
+                }
+            } catch (_: Throwable) {
+            } finally {
+                checking = false
+            }
+        }.start()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        handler.removeCallbacks(autoCheck)
     }
 
     private fun callCompany(number: String) {
@@ -147,7 +196,9 @@ class LockActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (Prefs.desiredLockState(this) == "unlocked") {
+        // Close only when nothing says the phone should be locked or waiting
+        // (an offline self-lock keeps the server's old "unlocked" until it syncs).
+        if (!SyncManager.shouldShowLock(this)) {
             finishUnlock()
         } else {
             // Back from a call (or anywhere): re-tighten the kiosk to our app only.
@@ -156,6 +207,8 @@ class LockActivity : AppCompatActivity() {
             }
             render()
             startKiosk()
+            handler.removeCallbacks(autoCheck)
+            handler.postDelayed(autoCheck, 15_000L)
         }
     }
 
@@ -166,6 +219,7 @@ class LockActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        handler.removeCallbacks(autoCheck)
         runCatching { unregisterReceiver(unlockReceiver) }
     }
 }

@@ -244,6 +244,9 @@ const heartbeat = async (req, res) => {
     if (app_version) device.agent.app_version = app_version;
     // Trust the agent's report of what it actually applied.
     if (lock_state === 'locked' || lock_state === 'unlocked') device.lock_status = lock_state;
+    if (['pending', 'locked', 'unlocked', 'released', 'release_pending'].includes(lock_state)) {
+      device.agent.applied_state = lock_state;
+    }
 
     // Store the phone's location (last-known on the device + a history ping).
     const latN = Number(lat);
@@ -301,11 +304,13 @@ const ack = async (req, res) => {
     const { applied_state } = req.body || {};
     if (applied_state === 'locked' || applied_state === 'unlocked') {
       device.lock_status = applied_state;
+      device.agent.applied_state = applied_state;
       device.agent.last_heartbeat = new Date();
       await device.save();
     } else if (applied_state === 'released') {
       // The phone relinquished Device Owner — it's the customer's now.
       device.lock_status = 'unlocked';
+      device.agent.applied_state = 'released';
       device.agent.enrolled = false;
       device.agent.enrollment_status = 'released';
       device.agent.last_heartbeat = new Date();
