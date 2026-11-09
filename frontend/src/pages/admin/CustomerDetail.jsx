@@ -973,6 +973,8 @@ function PhoneScreenRow({ agent }) {
   const shown = agent.applied_state
   const wanted = WANT_TO_SCREEN[agent.desired_lock_state] || null
   const waiting = shown && wanted && shown !== wanted && !(wanted === 'released' && shown === 'release_pending')
+  // Not heard from the phone for over 30 minutes: recent changes haven't reached it.
+  const stale = !agent.last_heartbeat || Date.now() - new Date(agent.last_heartbeat).getTime() > 30 * 60 * 1000
   return (
     <>
       <div className="flex justify-between items-center pt-0.5">
@@ -982,7 +984,14 @@ function PhoneScreenRow({ agent }) {
           <span className="block text-[11px] font-normal text-gray-400">last check-in {ago(agent.last_heartbeat)}</span>
         </span>
       </div>
-      {waiting && (
+      {stale && (
+        <p className="text-xs text-red-800 bg-red-50 rounded-xl px-3 py-2 mt-1">
+          This phone has not checked in since <strong>{ago(agent.last_heartbeat)}</strong>, so it hasn't received recent
+          changes (activation, unlock, lock). It needs internet: office Wi-Fi, a SIM with data, or a hotspot. On app 1.137+
+          the customer can tap <strong>Connect to Wi-Fi / data</strong> on the phone's screen.
+        </p>
+      )}
+      {!stale && waiting && (
         <p className="text-xs text-amber-800 bg-amber-50 rounded-xl px-3 py-2 mt-1">
           Waiting for the phone to pick up the change to <strong>{SCREEN_NAMES[wanted]}</strong>. It needs internet.
           On the phone, tap <strong>Check status</strong> (or <strong>Check for payment</strong>), or wait a minute or two.
