@@ -14,7 +14,12 @@ object SyncManager {
     private const val TAG = "DDAgent"
     const val ACTION_UNLOCK = "com.dandorsolar.lockagent.UNLOCK"
 
-    /** First-time pairing: trade the enrollment token for a device secret. */
+    /** First-time pairing: trade the enrollment token for a device secret.
+     *  Synchronized: setup can trigger it from several places at once (computer
+     *  script, sync worker, setup screen). Two parallel requests each got a new
+     *  key from the server, and the phone could keep the one the server had
+     *  already replaced — after which every check-in was refused. */
+    @Synchronized
     fun tryEnroll(c: Context): String {
         if (Prefs.enrolled(c)) return "already"
         val backend = Prefs.backendUrl(c)

@@ -1735,6 +1735,35 @@ const testCompanyAlert = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/admin/devices/:id/reconnect
+ * The phone is online but its check-ins are refused (its key doesn't match
+ * the saved one). For the next 48 hours, accept this phone's next check-in
+ * with the key it has and save that key.
+ */
+const reconnectDevice = async (req, res) => {
+  try {
+    const device = await Device.findById(req.params.id);
+    if (!device || !device.agent?.device_id) {
+      return res.status(404).json({ success: false, message: 'Phone not found or not enrolled.' });
+    }
+    device.agent.rekey_until = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    await device.save();
+    await AuditLog.create({
+      user_id: req.user._id, action: 'device_updated',
+      details: { event: 'reconnect_allowed', device_id: device._id, imei: device.imei },
+      ip_address: req.ip,
+    }).catch(() => {});
+    return res.status(200).json({
+      success: true,
+      message: 'Done. The phone reconnects at its next check-in (usually within 15 minutes, sooner if someone taps Check on its screen). It must have internet.',
+    });
+  } catch (error) {
+    logger.error('reconnectDevice error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── COMPUTER (USB) ENROLLMENT ────────────────────────────────────────────────
 
 /**
@@ -3476,6 +3505,7 @@ module.exports = {
   updateStaffIdentity,
   assignStock,
   setStockPrice,
+  reconnectDevice,
   mergeDuplicateDevices,
   getFrp,
   addFrpAccount,

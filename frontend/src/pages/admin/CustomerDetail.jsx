@@ -433,7 +433,7 @@ export default function AdminCustomerDetail() {
                 <StatusBadge status={(device.lock_status === "locked") ? 'locked' : 'unlocked'} />
               )}
             </div>
-            <PhoneScreenRow agent={device.agent} />
+            <PhoneScreenRow agent={device.agent} deviceId={device._id} onChanged={fetchCustomer} />
             <div className="flex justify-between items-center pt-0.5">
               <span className="text-gray-500">Lock Agent</span>
               {device.agent?.enrolled ? (
@@ -968,8 +968,24 @@ function ago(date) {
   return `${Math.round(h / 24)} days ago`
 }
 
-function PhoneScreenRow({ agent }) {
+function PhoneScreenRow({ agent, deviceId, onChanged }) {
+  const [busy, setBusy] = React.useState(false)
   if (!agent?.enrolled) return null
+  // Online, but its check-ins are refused (key mismatch) since its last good one.
+  const rejected = agent.rejected_at && (!agent.last_heartbeat || new Date(agent.rejected_at) > new Date(agent.last_heartbeat))
+  const reconnectPending = agent.rekey_until && new Date(agent.rekey_until) > new Date()
+  const reconnect = async () => {
+    setBusy(true)
+    try {
+      const res = await api.post(`/admin/devices/${deviceId}/reconnect`)
+      toast.success(res.data?.message || 'Done.', { duration: 8000 })
+      onChanged && onChanged()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not reconnect the phone.')
+    } finally {
+      setBusy(false)
+    }
+  }
   const shown = agent.applied_state
   const wanted = WANT_TO_SCREEN[agent.desired_lock_state] || null
   const waiting = shown && wanted && shown !== wanted && !(wanted === 'released' && shown === 'release_pending')
@@ -984,7 +1000,23 @@ function PhoneScreenRow({ agent }) {
           <span className="block text-[11px] font-normal text-gray-400">last check-in {ago(agent.last_heartbeat)}</span>
         </span>
       </div>
-      {stale && (
+      {rejected && (
+        <div className="text-xs text-red-800 bg-red-50 rounded-xl px-3 py-2 mt-1">
+          <p>
+            This phone <strong>is online</strong> (last tried {ago(agent.rejected_at)}) but the server can't verify it,
+            so it isn't receiving changes. Tap <strong>Reconnect phone</strong> to fix it.
+          </p>
+          {reconnectPending ? (
+            <p className="mt-2 font-semibold text-amber-800">Reconnect requested — waiting for the phone's next check-in (tap Check on the phone to speed it up).</p>
+          ) : (
+            <button type="button" onClick={reconnect} disabled={busy}
+              className="mt-2 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-red-600 hover:bg-red-500 disabled:opacity-60">
+              {busy ? 'Working…' : 'Reconnect phone'}
+            </button>
+          )}
+        </div>
+      )}
+      {stale && !rejected && (
         <p className="text-xs text-red-800 bg-red-50 rounded-xl px-3 py-2 mt-1">
           This phone has not checked in since <strong>{ago(agent.last_heartbeat)}</strong>, so it hasn't received recent
           changes (activation, unlock, lock). It needs internet: office Wi-Fi, a SIM with data, or a hotspot. On app 1.137+

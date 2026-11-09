@@ -158,6 +158,8 @@ const enroll = async (req, res) => {
     device.agent.enrollment_status = 'enrolled';
     device.agent.device_id = device_id;
     device.agent.device_secret = device_secret;
+    device.agent.rejected_at = null;
+    device.agent.rekey_until = null;
     if (fcm_token) device.agent.fcm_token = fcm_token;
     if (android_version) device.agent.android_version = android_version;
     if (app_version) device.agent.app_version = app_version;
@@ -214,6 +216,20 @@ async function authDevice(req, res) {
     return null;
   }
   const device = await Device.findOne({ 'agent.device_id': id });
+  if (device && !safeEqual(device.agent?.device_secret, secret)) {
+    // The admin pressed "Reconnect phone": take the key this phone has.
+    if (device.agent?.rekey_until && new Date(device.agent.rekey_until) > new Date() && String(secret).length >= 16) {
+      device.agent.device_secret = String(secret);
+      device.agent.rekey_until = null;
+      device.agent.rejected_at = null;
+      await device.save();
+      logger.info('[agent] Phone %s reconnected (record %s) — its key is now the saved one.', String(id).slice(-6), device._id);
+      AuditLog.create({ action: 'agent_enroll', details: { event: 'reconnected', device_id: device._id }, ip_address: req.ip }).catch(() => {});
+      return device;
+    }
+    // Remember it, so the customer page can offer "Reconnect phone".
+    Device.updateOne({ _id: device._id }, { $set: { 'agent.rejected_at': new Date() } }).catch(() => {});
+  }
   if (!device || !safeEqual(device.agent?.device_secret, secret)) {
     // A phone that is online but can't check in shows up here.
     logger.warn('[agent] Rejected check-in from phone %s: %s', String(id).slice(-6),
@@ -221,6 +237,7 @@ async function authDevice(req, res) {
     res.status(401).json({ success: false, message: 'Invalid device credentials.' });
     return null;
   }
+  if (device.agent?.rejected_at) device.agent.rejected_at = null;
   return device;
 }
 

@@ -30,6 +30,7 @@ const {
   updateStaffIdentity,
   assignStock,
   setStockPrice,
+  reconnectDevice,
   mergeDuplicateDevices,
   getFrp,
   addFrpAccount,
@@ -132,6 +133,7 @@ router.post('/frp', addFrpAccount);
 router.delete('/frp/:googleId', removeFrpAccount);
 router.post('/devices/:id/return-to-stock', [param('id').isMongoId()], returnDeviceToStock);
 router.post('/devices/:id/unenroll', [param('id').isMongoId()], unenrollDevice);
+router.post('/devices/:id/reconnect', [param('id').isMongoId()], reconnectDevice);
 router.post('/customers/:id/remind', [param('id').isMongoId()], sendCustomerReminder);
 router.post('/customers/:id/record-payment', [param('id').isMongoId()], recordAdminPayment);
 router.post('/customers/:id/repossess', [param('id').isMongoId().withMessage('Invalid customer ID.')], repossessDevice);

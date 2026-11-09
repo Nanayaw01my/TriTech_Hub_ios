@@ -79,6 +79,11 @@ const DeviceSchema = new mongoose.Schema(
       // What the phone itself says it is showing (from its last check-in):
       // 'pending' = Awaiting Activation page, 'locked', 'unlocked', 'released'.
       applied_state: { type: String, default: null },
+      // The phone's check-ins are being refused (its key doesn't match ours).
+      rejected_at: { type: Date, default: null },
+      // Admin pressed "Reconnect phone": until this time, the phone's next
+      // check-in is accepted with the key it has, which becomes the saved key.
+      rekey_until: { type: Date, default: null },
       app_version: { type: String, default: null },
       android_version: { type: String, default: null },
       model_reported: { type: String, default: null },
