@@ -215,6 +215,9 @@ async function authDevice(req, res) {
   }
   const device = await Device.findOne({ 'agent.device_id': id });
   if (!device || !safeEqual(device.agent?.device_secret, secret)) {
+    // A phone that is online but can't check in shows up here.
+    logger.warn('[agent] Rejected check-in from phone %s: %s', String(id).slice(-6),
+      device ? `wrong secret (record ${device._id}, ${device.model || ''} ${device.imei || ''})` : 'no phone record with this id');
     res.status(401).json({ success: false, message: 'Invalid device credentials.' });
     return null;
   }
