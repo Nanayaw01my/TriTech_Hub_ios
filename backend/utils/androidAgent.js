@@ -139,8 +139,9 @@ const generateDeviceSecret = () => crypto.randomBytes(32).toString('hex');
 
 // ── Messaging ────────────────────────────────────────────────────────────
 /** The text shown on the phone's full-screen lock. */
-function lockMessage(extra = '') {
-  const call = BUSINESS_PHONE ? ` Call ${BUSINESS_PHONE} or ` : ' ';
+function lockMessage(extra = '', phone = null) {
+  const num = phone || BUSINESS_PHONE;
+  const call = num ? ` Call ${num} or ` : ' ';
   return (
     `This device is locked by ${BUSINESS_NAME} due to an overdue installment payment.` +
     `${call}make your payment to unlock it automatically.${extra ? ' ' + extra : ''}`

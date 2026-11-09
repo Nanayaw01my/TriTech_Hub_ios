@@ -79,17 +79,21 @@ async function lockInfoFor(device) {
   const released = device.agent?.desired_lock_state === 'released' || device.agent?.enrollment_status === 'released';
   // FRP accounts for the phone to enforce ([] = switch FRP off, e.g. on release).
   let frpAccounts = [];
-  if (!released) {
-    try {
-      const s = await Settings.getSingleton();
-      frpAccounts = (s.frp_accounts || []).map((a) => a.google_id).filter(Boolean);
-    } catch { /* keep [] */ }
+  let settings = null;
+  try { settings = await Settings.getSingleton(); } catch { /* defaults */ }
+  if (!released && settings) {
+    frpAccounts = (settings.frp_accounts || []).map((a) => a.google_id).filter(Boolean);
+  }
+  // Number shown on the lock screen ("Call us"): BUSINESS_PHONE on the server,
+  // else the first company number in Settings → Business Information.
+  if (!contact && settings?.contact_phone) {
+    contact = String(settings.contact_phone).split(/\s*(?:[\/,;|&]|\bor\b|\band\b)\s*/i)[0].trim();
   }
   return {
     ...(agent.agentUpdateInfo() || {}),
     frp_accounts: frpAccounts,
     desired_lock_state: device.agent?.desired_lock_state || 'unlocked',
-    lock_message: agent.lockMessage(),
+    lock_message: agent.lockMessage('', contact),
     business_name: agent.config.BUSINESS_NAME,
     unlock_contact: contact,
     poll_interval: POLL_INTERVAL_SECONDS,
