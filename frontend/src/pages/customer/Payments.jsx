@@ -1,4 +1,5 @@
 import { paymentMethodLabel } from '../../utils/paymentMethod'
+import { planMoney } from '../../utils/planMoney'
 import React, { useState, useEffect, useCallback } from 'react'
 import api from '../../api/axios'
 import toast from 'react-hot-toast'
@@ -91,7 +92,7 @@ export default function CustomerPayments() {
     )
   }
 
-  const paidAmount = (plan?.down_payment || 0) + ((plan?.payments_made || 0) * (plan?.installment_amount || 0))
+  const paidAmount = planMoney(plan).totalPaid // deposit + all installments, part payments included
 
   return (
     <div className="pb-24 lg:pb-6 min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50">

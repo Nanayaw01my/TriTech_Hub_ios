@@ -1,4 +1,5 @@
 import { paymentMethodLabel } from '../../utils/paymentMethod'
+import { planMoney } from '../../utils/planMoney'
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
@@ -497,12 +498,25 @@ export default function AdminCustomerDetail() {
           <p className="text-xs text-gray-500 mt-1 text-right">
             {plan.payments_made || 0} of {plan.total_payments || 0} payments made
           </p>
+          {planMoney(plan).partPaid > 0 && ['active', 'defaulted'].includes(plan.status) && (
+            <p className="mt-3 text-xs text-amber-900 bg-amber-50 rounded-xl px-3 py-2">
+              <strong>Part payment:</strong> GHS {planMoney(plan).partPaid.toLocaleString()} of the GHS {Number(plan.installment_amount).toLocaleString()} installment is paid.
+              The customer still owes <strong>GHS {planMoney(plan).partLeft.toLocaleString()}</strong>
+              {plan.next_due_date ? <> by <strong>{format(new Date(plan.next_due_date), 'dd MMM yyyy')}</strong></> : ''}, or the phone locks.
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-x-4 gap-y-3 mt-4 text-sm">
             <InfoCell label="Device Price" value={`GHS ${Number(plan.total_price || plan.device_price || 0).toLocaleString()}`} />
             <InfoCell label="Down Payment" value={`GHS ${Number(plan.down_payment || 0).toLocaleString()}`} />
             <InfoCell label="Installment" value={`GHS ${Number(plan.installment_amount || 0).toLocaleString()}`} />
             <InfoCell label="Frequency" value={<span className="capitalize">{plan.payment_frequency || plan.frequency || 'N/A'}</span>} />
-            <InfoCell label="Amount Paid" value={`GHS ${Number(plan.amount_paid || 0).toLocaleString()}`} />
+            <InfoCell label="Amount Paid" value={
+              <span>GHS {planMoney(plan).totalPaid.toLocaleString()}
+                <span className="block text-[11px] font-normal text-gray-400">
+                  deposit {planMoney(plan).deposit.toLocaleString()} + installments {planMoney(plan).onBalance.toLocaleString()}
+                </span>
+              </span>
+            } />
             <InfoCell label="Remaining" value={`GHS ${Number(plan.remaining_balance || 0).toLocaleString()}`} valueClass="text-red-600" />
             {(plan.penalty_balance || 0) > 0 && (
               <InfoCell label="Late fees owed" value={`GHS ${Number(plan.penalty_balance).toLocaleString()}`} valueClass="text-red-600" />

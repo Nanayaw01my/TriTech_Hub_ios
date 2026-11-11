@@ -1,4 +1,5 @@
 import { paymentMethodLabel } from '../../utils/paymentMethod'
+import { planMoney } from '../../utils/planMoney'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
@@ -40,7 +41,7 @@ export default function CustomerDashboard() {
   const isOverdue = plan?.status === 'overdue' || plan?.status === 'defaulted'
   const isCompleted = plan?.status === 'completed'
 
-  const paidAmount = (plan?.down_payment || 0) + ((plan?.payments_made || 0) * (plan?.installment_amount || 0))
+  const paidAmount = planMoney(plan).totalPaid // deposit + all installments, part payments included
   const remaining = Number(plan?.remaining_balance || 0)
 
   const firstName = (user?.full_name || user?.name || 'Customer').split(' ')[0]
