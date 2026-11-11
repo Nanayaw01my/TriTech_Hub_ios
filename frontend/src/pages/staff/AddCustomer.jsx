@@ -8,6 +8,7 @@ import LoadingSpinner from '../../components/LoadingSpinner'
 import toast from 'react-hot-toast'
 import { addDays, addWeeks, format } from 'date-fns'
 import { displayEmail } from '../../utils/customerEmail'
+import { analysePhoto, photoIssues, issueKey, loadFaceApi } from '../../utils/photoChecks'
 
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || ''
 
@@ -89,6 +90,52 @@ export default function StaffAddCustomer() {
   )
   const business = useBusinessInfo() // late fee for the consent text and preview
   const [sellMode, setSellMode] = useState('stock') // 'stock' | 'manual'
+
+  // ── Photo checks (run on this phone) ─────────────────────────────────────────
+  const PHOTO_FIELDS = ['ghana_card_front', 'ghana_card_back', 'customer_photo', 'guarantor_photo']
+  const [photoResults, setPhotoResults] = useState({})   // field -> analysis
+  const [photoChecking, setPhotoChecking] = useState({}) // field -> true while checking
+  const [confirmedIssues, setConfirmedIssues] = useState([]) // issue keys the DSR said are fine
+  const [camKeys, setCamKeys] = useState({})             // bump to reset a camera box
+  const photoRuns = useRef({})
+  const photoProblems = useMemo(() => photoIssues(photoResults), [photoResults])
+  const [idWarnings, setIdWarnings] = useState(null)     // server warnings to confirm before saving
+
+  // Start loading the face models when the DSR reaches the photos step.
+  useEffect(() => {
+    if (step === 2) loadFaceApi().catch(() => {})
+  }, [step])
+
+  const capturePhoto = (field, img) => {
+    set(field, img)
+    setConfirmedIssues((list) => list.filter((k) => !k.startsWith(`${field}:`)))
+    const run = (photoRuns.current[field] || 0) + 1
+    photoRuns.current[field] = run
+    if (!img || !String(img).startsWith('data:image')) {
+      setPhotoResults((r) => { const n = { ...r }; delete n[field]; return n })
+      setPhotoChecking((c) => ({ ...c, [field]: false }))
+      return
+    }
+    setPhotoChecking((c) => ({ ...c, [field]: true }))
+    analysePhoto(img)
+      .then((res) => {
+        if (photoRuns.current[field] !== run) return // a newer photo replaced it
+        setPhotoResults((r) => ({ ...r, [field]: res }))
+      })
+      .catch(() => {
+        if (photoRuns.current[field] !== run) return
+        setPhotoResults((r) => { const n = { ...r }; delete n[field]; return n })
+      })
+      .finally(() => {
+        if (photoRuns.current[field] === run) setPhotoChecking((c) => ({ ...c, [field]: false }))
+      })
+  }
+
+  const retakePhoto = (field) => {
+    capturePhoto(field, null)
+    setCamKeys((k) => ({ ...k, [field]: (k[field] || 0) + 1 }))
+  }
+  const confirmIssue = (issue) => setConfirmedIssues((list) => list.includes(issueKey(issue)) ? list : [...list, issueKey(issue)])
 
   useEffect(() => {
     setDevicesLoading(true)
@@ -205,6 +252,16 @@ export default function StaffAddCustomer() {
       if (!form.customer_photo) e.customer_photo = 'Customer photo is required'
       if (!form.guarantor_photo) e.guarantor_photo = 'Guarantor photo is required'
       if (!form.proof_of_income) e.proof_of_income = 'Proof of income is required'
+      for (const f of PHOTO_FIELDS) {
+        if (e[f]) continue
+        if (photoChecking[f]) { e[f] = 'Checking this photo — wait a moment.'; continue }
+        const mine = photoProblems.filter((i) => i.field === f)
+        const block = mine.find((i) => i.level === 'block')
+        if (block) e[f] = block.message
+        else if (mine.some((i) => i.level === 'warn' && !confirmedIssues.includes(issueKey(i)))) {
+          e[f] = 'Retake this photo, or tap "It\'s correct" if it is right.'
+        }
+      }
     }
     if (s === 3) {
       if (!form.occupation.trim()) e.occupation = 'Occupation is required'
@@ -215,6 +272,10 @@ export default function StaffAddCustomer() {
       if (!form.guarantor_phone.trim()) e.guarantor_phone = "Guarantor's phone number is required"
       if (!form.guarantor_ghana_card_id.trim()) e.guarantor_ghana_card_id = "Guarantor's Ghana Card ID is required"
       if (!form.guarantor_relationship.trim()) e.guarantor_relationship = "Guarantor's relationship is required"
+      const normCard = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+      if (!e.guarantor_ghana_card_id && normCard(form.guarantor_ghana_card_id) === normCard(form.ghana_card_id)) {
+        e.guarantor_ghana_card_id = "This is the customer's own Ghana Card number. Enter the GUARANTOR's Ghana Card number."
+      }
     }
     if (s === 4) {
       if (sellMode === 'stock') {
@@ -282,6 +343,10 @@ export default function StaffAddCustomer() {
     consents: { terms: !!form.agreed, adult: !!form.adult, device_management: !!form.device_consent },
     // Same id on every retry of this registration, so the server never makes a duplicate.
     client_ref: saleRefRef.current,
+    // Photo warnings the DSR confirmed were wrong alarms (flagged for the admin).
+    photo_flags: photoProblems
+      .filter((i) => i.level === 'warn' && confirmedIssues.includes(issueKey(i)))
+      .map(({ field, code, message }) => ({ field, code, message })),
   })
 
   // Create the customer record. When called with a Paystack reference the backend
@@ -331,14 +396,39 @@ export default function StaffAddCustomer() {
     }
   }
 
+  // Ghana Card / guarantor warnings from the server: the DSR confirms them.
+  const askIdWarnings = (warnings, proceed) => {
+    if (!warnings?.length) { proceed(); return }
+    setIdWarnings({ list: warnings, proceed })
+  }
+
   const handleSubmit = async () => {
     if (!validateStep(4)) return
-    if (editMode) { saveCorrections(); return }
+    if (editMode) {
+      setSubmitting(true)
+      try {
+        const r = await api.post('/staff/customers/precheck', {
+          ids_only: true, exclude_customer_id: editId,
+          ghana_card_id: form.ghana_card_id, guarantor_ghana_card_id: form.guarantor_ghana_card_id,
+          phone: form.phone, guarantor_phone: form.guarantor_phone,
+        })
+        setSubmitting(false)
+        askIdWarnings(r.data?.warnings, saveCorrections)
+      } catch (err) {
+        setSubmitting(false)
+        toast.error(err?.response?.data?.message || 'Please fix the details and try again.')
+      }
+      return
+    }
 
     // 1. Pre-check (unique email, device, etc.) so we fail fast on bad details.
     setSubmitting(true)
+    let warnings = []
     try {
-      await api.post('/staff/customers/precheck', {
+      const r = await api.post('/staff/customers/precheck', {
+        ghana_card_id: form.ghana_card_id,
+        guarantor_ghana_card_id: form.guarantor_ghana_card_id,
+        guarantor_phone: form.guarantor_phone,
         email: form.email,
         phone: form.phone,
         device_id: form.device_id || undefined,
@@ -349,6 +439,7 @@ export default function StaffAddCustomer() {
         password: form.password,
         down_payment: Number(form.down_payment),
       })
+      warnings = r.data?.warnings || []
     } catch (err) {
       setSubmitting(false)
       const d = err?.response?.data
@@ -358,7 +449,7 @@ export default function StaffAddCustomer() {
     setSubmitting(false)
 
     // 2. Register (no payment yet — the deposit is collected after approval).
-    saveCustomer()
+    askIdWarnings(warnings, () => saveCustomer())
   }
 
   return (
@@ -524,45 +615,65 @@ export default function StaffAddCustomer() {
         <div className="bg-white rounded-2xl shadow-sm p-5 lg:p-6">
           <h2 className="text-base font-bold text-gray-800 mb-1">Photo Capture</h2>
           <p className="text-sm text-gray-500 mb-4">Ghana Card photos are required. Please ensure photos are clear and readable.</p>
+          <p className="text-xs text-blue-800 bg-blue-50 rounded-xl px-3 py-2 mb-4">
+            Each photo is checked on this phone: the FRONT must show the person's picture, the BACK must be the other side,
+            and the guarantor must be a different person from the customer. Retake any photo the app flags.
+          </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <div data-error={errors.ghana_card_front}>
               <OnFile value={form.ghana_card_front} />
               <CameraCapture
+                key={camKeys.ghana_card_front || 0}
                 label="Ghana Card - Front"
                 required
-                onCapture={(img) => set('ghana_card_front', img)}
+                onCapture={(img) => capturePhoto('ghana_card_front', img)}
               />
+              <PhotoCheckNote checking={photoChecking.ghana_card_front} hasPhoto={String(form.ghana_card_front || '').startsWith('data:')}
+                issues={photoProblems.filter((i) => i.field === 'ghana_card_front')} confirmed={confirmedIssues}
+                onRetake={() => retakePhoto('ghana_card_front')} onConfirm={confirmIssue} />
               {errors.ghana_card_front && <p className="text-xs text-red-500 mt-1">{errors.ghana_card_front}</p>}
             </div>
 
             <div data-error={errors.ghana_card_back}>
               <OnFile value={form.ghana_card_back} />
               <CameraCapture
+                key={camKeys.ghana_card_back || 0}
                 label="Ghana Card - Back"
                 required
-                onCapture={(img) => set('ghana_card_back', img)}
+                onCapture={(img) => capturePhoto('ghana_card_back', img)}
               />
+              <PhotoCheckNote checking={photoChecking.ghana_card_back} hasPhoto={String(form.ghana_card_back || '').startsWith('data:')}
+                issues={photoProblems.filter((i) => i.field === 'ghana_card_back')} confirmed={confirmedIssues}
+                onRetake={() => retakePhoto('ghana_card_back')} onConfirm={confirmIssue} />
               {errors.ghana_card_back && <p className="text-xs text-red-500 mt-1">{errors.ghana_card_back}</p>}
             </div>
 
             <div data-error={errors.customer_photo}>
               <OnFile value={form.customer_photo} />
               <CameraCapture
+                key={camKeys.customer_photo || 0}
                 label="Customer Photo"
                 required
-                onCapture={(img) => set('customer_photo', img)}
+                onCapture={(img) => capturePhoto('customer_photo', img)}
               />
+              <PhotoCheckNote checking={photoChecking.customer_photo} hasPhoto={String(form.customer_photo || '').startsWith('data:')}
+                issues={photoProblems.filter((i) => i.field === 'customer_photo')} confirmed={confirmedIssues}
+                onRetake={() => retakePhoto('customer_photo')} onConfirm={confirmIssue} />
               {errors.customer_photo && <p className="text-xs text-red-500 mt-1">{errors.customer_photo}</p>}
             </div>
 
             <div data-error={errors.guarantor_photo}>
               <OnFile value={form.guarantor_photo} />
               <CameraCapture
+                key={camKeys.guarantor_photo || 0}
                 label="Guarantor Photo"
                 required
-                onCapture={(img) => set('guarantor_photo', img)}
+                onCapture={(img) => capturePhoto('guarantor_photo', img)}
               />
+              <PhotoCheckNote checking={photoChecking.guarantor_photo} hasPhoto={String(form.guarantor_photo || '').startsWith('data:')}
+                issues={photoProblems.filter((i) => i.field === 'guarantor_photo')} confirmed={confirmedIssues}
+                onRetake={() => retakePhoto('guarantor_photo')} onConfirm={confirmIssue} />
               {errors.guarantor_photo && <p className="text-xs text-red-500 mt-1">{errors.guarantor_photo}</p>}
             </div>
           </div>
@@ -1042,6 +1153,60 @@ export default function StaffAddCustomer() {
           </button>
         )}
       </div>
+
+      {/* Ghana Card / guarantor warnings from the server: confirm or go back. */}
+      {idWarnings && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl">
+            <p className="text-lg font-black text-gray-900">Please check before saving</p>
+            <div className="mt-3 space-y-2">
+              {idWarnings.list.map((w) => (
+                <p key={w.code} className="text-sm text-amber-900 bg-amber-50 rounded-xl px-3 py-2">⚠️ {w.message}</p>
+              ))}
+            </div>
+            <p className="mt-3 text-xs text-gray-500">If you continue, the admin will see these warnings when reviewing the sale.</p>
+            <button type="button" onClick={() => setIdWarnings(null)}
+              className="mt-4 w-full py-3 rounded-2xl bg-orange-600 text-white font-bold">Go back and fix it</button>
+            <button type="button" onClick={() => { const go = idWarnings.proceed; setIdWarnings(null); go() }}
+              className="mt-2 w-full py-3 rounded-2xl border border-gray-200 text-gray-700 font-semibold">It's correct — continue</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Result of the photo checks under a camera box: checking / OK / problems. */
+function PhotoCheckNote({ checking, hasPhoto, issues, confirmed, onRetake, onConfirm }) {
+  if (checking) {
+    return <p className="mt-2 text-xs font-semibold text-gray-500">Checking photo…</p>
+  }
+  if (!hasPhoto) return null
+  if (!issues.length) {
+    return <p className="mt-2 text-xs font-semibold text-green-700">✓ Photo looks right</p>
+  }
+  return (
+    <div className="mt-2 space-y-2">
+      {issues.map((i) => {
+        const ok = confirmed.includes(`${i.field}:${i.code}`)
+        return (
+          <div key={i.code} className={`rounded-xl px-3 py-2 text-xs ${i.level === 'block' ? 'bg-red-50 text-red-800' : ok ? 'bg-gray-50 text-gray-500' : 'bg-amber-50 text-amber-900'}`}>
+            <p className="font-semibold">{i.level === 'block' ? '⛔ ' : '⚠️ '}{i.message}</p>
+            {ok ? (
+              <p className="mt-1">You said this photo is correct — the admin will check it.</p>
+            ) : (
+              <div className="mt-2 flex gap-2">
+                <button type="button" onClick={onRetake}
+                  className="px-3 py-1.5 rounded-lg bg-orange-600 text-white font-bold">Retake</button>
+                {i.level === 'warn' && (
+                  <button type="button" onClick={() => onConfirm(i)}
+                    className="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 font-semibold bg-white">It's correct</button>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

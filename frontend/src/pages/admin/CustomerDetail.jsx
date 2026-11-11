@@ -8,6 +8,7 @@ import LoadingSpinner from '../../components/LoadingSpinner'
 import StatusBadge from '../../components/StatusBadge'
 import ProgressBar from '../../components/ProgressBar'
 import ConfirmModal from '../../components/ConfirmModal'
+import { ReviewFlags } from './Activations'
 import EnrollDeviceModal from '../../components/EnrollDeviceModal'
 import LocationModal from '../../components/LocationModal'
 import toast from 'react-hot-toast'
@@ -403,6 +404,10 @@ export default function AdminCustomerDetail() {
           )}
         </div>
       </div>
+
+      {customer?.review_flags?.length > 0 && (
+        <div className="mb-4"><ReviewFlags flags={customer.review_flags} /></div>
+      )}
 
       {/* ── DEVICE ───────────────────────────────────────────── */}
       {device && (

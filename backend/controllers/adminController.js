@@ -1173,7 +1173,7 @@ const getPendingActivations = async (req, res) => {
     const plans = await InstallmentPlan.find({ status: { $in: ['pending', 'returned', 'approved'] } })
       .populate({
         path: 'customer_id',
-        select: 'full_name phone email ghana_card_id occupation guarantor photos proof_of_income location income user_id createdAt',
+        select: 'full_name phone email ghana_card_id occupation guarantor photos proof_of_income location income user_id createdAt review_flags',
         populate: { path: 'user_id', select: 'account_number' },
       })
       .populate({ path: 'device_id', select: 'model imei serial_number price agent lock_status' })
@@ -1200,6 +1200,7 @@ const getPendingActivations = async (req, res) => {
       photos: p.customer_id?.photos || null,
       location: p.customer_id?.location || null,
       income: p.customer_id?.income || null,
+      review_flags: p.customer_id?.review_flags || [],
       device_model: p.device_id?.model || 'Unknown',
       device_price: p.device_id?.price || 0,
       imei: p.device_id?.imei || '',

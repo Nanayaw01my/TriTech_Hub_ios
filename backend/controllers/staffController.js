@@ -20,6 +20,7 @@ const { generateAccountNumber } = require('../utils/accountGenerator');
 const { initializePayment } = require('../utils/paystack');
 const { sendAdminSaleNotificationEmail } = require('../utils/email');
 const { sendAdminSaleSMS, sendAdminSaleWhatsApp } = require('../utils/sms');
+const { checkIdentity, reviewFlags } = require('../utils/idChecks');
 const { sendCompanyAlert } = require('../utils/companyAlert');
 const Settings = require('../models/Settings');
 const { v4: uuidv4 } = require('uuid');
@@ -178,6 +179,18 @@ const precheckCustomer = async (req, res) => {
   try {
     const { email, device_id, device_model, device_price, password, down_payment, serial_number, udid } = req.body;
 
+    // Ghana Card / guarantor checks: some always stop the sale, others are
+    // shown to the DSR to confirm (and flagged for the admin).
+    const ids = await checkIdentity({
+      ghana_card_id: req.body.ghana_card_id, guarantor_ghana_card_id: req.body.guarantor_ghana_card_id,
+      phone: req.body.phone, guarantor_phone: req.body.guarantor_phone,
+      excludeCustomerId: req.body.exclude_customer_id || null,
+    });
+    if (ids.blocks.length) return res.status(400).json({ success: false, message: ids.blocks[0] });
+    const idWarnings = ids.warns.map((w) => ({ code: w.code, message: w.message }));
+    // Edit mode only needs the ID checks.
+    if (req.body.ids_only) return res.status(200).json({ success: true, ok: true, warnings: idWarnings });
+
     // Password is optional (a PIN is generated if blank) — only check length if given.
     if (password && String(password).length > 5) {
       return res.status(400).json({ success: false, message: 'Customer password must be between 1 and 5 characters.' });
@@ -221,7 +234,7 @@ const precheckCustomer = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Down payment must be less than the device price.' });
     }
 
-    return res.status(200).json({ success: true, ok: true });
+    return res.status(200).json({ success: true, ok: true, warnings: idWarnings });
   } catch (err) {
     logger.error('Staff precheckCustomer error: %s', err.message);
     return res.status(500).json({ success: false, message: 'Could not verify details. Please try again.' });
@@ -315,6 +328,12 @@ const addCustomerImpl = async (req, res) => {
         success: false,
         message: 'All guarantor details (name, phone, Ghana Card ID, relationship) are required.',
       });
+    }
+
+    // --- 1b1. ID checks (same card for guarantor = stop; others are flagged) ---
+    const idResult = await checkIdentity({ ghana_card_id, guarantor_ghana_card_id, phone, guarantor_phone });
+    if (idResult.blocks.length) {
+      return res.status(400).json({ success: false, message: idResult.blocks[0] });
     }
 
     // --- 1b2. Customer photo, guarantor photo and proof of income are required ---
@@ -472,6 +491,7 @@ const addCustomerImpl = async (req, res) => {
       },
       proof_of_income,
       created_by: req.user._id,
+      review_flags: reviewFlags(idResult, req.body.photo_flags),
     });
 
     // --- 8. Calculate installment plan ---
@@ -678,6 +698,11 @@ const updateSale = async (req, res) => {
     if (!b.guarantor_name || !b.guarantor_phone || !b.guarantor_ghana_card_id || !b.guarantor_relationship) {
       return res.status(400).json({ success: false, message: 'All guarantor details (name, phone, Ghana Card ID, relationship) are required.' });
     }
+    const idResult = await checkIdentity({
+      ghana_card_id: b.ghana_card_id || customer.ghana_card_id, guarantor_ghana_card_id: b.guarantor_ghana_card_id,
+      phone: b.phone || customer.phone, guarantor_phone: b.guarantor_phone, excludeCustomerId: customer._id,
+    });
+    if (idResult.blocks.length) return res.status(400).json({ success: false, message: idResult.blocks[0] });
     const downPayment = Number(b.down_payment) || 0;
     if (!(downPayment > 0)) return res.status(400).json({ success: false, message: 'A deposit (down payment) is required.' });
     const cleanEmail = b.email ? String(b.email).toLowerCase().trim() : '';
@@ -807,6 +832,7 @@ const updateSale = async (req, res) => {
     };
     customer.photos = photos;
     customer.proof_of_income = proofOfIncome;
+    customer.review_flags = reviewFlags(idResult, b.photo_flags);
     await customer.save();
 
     user.name = customer.full_name;

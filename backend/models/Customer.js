@@ -28,6 +28,19 @@ const CustomerSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    // Fingerprint of the Ghana Card number (the number itself is encrypted),
+    // used to spot a card that's already registered. See utils/idChecks.js.
+    ghana_card_hash: { type: String, default: null, index: true },
+    ghana_card_hash_kid: { type: String, default: null },
+    // Things for the admin to look at before approving: ID warnings found by
+    // the system, and photo warnings the DSR overrode ("It's correct").
+    review_flags: [{
+      code: { type: String },
+      source: { type: String }, // 'system' | 'photo'
+      message: { type: String },
+      at: { type: Date, default: Date.now },
+      _id: false,
+    }],
     photos: {
       ghana_card_front: {
         type: String,
@@ -162,6 +175,12 @@ CustomerSchema.index({ full_name: 'text' });
 
 // Auto-encrypt phone on save
 CustomerSchema.pre('save', function (next) {
+  // Fingerprint the Ghana Card number while it's still readable.
+  if (this.isModified('ghana_card_id') && this.ghana_card_id && !isEncrypted(this.ghana_card_id)) {
+    const ids = require('../utils/idChecks');
+    this.ghana_card_hash = ids.cardHash(this.ghana_card_id);
+    this.ghana_card_hash_kid = ids.keyId();
+  }
   if (this.isModified('phone') && this.phone && !isEncrypted(this.phone)) {
     this.phone = encrypt(this.phone);
   }

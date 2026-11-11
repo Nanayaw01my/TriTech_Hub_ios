@@ -140,6 +140,8 @@ export default function Activations() {
                     </div>
                   )}
 
+                  <ReviewFlags flags={it.review_flags} compact />
+
                   <div className="flex items-center justify-between mt-4 gap-3">
                     <p className="text-[11px] text-gray-400">
                       By {it.created_by || 'DSR'} · {it.created_at ? formatDistanceToNow(new Date(it.created_at), { addSuffix: true }) : ''}
@@ -248,6 +250,8 @@ function ReviewSheet({ it, onClose, onApprove, onSendBack }) {
               <p className="mt-1">Your earlier note: {it.review_note}</p>
             </div>
           )}
+
+          <ReviewFlags flags={it.review_flags} />
 
           <Section title="Customer">
             <Detail label="Full name" value={it.customer_name} />
@@ -361,3 +365,24 @@ function Detail({ label, value, mono }) {
     </div>
   )
 }
+
+/** Things to check before approving: ID warnings and photo warnings the DSR overrode. */
+export function ReviewFlags({ flags, compact = false }) {
+  if (!flags?.length) return null
+  return (
+    <div className={`${compact ? 'mt-3' : ''} rounded-2xl p-3 text-sm bg-amber-50 text-amber-900 border border-amber-200`}>
+      <p className="font-bold">⚠️ Check before approving ({flags.length})</p>
+      <ul className="mt-1 space-y-1 list-disc list-inside">
+        {flags.map((f, i) => (
+          <li key={i} className={compact ? 'truncate' : ''}>{f.message}</li>
+        ))}
+      </ul>
+      {!compact && (
+        <p className="mt-2 text-xs text-amber-800">
+          Look at the photos and details above. If something is wrong, use “Send back” so the DSR fixes it.
+        </p>
+      )}
+    </div>
+  )
+}
+
