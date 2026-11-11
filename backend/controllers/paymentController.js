@@ -225,9 +225,35 @@ const processSuccessfulPayment = async ({
   }
 
   if (customer.phone) {
+    // What the customer must pay next, and by when (part payments included).
+    let next = {};
+    if (!isCompleted) {
+      const round = (n) => Math.round(n * 100) / 100;
+      const credit = round(Math.max(0, financed - newRemainingBalance - newPaymentsMade * per));
+      if (!caughtUp) {
+        // Still behind (overdue installments and/or late fees): the amount
+        // that unlocks the phone now.
+        const { amountDue } = require('../utils/payLink');
+        next = {
+          overdue: true,
+          nextAmount: amountDue({
+            ...(plan.toObject ? plan.toObject() : plan),
+            remaining_balance: newRemainingBalance, payments_made: newPaymentsMade,
+            penalty_balance: newPenaltyBalance, schedule: scheduleUpdate, next_due_date: nextDueDate,
+          }),
+        };
+      } else {
+        next = {
+          partial: credit > 0,
+          nextAmount: round(Math.max(0, Math.min(per, newRemainingBalance) - credit)),
+          nextDueDate,
+        };
+      }
+    }
     sendPaymentConfirmedSMS(customer.phone, customer.full_name, amountGHS, {
       deviceModel,
       remainingBalance: newRemainingBalance,
+      ...next,
     }).catch(e => logger.error('Payment confirmation SMS failed:', e.message));
 
     sendPaymentConfirmedWhatsApp(customer.phone, customer.full_name, amountGHS, {

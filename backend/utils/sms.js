@@ -201,11 +201,28 @@ const sendDeviceUnlockedSMS = async (phone, name, deviceModel) => {
   await sendSMS(phone, msg);
 };
 
+// details.nextAmount / nextDueDate: what's due next (a part payment leaves the
+// rest of the installment due by the same date); details.overdue: still behind,
+// nextAmount is what unlocks the phone now.
 const sendPaymentConfirmedSMS = async (phone, name, amount, details) => {
-  const { deviceModel, remainingBalance } = details;
-  const msg = remainingBalance <= 0
-    ? `Congratulations ${name}! Your ${deviceModel} is fully paid off. It is now yours! Thank you. -Dan & Dor Solar`
-    : `Hi ${name}, GHS ${Number(amount).toLocaleString()} received for your ${deviceModel}. Balance: GHS ${Number(remainingBalance).toLocaleString()}. -Dan & Dor Solar`;
+  const { deviceModel, remainingBalance, nextAmount, nextDueDate, partial, overdue } = details;
+  const got = `GHS ${money(amount)} received for your ${deviceModel}.`;
+  const bal = `Total balance: GHS ${money(remainingBalance)}.`;
+  const day = nextDueDate
+    ? new Date(nextDueDate).toLocaleDateString('en-GH', { timeZone: 'UTC', day: 'numeric', month: 'short' })
+    : null;
+  let msg;
+  if (remainingBalance <= 0) {
+    msg = `Congratulations ${name}! Your ${deviceModel} is fully paid off. It is now yours! Thank you. -Dan & Dor Solar`;
+  } else if (overdue && nextAmount > 0) {
+    msg = `Hi ${firstName(name)}, ${got} You still owe GHS ${money(nextAmount)} now - pay it to unlock your phone. ${bal} -Dan & Dor Solar`;
+  } else if (partial && nextAmount > 0 && day) {
+    msg = `Hi ${firstName(name)}, ${got} Still due by ${day}: GHS ${money(nextAmount)} (to avoid a lock). ${bal} -Dan & Dor Solar`;
+  } else if (nextAmount > 0 && day) {
+    msg = `Hi ${firstName(name)}, ${got} Next payment: GHS ${money(nextAmount)} due ${day}. ${bal} -Dan & Dor Solar`;
+  } else {
+    msg = `Hi ${firstName(name)}, ${got} ${bal} -Dan & Dor Solar`;
+  }
   await sendSMS(phone, msg);
 };
 
