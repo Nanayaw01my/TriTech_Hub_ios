@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { openPayPage } from '../../utils/openPayPage'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { saveBlob } from '../../utils/download'
@@ -214,6 +215,18 @@ export default function AdminCustomers() {
                       <p className="text-[11px] text-gray-400">Registered {format(new Date(c.createdAt), 'dd MMM, HH:mm')}</p>
                     )}
                   </div>
+
+                  {/* Pay now through Paystack (MoMo / card) */}
+                  {['active', 'defaulted'].includes(c.plan_status) && (
+                    <button
+                      type="button"
+                      aria-label={`Pay for ${c.full_name || c.name}`}
+                      onClick={(e) => { e.stopPropagation(); openPayPage(navigate, c._id || c.id, '/admin/customers') }}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-orange-600 hover:bg-orange-500 flex-shrink-0"
+                    >
+                      Pay
+                    </button>
+                  )}
 
                   {/* Delete (e.g. a duplicate made on a weak network) */}
                   <button

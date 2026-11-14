@@ -38,6 +38,7 @@ const {
   getComputerEnrollScript,
   testSms,
   testCompanyAlert,
+  getAdminPayLink,
   recordAdminPayment,
   getAdmins,
   addAdmin,
@@ -136,6 +137,7 @@ router.post('/devices/:id/unenroll', [param('id').isMongoId()], unenrollDevice);
 router.post('/devices/:id/reconnect', [param('id').isMongoId()], reconnectDevice);
 router.post('/customers/:id/remind', [param('id').isMongoId()], sendCustomerReminder);
 router.post('/customers/:id/record-payment', [param('id').isMongoId()], recordAdminPayment);
+router.get('/customers/:id/pay-link', [param('id').isMongoId()], getAdminPayLink);
 router.post('/customers/:id/repossess', [param('id').isMongoId().withMessage('Invalid customer ID.')], repossessDevice);
 
 // ─── STAFF ────────────────────────────────────────────────────────────────────

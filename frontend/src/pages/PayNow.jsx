@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import api from '../api/axios'
 import useLogo from '../hooks/useLogo'
 import PublicFooter from '../components/PublicFooter'
@@ -14,6 +14,10 @@ const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-GH', { weekday: '
  */
 export default function PayNow() {
   const { token } = useParams()
+  // Opened from the admin portal: offer a way back to the customer.
+  const location = useLocation()
+  const navigate = useNavigate()
+  const back = location.state?.back || null
   const [params] = useSearchParams()
   const reference = params.get('reference') || params.get('trxref')
   const logo = useLogo()
@@ -79,6 +83,10 @@ export default function PayNow() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 flex items-start justify-center px-4 py-10">
       <div className="w-full max-w-sm">
+        {back && (
+          <button type="button" onClick={() => navigate(back)}
+            className="mb-4 text-sm font-semibold text-orange-700">‹ {location.state?.backLabel || 'Back'}</button>
+        )}
         <div className="flex items-center gap-3 mb-6 justify-center">
           <img src={logo} alt="" className="w-12 h-12 rounded-2xl object-contain bg-white shadow" />
           <div>

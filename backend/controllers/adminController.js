@@ -1699,6 +1699,32 @@ const testSms = async (req, res) => {
 };
 
 /**
+ * GET /api/admin/customers/:id/pay-link
+ * The customer's Pay-now page, so the admin can take a payment through
+ * Paystack (MoMo prompt to the customer's phone, or card) instead of
+ * recording it by hand. Same page the customer gets by SMS.
+ */
+const getAdminPayLink = async (req, res) => {
+  try {
+    const plan = await InstallmentPlan.findOne({ customer_id: req.params.id, status: { $in: ['active', 'defaulted'] } })
+      .sort({ createdAt: -1 });
+    if (!plan) {
+      return res.status(400).json({ success: false, message: 'This customer has no active plan to pay. (A new sale is paid with its deposit first.)' });
+    }
+    const { ensurePayLink, amountDue } = require('../utils/payLink');
+    const link = await ensurePayLink(plan);
+    if (!link) return res.status(500).json({ success: false, message: 'Could not make the payment link. Try again.' });
+    return res.status(200).json({
+      success: true,
+      data: { token: plan.pay_token, url: `https://${link}`, amount_due: amountDue(plan) },
+    });
+  } catch (error) {
+    logger.error('getAdminPayLink error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
  * POST /api/admin/sms/test-company-alert
  * Send a test alert to every company alert number (Settings number + silent
  * backup numbers) and report what happened to each one.
@@ -3518,6 +3544,7 @@ module.exports = {
   getComputerEnrollScript,
   testSms,
   testCompanyAlert,
+  getAdminPayLink,
   recordAdminPayment,
   getAdmins,
   addAdmin,
