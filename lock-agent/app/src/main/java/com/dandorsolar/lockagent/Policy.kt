@@ -82,6 +82,29 @@ object Policy {
         runCatching { dpm.addUserRestriction(admin, UserManager.DISALLOW_CONFIG_LOCATION) }
     }
 
+    /** Let the phone / dialer / call-screen apps through lock-task (kiosk) mode,
+     *  e.g. for a Mobile Money approval while paying from the lock screen. The
+     *  lock screen sets the list back to our app only when it shows again. */
+    fun allowPhoneApps(c: Context) {
+        if (!isOwner(c)) return
+        val pkgs = linkedSetOf(c.packageName)
+        val pm = c.packageManager
+        listOf(android.content.Intent(android.content.Intent.ACTION_DIAL),
+            android.content.Intent(android.content.Intent.ACTION_CALL, android.net.Uri.parse("tel:0"))).forEach { i ->
+            runCatching { pm.queryIntentActivities(i, 0).forEach { pkgs.add(it.activityInfo.packageName) } }
+        }
+        runCatching {
+            val tm = c.getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+            tm.defaultDialerPackage?.let { pkgs.add(it) }
+        }
+        pkgs.addAll(listOf(
+            "com.android.server.telecom", "com.android.dialer", "com.android.incallui", "com.google.android.dialer",
+            "com.samsung.android.dialer", "com.samsung.android.incallui", "com.android.phone",
+            "com.android.stk", "com.android.contacts", "com.samsung.android.app.telephonyui"
+        ))
+        dpm(c).setLockTaskPackages(admin(c), pkgs.toTypedArray())
+    }
+
     fun lockNow(c: Context) = runCatching { dpm(c).lockNow() }
 
     /**

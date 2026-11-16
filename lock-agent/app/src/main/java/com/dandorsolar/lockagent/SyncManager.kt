@@ -147,6 +147,11 @@ object SyncManager {
             Deadline.schedule(c) // offline alarm at the new deadline
         }
         if (j.has("deadman_days")) Prefs.setDeadmanDays(c, j.optInt("deadman_days", 7))
+        if (j.has("pay_url")) {
+            val amt = j.optDouble("amount_due", 0.0)
+            Prefs.setPayInfo(c, j.optString("pay_url", ""),
+                if (amt > 0) String.format(java.util.Locale.US, "%,.2f", amt) else "")
+        }
     }
 
     /** Make the phone match [desired] ("locked"/"unlocked"/"released"/

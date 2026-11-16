@@ -54,6 +54,10 @@ class LockActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btnCheck).setOnClickListener { onCheck() }
         findViewById<Button>(R.id.btnInternet).setOnClickListener { openInternetSettings() }
+        findViewById<Button>(R.id.btnPay).setOnClickListener {
+            if (!online()) findViewById<TextView>(R.id.tvLockStatus).setText(R.string.lock_no_internet)
+            else PayActivity.open(this)
+        }
         render()
 
         ContextCompat.registerReceiver(
@@ -80,6 +84,17 @@ class LockActivity : AppCompatActivity() {
             title.setText(R.string.lock_title)
             msg.text = Prefs.lockMessage(this).ifEmpty { getString(R.string.lock_default_message) }
             check.setText(R.string.lock_check_again)
+        }
+
+        // Pay now (overdue lock only — a sale awaiting activation is paid by the DSR).
+        val btnPay = findViewById<Button>(R.id.btnPay)
+        val payUrl = Prefs.payUrl(this)
+        if (!isAwaiting() && payUrl.startsWith("https://")) {
+            val amt = Prefs.amountDue(this)
+            btnPay.text = if (amt.isNotEmpty()) getString(R.string.lock_pay_amount, amt) else getString(R.string.lock_pay_button)
+            btnPay.visibility = View.VISIBLE
+        } else {
+            btnPay.visibility = View.GONE
         }
 
         val contact = Prefs.unlockContact(this)

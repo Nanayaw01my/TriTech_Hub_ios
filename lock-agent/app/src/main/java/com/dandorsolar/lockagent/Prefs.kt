@@ -26,6 +26,12 @@ object Prefs {
     fun unlockContact(c: Context): String = p(c).getString("unlock_contact", "") ?: ""
     fun setUnlockContact(c: Context, v: String) = p(c).edit().putString("unlock_contact", v).apply()
 
+    // "Pay now" on the lock screen: the customer's Pay-now page and amount due.
+    fun payUrl(c: Context): String = p(c).getString("pay_url", "") ?: ""
+    fun amountDue(c: Context): String = p(c).getString("amount_due", "") ?: ""
+    fun setPayInfo(c: Context, url: String, amount: String) =
+        p(c).edit().putString("pay_url", url).putString("amount_due", amount).apply()
+
     fun lockMessage(c: Context): String = p(c).getString("lock_message", "") ?: ""
     fun setLockMessage(c: Context, v: String) = p(c).edit().putString("lock_message", v).apply()
 

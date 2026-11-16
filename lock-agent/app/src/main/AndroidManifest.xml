@@ -71,6 +71,15 @@
              admin receiver below carries BIND_DEVICE_ADMIN). Guarding them with
              BIND_DEVICE_ADMIN made setup fail with "Something went wrong" before
              the app ever ran (Tecno Spark 50, Samsung A08/A18). -->
+        <!-- Pay now from the lock screen (in-app page, works while locked). -->
+        <activity
+            android:name=".PayActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:showOnLockScreen="true"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.LockAgent" />
+
         <activity
             android:name=".GetProvisioningModeActivity"
             android:exported="true"

@@ -89,8 +89,24 @@ async function lockInfoFor(device) {
   if (!contact && settings?.contact_phone) {
     contact = String(settings.contact_phone).split(/\s*(?:[\/,;|&]|\bor\b|\band\b)\s*/i)[0].trim();
   }
+  // Pay from the lock screen: the customer's Pay-now page and what's due now.
+  let payUrl = '';
+  let amountDueNow = 0;
+  if (!released && device.agent?.desired_lock_state !== 'pending_activation') {
+    try {
+      const plan = await InstallmentPlan.findOne({ device_id: device._id, status: { $in: ['active', 'defaulted'] } }).sort({ createdAt: -1 });
+      if (plan) {
+        const { ensurePayLink, amountDue } = require('../utils/payLink');
+        const link = await ensurePayLink(plan);
+        if (link) payUrl = `https://${link}`;
+        amountDueNow = amountDue(plan);
+      }
+    } catch { /* no pay button this time */ }
+  }
   return {
     ...(agent.agentUpdateInfo() || {}),
+    pay_url: payUrl,
+    amount_due: amountDueNow,
     frp_accounts: frpAccounts,
     desired_lock_state: device.agent?.desired_lock_state || 'unlocked',
     lock_message: agent.lockMessage('', contact),
