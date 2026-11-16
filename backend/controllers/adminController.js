@@ -1742,6 +1742,76 @@ const setDeviceCost = async (req, res) => {
   }
 };
 
+// ─── PHONES THE SYSTEM DOESN'T KNOW ───────────────────────────────────────────
+const UnknownPhone = require('../models/UnknownPhone');
+
+/** GET /api/admin/unknown-phones — phones checking in with an id we don't have. */
+const getUnknownPhones = async (req, res) => {
+  try {
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const list = await UnknownPhone.find({ last_at: { $gte: since } }).sort({ last_at: -1 }).limit(50).lean();
+    // Skip ids that have a record again (already reconnected).
+    const known = new Set((await Device.find({ 'agent.device_id': { $in: list.map((u) => u.device_id) } }).select('agent.device_id').lean())
+      .map((d) => d.agent.device_id));
+    return res.status(200).json({
+      success: true,
+      data: { phones: list.filter((u) => !known.has(u.device_id)).map((u) => ({ ...u, device_code: String(u.device_id).slice(-6) })) },
+    });
+  } catch (error) {
+    logger.error('getUnknownPhones error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * POST /api/admin/unknown-phones/:id/reconnect { action: 'release' | 'stock' }
+ * Give the phone a record again. Its next check-in is accepted with the key it
+ * has (like "Reconnect phone"); then it's either released (lock removed, app
+ * lets go of the phone) or kept as stock awaiting a sale.
+ */
+const reconnectUnknownPhone = async (req, res) => {
+  try {
+    const u = await UnknownPhone.findById(req.params.id);
+    if (!u) return res.status(404).json({ success: false, message: 'Not found.' });
+    if (await Device.exists({ 'agent.device_id': u.device_id })) {
+      await u.deleteOne();
+      return res.status(200).json({ success: true, message: 'This phone already has a record again.' });
+    }
+    const release = req.body?.action === 'release';
+    const device = await Device.create({
+      model: 'Phone (reconnected)',
+      price: 0,
+      imei: u.imei ? `${u.imei}` : undefined,
+      sold_status: 'available',
+      assigned_to: null,
+      lock_status: 'unlocked',
+      agent: {
+        enrolled: true,
+        enrollment_status: 'enrolled',
+        device_id: u.device_id,
+        device_secret: null,
+        rekey_until: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        desired_lock_state: release ? 'released' : 'pending_activation',
+        app_version: u.app_version || null,
+      },
+    });
+    await u.deleteOne();
+    await AuditLog.create({
+      user_id: req.user._id, action: 'device_updated', ip_address: req.ip,
+      details: { event: 'unknown_phone_reconnected', device_id: device._id, imei: u.imei, release },
+    }).catch(() => {});
+    return res.status(200).json({
+      success: true,
+      message: release
+        ? 'Done. At its next check-in (needs internet; tap Check status on it to hurry) the phone is released: the activation screen goes away and our app lets go of it.'
+        : 'Done. At its next check-in the phone reconnects and shows in your stock list.',
+    });
+  } catch (error) {
+    logger.error('reconnectUnknownPhone error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── MONEY CHECKS (cash-up, Paystack check) ───────────────────────────────────
 const money = require('../utils/moneyCheck');
 const moneyErr = (res, e, where) => {
@@ -3713,6 +3783,8 @@ module.exports = {
   testSms,
   testCompanyAlert,
   getAdminPayLink,
+  getUnknownPhones,
+  reconnectUnknownPhone,
   getCashUp,
   receiveCash,
   getPaystackCheck,

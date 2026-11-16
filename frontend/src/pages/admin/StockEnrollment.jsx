@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import UnknownPhonesCard from '../../components/UnknownPhonesCard'
 import api from '../../api/axios'
 import { saveBlob } from '../../utils/download'
 import toast from 'react-hot-toast'
@@ -351,6 +352,7 @@ export default function StockEnrollment() {
               </p>
             )}
 
+            <UnknownPhonesCard onChanged={load} />
             {shown.length === 0 ? (
               <div className="bg-white rounded-2xl p-10 text-center shadow-card">
                 <p className="text-gray-500 font-medium">No phones here yet</p>

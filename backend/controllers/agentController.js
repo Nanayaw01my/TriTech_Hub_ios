@@ -272,6 +272,25 @@ async function authDevice(req, res) {
     // Remember it, so the customer page can offer "Reconnect phone".
     Device.updateOne({ _id: device._id }, { $set: { 'agent.rejected_at': new Date() } }).catch(() => {});
   }
+  if (!device) {
+    // Remember it, so the admin can reconnect it from Enroll Stock.
+    const b = req.body || {};
+    require('../models/UnknownPhone').updateOne(
+      { device_id: String(id).slice(0, 100) },
+      {
+        $set: {
+          last_at: new Date(),
+          ...(b.imei ? { imei: String(b.imei).slice(0, 30) } : {}),
+          ...(b.app_version ? { app_version: String(b.app_version).slice(0, 20) } : {}),
+          ...(b.android_version ? { android_version: String(b.android_version).slice(0, 20) } : {}),
+          ...(b.lock_state ? { lock_state: String(b.lock_state).slice(0, 20) } : {}),
+        },
+        $inc: { tries: 1 },
+        $setOnInsert: { first_at: new Date() },
+      },
+      { upsert: true },
+    ).catch(() => {});
+  }
   if (!device || !safeEqual(device.agent?.device_secret, secret)) {
     // A phone that is online but can't check in shows up here.
     logger.warn('[agent] Rejected check-in from phone %s: %s', String(id).slice(-6),
