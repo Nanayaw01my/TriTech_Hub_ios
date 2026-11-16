@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import BusinessReportCard from '../../components/BusinessReportCard'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Legend,
@@ -158,6 +159,8 @@ export default function AdminReports() {
               <p className="text-gray-400 text-sm">No revenue data available for this period</p>
             </div>
           )}
+
+          <BusinessReportCard />
 
           {/* Revenue Forecast */}
           <div className="bg-white rounded-2xl shadow-card p-4 mb-5">

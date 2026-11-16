@@ -54,6 +54,24 @@ async function checkIdentity({ ghana_card_id, guarantor_ghana_card_id, phone, gu
     });
   }
 
+  // The company's do-not-sell list.
+  try {
+    const Blacklist = require('../models/Blacklist');
+    const hc = cardHash(ghana_card_id);
+    const hg = cardHash(guarantor_ghana_card_id);
+    const hits = await Blacklist.find({ card_hash: { $in: [hc, hg].filter(Boolean) } }).lean();
+    const onC = hits.find((b) => b.card_hash === hc);
+    const onG = hits.find((b) => b.card_hash === hg);
+    if (onC) blocks.push("This customer's Ghana Card is on the company's do-not-sell list. Don't sell to them — contact the office.");
+    if (onG) {
+      warns.push({
+        code: 'guarantor_blacklisted',
+        message: "The guarantor's Ghana Card is on the company's do-not-sell list. Choose a different guarantor, or check with the office.",
+        admin: `Guarantor is on the do-not-sell list (${onG.name || 'no name'}${onG.reason ? `: ${onG.reason}` : ''}).`,
+      });
+    }
+  } catch (e) { logger.warn('[id-check] blacklist lookup failed: %s', e.message); }
+
   const h = cardHash(ghana_card_id);
   if (h) {
     const q = { ghana_card_hash: h, deleted_at: null };

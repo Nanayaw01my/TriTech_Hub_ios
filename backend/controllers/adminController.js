@@ -1064,7 +1064,7 @@ const getEnrolledDevices = async (req, res) => {
     const filter = { 'agent.enrolled': true };
     if (onlyAvailable) filter.assigned_to = null;
     const devices = await Device.find(filter)
-      .select('model imei serial_number price price_set_by_admin agent assigned_to held_by lock_status createdAt')
+      .select('model imei serial_number price price_set_by_admin cost_price agent assigned_to held_by lock_status createdAt')
       .populate({ path: 'assigned_to', select: 'full_name' })
       .populate({ path: 'held_by', select: 'name staff_id' })
       .sort({ createdAt: -1 })
@@ -1091,6 +1091,7 @@ const getEnrolledDevices = async (req, res) => {
       device_code: d.agent?.device_id ? String(d.agent.device_id).slice(-6) : '',
       held_by: d.held_by ? { _id: d.held_by._id, name: d.held_by.name, staff_id: d.held_by.staff_id || '' } : null,
       price: d.price_set_by_admin ? d.price || 0 : 0,
+      cost_price: d.cost_price ?? null,
       enrolled_at: d.createdAt,
     }));
     return res.status(200).json({ success: true, data: { devices: mapped, total: mapped.length } });
@@ -1708,6 +1709,88 @@ const getSmsBalance = async (req, res) => {
   } catch (error) {
     logger.error('getSmsBalance error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Could not check the SMS credit.' });
+  }
+};
+
+/** GET /api/admin/business-report?period=month|last_month|year|all */
+const getBusinessReport = async (req, res) => {
+  try {
+    const period = ['month', 'last_month', 'year', 'all'].includes(req.query.period) ? req.query.period : 'month';
+    const data = await require('../utils/businessReport').businessReport(period);
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    logger.error('getBusinessReport error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/** POST /api/admin/devices/cost { device_ids, cost } — what the company paid for the phones. */
+const setDeviceCost = async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.device_ids) ? req.body.device_ids.filter(Boolean) : [];
+    const raw = req.body?.cost;
+    const cost = raw === '' || raw === null || raw === undefined ? null : Number(raw);
+    if (!ids.length) return res.status(400).json({ success: false, message: 'Select at least one phone.' });
+    if (cost !== null && (!Number.isFinite(cost) || cost < 0)) return res.status(400).json({ success: false, message: 'Enter a valid cost.' });
+    const r = await Device.updateMany({ _id: { $in: ids } }, { $set: { cost_price: cost } });
+    await AuditLog.create({ user_id: req.user._id, action: 'device_updated', details: { cost_price: cost, device_ids: ids }, ip_address: req.ip }).catch(() => {});
+    return res.status(200).json({ success: true, message: cost === null ? `Cost cleared on ${r.matchedCount} phone(s).` : `Cost GH₵${cost.toLocaleString()} saved on ${r.matchedCount} phone(s).` });
+  } catch (error) {
+    logger.error('setDeviceCost error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── DO-NOT-SELL LIST ─────────────────────────────────────────────────────────
+const Blacklist = require('../models/Blacklist');
+
+/** GET /api/admin/blacklist */
+const getBlacklist = async (req, res) => {
+  try {
+    const list = await Blacklist.find().sort({ createdAt: -1 }).populate({ path: 'added_by', select: 'name' }).lean();
+    return res.status(200).json({ success: true, data: { list } });
+  } catch (error) {
+    logger.error('getBlacklist error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/** POST /api/admin/customers/:id/blacklist { reason, guarantor_too } */
+const blacklistCustomer = async (req, res) => {
+  try {
+    const { cardHash } = require('../utils/idChecks');
+    const c = await Customer.findById(req.params.id).select('full_name ghana_card_id guarantor').lean();
+    if (!c) return res.status(404).json({ success: false, message: 'Customer not found.' });
+    const reason = String(req.body?.reason || '').trim().slice(0, 300);
+    const added = [];
+    const add = async (card, name, role) => {
+      const h = cardHash(card);
+      if (!h) return;
+      await Blacklist.updateOne({ card_hash: h },
+        { $set: { name, role, reason, customer_id: c._id, added_by: req.user._id } }, { upsert: true });
+      added.push(`${name} (${role})`);
+    };
+    await add(c.ghana_card_id, c.full_name, 'customer');
+    if (req.body?.guarantor_too && c.guarantor?.ghana_card_id) await add(c.guarantor.ghana_card_id, c.guarantor.full_name, 'guarantor');
+    if (!added.length) return res.status(400).json({ success: false, message: 'This customer has no Ghana Card number on file.' });
+    await AuditLog.create({ user_id: req.user._id, action: 'blacklist_updated', details: { customer_id: c._id, added, reason }, ip_address: req.ip }).catch(() => {});
+    return res.status(200).json({ success: true, message: `Added to the do-not-sell list: ${added.join(', ')}.` });
+  } catch (error) {
+    logger.error('blacklistCustomer error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/** DELETE /api/admin/blacklist/:id */
+const removeBlacklist = async (req, res) => {
+  try {
+    const b = await Blacklist.findByIdAndDelete(req.params.id);
+    if (!b) return res.status(404).json({ success: false, message: 'Not found.' });
+    await AuditLog.create({ user_id: req.user._id, action: 'blacklist_updated', details: { removed: b.name, role: b.role }, ip_address: req.ip }).catch(() => {});
+    return res.status(200).json({ success: true, message: `${b.name || 'Entry'} removed from the do-not-sell list.` });
+  } catch (error) {
+    logger.error('removeBlacklist error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
 
@@ -3591,6 +3674,11 @@ module.exports = {
   testSms,
   testCompanyAlert,
   getAdminPayLink,
+  getBlacklist,
+  blacklistCustomer,
+  removeBlacklist,
+  getBusinessReport,
+  setDeviceCost,
   getSmsBalance,
   listNotes,
   addNote,

@@ -83,6 +83,25 @@ export default function StockEnrollment() {
     }
   }
 
+  // What the company paid for the ticked phones (for profit reports).
+  const [costInput, setCostInput] = useState('')
+  const setCost = async () => {
+    if (!selected.length) { toast.error('Tick the phones first.'); return }
+    const cost = Number(costInput)
+    if (costInput === '' || !Number.isFinite(cost) || cost < 0) { toast.error('Enter what you paid for each phone.'); return }
+    setAssigning(true)
+    try {
+      const res = await api.post('/admin/devices/cost', { device_ids: selected, cost })
+      toast.success(res.data?.message || 'Cost saved.')
+      setCostInput('')
+      load()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not save the cost')
+    } finally {
+      setAssigning(false)
+    }
+  }
+
   // Set the selling price on the ticked phones. DSRs get it filled in and locked.
   const setPrice = async () => {
     if (!selected.length) { toast.error('Tick the phones first.'); return }
@@ -366,6 +385,7 @@ export default function StockEnrollment() {
                         {!d.assigned && (
                           <p className={`text-[11px] font-bold mt-0.5 ${d.price > 0 ? 'text-gray-800' : 'text-amber-600'}`}>
                             {d.price > 0 ? `GH₵${Number(d.price).toLocaleString()}` : 'No price set'}
+                            {d.cost_price != null && <span className="font-normal text-gray-500"> · cost GH₵{Number(d.cost_price).toLocaleString()}</span>}
                           </p>
                         )}
                         {!d.assigned && (
@@ -444,6 +464,14 @@ export default function StockEnrollment() {
             <button onClick={setPrice} disabled={assigning || !selected.length}
               className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-bold disabled:opacity-50">
               Set price
+            </button>
+            <div className="basis-full h-0" />
+            <input type="number" inputMode="numeric" min="0" value={costInput}
+              onChange={(e) => setCostInput(e.target.value)} placeholder="Cost (what you paid) GH₵"
+              className="flex-1 min-w-[110px] px-3 py-2 border border-gray-200 rounded-xl text-sm" />
+            <button onClick={setCost} disabled={assigning || !selected.length}
+              className="px-4 py-2 rounded-xl border border-gray-300 text-gray-800 text-sm font-bold disabled:opacity-50">
+              Set cost
             </button>
             <div className="basis-full h-0" />
             <select value={giveTo} onChange={(e) => setGiveTo(e.target.value)}

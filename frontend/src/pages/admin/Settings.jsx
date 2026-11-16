@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import BlacklistCard from './BlacklistCard'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
 import LoadingSpinner from '../../components/LoadingSpinner'
@@ -272,6 +273,7 @@ export default function AdminSettings() {
 
         {/* SMS check */}
         <SmsTestCard />
+        <BlacklistCard />
 
         {/* Admin accounts */}
         <AdminsCard />

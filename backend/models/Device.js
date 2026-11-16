@@ -111,6 +111,8 @@ const DeviceSchema = new mongoose.Schema(
         at: { type: Date, default: null },
       },
     },
+    // What the company paid for this phone (for profit reports). null = not entered.
+    cost_price: { type: Number, default: null, min: 0 },
     sold_status: {
       type: String,
       enum: ['available', 'sold'],

@@ -39,6 +39,11 @@ const {
   testSms,
   testCompanyAlert,
   getAdminPayLink,
+  getBlacklist,
+  blacklistCustomer,
+  removeBlacklist,
+  getBusinessReport,
+  setDeviceCost,
   getSmsBalance,
   listNotes,
   addNote,
@@ -137,6 +142,11 @@ router.delete('/staff/:id/payout', [param('id').isMongoId()], removeStaffPayout)
 router.post('/plans/:id/return', [param('id').isMongoId()], returnPlan);
 router.post('/devices/assign', assignStock);
 router.post('/devices/price', setStockPrice);
+router.post('/devices/cost', setDeviceCost);
+router.get('/business-report', getBusinessReport);
+router.get('/blacklist', getBlacklist);
+router.post('/customers/:id/blacklist', [param('id').isMongoId()], blacklistCustomer);
+router.delete('/blacklist/:id', [param('id').isMongoId()], removeBlacklist);
 router.post('/devices/merge-duplicates', mergeDuplicateDevices);
 router.get('/frp', getFrp);
 router.post('/frp', addFrpAccount);

@@ -437,6 +437,21 @@ export default function AdminCustomerDetail() {
             {device.serial_number && <Row label="Serial Number" value={device.serial_number} mono />}
             {device.imei && <Row label="IMEI" value={device.imei} mono />}
             <div className="flex justify-between items-center pt-0.5">
+              <span className="text-gray-500">Cost (what you paid)</span>
+              <button type="button" className="text-xs font-semibold text-orange-700"
+                onClick={async () => {
+                  const v = window.prompt('What did the company pay for this phone (GH₵)? Leave empty to clear.', device.cost_price ?? '')
+                  if (v === null) return
+                  try {
+                    const r = await api.post('/admin/devices/cost', { device_ids: [device._id], cost: v.trim() === '' ? null : v })
+                    toast.success(r.data?.message || 'Saved.')
+                    fetchCustomer()
+                  } catch (err) { toast.error(err?.response?.data?.message || 'Could not save.') }
+                }}>
+                {device.cost_price != null ? `GH₵${Number(device.cost_price).toLocaleString()} · Edit` : 'Add cost'}
+              </button>
+            </div>
+            <div className="flex justify-between items-center pt-0.5">
               <span className="text-gray-500">Lock Status</span>
               {(device.agent?.desired_lock_state === 'pending_activation' || device.agent?.applied_state === 'pending') ? (
                 <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Awaiting activation</span>
@@ -595,6 +610,21 @@ export default function AdminCustomerDetail() {
               ✂️ Waive late fees (GHS {Number(plan.penalty_balance).toLocaleString()} owed)
             </button>
           )}
+          <button
+            onClick={async () => {
+              const reason = window.prompt(`Add ${customer?.full_name || 'this customer'} to the do-not-sell list? Reason (e.g. stopped paying, phone not recovered):`)
+              if (reason === null) return
+              const guarantorToo = customer?.guarantor?.ghana_card_id
+                ? window.confirm('Add the guarantor too? (OK = yes, Cancel = only the customer)') : false
+              try {
+                const r = await api.post(`/admin/customers/${id}/blacklist`, { reason, guarantor_too: guarantorToo })
+                toast.success(r.data?.message || 'Added.', { duration: 7000 })
+              } catch (err) { toast.error(err?.response?.data?.message || 'Could not add.') }
+            }}
+            className="w-full py-3 px-4 rounded-xl border-2 border-gray-300 text-gray-800 font-semibold text-sm hover:bg-gray-50 transition-colors flex items-center gap-2"
+          >
+            ⛔ Add to do-not-sell list
+          </button>
           {plan && ['active', 'defaulted'].includes(plan.status) && (
             <button
               onClick={() => setAdjust({ type: 'days' })}
