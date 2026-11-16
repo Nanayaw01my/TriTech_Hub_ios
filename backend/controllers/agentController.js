@@ -129,7 +129,23 @@ async function lockInfoFor(device) {
  * Called once, right after Device Owner provisioning. Body carries the
  * enrollment token (from the provisioning QR) plus device facts.
  */
-const enroll = async (req, res) => {
+// One enrollment at a time per phone: an old app could send two at once,
+// which created two records for the same phone (same IMEI).
+const enrollQueue = new Map();
+function onePerPhone(key, fn) {
+  const prev = enrollQueue.get(key) || Promise.resolve();
+  const run = prev.catch(() => {}).then(fn);
+  enrollQueue.set(key, run);
+  run.finally(() => { if (enrollQueue.get(key) === run) enrollQueue.delete(key); }).catch(() => {});
+  return run;
+}
+
+const enroll = (req, res) => {
+  const key = String(req.body?.device_id || req.body?.imei || Math.random());
+  return onePerPhone(key, () => enrollOnce(req, res));
+};
+
+const enrollOnce = async (req, res) => {
   try {
     const { enrollment_token, device_id, imei, fcm_token, android_version, app_version, model } = req.body || {};
     if (!enrollment_token || !device_id) {
