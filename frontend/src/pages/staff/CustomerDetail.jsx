@@ -1,4 +1,6 @@
 import { paymentMethodLabel } from '../../utils/paymentMethod'
+import NotesCard from '../../components/NotesCard'
+import TimelineCard from '../../components/TimelineCard'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
@@ -586,6 +588,9 @@ export default function StaffCustomerDetail() {
           )}
         </div>
       )}
+
+      <NotesCard customerId={id} base="/staff" />
+      <TimelineCard customerId={id} base="/staff" />
 
       {/* Payment History */}
       <div className="bg-white rounded-2xl shadow-card p-4">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import api from '../../api/axios'
 import toast from 'react-hot-toast'
 import Card from '../../components/Modern/Card'
@@ -24,6 +24,39 @@ export default function SmsTestCard() {
       toast.error(err?.response?.data?.message || 'Could not run the SMS test.')
     } finally {
       setBusy(false)
+    }
+  }
+
+  // SMS credit (Arkesel) and the warning level.
+  const [credit, setCredit] = useState(null)       // { value, at }
+  const [lowLevel, setLowLevel] = useState('')
+  const [creditBusy, setCreditBusy] = useState(false)
+  useEffect(() => {
+    api.get('/admin/settings').then((r) => {
+      const st = r.data?.data?.settings || {}
+      setCredit(st.sms_balance || null)
+      setLowLevel(String(st.sms_low_balance ?? 200))
+    }).catch(() => {})
+  }, [])
+  const checkCredit = async () => {
+    setCreditBusy(true)
+    try {
+      const r = await api.get('/admin/sms/balance')
+      const d = r.data?.data || {}
+      if (d.value === null || d.value === undefined) toast.error("Couldn't read the Arkesel balance. Check the Arkesel API key.")
+      setCredit({ value: d.value, at: new Date().toISOString() })
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not check the SMS credit.')
+    } finally {
+      setCreditBusy(false)
+    }
+  }
+  const saveLowLevel = async () => {
+    try {
+      await api.put('/admin/settings', { sms_low_balance: lowLevel })
+      toast.success('Warning level saved.')
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not save.')
     }
   }
 
@@ -64,6 +97,30 @@ export default function SmsTestCard() {
 
   return (
     <Card padding="p-6 sm:p-8" className="mb-6 shadow-lg">
+      <div className="mb-5 p-4 rounded-2xl bg-gray-50">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold text-gray-900">SMS credit (Arkesel)</p>
+            <p className={`text-2xl font-black ${credit?.value != null && credit.value < Number(lowLevel || 0) ? 'text-red-600' : 'text-gray-900'}`}>
+              {credit?.value != null ? Math.floor(credit.value).toLocaleString() : '—'}
+            </p>
+            {credit?.at && <p className="text-[11px] text-gray-400">checked {new Date(credit.at).toLocaleString()}</p>}
+          </div>
+          <button type="button" onClick={checkCredit} disabled={creditBusy}
+            className="px-4 py-2.5 rounded-xl text-sm font-bold text-orange-700 border-2 border-orange-200 bg-white disabled:opacity-60">
+            {creditBusy ? 'Checking…' : 'Check now'}
+          </button>
+        </div>
+        <div className="mt-3 flex items-end gap-2">
+          <label className="flex-1 text-xs text-gray-500">Text me when credit falls below
+            <input type="number" inputMode="numeric" value={lowLevel} onChange={(e) => setLowLevel(e.target.value)}
+              className="mt-1 w-full px-3 py-2 border-2 border-gray-200 rounded-xl text-sm" />
+          </label>
+          <button type="button" onClick={saveLowLevel} className="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-300 bg-white">Save</button>
+        </div>
+        <p className="mt-2 text-[11px] text-gray-500">Checked every morning at 9:10. When it's low, the company numbers get a text so reminders never stop silently.</p>
+      </div>
+
       <h2 className="text-gray-900 text-lg font-bold mb-1">SMS check</h2>
       <p className="text-sm text-gray-500 mb-4">Send one test text and see exactly what the SMS provider answered.</p>
       <div className="flex gap-2">

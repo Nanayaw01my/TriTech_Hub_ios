@@ -1700,6 +1700,25 @@ const testSms = async (req, res) => {
   }
 };
 
+/** GET /api/admin/sms/balance — check the Arkesel SMS credit now. */
+const getSmsBalance = async (req, res) => {
+  try {
+    const r = await require('../utils/smsCredit').checkSmsCredit({ alert: false });
+    return res.status(200).json({ success: true, data: r });
+  } catch (error) {
+    logger.error('getSmsBalance error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Could not check the SMS credit.' });
+  }
+};
+
+// ─── CUSTOMER NOTES, FOLLOW-UPS, TIMELINE ─────────────────────────────────────
+const notesApi = require('../utils/customerNotes');
+const listNotes = (req, res) => notesApi.listHandler(req, res);
+const addNote = (req, res) => notesApi.addHandler(req, res);
+const updateNote = (req, res) => notesApi.updateHandler(req, res);
+const getFollowUps = (req, res) => notesApi.followUpsHandler(req, res);
+const getTimeline = (req, res) => notesApi.timelineHandler(req, res);
+
 // ─── PLAN CORRECTIONS (void payment, waive late fees, extra days) ─────────────
 
 const adjustHandler = (fn, pick) => async (req, res) => {
@@ -2293,7 +2312,7 @@ const resetCustomerPassword = async (req, res) => {
 // ─── SETTINGS ─────────────────────────────────────────────────────────────────
 
 const SETTINGS_ALLOWED_KEYS = [
-  'business_name', 'contact_email', 'contact_phone', 'contact_address',
+  'business_name', 'contact_email', 'contact_phone', 'contact_address', 'sms_low_balance',
   'whatsapp_number', 'lock_grace_period_hours', 'installment_frequencies', 'currency',
   'late_fee_per_day',
 ];
@@ -2317,6 +2336,11 @@ const updateSettings = async (req, res) => {
     const updates = {};
     for (const key of SETTINGS_ALLOWED_KEYS) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+    if ('sms_low_balance' in updates) {
+      const v = Number(updates.sms_low_balance);
+      if (updates.sms_low_balance === '' || !Number.isFinite(v) || v < 0) delete updates.sms_low_balance;
+      else updates.sms_low_balance = Math.round(v);
     }
     if ('late_fee_per_day' in updates) {
       const fee = Number(updates.late_fee_per_day);
@@ -3567,6 +3591,12 @@ module.exports = {
   testSms,
   testCompanyAlert,
   getAdminPayLink,
+  getSmsBalance,
+  listNotes,
+  addNote,
+  updateNote,
+  getFollowUps,
+  getTimeline,
   voidPaymentHandler,
   waiveLateFeesHandler,
   extraDaysHandler,

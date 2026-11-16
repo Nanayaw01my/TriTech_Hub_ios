@@ -79,6 +79,13 @@ const sendSMSViaNkomo = async (phone, message) => {
 // ── Primary SMS sender: Arkesel first, NkomoSMS as the backup ──────────────────
 // (Arkesel's sender name is approved on Ghana's networks; NkomoSMS reported
 // "Delivered" for messages MTN never delivered.)
+// Keep a copy of every text (customer timeline, checks). Never blocks sending.
+const logSms = (to, message, provider, ok) => {
+  try {
+    require('../models/SmsLog').create({ to, message: String(message).slice(0, 480), provider, ok: !!ok }).catch(() => {});
+  } catch { /* no DB (tests) */ }
+};
+
 const sendSMS = async (to, message) => {
   const phone = formatPhone(to);
   if (!phone) {
@@ -86,12 +93,49 @@ const sendSMS = async (to, message) => {
     return;
   }
   const first = await sendSMSViaArkesel(phone, message);
-  if (first.ok || !first.retry) return first;
+  if (first.ok || !first.retry) {
+    // (retry=false without ok = slow answer, probably sent)
+    logSms(phone, message, 'arkesel', first.ok || !first.retry);
+    return first;
+  }
   const second = await sendSMSViaNkomo(phone, message);
   if (!second.ok && second.retry) {
     logger.error(`[SMS] NOT sent to ${phone}: both Arkesel and NkomoSMS failed or aren't set up.`);
   }
+  logSms(phone, message, second.ok || !second.retry ? 'nkomo' : null, second.ok || !second.retry);
   return second;
+};
+
+/**
+ * Arkesel SMS credit left (number of SMS units), or null if it can't be read.
+ * Tries Arkesel's v2 balance endpoint, then the v1 one.
+ */
+const getArkeselBalance = async () => {
+  if (!ARKESEL_API_KEY) return null;
+  const pick = (o) => {
+    if (!o || typeof o !== 'object') return null;
+    for (const k of ['sms_balance', 'balance', 'sms_units', 'units']) {
+      if (o[k] !== undefined && o[k] !== null) {
+        const n = Number(String(o[k]).replace(/[^\d.-]/g, ''));
+        if (Number.isFinite(n)) return n;
+      }
+    }
+    return o.data ? pick(o.data) : null;
+  };
+  try {
+    const r = await axios.get('https://sms.arkesel.com/api/v2/clients/balance-details',
+      { headers: { 'api-key': ARKESEL_API_KEY }, timeout: 15000 });
+    const n = pick(r.data);
+    if (n !== null) return n;
+  } catch (e) { logger.warn('[SMS] Arkesel v2 balance: %s', e.response?.status || e.message); }
+  try {
+    const r = await axios.get('https://sms.arkesel.com/sms/api',
+      { params: { action: 'check-balance', api_key: ARKESEL_API_KEY, response: 'json' }, timeout: 15000 });
+    return pick(r.data);
+  } catch (e) {
+    logger.warn('[SMS] Arkesel v1 balance: %s', e.response?.status || e.message);
+    return null;
+  }
 };
 
 // WhatsApp is opt-in. It's OFF by default because Arkesel delivers it as a
@@ -326,6 +370,7 @@ const diagnoseSMS = async (to, message, only = null) => {
 
 module.exports = {
   formatPhone,
+  getArkeselBalance,
   diagnoseSMS,
   sendCustomerActivatedSMS,
   sendLockTomorrowSMS,

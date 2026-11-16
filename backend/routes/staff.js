@@ -139,4 +139,12 @@ router.post(
   recordCashPayment
 );
 
+// Notes / follow-ups / customer history — a DSR sees only their own customers.
+const notesApi = require('../utils/customerNotes');
+router.get('/customers/:id/notes', (req, res) => notesApi.listHandler(req, res));
+router.post('/customers/:id/notes', (req, res) => notesApi.addHandler(req, res));
+router.patch('/notes/:id', (req, res) => notesApi.updateHandler(req, res));
+router.get('/follow-ups', (req, res) => notesApi.followUpsHandler(req, res));
+router.get('/customers/:id/timeline', (req, res) => notesApi.timelineHandler(req, res));
+
 module.exports = router;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import FollowUpsList from '../../components/FollowUpsList'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
@@ -125,6 +126,9 @@ export default function StaffDashboard() {
           {user?.staff_id && <p className="text-sm font-bold text-orange-500 mt-0.5">ID: {user.staff_id}</p>}
           <p className="text-xs text-gray-400 mt-0.5">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
         </div>
+
+      {/* Who to call today (own customers) */}
+      <FollowUpsList base="/staff" onOpen={(cid) => navigate(`/staff/customers/${cid}`)} />
 
       {/* Desktop two-column layout */}
       <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">

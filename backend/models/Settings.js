@@ -11,6 +11,13 @@ const SettingsSchema = new mongoose.Schema(
     // Late fee (GHS) added for each extra day a locked/overdue payment stays
     // unpaid after the due day. 0 = no late fees.
     late_fee_per_day: { type: Number, default: 10, min: 0 },
+    // SMS credit warning: text the company when Arkesel credit falls below this.
+    sms_low_balance: { type: Number, default: 200, min: 0 },
+    sms_balance: {
+      value: { type: Number, default: null },
+      at: { type: Date, default: null },
+      alerted_at: { type: Date, default: null },
+    },
     installment_frequencies: { type: [String], default: ['daily', 'weekly', 'monthly'] },
     currency: { type: String, trim: true, default: 'GHS' },
     maintenance_mode: { type: Boolean, default: false },

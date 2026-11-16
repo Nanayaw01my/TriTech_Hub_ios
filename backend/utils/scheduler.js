@@ -512,6 +512,13 @@ const startScheduler = () => {
   });
   logger.info('[Scheduler] Silent-phone check scheduled: every hour.');
 
+  // SMS credit: check every morning (and once after start-up).
+  cron.schedule('10 9 * * *', async () => {
+    await require('./smsCredit').checkSmsCredit().catch((e) => logger.error('[sms-credit] %s', e.message));
+  });
+  setTimeout(() => require('./smsCredit').checkSmsCredit().catch(() => {}), 3 * 60 * 1000);
+  logger.info('[Scheduler] SMS credit check scheduled: daily at 09:10.');
+
   // Run daily at 2:00 AM to create and email a system backup
   cron.schedule('0 2 * * *', async () => {
     await dailyBackup();

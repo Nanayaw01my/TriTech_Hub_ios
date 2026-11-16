@@ -39,6 +39,12 @@ const {
   testSms,
   testCompanyAlert,
   getAdminPayLink,
+  getSmsBalance,
+  listNotes,
+  addNote,
+  updateNote,
+  getFollowUps,
+  getTimeline,
   voidPaymentHandler,
   waiveLateFeesHandler,
   extraDaysHandler,
@@ -142,6 +148,12 @@ router.post('/customers/:id/remind', [param('id').isMongoId()], sendCustomerRemi
 router.post('/customers/:id/record-payment', [param('id').isMongoId()], recordAdminPayment);
 router.get('/customers/:id/pay-link', [param('id').isMongoId()], getAdminPayLink);
 router.post('/payments/:id/void', [param('id').isMongoId()], voidPaymentHandler);
+router.get('/sms/balance', getSmsBalance);
+router.get('/customers/:id/notes', [param('id').isMongoId()], listNotes);
+router.post('/customers/:id/notes', [param('id').isMongoId()], addNote);
+router.patch('/notes/:id', [param('id').isMongoId()], updateNote);
+router.get('/follow-ups', getFollowUps);
+router.get('/customers/:id/timeline', [param('id').isMongoId()], getTimeline);
 router.post('/plans/:id/waive-late-fees', [param('id').isMongoId()], waiveLateFeesHandler);
 router.post('/plans/:id/extra-days', [param('id').isMongoId()], extraDaysHandler);
 router.post('/customers/:id/repossess', [param('id').isMongoId().withMessage('Invalid customer ID.')], repossessDevice);

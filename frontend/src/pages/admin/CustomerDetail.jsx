@@ -1,4 +1,6 @@
 import { paymentMethodLabel } from '../../utils/paymentMethod'
+import NotesCard from '../../components/NotesCard'
+import TimelineCard from '../../components/TimelineCard'
 import { planMoney } from '../../utils/planMoney'
 import { openPayPage } from '../../utils/openPayPage'
 import React, { useState, useEffect } from 'react'
@@ -658,6 +660,9 @@ export default function AdminCustomerDetail() {
           </button>
         </div>
       </div>
+
+      <NotesCard customerId={id} base="/admin" />
+      <TimelineCard customerId={id} base="/admin" />
 
       {/* ── PAYMENT HISTORY ──────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-card p-4">

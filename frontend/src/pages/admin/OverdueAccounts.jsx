@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import FollowUpsList from '../../components/FollowUpsList'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import LoadingSpinner from '../../components/LoadingSpinner'
@@ -76,6 +77,8 @@ export default function OverdueAccounts() {
           {accounts.length} customer{accounts.length !== 1 ? 's' : ''} with overdue or defaulted payments
         </p>
       </div>
+
+      <FollowUpsList base="/admin" onOpen={(cid) => navigate(`/admin/customers/${cid}`)} />
 
       {loading ? (
         <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
