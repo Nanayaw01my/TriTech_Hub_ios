@@ -1488,8 +1488,8 @@ const mainAdmin = async () => null;
 const getAdmins = async (req, res) => {
   try {
     const main = await mainAdmin();
-    const admins = await User.find({ role: { $in: ['admin', 'superadmin'] } })
-      .select('name email phone is_active createdAt').sort({ createdAt: 1 }).lean();
+    const admins = await User.find({ role: { $in: ['admin', 'superadmin', 'collector'] } })
+      .select('name email phone role is_active createdAt').sort({ createdAt: 1 }).lean();
     return res.status(200).json({
       success: true,
       data: {
@@ -1515,12 +1515,13 @@ const addAdmin = async (req, res) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ success: false, message: 'Enter a valid email — they log in with it.' });
     if (password.length < 8) return res.status(400).json({ success: false, message: 'The password must be at least 8 characters.' });
     if (await User.findOne({ email })) return res.status(409).json({ success: false, message: 'That email is already used by another account.' });
-    const admin = await User.create({ name, email, phone: phone || undefined, password, role: 'admin', is_active: true });
+    const role = req.body?.role === 'collector' ? 'collector' : 'admin';
+    const admin = await User.create({ name, email, phone: phone || undefined, password, role, is_active: true });
     await AuditLog.create({
       user_id: req.user._id, action: 'staff_added', target_user_id: admin._id,
       details: { admin_added: email, name }, ip_address: req.ip,
     }).catch(() => {});
-    return res.status(201).json({ success: true, message: `${name} can now log in as an admin with ${email}.`, data: { id: admin._id } });
+    return res.status(201).json({ success: true, message: `${name} can now log in as ${role === 'collector' ? 'a collector' : 'an admin'} with ${email}.`, data: { id: admin._id } });
   } catch (error) {
     logger.error('addAdmin error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Server error.' });
@@ -1532,14 +1533,14 @@ const updateAdmin = async (req, res) => {
   try {
     const main = await requireMainAdmin(req, res);
     if (!main) return;
-    const admin = await User.findOne({ _id: req.params.id, role: { $in: ['admin', 'superadmin'] } }).select('+password');
+    const admin = await User.findOne({ _id: req.params.id, role: { $in: ['admin', 'superadmin', 'collector'] } }).select('+password');
     if (!admin) return res.status(404).json({ success: false, message: 'Admin not found.' });
     const changes = {};
     if (typeof req.body?.is_active === 'boolean') {
       if (String(admin._id) === String(req.user._id) && req.body.is_active === false) {
         return res.status(400).json({ success: false, message: "You can't switch off your own account." });
       }
-      if (req.body.is_active === false) {
+      if (req.body.is_active === false && admin.role !== 'collector') {
         const others = await User.countDocuments({ _id: { $ne: admin._id }, role: { $in: ['admin', 'superadmin'] }, is_active: true });
         if (others < 1) return res.status(400).json({ success: false, message: 'At least one admin must stay active.' });
       }

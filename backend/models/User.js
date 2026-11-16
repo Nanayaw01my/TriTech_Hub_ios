@@ -37,7 +37,9 @@ const UserSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['superadmin', 'admin', 'staff', 'customer'],
+      // collector = takes payments, reminders and notes in the admin portal
+      // (no deleting, locking, settings or approvals).
+      enum: ['superadmin', 'admin', 'collector', 'staff', 'customer'],
       default: 'customer',
     },
     staff_id: {

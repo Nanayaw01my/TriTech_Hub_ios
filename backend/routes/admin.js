@@ -93,7 +93,24 @@ const {
 } = require('../controllers/adminController');
 
 // Apply authentication and admin authorization to all routes
-router.use(authenticate, authorize('admin', 'superadmin'));
+// Full admins can use everything below. A collector may only: see customers
+// and overdue / call lists, take payments (Pay, Record payment), send
+// reminders, add notes and see history.
+const ID = '[0-9a-fA-F]{24}';
+const COLLECTOR_ALLOWED = [
+  ['GET', new RegExp('^/customers/?$')],
+  ['GET', new RegExp(`^/customers/${ID}/?$`)],
+  ['GET', new RegExp(`^/customers/${ID}/(notes|timeline|pay-link|receipt)/?$`)],
+  ['POST', new RegExp(`^/customers/${ID}/(notes|record-payment|remind)/?$`)],
+  ['PATCH', new RegExp(`^/notes/${ID}/?$`)],
+  ['GET', /^\/(overdue-accounts|follow-ups|search|staff)\/?$/],
+];
+router.use(authenticate, (req, res, next) => {
+  const role = req.user?.role;
+  if (role === 'admin' || role === 'superadmin') return next();
+  if (role === 'collector' && COLLECTOR_ALLOWED.some(([m, re]) => m === req.method && re.test(req.path))) return next();
+  return res.status(403).json({ success: false, message: 'You do not have permission to do this.' });
+});
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
 router.get('/dashboard', getDashboard);

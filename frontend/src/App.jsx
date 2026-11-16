@@ -72,6 +72,7 @@ function ProtectedRoute({ children, allowedRoles }) {
   if (allowedRoles && !allowedRoles.includes(userRole)) {
     // Redirect to appropriate dashboard
     if (userRole === 'superadmin' || userRole === 'admin') return <Navigate to="/admin/dashboard" replace />
+    if (userRole === 'collector') return <Navigate to="/admin/overdue-accounts" replace />
     if (userRole === 'staff') return <Navigate to="/staff/dashboard" replace />
     if (userRole === 'customer') return <Navigate to="/customer/dashboard" replace />
     return <Navigate to="/login" replace />
@@ -93,6 +94,7 @@ function RoleRedirect() {
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
   if (userRole === 'superadmin' || userRole === 'admin') return <Navigate to="/admin/dashboard" replace />
+  if (userRole === 'collector') return <Navigate to="/admin/overdue-accounts" replace />
   if (userRole === 'staff') return <Navigate to="/staff/dashboard" replace />
   if (userRole === 'customer') return <Navigate to="/customer/dashboard" replace />
   return <Navigate to="/login" replace />
@@ -140,7 +142,7 @@ function AppRoutes() {
       <Route
         path="/admin"
         element={
-          <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+          <ProtectedRoute allowedRoles={['admin', 'superadmin', 'collector']}>
             <Layout role="admin" />
           </ProtectedRoute>
         }

@@ -7,7 +7,7 @@ import Card from '../../components/Modern/Card'
 export default function AdminsCard() {
   const [admins, setAdmins] = useState([])
   const [canManage, setCanManage] = useState(false)
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '' })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', role: 'admin' })
   const [adding, setAdding] = useState(false)
   const [busyId, setBusyId] = useState(null)
 
@@ -24,7 +24,7 @@ export default function AdminsCard() {
     try {
       const res = await api.post('/admin/admins', form)
       toast.success(res.data?.message || 'Admin added.', { duration: 6000 })
-      setForm({ name: '', email: '', phone: '', password: '' })
+      setForm({ name: '', email: '', phone: '', password: '', role: 'admin' })
       load()
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Could not add the admin.')
@@ -57,10 +57,11 @@ export default function AdminsCard() {
 
   return (
     <Card padding="p-6 sm:p-8" className="mb-6 shadow-lg">
-      <h2 className="text-gray-900 text-lg font-bold mb-1">Admins</h2>
+      <h2 className="text-gray-900 text-lg font-bold mb-1">Admins & collectors</h2>
       <p className="text-sm text-gray-500 mb-4">
-        People who can log in to this admin portal. Admins have full access and can add or switch off other admins;
-        every action is logged with their name. You can't switch off your own account.
+        People who can log in to this portal. <strong>Admins</strong> have full access. <strong>Collectors</strong> can only see
+        customers and the call list, take payments (Pay / Record), send reminders and add notes — no deleting, locking,
+        settings or approvals. Every action is logged with their name. You can't switch off your own account.
       </p>
 
       <div className="space-y-2 mb-5">
@@ -72,6 +73,7 @@ export default function AdminsCard() {
                   {a.name}
                   {a.is_main && <span className="ml-1 text-[11px] font-semibold text-orange-600">· main</span>}
                   {a.is_you && <span className="ml-1 text-[11px] font-semibold text-gray-500">· you</span>}
+                  {a.role === 'collector' && <span className="ml-1 text-[11px] font-semibold text-blue-600">· collector</span>}
                 </p>
                 <p className="text-xs text-gray-500 truncate">{a.email}{a.phone ? ` · ${a.phone}` : ''}</p>
                 {!a.is_active && <p className="text-xs font-semibold text-red-600 mt-0.5">Switched off — can't log in</p>}
@@ -105,14 +107,20 @@ export default function AdminsCard() {
 
       {canManage && (
         <div className="space-y-3">
-          <p className="text-sm font-bold text-gray-800">Add an admin</p>
+          <p className="text-sm font-bold text-gray-800">Add a person</p>
+          <div className="flex gap-2">
+            {[['admin', 'Full admin'], ['collector', 'Collector (payments only)']].map(([v, l]) => (
+              <button key={v} type="button" onClick={() => set('role', v)}
+                className={`flex-1 px-3 py-2 rounded-xl text-sm font-semibold border-2 ${form.role === v ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-600'}`}>{l}</button>
+            ))}
+          </div>
           <input className={input} placeholder="Full name" value={form.name} onChange={(e) => set('name', e.target.value)} />
           <input className={input} type="email" placeholder="Email (they log in with this)" value={form.email} onChange={(e) => set('email', e.target.value)} />
           <input className={input} type="tel" placeholder="Phone (for password reset by SMS)" value={form.phone} onChange={(e) => set('phone', e.target.value)} />
           <input className={input} type="text" placeholder="Password (at least 8 characters)" value={form.password} onChange={(e) => set('password', e.target.value)} />
           <button type="button" onClick={add} disabled={adding}
             className="w-full px-4 py-3 rounded-xl text-sm font-bold text-white bg-orange-600 hover:bg-orange-500 disabled:opacity-60">
-            {adding ? 'Adding…' : 'Add admin'}
+            {adding ? 'Adding…' : form.role === 'collector' ? 'Add collector' : 'Add admin'}
           </button>
           <p className="text-xs text-gray-500">Give them the email and password in person. They can change the password later with “Forgot password”.</p>
         </div>

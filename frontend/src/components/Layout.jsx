@@ -49,6 +49,13 @@ const ADMIN_NAV = [
   { to: '/admin/about', label: 'About', icon: Icon_info },
 ]
 
+// Collector: payments, reminders and notes only.
+const COLLECTOR_NAV = [
+  { to: '/admin/overdue-accounts', label: 'To call / Overdue', short: 'Overdue', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /> },
+  { to: '/admin/customers', label: 'Customers', short: 'Customers', icon: Icon.customers },
+  { to: '/admin/search', label: 'Search', short: 'Search', icon: Icon_search },
+]
+
 const STAFF_NAV = [
   { to: '/staff/dashboard', label: 'Dashboard', short: 'Home', icon: Icon.home },
   { to: '/staff/customers', label: 'My Customers', short: 'Customers', icon: Icon.customers },
@@ -256,6 +263,7 @@ function SideNavLink({ item, role, onClick }) {
 function Sidebar({ role, navItems, user, onLinkClick, onLogout }) {
   const logo = useLogo()
   const roleLabel = role === 'admin' ? 'Admin Portal' : role === 'staff' ? 'Staff Portal' : 'My Account'
+  // (collectors also use the admin portal, with a smaller menu)
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-b from-orange-600 to-orange-900">
@@ -360,8 +368,9 @@ export default function Layout({ role }) {
     }
   }, [])
 
-  const navItems = role === 'admin' ? ADMIN_NAV : role === 'staff' ? STAFF_NAV : CUSTOMER_NAV
-  const bottomItems = role === 'admin' ? ADMIN_BOTTOM : navItems
+  const isCollector = role === 'admin' && user?.role === 'collector'
+  const navItems = isCollector ? COLLECTOR_NAV : role === 'admin' ? ADMIN_NAV : role === 'staff' ? STAFF_NAV : CUSTOMER_NAV
+  const bottomItems = isCollector ? COLLECTOR_NAV : role === 'admin' ? ADMIN_BOTTOM : navItems
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -425,7 +434,7 @@ export default function Layout({ role }) {
             </div>
 
             <div className="flex items-center gap-0.5 flex-shrink-0">
-              {role === 'admin' && <NotificationBell />}
+              {role === 'admin' && !isCollector && <NotificationBell />}
               <button
                 onClick={() => setLogoutModal(true)}
                 className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 active:bg-white/20 transition-colors"
@@ -440,7 +449,7 @@ export default function Layout({ role }) {
         {/* Desktop top bar — user info only (page titles live inside each page) */}
         <div className="hidden lg:flex items-center justify-end px-8 py-3 bg-white border-b border-gray-100">
           <div className="flex items-center gap-3">
-            {role === 'admin' && <NotificationBell />}
+            {role === 'admin' && !isCollector && <NotificationBell />}
             <div className="text-right">
               <p className="text-sm font-semibold text-gray-900">
                 {user?.full_name || user?.name || 'User'}

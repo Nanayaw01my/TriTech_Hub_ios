@@ -6,6 +6,7 @@ import { openPayPage } from '../../utils/openPayPage'
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
+import { useAuth } from '../../context/AuthContext'
 import { saveBlob } from '../../utils/download'
 import { displayEmail } from '../../utils/customerEmail'
 import LoadingSpinner from '../../components/LoadingSpinner'
@@ -20,6 +21,8 @@ import { format } from 'date-fns'
 
 export default function AdminCustomerDetail() {
   const { id } = useParams()
+  const { user: me } = useAuth()
+  const isCollector = me?.role === 'collector'
   const navigate = useNavigate()
   const [customer, setCustomer] = useState(null)
   const [plan, setPlan] = useState(null)
@@ -420,7 +423,7 @@ export default function AdminCustomerDetail() {
         <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-gray-800">Device</h3>
-            {(device.lock_status === "locked") ? (
+            {isCollector ? null : (device.lock_status === "locked") ? (
               <button
                 onClick={() => { setLockAction('unlock'); setLockModal(true) }}
                 className="px-3 py-1.5 bg-orange-100 text-orange-600 rounded-xl text-xs font-semibold hover:bg-orange-200 transition-colors"
@@ -470,7 +473,7 @@ export default function AdminCustomerDetail() {
             </div>
 
             {/* Enroll / track the phone. */}
-            <div className="mt-2 flex items-center gap-4">
+            {!isCollector && <div className="mt-2 flex items-center gap-4">
               <button
                 onClick={() => setEnrollOpen(true)}
                 className="text-xs font-semibold text-orange-600 hover:text-orange-700"
@@ -502,7 +505,7 @@ export default function AdminCustomerDetail() {
                   ✓ Release (paid off)
                 </button>
               )}
-            </div>
+            </div>}
           </div>
         </div>
       )}
@@ -551,6 +554,30 @@ export default function AdminCustomerDetail() {
         </div>
       )}
 
+      {/* Collector: payments and reminders only */}
+      {isCollector && (
+        <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
+          <h3 className="text-sm font-bold text-gray-800 mb-3">Payments</h3>
+          <div className="space-y-2">
+            {plan && ['active', 'defaulted'].includes(plan.status) && (plan.remaining_balance || 0) > 0 && (
+              <>
+                <button onClick={() => openPayPage(navigate, id, `/admin/customers/${id}`)}
+                  className="w-full py-3 px-4 rounded-xl bg-orange-600 text-white font-bold text-sm">Pay now (MoMo / Card)</button>
+                <button onClick={() => { setPayAmount(''); setPayOpen(true) }}
+                  className="w-full py-3 px-4 rounded-xl bg-green-600 text-white font-semibold text-sm">Record cash / other payment</button>
+                <button onClick={handleSendReminder} disabled={reminderLoading}
+                  className="w-full py-3 px-4 rounded-xl border-2 border-blue-200 text-blue-700 font-semibold text-sm disabled:opacity-60">
+                  {reminderLoading ? 'Sending…' : 'Send Payment Reminder'}
+                </button>
+              </>
+            )}
+            <button onClick={handleDownloadReceipt}
+              className="w-full py-3 px-4 rounded-xl border-2 border-orange-200 text-orange-600 font-semibold text-sm">Download PDF Receipt</button>
+          </div>
+        </div>
+      )}
+
+      {!isCollector && (<>
       {/* ── ADMIN ACTIONS ────────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
         <h3 className="text-sm font-bold text-gray-800 mb-3">Admin Actions</h3>
@@ -691,6 +718,8 @@ export default function AdminCustomerDetail() {
         </div>
       </div>
 
+      </>)}
+
       <NotesCard customerId={id} base="/admin" />
       <TimelineCard customerId={id} base="/admin" />
 
@@ -738,7 +767,7 @@ export default function AdminCustomerDetail() {
                   )}
                   {tx.notes && <p className="italic">"{tx.notes}"</p>}
                 </div>
-                {!tx.voided && !/deposit/i.test(tx.notes || '') && tx.kind !== 'deposit' && plan && ['active', 'defaulted'].includes(plan.status) && (
+                {!isCollector && !tx.voided && !/deposit/i.test(tx.notes || '') && tx.kind !== 'deposit' && plan && ['active', 'defaulted'].includes(plan.status) && (
                   <button type="button" onClick={() => setAdjust({ type: 'void', payment: tx })}
                     className="mt-2 text-xs font-semibold text-red-600 hover:text-red-700">Cancel this payment</button>
                 )}

@@ -45,7 +45,7 @@ const PaymentSchema = new mongoose.Schema(
       },
       user_role: {
         type: String,
-        enum: ['admin', 'staff', 'customer'],
+        enum: ['admin', 'superadmin', 'collector', 'staff', 'customer'],
       },
       name: {
         type: String,
