@@ -214,8 +214,10 @@ const getCustomerDetail = async (req, res) => {
         .populate({ path: 'device_id', select: '-agent.device_secret -agent.enrollment_token' })
         .lean(),
       Payment.find({ customer_id: customer._id })
+        .setOptions({ includeVoided: true }) // show cancelled ones too (marked)
         .sort({ createdAt: -1 })
-        .limit(20)
+        .limit(50)
+        .populate({ path: 'voided_by', select: 'name' })
         .lean(),
     ]);
 
@@ -1697,6 +1699,26 @@ const testSms = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
+
+// ─── PLAN CORRECTIONS (void payment, waive late fees, extra days) ─────────────
+
+const adjustHandler = (fn, pick) => async (req, res) => {
+  try {
+    const out = await fn({ ...pick(req), user: req.user, ip: req.ip });
+    return res.status(200).json({ success: true, message: out.message });
+  } catch (error) {
+    if (error.status) return res.status(error.status).json({ success: false, message: error.message });
+    logger.error('plan adjust error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+const { voidPayment, waiveLateFees, giveExtraDays } = require('../utils/planAdjust');
+/** POST /api/admin/payments/:id/void { reason } */
+const voidPaymentHandler = adjustHandler(voidPayment, (req) => ({ paymentId: req.params.id, reason: req.body?.reason }));
+/** POST /api/admin/plans/:id/waive-late-fees { amount?, reason } */
+const waiveLateFeesHandler = adjustHandler(waiveLateFees, (req) => ({ planId: req.params.id, amount: req.body?.amount, reason: req.body?.reason }));
+/** POST /api/admin/plans/:id/extra-days { days, reason } */
+const extraDaysHandler = adjustHandler(giveExtraDays, (req) => ({ planId: req.params.id, days: req.body?.days, reason: req.body?.reason }));
 
 /**
  * GET /api/admin/customers/:id/pay-link
@@ -3545,6 +3567,9 @@ module.exports = {
   testSms,
   testCompanyAlert,
   getAdminPayLink,
+  voidPaymentHandler,
+  waiveLateFeesHandler,
+  extraDaysHandler,
   recordAdminPayment,
   getAdmins,
   addAdmin,

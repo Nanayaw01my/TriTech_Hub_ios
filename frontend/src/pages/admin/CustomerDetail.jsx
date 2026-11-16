@@ -41,6 +41,8 @@ export default function AdminCustomerDetail() {
   const [releaseLoading, setReleaseLoading] = useState(false)
   // Record a payment received outside Paystack (cash / MoMo to the company / bank)
   const [payOpen, setPayOpen] = useState(false)
+  // Plan corrections: { type: 'void' | 'waive' | 'days', payment? }
+  const [adjust, setAdjust] = useState(null)
   const [payAmount, setPayAmount] = useState('')
   const [payMethod, setPayMethod] = useState('manual_cash')
   const [payNote, setPayNote] = useState('')
@@ -583,6 +585,22 @@ export default function AdminCustomerDetail() {
               Record cash / other payment
             </button>
           )}
+          {plan && ['active', 'defaulted'].includes(plan.status) && (plan.penalty_balance || 0) > 0 && (
+            <button
+              onClick={() => setAdjust({ type: 'waive' })}
+              className="w-full py-3 px-4 rounded-xl border-2 border-amber-200 text-amber-800 font-semibold text-sm hover:bg-amber-50 transition-colors flex items-center gap-2"
+            >
+              ✂️ Waive late fees (GHS {Number(plan.penalty_balance).toLocaleString()} owed)
+            </button>
+          )}
+          {plan && ['active', 'defaulted'].includes(plan.status) && (
+            <button
+              onClick={() => setAdjust({ type: 'days' })}
+              className="w-full py-3 px-4 rounded-xl border-2 border-blue-200 text-blue-700 font-semibold text-sm hover:bg-blue-50 transition-colors flex items-center gap-2"
+            >
+              📅 Give extra days
+            </button>
+          )}
           {plan && ['active', 'defaulted'].includes(plan.status) && (
             <button
               onClick={() => setRepossessModal(true)}
@@ -654,13 +672,21 @@ export default function AdminCustomerDetail() {
         ) : (
           <div className="space-y-3">
             {transactions.map((tx) => (
-              <div key={tx._id || tx.id} className="p-3 bg-gray-50 rounded-xl">
+              <div key={tx._id || tx.id} className={`p-3 rounded-xl ${tx.voided ? 'bg-red-50/60' : 'bg-gray-50'}`}>
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-sm font-bold text-gray-900">
+                  <p className={`text-sm font-bold ${tx.voided ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
                     GHS {Number(tx.amount).toLocaleString()}
                   </p>
-                  <StatusBadge status={tx.status || 'paid'} />
+                  {tx.voided
+                    ? <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Cancelled</span>
+                    : <StatusBadge status={tx.status || 'paid'} />}
                 </div>
+                {tx.voided && (
+                  <p className="text-xs text-red-700 mb-1">
+                    Cancelled {tx.voided_at ? format(new Date(tx.voided_at), 'dd MMM yyyy, HH:mm') : ''}
+                    {tx.voided_by?.name ? ` by ${tx.voided_by.name}` : ''}: {tx.void_reason}
+                  </p>
+                )}
                 <div className="text-xs text-gray-500 space-y-0.5">
                   <p>
                     {tx.payment_date || tx.created_at
@@ -677,11 +703,20 @@ export default function AdminCustomerDetail() {
                   )}
                   {tx.notes && <p className="italic">"{tx.notes}"</p>}
                 </div>
+                {!tx.voided && !/deposit/i.test(tx.notes || '') && tx.kind !== 'deposit' && plan && ['active', 'defaulted'].includes(plan.status) && (
+                  <button type="button" onClick={() => setAdjust({ type: 'void', payment: tx })}
+                    className="mt-2 text-xs font-semibold text-red-600 hover:text-red-700">Cancel this payment</button>
+                )}
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {adjust && plan && (
+        <AdjustPlanModal adjust={adjust} plan={plan} onClose={() => setAdjust(null)}
+          onDone={() => { setAdjust(null); fetchCustomer() }} />
+      )}
 
       {/* Lock/Unlock Modal */}
       <LockDeviceModal
@@ -1062,6 +1097,79 @@ function PhoneScreenRow({ agent, deviceId, onChanged }) {
         </p>
       )}
     </>
+  )
+}
+
+/** Cancel a payment, waive late fees, or give extra days (admin). */
+function AdjustPlanModal({ adjust, plan, onClose, onDone }) {
+  const [reason, setReason] = React.useState('')
+  const [amount, setAmount] = React.useState(adjust.type === 'waive' ? String(plan.penalty_balance || '') : '')
+  const [days, setDays] = React.useState('3')
+  const [busy, setBusy] = React.useState(false)
+  const t = adjust.type
+  const title = t === 'void' ? 'Cancel this payment?' : t === 'waive' ? 'Waive late fees' : 'Give extra days'
+  const submit = async () => {
+    if (t === 'void' && reason.trim().length < 3) { toast.error('Give a reason.'); return }
+    setBusy(true)
+    try {
+      const res = t === 'void'
+        ? await api.post(`/admin/payments/${adjust.payment._id}/void`, { reason })
+        : t === 'waive'
+          ? await api.post(`/admin/plans/${plan._id}/waive-late-fees`, { amount, reason })
+          : await api.post(`/admin/plans/${plan._id}/extra-days`, { days, reason })
+      toast.success(res.data?.message || 'Done.', { duration: 9000 })
+      onDone()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not save.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4" onClick={() => !busy && onClose()}>
+      <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <p className="text-lg font-black text-gray-900">{title}</p>
+        {t === 'void' && (
+          <p className="mt-2 text-sm text-gray-600">
+            GHS {Number(adjust.payment.amount).toLocaleString()} ({adjust.payment.payment_method === 'paystack' ? 'Paystack' : 'recorded by hand'}) will be removed from
+            this customer's payments and put back on their balance. If that means they're behind, the phone locks. It stays in the
+            history marked "Cancelled".
+            {adjust.payment.payment_method === 'paystack' && <span className="block mt-1 text-amber-700">This doesn't refund the money — do that in your Paystack dashboard if needed.</span>}
+          </p>
+        )}
+        {t === 'waive' && (
+          <div className="mt-3">
+            <label className="text-sm font-semibold text-gray-700">Amount to waive (GHS) — owed: {Number(plan.penalty_balance).toLocaleString()}</label>
+            <input type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)}
+              className="mt-1 w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:border-orange-500 outline-none" />
+          </div>
+        )}
+        {t === 'days' && (
+          <div className="mt-3">
+            <label className="text-sm font-semibold text-gray-700">How many extra days? (moves the next payment and all later ones)</label>
+            <input type="number" inputMode="numeric" min="1" max="60" value={days} onChange={(e) => setDays(e.target.value)}
+              className="mt-1 w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:border-orange-500 outline-none" />
+            {plan.next_due_date && Number(days) > 0 && (
+              <p className="mt-1 text-xs text-gray-500">
+                New due date: {format(new Date(new Date(plan.next_due_date).getTime() + Number(days) * 86400000), 'dd MMM yyyy')}
+              </p>
+            )}
+          </div>
+        )}
+        <div className="mt-3">
+          <label className="text-sm font-semibold text-gray-700">Reason {t === 'void' ? '(required)' : '(optional)'}</label>
+          <input type="text" value={reason} onChange={(e) => setReason(e.target.value)}
+            placeholder={t === 'void' ? 'e.g. Recorded twice' : 'e.g. Customer in hospital'}
+            className="mt-1 w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:border-orange-500 outline-none" />
+        </div>
+        <button type="button" onClick={submit} disabled={busy}
+          className={`mt-5 w-full py-3 rounded-2xl text-white font-bold disabled:opacity-60 ${t === 'void' ? 'bg-red-600' : 'bg-orange-600'}`}>
+          {busy ? 'Saving…' : t === 'void' ? 'Cancel payment' : t === 'waive' ? 'Waive' : 'Give extra days'}
+        </button>
+        <button type="button" onClick={onClose} disabled={busy}
+          className="mt-2 w-full py-3 rounded-2xl border border-gray-200 text-gray-700 font-semibold">Close</button>
+      </div>
+    </div>
   )
 }
 

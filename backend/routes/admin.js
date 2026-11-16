@@ -39,6 +39,9 @@ const {
   testSms,
   testCompanyAlert,
   getAdminPayLink,
+  voidPaymentHandler,
+  waiveLateFeesHandler,
+  extraDaysHandler,
   recordAdminPayment,
   getAdmins,
   addAdmin,
@@ -138,6 +141,9 @@ router.post('/devices/:id/reconnect', [param('id').isMongoId()], reconnectDevice
 router.post('/customers/:id/remind', [param('id').isMongoId()], sendCustomerReminder);
 router.post('/customers/:id/record-payment', [param('id').isMongoId()], recordAdminPayment);
 router.get('/customers/:id/pay-link', [param('id').isMongoId()], getAdminPayLink);
+router.post('/payments/:id/void', [param('id').isMongoId()], voidPaymentHandler);
+router.post('/plans/:id/waive-late-fees', [param('id').isMongoId()], waiveLateFeesHandler);
+router.post('/plans/:id/extra-days', [param('id').isMongoId()], extraDaysHandler);
 router.post('/customers/:id/repossess', [param('id').isMongoId().withMessage('Invalid customer ID.')], repossessDevice);
 
 // ─── STAFF ────────────────────────────────────────────────────────────────────

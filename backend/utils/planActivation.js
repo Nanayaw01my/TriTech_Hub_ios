@@ -188,6 +188,7 @@ async function recordDeposit(paystackData, { recordedBy = null, ip = null } = {}
       paystack_status: paystackData.status,
       recorded_by: recordedBy,
       notes,
+      kind: 'deposit',
     });
   } catch (err) {
     if (err.code !== 11000) throw err;

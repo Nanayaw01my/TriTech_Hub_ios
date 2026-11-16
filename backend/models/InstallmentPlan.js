@@ -131,6 +131,15 @@ const InstallmentPlanSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // Late fees the admin waived, and extra days given (kept for the record).
+    penalties_waived: {
+      type: Number,
+      default: 0,
+    },
+    extra_days_given: {
+      type: Number,
+      default: 0,
+    },
     // Last day (UTC midnight) a late fee was charged for, so each day is charged once.
     last_penalty_date: {
       type: Date,

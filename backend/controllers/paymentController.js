@@ -38,7 +38,8 @@ const processSuccessfulPayment = async ({
 
   // Check for duplicate payment (idempotency) — only Paystack has a reference.
   if (reference) {
-    const existingPayment = await Payment.findOne({ paystack_reference: reference });
+    // (A voided payment still owns its reference: never record it again.)
+    const existingPayment = await Payment.findOne({ paystack_reference: reference }).setOptions({ includeVoided: true });
     if (existingPayment) {
       return { duplicate: true, payment: existingPayment };
     }
@@ -122,11 +123,14 @@ const processSuccessfulPayment = async ({
   };
 
   await InstallmentPlan.findByIdAndUpdate(plan._id, planUpdateData);
-  if (penaltyPaid > 0) {
-    await Payment.updateOne({ _id: payment._id }, {
-      $set: { notes: `${notes ? `${notes} · ` : ''}Includes GHS ${penaltyPaid.toFixed(2)} late fees` },
-    }).catch(() => {});
-  }
+  // Remember the split (late fees vs balance), so the payment can be undone exactly.
+  await Payment.updateOne({ _id: payment._id }, {
+    $set: {
+      kind: 'installment',
+      applied_penalty: penaltyPaid,
+      ...(penaltyPaid > 0 ? { notes: `${notes ? `${notes} · ` : ''}Includes GHS ${penaltyPaid.toFixed(2)} late fees` } : {}),
+    },
+  }).catch(() => {});
 
   // If plan is completed, unlock the device
   let deviceUnlocked = false;
