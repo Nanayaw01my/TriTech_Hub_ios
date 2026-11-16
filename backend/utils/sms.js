@@ -187,8 +187,13 @@ const sendAdminSaleSMS = async (adminPhone, sale) => {
 const sendCustomerActivatedSMS = async (phone, name, d) => {
   const per = d.frequency === 'weekly' ? 'week' : d.frequency === 'monthly' ? 'month' : 'day';
   const due = d.firstDueDate ? new Date(d.firstDueDate).toLocaleDateString('en-GH', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-  const creds = d.pin ? `Acct ${d.accountNumber}, PIN ${d.pin}` : `Acct ${d.accountNumber} and your password`;
-  const msg = `Congrats ${name}! Your ${d.deviceModel || 'phone'} plan is active. Pay GHS ${Number(d.installmentAmount).toLocaleString()} per ${per}${due ? `, first due ${due}` : ''}. Login at dandorsolar.site: ${creds}. -Dan & Dor Solar`;
+  const creds = d.help
+    ? (d.pin ? `Acct ${d.accountNumber} PIN ${d.pin}.` : `Acct ${d.accountNumber}.`)
+    : (d.pin ? `Acct ${d.accountNumber}, PIN ${d.pin}` : `Acct ${d.accountNumber} and your password`);
+  // With a contact line (the DSR / business number) the sign-off is dropped to save space.
+  const msg = d.help
+    ? `Congrats ${firstName(name)}! Your ${d.deviceModel || 'phone'} plan is active. Pay GHS ${Number(d.installmentAmount).toLocaleString()} ${per === 'day' ? 'daily' : per === 'week' ? 'weekly' : 'monthly'}${due ? `, first due ${due}` : ''}. Login dandorsolar.site ${creds} ${d.help}`
+    : `Congrats ${name}! Your ${d.deviceModel || 'phone'} plan is active. Pay GHS ${Number(d.installmentAmount).toLocaleString()} per ${per}${due ? `, first due ${due}` : ''}. Login at dandorsolar.site: ${creds}. -Dan & Dor Solar`;
   await sendSMS(phone, msg);
 };
 
@@ -199,7 +204,9 @@ const money = (n) => Number(n).toLocaleString(undefined, { maximumFractionDigits
 // d.link = the customer's "Pay now" link (dandorsolar.site/p/<token>).
 const sendLockTomorrowSMS = async (phone, name, d) => {
   const due = d.dueDate ? new Date(d.dueDate).toLocaleDateString('en-GH', { weekday: 'short', day: 'numeric', month: 'short' }) : 'tomorrow';
-  const msg = d.link
+  const msg = d.link && d.help
+    ? `Hi ${firstName(name)}, GHS ${money(d.amount)} is due tomorrow (${due}). Pay now to avoid a lock: ${d.link} ${d.help.replace(/^Agent:/, 'Your agent:')} -Dan & Dor Solar`
+    : d.link
     ? `Hi ${firstName(name)}, GHS ${money(d.amount)} is due tomorrow (${due}). Pay now to avoid your phone being locked: ${d.link} -Dan & Dor Solar`
     : `Hi ${firstName(name)}, GHS ${money(d.amount)} is due tomorrow (${due}). Pay today at dandorsolar.site${d.contact ? ` or call ${d.contact}` : ''} to avoid your phone being locked. -Dan & Dor Solar`;
   await sendSMS(phone, msg);
@@ -232,9 +239,11 @@ const sendPaymentReminderSMS = async (phone, name, details) => {
   await sendSMS(phone, msg);
 };
 
-const sendDeviceLockedSMS = async (phone, name, deviceModel, link = null, lateFee = null) => {
+const sendDeviceLockedSMS = async (phone, name, deviceModel, link = null, lateFee = null, help = '') => {
   const fee = Number(lateFee) > 0 ? ` today to avoid a GHS ${money(lateFee)}/day late fee` : ' now';
-  const msg = link
+  const msg = link && help
+    ? `Hi ${firstName(name)}, your phone is locked: payment overdue. Pay to unlock: ${link}${Number(lateFee) > 0 ? ` (GHS ${money(lateFee)}/day late fee)` : ''}. ${help} -Dan & Dor Solar`
+    : link
     ? `Hi ${firstName(name)}, your ${deviceModel} is locked for an overdue payment. Pay${fee}: ${link} -Dan & Dor Solar`
     : `Hi ${name}, your ${deviceModel} has been locked. Pay at dandorsolar.site to unlock. -Dan & Dor Solar`;
   await sendSMS(phone, msg);
@@ -250,8 +259,10 @@ const sendDeviceUnlockedSMS = async (phone, name, deviceModel) => {
 // nextAmount is what unlocks the phone now.
 const sendPaymentConfirmedSMS = async (phone, name, amount, details) => {
   const { deviceModel, remainingBalance, nextAmount, nextDueDate, partial, overdue } = details;
-  const got = `GHS ${money(amount)} received for your ${deviceModel}.`;
-  const bal = `Total balance: GHS ${money(remainingBalance)}.`;
+  // With a contact line the phone model is left out to keep it to one SMS.
+  const got = details.help ? `GHS ${money(amount)} received.` : `GHS ${money(amount)} received for your ${deviceModel}.`;
+  const tail = details.help ? ` ${details.help} -Dan & Dor Solar` : ' -Dan & Dor Solar';
+  const bal = details.help ? `Balance GHS ${money(remainingBalance)}.` : `Total balance: GHS ${money(remainingBalance)}.`;
   const day = nextDueDate
     ? new Date(nextDueDate).toLocaleDateString('en-GH', { timeZone: 'UTC', day: 'numeric', month: 'short' })
     : null;
@@ -259,13 +270,13 @@ const sendPaymentConfirmedSMS = async (phone, name, amount, details) => {
   if (remainingBalance <= 0) {
     msg = `Congratulations ${name}! Your ${deviceModel} is fully paid off. It is now yours! Thank you. -Dan & Dor Solar`;
   } else if (overdue && nextAmount > 0) {
-    msg = `Hi ${firstName(name)}, ${got} You still owe GHS ${money(nextAmount)} now - pay it to unlock your phone. ${bal} -Dan & Dor Solar`;
+    msg = `Hi ${firstName(name)}, ${got} You still owe GHS ${money(nextAmount)} now - pay it to unlock your phone. ${bal}${tail}`;
   } else if (partial && nextAmount > 0 && day) {
-    msg = `Hi ${firstName(name)}, ${got} Still due by ${day}: GHS ${money(nextAmount)} (to avoid a lock). ${bal} -Dan & Dor Solar`;
+    msg = `Hi ${firstName(name)}, ${got} Still due by ${day}: GHS ${money(nextAmount)} (to avoid a lock). ${bal}${tail}`;
   } else if (nextAmount > 0 && day) {
-    msg = `Hi ${firstName(name)}, ${got} Next payment: GHS ${money(nextAmount)} due ${day}. ${bal} -Dan & Dor Solar`;
+    msg = `Hi ${firstName(name)}, ${got} Next payment: GHS ${money(nextAmount)} due ${day}. ${bal}${tail}`;
   } else {
-    msg = `Hi ${firstName(name)}, ${got} ${bal} -Dan & Dor Solar`;
+    msg = `Hi ${firstName(name)}, ${got} ${bal}${tail}`;
   }
   await sendSMS(phone, msg);
 };

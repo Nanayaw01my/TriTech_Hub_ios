@@ -258,6 +258,7 @@ const processSuccessfulPayment = async ({
       deviceModel,
       remainingBalance: newRemainingBalance,
       ...next,
+      help: await require('../utils/helpContact').helpContactFor(plan),
     }).catch(e => logger.error('Payment confirmation SMS failed:', e.message));
 
     sendPaymentConfirmedWhatsApp(customer.phone, customer.full_name, amountGHS, {

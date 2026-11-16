@@ -8,6 +8,8 @@ const {
   makePayment,
   getProfile,
   requestDataDeletion,
+  getMyPayLink,
+  downloadMyAgreement,
 } = require('../controllers/customerController');
 const { getPublicSettings } = require('../controllers/adminController');
 
@@ -56,5 +58,7 @@ router.post(
  */
 router.get('/profile', getProfile);
 router.post('/data-deletion', requestDataDeletion);
+router.get('/pay-link', getMyPayLink);
+router.get('/agreement', downloadMyAgreement);
 
 module.exports = router;

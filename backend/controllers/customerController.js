@@ -279,4 +279,53 @@ const requestDataDeletion = async (req, res) => {
   }
 };
 
-module.exports = { getDashboard, getPayments, makePayment, getProfile, requestDataDeletion };
+/**
+ * GET /api/customer/pay-link — the customer's Pay-now page token (amount due
+ * with late fees and part payments), used by the app's Pay buttons.
+ */
+const getMyPayLink = async (req, res) => {
+  try {
+    const InstallmentPlan = require('../models/InstallmentPlan');
+    const customer = await Customer.findOne({ user_id: req.user._id, deleted_at: null }).select('_id').lean();
+    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found.' });
+    const plan = await InstallmentPlan.findOne({ customer_id: customer._id, status: { $in: ['active', 'defaulted'] } }).sort({ createdAt: -1 });
+    if (!plan) return res.status(400).json({ success: false, message: 'No payment due right now.' });
+    const { ensurePayLink } = require('../utils/payLink');
+    await ensurePayLink(plan);
+    return res.status(200).json({ success: true, data: { token: plan.pay_token } });
+  } catch (error) {
+    logger.error('getMyPayLink error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/** GET /api/customer/agreement — the customer's own copy of their agreement (PDF). */
+const downloadMyAgreement = async (req, res) => {
+  try {
+    const InstallmentPlan = require('../models/InstallmentPlan');
+    const Payment = require('../models/Payment');
+    const Settings = require('../models/Settings');
+    const customer = await Customer.findOne({ user_id: req.user._id, deleted_at: null })
+      .populate({ path: 'user_id', select: 'account_number email is_active' })
+      .populate({ path: 'created_by', select: 'name phone role' })
+      .lean();
+    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found.' });
+    if (customer.created_by && customer.created_by.role !== 'staff') customer.created_by = null; // admin sale: no agent
+    const [plan, payments, settings] = await Promise.all([
+      InstallmentPlan.findOne({ customer_id: customer._id }).sort({ createdAt: -1 })
+        .populate({ path: 'device_id', select: 'model serial_number imei' }).lean(),
+      Payment.find({ customer_id: customer._id }).sort({ payment_date: 1 }).lean(),
+      Settings.getSingleton(),
+    ]);
+    const { writeCustomerFile } = require('../utils/customerFilePdf');
+    await writeCustomerFile(res, { customer, plan, payments, settings, customerCopy: true });
+  } catch (error) {
+    logger.error('downloadMyAgreement error: %s', error.message);
+    if (!res.headersSent) return res.status(500).json({ success: false, message: 'Could not make the PDF.' });
+    res.end();
+  }
+};
+
+module.exports = {
+  getMyPayLink,
+  downloadMyAgreement, getDashboard, getPayments, makePayment, getProfile, requestDataDeletion };

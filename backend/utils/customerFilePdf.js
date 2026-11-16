@@ -64,27 +64,30 @@ async function loadImage(src) {
  * Stream the customer's file PDF to `res`.
  * data = { customer, plan, payments, settings }
  */
-async function writeCustomerFile(res, { customer, plan, payments, settings }) {
+async function writeCustomerFile(res, { customer, plan, payments, settings, customerCopy = false }) {
   const c = customer;
   const ph = c.photos || {};
   const device = plan?.device_id || null;
   const business = settings?.business_name || 'Dan & Dor Solar Company Ltd.';
 
   // Fetch the photos first so a slow one doesn't stall the stream halfway.
-  const photoList = [
-    ['Customer photo', ph.customer_photo],
-    ['Ghana Card (front)', ph.ghana_card_front],
-    ['Ghana Card (back)', ph.ghana_card_back],
-    ['Guarantor photo', ph.guarantor_photo],
-    ['Customer signature', ph.signature],
-    ['Proof of income', c.proof_of_income],
-  ];
+  // The customer's own copy shows only their photo and signature.
+  const photoList = customerCopy
+    ? [['Customer photo', ph.customer_photo], ['Customer signature', ph.signature]]
+    : [
+      ['Customer photo', ph.customer_photo],
+      ['Ghana Card (front)', ph.ghana_card_front],
+      ['Ghana Card (back)', ph.ghana_card_back],
+      ['Guarantor photo', ph.guarantor_photo],
+      ['Customer signature', ph.signature],
+      ['Proof of income', c.proof_of_income],
+    ];
   const images = await Promise.all(photoList.map(([, src]) => loadImage(src)));
 
   const doc = new PDFDocument({ margin: MARGIN, size: 'A4', bufferPages: true, info: { Title: `Customer file - ${c.full_name}`, Author: business } });
   const safeName = String(c.full_name || 'customer').replace(/[^\w-]+/g, '-');
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="customer-file-${safeName}.pdf"`);
+  res.setHeader('Content-Disposition', `attachment; filename="${customerCopy ? 'my-agreement' : 'customer-file'}-${safeName}.pdf"`);
   res.setHeader('Cache-Control', 'no-store');
   doc.pipe(res);
 
@@ -95,7 +98,7 @@ async function writeCustomerFile(res, { customer, plan, payments, settings }) {
   // ── Header ──
   doc.rect(0, 0, doc.page.width, 80).fill(ORANGE);
   doc.fillColor('white').font('Helvetica-Bold').fontSize(20).text(business, MARGIN, 22, { width: W - 140 });
-  doc.font('Helvetica').fontSize(10).text('Customer File', MARGIN, 50);
+  doc.font('Helvetica').fontSize(10).text(customerCopy ? 'Hire-Purchase Agreement — customer copy' : 'Customer File', MARGIN, 50);
   const contact = settings?.contact_phone ? `Tel: ${settings.contact_phone}` : '';
   if (contact) doc.fontSize(9).text(contact, doc.page.width - MARGIN - 160, 28, { width: 160, align: 'right' });
   doc.y = 96;
@@ -180,7 +183,11 @@ async function writeCustomerFile(res, { customer, plan, payments, settings }) {
   ]);
 
   section('Registered by');
-  rows([
+  rows(customerCopy ? [
+    ['Agent (DSR)', c.created_by?.name],
+    ['Agent phone', c.created_by?.phone],
+    ['Registered on', dateStr(c.createdAt, true)],
+  ] : [
     ['DSR', c.created_by?.name],
     ['Staff ID', c.created_by?.staff_id],
     ['DSR email', c.created_by?.email],
@@ -200,6 +207,25 @@ async function writeCustomerFile(res, { customer, plan, payments, settings }) {
     c.deletion_requested_at ? ['Data deletion asked', dateStr(c.deletion_requested_at, true)] : null,
   ]);
 
+  if (customerCopy) {
+    section('Key terms');
+    const fee = k.late_fee_per_day ?? settings?.late_fee_per_day;
+    const terms = [
+      `The phone stays the property of ${business} until it is fully paid. When you finish paying, it is released to you and becomes yours.`,
+      'Pay every installment on time — through the Dan & Dor app, the Pay-now link in your texts, or at the office.',
+      'If a payment is missed, the phone locks until you pay; it unlocks automatically after payment.',
+      `A late fee${fee ? ` of GHS ${Number(fee).toLocaleString()}` : ''} is added for each extra day a payment is late.`,
+      "While the plan runs, the phone's location is recorded and it is protected against reset.",
+      'If payments stop, the company may recover the phone and pursue the balance as permitted by Ghanaian law. Full terms: dandorsolar.site/terms',
+    ];
+    doc.font('Helvetica').fontSize(9.5).fillColor(DARK);
+    for (const t of terms) {
+      ensure(30);
+      doc.text(`•  ${t}`, MARGIN, doc.y, { width: W });
+      doc.moveDown(0.3);
+    }
+  }
+
   // ── Phone & plan ──
   if (plan) {
     section('Phone');
@@ -207,9 +233,11 @@ async function writeCustomerFile(res, { customer, plan, payments, settings }) {
       ['Model', device?.model],
       ['IMEI', device?.imei],
       ['Serial number', device?.serial_number],
-      ['Lock status', cap(device?.lock_status)],
-      ['App version', device?.agent?.app_version],
-      ['Last check-in', dateStr(device?.agent?.last_heartbeat, true)],
+      ...(customerCopy ? [] : [
+        ['Lock status', cap(device?.lock_status)],
+        ['App version', device?.agent?.app_version],
+        ['Last check-in', dateStr(device?.agent?.last_heartbeat, true)],
+      ]),
     ]);
 
     section('Plan');
@@ -318,7 +346,7 @@ async function writeCustomerFile(res, { customer, plan, payments, settings }) {
     doc.page.margins.bottom = 0;
     const y = doc.page.height - MARGIN + 10;
     doc.font('Helvetica').fontSize(8).fillColor(MUTED)
-      .text(`${business} · Customer file · ${c.full_name} · Generated ${dateStr(new Date(), true)} · Confidential`, MARGIN, y, { width: W - 60, lineBreak: false });
+      .text(`${business} · ${customerCopy ? 'Agreement (customer copy)' : 'Customer file'} · ${c.full_name} · Generated ${dateStr(new Date(), true)} · Confidential`, MARGIN, y, { width: W - 60, lineBreak: false });
     doc.text(`Page ${i - range.start + 1} of ${range.count}`, MARGIN + W - 60, y, { width: 60, align: 'right', lineBreak: false });
   }
 

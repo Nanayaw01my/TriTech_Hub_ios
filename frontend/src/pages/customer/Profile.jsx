@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import api from '../../api/axios'
+import { saveBlob } from '../../utils/download'
 import { displayEmail } from '../../utils/customerEmail'
 import toast from 'react-hot-toast'
 import LoadingSpinner from '../../components/LoadingSpinner'
@@ -330,6 +331,22 @@ export default function CustomerProfile() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </a>
+      </div>
+
+      {/* My agreement (PDF) */}
+      <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
+        <p className="text-sm font-bold text-gray-800">My agreement</p>
+        <p className="text-xs text-gray-500 mt-1">Your hire-purchase agreement: your details, phone, plan, payments, the key terms and your signature.</p>
+        <button type="button"
+          onClick={async () => {
+            try {
+              const r = await api.get('/customer/agreement', { responseType: 'blob', timeout: 120000 })
+              await saveBlob(new Blob([r.data], { type: 'application/pdf' }), 'my-agreement.pdf')
+            } catch { toast.error('Could not download the agreement. Try again.') }
+          }}
+          className="mt-3 w-full py-3 rounded-xl border-2 border-orange-200 text-orange-700 font-bold text-sm">
+          Download my agreement (PDF)
+        </button>
       </div>
 
       {/* Data deletion request */}

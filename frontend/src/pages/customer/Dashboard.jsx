@@ -1,5 +1,6 @@
 import { paymentMethodLabel } from '../../utils/paymentMethod'
 import { planMoney } from '../../utils/planMoney'
+import { openMyPayPage } from '../../utils/openMyPayPage'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
@@ -53,30 +54,10 @@ export default function CustomerDashboard() {
   const money = (n) => `GHS ${Number(n || 0).toLocaleString('en-GH', { minimumFractionDigits: 2 })}`
 
   // ── Payment (Paystack) ──────────────────────────────────────────────────────
+  // Pay: opens my Pay-now page (amount due with late fees and part payments).
   const openPayment = () => {
     if (!plan || isCompleted) { toast('No payment due right now.'); return }
-    if (!user?.email) { toast.error('Email is required for payment'); return }
-    const amount = plan.installment_amount || 0
-    if (!amount || amount <= 0) { toast.error('Invalid payment amount'); return }
-    if (!window.PaystackPop) { toast.error('Payment system not loaded. Please refresh and try again.'); return }
-    try {
-      const handler = window.PaystackPop.setup({
-        key: PAYSTACK_PUBLIC_KEY,
-        email: user.email,
-        amount: Math.round(amount * 100),
-        currency: 'GHS',
-        channels: ['mobile_money', 'card'],
-        metadata: { plan_id: plan.id || plan._id },
-        callback: () => {
-          toast.success('Payment successful! Device will unlock shortly.')
-          fetchDashboard()
-        },
-        onClose: () => {},
-      })
-      handler.openIframe()
-    } catch (err) {
-      toast.error('Payment initialization failed. Please try again.')
-    }
+    openMyPayPage(navigate)
   }
 
   if (loading) {

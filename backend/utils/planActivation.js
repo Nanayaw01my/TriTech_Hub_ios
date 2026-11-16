@@ -118,6 +118,7 @@ async function activatePlanNow(plan, { userId = null, ip = null } = {}) {
         await sendCustomerActivatedSMS(customer.phone, customer.full_name, {
           accountNumber: user?.account_number, pin, deviceModel: device?.model,
           installmentAmount: plan.installment_amount, frequency: plan.frequency, firstDueDate: nextDueDate,
+          help: await require('./helpContact').helpContactFor(plan),
         }).catch((e) => logger.error('[activate] welcome SMS failed: %s', e.message));
       }
       if (customer.email && !isPlaceholderEmail(customer.email)) {

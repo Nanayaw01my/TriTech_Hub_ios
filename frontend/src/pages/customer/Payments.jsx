@@ -6,11 +6,13 @@ import toast from 'react-hot-toast'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import Skeleton from '../../components/Skeleton'
 import StatusBadge from '../../components/StatusBadge'
-import PaystackButton from '../../components/PaystackButton'
+import { openMyPayPage } from '../../utils/openMyPayPage'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { format } from 'date-fns'
 
 export default function CustomerPayments() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [payments, setPayments] = useState([])
   const [plan, setPlan] = useState(null)
@@ -137,15 +139,10 @@ export default function CustomerPayments() {
             </p>
           )}
           <div className="mt-4">
-            <PaystackButton
-              amount={plan.installment_amount || 0}
-              email={user?.email}
-              planId={plan.id || plan._id}
-              label="Pay Now"
-              onSuccess={handlePaymentSuccess}
-              onClose={() => {}}
-              colorClass="bg-white text-orange-600 hover:bg-orange-50 shadow-sm"
-            />
+            <button type="button" onClick={() => openMyPayPage(navigate)}
+              className="w-full py-3.5 rounded-2xl font-black text-base bg-white text-orange-600 hover:bg-orange-50 shadow-sm">
+              Pay Now
+            </button>
           </div>
         </div>
       )}

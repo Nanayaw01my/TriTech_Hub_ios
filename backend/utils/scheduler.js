@@ -11,6 +11,7 @@ const Settings = require('../models/Settings');
 const { ensurePayLink, amountDue } = require('./payLink');
 const { applyLateFees } = require('./lateFees');
 const { checkSilentPhones } = require('./tamperWatch');
+const { helpContactFor } = require('./helpContact');
 const { sendCompanyAlert } = require('./companyAlert');
 const agent = require('./androidAgent');
 const logger = require('./logger');
@@ -200,7 +201,7 @@ const checkOverduePayments = async () => {
           }
           if (customer.phone) {
             await sendDeviceLockedSMS(customer.phone, customer.full_name, device.model, await ensurePayLink(plan).catch(() => null),
-              (await Settings.getSingleton().catch(() => null))?.late_fee_per_day)
+              (await Settings.getSingleton().catch(() => null))?.late_fee_per_day, await helpContactFor(plan))
               .catch(e => logger.error('[Scheduler] Lock SMS failed: %s', e.message));
             await sendDeviceLockedWhatsApp(customer.phone, customer.full_name, device.model)
               .catch(e => logger.error('[Scheduler] Lock WhatsApp failed: %s', e.message));
@@ -283,7 +284,7 @@ const checkUpcomingPayments = async () => {
       try {
         if (customer.phone) {
           await sendLockTomorrowSMS(customer.phone, customer.full_name, {
-            amount: amountDue(plan), dueDate: plan.next_due_date, contact,
+            amount: amountDue(plan), dueDate: plan.next_due_date, contact, help: await helpContactFor(plan),
             link: await ensurePayLink(plan).catch(() => null),
           });
           logger.info('[Scheduler] Lock-tomorrow SMS sent to %s', customer.full_name);

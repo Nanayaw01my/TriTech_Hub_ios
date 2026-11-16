@@ -2951,7 +2951,8 @@ const lockCustomerDevice = async (req, res) => {
       const linkPlan = await InstallmentPlan.findOne({ customer_id: customer._id, status: { $in: ['active', 'defaulted'] } }).catch(() => null);
       const payLink = linkPlan ? await require('../utils/payLink').ensurePayLink(linkPlan).catch(() => null) : null;
       const lateFee = (await Settings.getSingleton().catch(() => null))?.late_fee_per_day;
-      sendDeviceLockedSMS(customer.phone, customer.full_name, device.model, payLink, lateFee).catch(e =>
+      const help = linkPlan ? await require('../utils/helpContact').helpContactFor(linkPlan) : '';
+      sendDeviceLockedSMS(customer.phone, customer.full_name, device.model, payLink, lateFee, help).catch(e =>
         logger.error('[SMS] Lock notification failed:', e.message)
       );
       sendDeviceLockedWhatsApp(customer.phone, customer.full_name, device.model).catch(e =>
