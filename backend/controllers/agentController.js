@@ -165,8 +165,14 @@ const enrollOnce = async (req, res) => {
       // A factory reset gives the phone a new id, but the IMEI is the same:
       // reuse its existing record instead of creating a duplicate.
       if (!device && imei) {
-        device = await Device.findOne({ imei: String(imei).trim(), 'agent.enrolled': true })
+        const same = await Device.findOne({ imei: String(imei).trim(), 'agent.enrolled': true })
           .sort({ assigned_to: -1, 'agent.last_heartbeat': -1 });
+        // Only if that record's phone has gone quiet (it's this phone, reset).
+        // If it is still checking in, it's ANOTHER phone with the same IMEI:
+        // give this one its own record instead of taking over the other's.
+        const quiet = !same?.agent?.last_heartbeat || Date.now() - new Date(same.agent.last_heartbeat).getTime() > 24 * 60 * 60 * 1000;
+        if (same && quiet) device = same;
+        else if (same) logger.warn('[agent] IMEI %s is already used by another active phone (%s) — new record for this one.', imei, same._id);
       }
       if (!device) {
         device = new Device({

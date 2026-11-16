@@ -28,6 +28,17 @@ async function mergeDevicesByImei(imei) {
   const copies = await Device.find({ imei: clean, 'agent.enrolled': true });
   if (copies.length < 2) return copies[0] || null;
 
+  // Two DIFFERENT phones can share an IMEI (copied IMEIs on some phones). Then
+  // several copies keep checking in with different phone ids: never merge
+  // those — it would cut one phone off. (A phone that was reset and set up
+  // again gets a new id, but its old record stops checking in.)
+  const DAY = 24 * 60 * 60 * 1000;
+  const live = copies.filter((d) => d.agent?.last_heartbeat && Date.now() - new Date(d.agent.last_heartbeat).getTime() < DAY);
+  const liveIds = new Set(live.map((d) => d.agent?.device_id).filter(Boolean));
+  if (liveIds.size > 1) {
+    logger.warn('[merge] IMEI %s is reported by %d different phones that are all active — not merged (IMEI shared by two phones?).', clean, liveIds.size);
+    return null;
+  }
   const sold = copies.filter((d) => d.assigned_to);
   if (sold.length > 1) {
     logger.warn('[merge] IMEI %s is on %d sold records — left for manual review.', clean, sold.length);
