@@ -527,93 +527,11 @@ const paystackWebhook = async (req, res) => {
     // Handle charge.success event
     if (event.event === 'charge.success') {
       const paystackData = event.data;
-      const metadata = paystackData.metadata || {};
 
       // Respond to Paystack quickly (200) then process
       res.status(200).json({ success: true, message: 'Webhook received.' });
 
-      // Admin's GHS 1 test from the sample Pay-now page — not a customer payment.
-      if (metadata.type === 'demo_test') {
-        logger.info(`Webhook: sample-page test payment ${paystackData.reference} (GHS ${paystackData.amount / 100}) — not linked to any customer.`);
-        return;
-      }
-
-      // A sale's DEPOSIT (collected by the DSR after approval) activates the
-      // plan instead of counting as an installment.
-      if (metadata.type === 'down_payment') {
-        try {
-          const r = await recordDeposit(paystackData);
-          logger.info(`Webhook: deposit ${paystackData.reference} — ${r.message}`);
-        } catch (depErr) {
-          logger.error('Webhook deposit error: %s', depErr.message);
-        }
-        return;
-      }
-
-      try {
-        // Find customer
-        let customer;
-        if (metadata.customer_id) {
-          customer = await Customer.findById(metadata.customer_id).lean();
-        } else {
-          // Try to find by email
-          const User = require('../models/User');
-          const user = await User.findOne({ email: paystackData.customer?.email?.toLowerCase() }).lean();
-          if (user) {
-            customer = await Customer.findOne({ user_id: user._id }).lean();
-          }
-        }
-
-        if (!customer) {
-          logger.error(`Webhook: Customer not found for reference ${paystackData.reference}`);
-          return;
-        }
-
-        // Find the plan
-        let plan;
-        if (metadata.plan_id) {
-          plan = await InstallmentPlan.findById(metadata.plan_id).lean();
-        } else {
-          plan = await InstallmentPlan.findOne({
-            customer_id: customer._id,
-            status: { $in: ['active', 'defaulted'] },
-          }).lean();
-        }
-
-        if (!plan) {
-          logger.error(`Webhook: Plan not found for customer ${customer._id}`);
-          return;
-        }
-
-        const device = await Device.findById(plan.device_id).lean();
-
-        const paidBy = {
-          user_id: null,
-          user_role: metadata.initiated_by_role || 'customer',
-          name: metadata.customer_name || customer.full_name,
-        };
-
-        const result = await processSuccessfulPayment({
-          paystackData,
-          customer,
-          plan,
-          device,
-          paidBy,
-          recordedBy: null,
-          notes: 'Processed via Paystack webhook',
-        });
-
-        if (result.duplicate) {
-          logger.info(`Webhook: Duplicate payment for reference ${paystackData.reference}`);
-        } else {
-          logger.info(
-            `Webhook: Payment processed for ${customer.full_name}. ` +
-            `Amount: GHS ${paystackData.amount / 100}. Completed: ${result.isCompleted}`
-          );
-        }
-      } catch (processError) {
-        logger.error('Webhook processing error:', processError.message);
-      }
+      await applyPaystackCharge(paystackData).catch((e) => logger.error('Webhook processing error: %s', e.message));
 
       return; // Already responded
     }
@@ -627,4 +545,53 @@ const paystackWebhook = async (req, res) => {
   }
 };
 
-module.exports = { initializePayment: initializePaymentHandler, verifyPayment: verifyPaymentHandler, paystackWebhook, processSuccessfulPayment };
+/**
+ * Record a successful Paystack charge in the system (used by the webhook and
+ * by "Record it" in the Paystack check). Idempotent: a charge already recorded
+ * is reported as a duplicate. Returns { ok, message }.
+ */
+async function applyPaystackCharge(paystackData) {
+  const metadata = paystackData.metadata || {};
+  // Admin's GHS 1 test from the sample Pay-now page — not a customer payment.
+  if (metadata.type === 'demo_test') {
+    logger.info(`Paystack: sample-page test payment ${paystackData.reference} (GHS ${paystackData.amount / 100}) — not linked to any customer.`);
+    return { ok: false, skipped: true, message: 'Sample-page test payment (not a customer payment).' };
+  }
+  // A sale's DEPOSIT activates the plan instead of counting as an installment.
+  if (metadata.type === 'down_payment') {
+    const r = await recordDeposit(paystackData);
+    logger.info(`Paystack: deposit ${paystackData.reference} — ${r.message}`);
+    return { ok: !!r.ok, message: r.message };
+  }
+  let customer;
+  if (metadata.customer_id) {
+    customer = await Customer.findById(metadata.customer_id).lean();
+  } else {
+    const User = require('../models/User');
+    const user = await User.findOne({ email: paystackData.customer?.email?.toLowerCase() }).lean();
+    if (user) customer = await Customer.findOne({ user_id: user._id }).lean();
+  }
+  if (!customer) {
+    logger.error(`Paystack: customer not found for reference ${paystackData.reference}`);
+    return { ok: false, message: 'Customer not found for this payment.' };
+  }
+  let plan;
+  if (metadata.plan_id) plan = await InstallmentPlan.findById(metadata.plan_id).lean();
+  else plan = await InstallmentPlan.findOne({ customer_id: customer._id, status: { $in: ['active', 'defaulted'] } }).lean();
+  if (!plan) {
+    logger.error(`Paystack: plan not found for customer ${customer._id}`);
+    return { ok: false, message: 'No plan found for this customer.' };
+  }
+  const device = await Device.findById(plan.device_id).lean();
+  const result = await processSuccessfulPayment({
+    paystackData, customer, plan, device,
+    paidBy: { user_id: null, user_role: metadata.initiated_by_role || 'customer', name: metadata.customer_name || customer.full_name },
+    recordedBy: null,
+    notes: 'Processed via Paystack',
+  });
+  if (result.duplicate) return { ok: true, duplicate: true, message: 'Already recorded.' };
+  logger.info(`Paystack: payment processed for ${customer.full_name}. Amount: GHS ${paystackData.amount / 100}. Completed: ${result.isCompleted}`);
+  return { ok: true, message: `Recorded GHS ${(paystackData.amount / 100).toLocaleString()} for ${customer.full_name}.` };
+}
+
+module.exports = { initializePayment: initializePaymentHandler, verifyPayment: verifyPaymentHandler, paystackWebhook, processSuccessfulPayment, applyPaystackCharge };

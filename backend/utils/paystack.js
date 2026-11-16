@@ -65,6 +65,12 @@ const listTransactions = async (params = {}) => {
   return response.data;
 };
 
+/** List settlements (Paystack paying your money into your bank). */
+const listSettlements = async (params = {}) => {
+  const response = await axios.get(`${PAYSTACK_BASE_URL}/settlement`, { headers: getHeaders(), params });
+  return response.data;
+};
+
 /**
  * Create a transfer recipient for a Ghana mobile money account.
  * @param {Object} p
@@ -174,6 +180,7 @@ const paystackErrorMessage = (err) =>
   err?.response?.data?.message || err?.message || 'Paystack request failed';
 
 module.exports = {
+  listSettlements,
   initializePayment, verifyPayment, listTransactions, createTransferRecipient, initiateTransfer,
   listBanks, createSubaccount, updateSubaccount, setSubaccountSafeDefault, createSplit, setSplitShare, paystackErrorMessage,
 };

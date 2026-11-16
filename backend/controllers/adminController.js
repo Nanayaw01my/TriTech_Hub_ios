@@ -1741,6 +1741,43 @@ const setDeviceCost = async (req, res) => {
   }
 };
 
+// ─── MONEY CHECKS (cash-up, Paystack check) ───────────────────────────────────
+const money = require('../utils/moneyCheck');
+const moneyErr = (res, e, where) => {
+  if (/Bad dates|2 months/.test(e.message)) return res.status(400).json({ success: false, message: e.message });
+  logger.error(`${where} error: %s`, e.message);
+  return res.status(500).json({ success: false, message: 'Server error.' });
+};
+/** GET /api/admin/cash-up?from=YYYY-MM-DD&to=YYYY-MM-DD */
+const getCashUp = async (req, res) => {
+  try { return res.status(200).json({ success: true, data: await money.cashUp(req.query) }); } catch (e) { return moneyErr(res, e, 'getCashUp'); }
+};
+/** POST /api/admin/cash-up/receive { payment_ids, undo } */
+const receiveCash = async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.payment_ids) ? req.body.payment_ids.filter(Boolean) : [];
+    if (!ids.length) return res.status(400).json({ success: false, message: 'Choose the payments.' });
+    const n = await money.markHandedIn({ ids, user: req.user, undo: !!req.body?.undo });
+    await AuditLog.create({ user_id: req.user._id, action: 'cash_received', details: { payment_ids: ids, undo: !!req.body?.undo, updated: n }, ip_address: req.ip }).catch(() => {});
+    return res.status(200).json({ success: true, message: req.body?.undo ? `${n} payment(s) marked not handed in.` : `${n} payment(s) marked handed in.` });
+  } catch (e) { return moneyErr(res, e, 'receiveCash'); }
+};
+/** GET /api/admin/paystack-check?from&to */
+const getPaystackCheck = async (req, res) => {
+  try { return res.status(200).json({ success: true, data: await money.paystackCheck(req.query) }); } catch (e) { return moneyErr(res, e, 'getPaystackCheck'); }
+};
+/** POST /api/admin/paystack-check/record { reference } */
+const recordMissedPaystack = async (req, res) => {
+  try {
+    const ref = String(req.body?.reference || '').trim();
+    if (!ref) return res.status(400).json({ success: false, message: 'No reference.' });
+    const r = await money.recordMissed(ref);
+    return res.status(r.ok ? 200 : 400).json({ success: !!r.ok, message: r.message });
+  } catch (e) {
+    return res.status(502).json({ success: false, message: e.response?.data?.message || 'Could not check this payment with Paystack.' });
+  }
+};
+
 // ─── DO-NOT-SELL LIST ─────────────────────────────────────────────────────────
 const Blacklist = require('../models/Blacklist');
 
@@ -3674,6 +3711,10 @@ module.exports = {
   testSms,
   testCompanyAlert,
   getAdminPayLink,
+  getCashUp,
+  receiveCash,
+  getPaystackCheck,
+  recordMissedPaystack,
   getBlacklist,
   blacklistCustomer,
   removeBlacklist,

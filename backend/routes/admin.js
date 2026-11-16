@@ -39,6 +39,10 @@ const {
   testSms,
   testCompanyAlert,
   getAdminPayLink,
+  getCashUp,
+  receiveCash,
+  getPaystackCheck,
+  recordMissedPaystack,
   getBlacklist,
   blacklistCustomer,
   removeBlacklist,
@@ -145,6 +149,10 @@ router.post('/devices/price', setStockPrice);
 router.post('/devices/cost', setDeviceCost);
 router.get('/business-report', getBusinessReport);
 router.get('/blacklist', getBlacklist);
+router.get('/cash-up', getCashUp);
+router.post('/cash-up/receive', receiveCash);
+router.get('/paystack-check', getPaystackCheck);
+router.post('/paystack-check/record', recordMissedPaystack);
 router.post('/customers/:id/blacklist', [param('id').isMongoId()], blacklistCustomer);
 router.delete('/blacklist/:id', [param('id').isMongoId()], removeBlacklist);
 router.post('/devices/merge-duplicates', mergeDuplicateDevices);
