@@ -1,7 +1,7 @@
 import { paymentMethodLabel } from '../../utils/paymentMethod'
 import NotesCard from '../../components/NotesCard'
 import TimelineCard from '../../components/TimelineCard'
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { displayEmail } from '../../utils/customerEmail'
@@ -341,8 +341,11 @@ export default function StaffCustomerDetail() {
   const [depositSplit, setDepositSplit] = useState(null) // DSR's automatic commission split
   const [amountDue, setAmountDue] = useState(null) // owed right now (late fees, part payments)
 
+  // Full-page spinner only the first time: a refresh after a payment must not
+  // unmount the payment window (it would wipe the receipt the DSR is shown).
+  const loadedOnce = useRef(false)
   const fetchData = useCallback(async () => {
-    setLoading(true)
+    if (!loadedOnce.current) setLoading(true)
     try {
       const res = await api.get(`/staff/customers/${id}`)
       const d = res.data?.data || res.data
@@ -355,6 +358,7 @@ export default function StaffCustomerDetail() {
       toast.error('Failed to load customer')
       navigate('/staff/customers')
     } finally {
+      loadedOnce.current = true
       setLoading(false)
     }
   }, [id, navigate])

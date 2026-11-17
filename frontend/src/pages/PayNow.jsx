@@ -17,7 +17,21 @@ export default function PayNow() {
   // Opened from the admin portal: offer a way back to the customer.
   const location = useLocation()
   const navigate = useNavigate()
-  const back = location.state?.back || null
+  // Remember it for this payment page, since Paystack's page sends the
+  // browser back here without that information.
+  const back = (() => {
+    const key = `pay_back_${token}`
+    try {
+      if (location.state?.back) {
+        sessionStorage.setItem(key, JSON.stringify({ back: location.state.back, label: location.state.backLabel || 'Back' }))
+        return location.state.back
+      }
+      return JSON.parse(sessionStorage.getItem(key) || 'null')?.back || null
+    } catch { return location.state?.back || null }
+  })()
+  const backLabel = (() => {
+    try { return location.state?.backLabel || JSON.parse(sessionStorage.getItem(`pay_back_${token}`) || 'null')?.label || 'Back' } catch { return 'Back' }
+  })()
   const [params] = useSearchParams()
   const reference = params.get('reference') || params.get('trxref')
   const logo = useLogo()
@@ -85,7 +99,7 @@ export default function PayNow() {
       <div className="w-full max-w-sm">
         {back && (
           <button type="button" onClick={() => navigate(back)}
-            className="mb-4 text-sm font-semibold text-orange-700">‹ {location.state?.backLabel || 'Back'}</button>
+            className="mb-4 text-sm font-semibold text-orange-700">‹ {backLabel}</button>
         )}
         <div className="flex items-center gap-3 mb-6 justify-center">
           <img src={logo} alt="" className="w-12 h-12 rounded-2xl object-contain bg-white shadow" />
