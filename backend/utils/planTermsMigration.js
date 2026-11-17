@@ -1,24 +1,24 @@
 /**
- * One-time update of existing plans to the new terms: the deposit counts as the
- * first day/week, so weekly plans have 15 payments after the deposit (was 17)
- * and daily plans 119 (was 120). The money already paid stays; the amount per
- * payment is worked out again from the balance after the deposit.
+ * Plan terms: the "deposit counts as the first day/week" rule (15 weekly /
+ * 119 daily payments after the deposit) is ON HOLD. Plans are 17 weekly /
+ * 120 daily payments after the deposit, as before.
  *
- * Customers are protected: if the new numbers would make a customer look behind
- * (because each payment is now bigger), their remaining due dates move so the
- * next payment is not earlier than before — nobody is locked or charged late
- * fees because of the change.
+ * If the 15/119 rule already ran on this database (plan_terms_version 2),
+ * open plans on 15/119 are switched back once: amount per payment worked out
+ * again for 17/120, the money already paid kept, and the schedule rebuilt from
+ * the plan's start (plus any extra days given). A customer is never made to
+ * look behind by this (dates move instead), so nobody is locked or charged
+ * late fees because of the switch.
  */
 const InstallmentPlan = require('../models/InstallmentPlan');
-const Device = require('../models/Device');
 const Settings = require('../models/Settings');
 const AuditLog = require('../models/AuditLog');
-const agent = require('./androidAgent');
 const logger = require('./logger');
 
-const OLD = { weekly: 17, daily: 120 };
-const NEW = { weekly: 15, daily: 119 };
+const BACK = { weekly: 17, daily: 120 };
+const FROM = { weekly: 15, daily: 119 };
 const OPEN = ['pending', 'returned', 'approved', 'active', 'defaulted'];
+const DAY = 86400000;
 
 function addPeriod(date, frequency, n) {
   const d = new Date(date);
@@ -27,35 +27,30 @@ function addPeriod(date, frequency, n) {
   return d;
 }
 
-/** Recalculate one plan (mongoose doc). Returns a short summary, or null if skipped. */
-function convertPlan(plan) {
+/** Switch one plan (mongoose doc) from 15/119 back to 17/120. */
+function revertPlan(plan) {
   const f = plan.frequency;
-  if (!NEW[f] || plan.total_payments !== OLD[f]) return null;
-  const total = NEW[f];
+  if (!BACK[f] || plan.total_payments !== FROM[f]) return null;
+  const total = BACK[f];
   const financed = Math.max(0, (plan.total_price || 0) - (plan.down_payment || 0));
   const per = Math.ceil((financed / total) * 100) / 100;
   const oldNext = plan.next_due_date ? new Date(plan.next_due_date) : null;
-  const oldPer = plan.installment_amount;
 
-  // Keep the dates (same rhythm), drop the last entries, new amount.
-  let sched = [...(plan.schedule || [])].sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
-  if (sched.length < total) {
-    const first = sched[0]?.due_date || addPeriod(plan.start_date || new Date(), f, 1);
-    sched = Array.from({ length: total }, (_, i) => ({ due_date: addPeriod(first, f, i), amount: per, paid: false, payment_id: null }));
-  }
-  sched = sched.slice(0, total).map((s) => ({ due_date: s.due_date, amount: per, paid: false, payment_id: s.payment_id || null }));
-
+  // Rebuild from the start: first payment one period after the plan started.
+  const start = plan.activated_at || plan.start_date || plan.createdAt || new Date();
+  const extra = (plan.extra_days_given || 0) * DAY;
+  const sched = Array.from({ length: total }, (_, i) => ({
+    due_date: new Date(addPeriod(start, f, i + 1).getTime() + extra), amount: per, paid: false, payment_id: null,
+  }));
   const remaining = Math.max(0, plan.remaining_balance || 0);
   let made = per > 0 ? Math.floor((financed - remaining + 0.01) / per) : 0;
   made = Math.max(0, Math.min(total - 1, made));
-  sched.forEach((s, i) => { s.paid = i < made; if (!s.paid) s.payment_id = null; });
+  sched.forEach((s, i) => { s.paid = i < made; });
 
-  let next = sched[made] ? new Date(sched[made].due_date) : oldNext;
-  let shiftedDays = 0;
-  // Never make a customer behind because of the change.
-  if (['active', 'defaulted'].includes(plan.status) && oldNext && next < oldNext) {
+  let next = new Date(sched[made].due_date);
+  // Never make a customer behind because of the switch.
+  if (['active', 'defaulted'].includes(plan.status) && oldNext && next < oldNext && next < new Date()) {
     const delta = oldNext - next;
-    shiftedDays = Math.round(delta / 86400000);
     sched.forEach((s) => { if (!s.paid) s.due_date = new Date(new Date(s.due_date).getTime() + delta); });
     next = oldNext;
   }
@@ -69,36 +64,37 @@ function convertPlan(plan) {
   plan.end_date = sched[sched.length - 1].due_date;
   plan.lock_reminder_for = null;
   plan.company_reminder_for = null;
-  return { plan_id: plan._id, frequency: f, old_per: oldPer, new_per: per, made, shifted_days: shiftedDays };
+  return { plan_id: plan._id, frequency: f, new_per: per, made, next };
 }
 
-async function migratePlanTermsV2() {
+async function revertPlanTermsIfNeeded() {
   const s = await Settings.getSingleton();
-  if ((s.plan_terms_version || 1) >= 2) return 0;
+  if ((s.plan_terms_version || 1) !== 2) return 0; // the 15/119 rule never ran here
   const plans = await InstallmentPlan.find({
     status: { $in: OPEN },
-    $or: [{ frequency: 'weekly', total_payments: 17 }, { frequency: 'daily', total_payments: 120 }],
+    $or: [{ frequency: 'weekly', total_payments: 15 }, { frequency: 'daily', total_payments: 119 }],
   });
   const done = [];
   for (const plan of plans) {
     try {
-      const r = convertPlan(plan);
+      const r = revertPlan(plan);
       if (!r) continue;
-      await plan.save();
-      done.push(r);
-      // Keep the phone's own deadline in step with the (possibly moved) next due date.
-      if (['active', 'defaulted'].includes(plan.status) && plan.device_id) {
-        const dev = await Device.findById(plan.device_id);
-        if (dev?.agent?.enrolled) await agent.setDeadline(dev, plan.next_due_date).catch(() => {});
+      if (['active', 'defaulted'].includes(plan.status)) {
+        // Saves the plan; unlocks a phone locked by the 15/119 rule if the
+        // customer is up to date on the old terms, else moves its deadline.
+        await require('./planAdjust').syncPhone(plan);
+      } else {
+        await plan.save();
       }
+      done.push(r);
     } catch (e) {
-      logger.error('[plan-terms] plan %s not updated: %s', plan._id, e.message);
+      logger.error('[plan-terms] plan %s not switched back: %s', plan._id, e.message);
     }
   }
-  await Settings.updateOne({ _id: s._id }, { $set: { plan_terms_version: 2 } });
-  await AuditLog.create({ action: 'settings_updated', details: { event: 'plan_terms_v2', plans_updated: done.length, plans: done.slice(0, 200) }, ip_address: 'system' }).catch(() => {});
-  logger.info('[plan-terms] %d existing plan(s) updated to deposit + %d weekly / %d daily payments.', done.length, NEW.weekly, NEW.daily);
+  await Settings.updateOne({ _id: s._id }, { $set: { plan_terms_version: 3 } });
+  await AuditLog.create({ action: 'settings_updated', details: { event: 'plan_terms_reverted', plans_updated: done.length }, ip_address: 'system' }).catch(() => {});
+  logger.info('[plan-terms] %d plan(s) switched back to 17 weekly / 120 daily payments.', done.length);
   return done.length;
 }
 
-module.exports = { migratePlanTermsV2, convertPlan };
+module.exports = { revertPlanTermsIfNeeded, revertPlan };

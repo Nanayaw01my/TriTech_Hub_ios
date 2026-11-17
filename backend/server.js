@@ -679,9 +679,10 @@ const startServer = async () => {
     // The old default contact email (from the template) -> the company's.
     await require('./models/Settings').updateMany({ contact_email: 'support@tritech.com' }, { $set: { contact_email: 'support@dandorsolar.site' } })
       .catch(() => {});
-    // Existing plans -> new terms (deposit counts as the first day/week). Once.
-    await require('./utils/planTermsMigration').migratePlanTermsV2()
-      .catch((e) => logger.error('[plan-terms] migration failed: %s', e.message));
+    // The "deposit counts as the first week/day" rule is on hold: if it already
+    // ran here, switch those plans back to 17 weekly / 120 daily (once).
+    await require('./utils/planTermsMigration').revertPlanTermsIfNeeded()
+      .catch((e) => logger.error('[plan-terms] switch back failed: %s', e.message));
     // Fold any duplicate records of the same phone (same IMEI) into one.
     await require('./utils/deviceMerge').mergeAllDuplicates()
       .then((r) => { if (r.removed) logger.info('[merge] Start-up: merged %d duplicate phone record(s).', r.removed); })

@@ -13,8 +13,8 @@ const SettingsSchema = new mongoose.Schema(
     late_fee_per_day: { type: Number, default: 10, min: 0 },
     // SMS credit warning: text the company when Arkesel credit falls below this.
     sms_low_balance: { type: Number, default: 200, min: 0 },
-    // Plan terms already applied to existing plans (2 = deposit counts as the
-    // first day/week: 119 daily or 15 weekly payments after it).
+    // Plan terms applied to existing plans: 1 = 17 weekly / 120 daily (normal);
+    // 2 = the 15/119 rule ran (now on hold); 3 = switched back to 17/120.
     plan_terms_version: { type: Number, default: 1 },
     sms_balance: {
       value: { type: Number, default: null },
