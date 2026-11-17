@@ -444,7 +444,7 @@ const dailyBackup = async () => {
 
     const backupJson = JSON.stringify(backup, null, 2);
     const date = new Date().toISOString().split('T')[0];
-    const filename = `tritech-backup-${date}.json`;
+    const filename = `dandor-solar-backup-${date}.json`;
 
     logger.info('[Scheduler] Backup file: %s (%d bytes)', filename, backupJson.length);
 

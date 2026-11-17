@@ -676,6 +676,9 @@ const startServer = async () => {
     // Sales stuck on a plain copy of a phone (from duplicate sales) -> real phone.
     await require('./utils/deviceMerge').relinkCopiesToEnrolledPhones()
       .catch((e) => logger.warn('[merge] relink skipped: %s', e.message));
+    // The old default contact email (from the template) -> the company's.
+    await require('./models/Settings').updateMany({ contact_email: 'support@tritech.com' }, { $set: { contact_email: 'support@dandorsolar.site' } })
+      .catch(() => {});
     // Existing plans -> new terms (deposit counts as the first day/week). Once.
     await require('./utils/planTermsMigration').migratePlanTermsV2()
       .catch((e) => logger.error('[plan-terms] migration failed: %s', e.message));

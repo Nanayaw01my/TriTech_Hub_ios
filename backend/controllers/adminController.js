@@ -3169,7 +3169,7 @@ const downloadBackup = async (req, res) => {
       data: { customers, devices, installment_plans: plans, payments, staff },
     };
 
-    const filename = `tritechhub-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    const filename = `dandor-solar-backup-${new Date().toISOString().slice(0, 10)}.json`;
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.status(200).json(backup);

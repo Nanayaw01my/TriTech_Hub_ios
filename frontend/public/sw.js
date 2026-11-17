@@ -1,5 +1,5 @@
-const CACHE = 'tritech-v2';
-const STATIC_CACHE = 'tritech-static-v2';
+const CACHE = 'dandor-v3';
+const STATIC_CACHE = 'dandor-static-v3';
 
 // App shell files to pre-cache on install
 const PRECACHE = [
@@ -117,7 +117,7 @@ self.addEventListener('push', (e) => {
       body: data.body || '',
       icon: '/logo.png',
       badge: '/logo.png',
-      tag: data.tag || 'tritech',
+      tag: data.tag || 'dandor',
       data: { url: data.url || '/' },
     })
   );

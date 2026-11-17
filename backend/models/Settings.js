@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const SettingsSchema = new mongoose.Schema(
   {
     business_name: { type: String, trim: true, default: 'Dan & Dor Solar Company Ltd.' },
-    contact_email: { type: String, trim: true, lowercase: true, default: 'support@tritech.com' },
+    contact_email: { type: String, trim: true, lowercase: true, default: 'support@dandorsolar.site' },
     contact_phone: { type: String, trim: true, default: '' },
     contact_address: { type: String, trim: true, default: '' },
     whatsapp_number: { type: String, trim: true, default: '' },
