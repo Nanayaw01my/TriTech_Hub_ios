@@ -916,7 +916,12 @@ const getCustomerDetail = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: 'Customer detail retrieved.',
-      data: { customer, plan, payments, deposit_split },
+      data: {
+        customer, plan, payments, deposit_split,
+        // What the customer owes right now (overdue installments, the rest of a
+        // part payment, late fees) — the DSR's payment window starts with this.
+        amount_due: plan && ['active', 'defaulted'].includes(plan.status) ? require('../utils/payLink').amountDue(plan) : null,
+      },
     });
   } catch (error) {
     logger.error('Staff getCustomerDetail error:', error);

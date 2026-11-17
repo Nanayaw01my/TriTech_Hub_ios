@@ -15,14 +15,17 @@ import { format } from 'date-fns'
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || ''
 
 // ─── Payment Modal ────────────────────────────────────────────────────────────
-function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
-  const [amount, setAmount] = useState(String(defaultAmount ?? plan?.installment_amount ?? ''))
+function PaymentModal({ customer, plan, defaultAmount, amountDue, onClose, onSuccess }) {
+  const [amount, setAmount] = useState(String(defaultAmount ?? amountDue ?? plan?.installment_amount ?? ''))
   const [processing, setProcessing] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const [receipt, setReceipt] = useState(null)
 
   const installmentAmt = plan?.installment_amount || 0
-  const remaining = plan?.remaining_balance || 0
+  const lateFees = Math.max(0, plan?.penalty_balance || 0)
+  // Most that can be paid: the balance plus any late fees owed.
+  const remaining = Math.round(((plan?.remaining_balance || 0) + lateFees) * 100) / 100
+  const dueNow = Number(amountDue) > 0 ? Number(amountDue) : null
 
   const handlePay = async () => {
     const amt = parseFloat(amount)
@@ -248,9 +251,22 @@ function PaymentModal({ customer, plan, defaultAmount, onClose, onSuccess }) {
               />
             </div>
 
+            {lateFees > 0 && (
+              <p className="text-xs font-semibold text-red-600 -mt-2 mb-3">Includes GHS {lateFees.toLocaleString()} late fees owed (paid first).</p>
+            )}
+
             {/* Quick amount buttons */}
             <div className="flex gap-2 mb-5">
-              {[installmentAmt, remaining].filter((v, i, a) => v > 0 && a.indexOf(v) === i).map(v => (
+              {dueNow && (
+                <button
+                  onClick={() => setAmount(String(dueNow))}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-colors
+                    ${String(amount) === String(dueNow) ? 'bg-orange-600 text-white border-orange-500' : 'border-gray-200 text-gray-600 hover:border-orange-400'}`}
+                >
+                  Due now{'\n'}GHS {dueNow.toLocaleString()}
+                </button>
+              )}
+              {[installmentAmt, remaining].filter((v, i, a) => v > 0 && a.indexOf(v) === i && v !== dueNow).map(v => (
                 <button
                   key={v}
                   onClick={() => setAmount(String(v))}
@@ -323,6 +339,7 @@ export default function StaffCustomerDetail() {
   const [imageModal, setImageModal] = useState(null)
   const [depositBusy, setDepositBusy] = useState(false)
   const [depositSplit, setDepositSplit] = useState(null) // DSR's automatic commission split
+  const [amountDue, setAmountDue] = useState(null) // owed right now (late fees, part payments)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -333,6 +350,7 @@ export default function StaffCustomerDetail() {
       if (d?.plan) setPlan(d.plan)
       if (Array.isArray(d?.payments)) setPayments(d.payments)
       setDepositSplit(d?.deposit_split || null)
+      setAmountDue(d?.amount_due ?? null)
     } catch (err) {
       toast.error('Failed to load customer')
       navigate('/staff/customers')
@@ -352,7 +370,8 @@ export default function StaffCustomerDetail() {
   if (!customer) return null
 
   const device = plan?.device_id
-  const canPay = plan?.status === 'active' && (plan?.remaining_balance || 0) > 0
+  // Active or overdue (locked) customers who still owe something.
+  const canPay = ['active', 'defaulted'].includes(plan?.status) && ((plan?.remaining_balance || 0) > 0 || (plan?.penalty_balance || 0) > 0)
 
   // Collect the sale's deposit via Paystack. The payment is tagged as a
   // deposit, so the server activates the plan (and unlocks the phone) instead
@@ -577,7 +596,7 @@ export default function StaffCustomerDetail() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
-              Collect Installment (MoMo / Card)
+              {plan.status === 'defaulted' ? 'Collect Payment — overdue (MoMo / Card)' : 'Collect Payment (MoMo / Card)'}
             </button>
           )}
 
@@ -646,7 +665,7 @@ export default function StaffCustomerDetail() {
 
       {/* Payment Modal */}
       {showPayModal && plan && (
-        <PaymentModal
+        <PaymentModal amountDue={amountDue}
           customer={customer}
           plan={plan}
           defaultAmount={defaultPayAmount}
