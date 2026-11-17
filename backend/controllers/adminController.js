@@ -2236,16 +2236,35 @@ const getTransactions = async (req, res) => {
       }
     }
 
-    const [payments, total, amountAgg] = await Promise.all([
+    // Only the customers of one DSR (the DSR who registered the sale).
+    if (req.query.staff_id && /^[0-9a-fA-F]{24}$/.test(String(req.query.staff_id))) {
+      const planIds = await InstallmentPlan.find({ created_by: req.query.staff_id }).distinct('_id');
+      filter.installment_plan_id = { $in: planIds };
+    }
+
+    // Totals per DSR for the same dates (who brought in the money).
+    const byDsrAgg = Payment.aggregate([
+      { $match: (() => { const f = { ...filter }; delete f.installment_plan_id; return f; })() },
+      { $lookup: { from: 'installmentplans', localField: 'installment_plan_id', foreignField: '_id', as: 'plan' } },
+      { $unwind: '$plan' },
+      { $group: { _id: '$plan.created_by', total: { $sum: '$amount' }, count: { $sum: 1 }, customers: { $addToSet: '$customer_id' } } },
+      { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'u' } },
+      { $unwind: { path: '$u', preserveNullAndEmptyArrays: true } },
+      { $project: { _id: 1, total: 1, count: 1, customers: { $size: '$customers' }, name: '$u.name', role: '$u.role', staff_id: '$u.staff_id' } },
+      { $sort: { total: -1 } },
+    ]);
+
+    const [payments, total, amountAgg, byDsr] = await Promise.all([
       Payment.find(filter)
         .populate({ path: 'customer_id', select: 'full_name email phone' })
-        .populate({ path: 'installment_plan_id', select: 'frequency' })
+        .populate({ path: 'installment_plan_id', select: 'frequency created_by', populate: { path: 'created_by', select: 'name role' } })
         .sort({ payment_date: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
       Payment.countDocuments(filter),
       Payment.aggregate([{ $match: filter }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      byDsrAgg.catch(() => []),
     ]);
 
     const totalAmount = amountAgg[0]?.total || 0;
@@ -2265,6 +2284,7 @@ const getTransactions = async (req, res) => {
       payment_date: p.payment_date,
       created_at: p.payment_date || p.createdAt,
       notes: p.notes || '',
+      dsr_name: p.installment_plan_id?.created_by?.role === 'staff' ? p.installment_plan_id.created_by.name : (p.installment_plan_id?.created_by ? 'Office' : ''),
     }));
 
     return res.status(200).json({
@@ -2272,6 +2292,7 @@ const getTransactions = async (req, res) => {
       message: 'Transactions retrieved.',
       data: {
         transactions,
+        by_dsr: byDsr.map((d) => ({ staff_id: d._id, name: d.role === 'staff' ? d.name : 'Office (admin sales)', is_staff: d.role === 'staff', total: Math.round(d.total * 100) / 100, count: d.count, customers: d.customers })),
         total,
         totalPages,
         total_amount: totalAmount,

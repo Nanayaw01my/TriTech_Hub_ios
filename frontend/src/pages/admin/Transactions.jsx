@@ -16,24 +16,35 @@ export default function AdminTransactions() {
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [totalAmount, setTotalAmount] = useState(0)
+  // DSR filter + money brought in per DSR (by the DSR who sold to the customer).
+  const [staffId, setStaffId] = useState('')
+  const [staffList, setStaffList] = useState([])
+  const [byDsr, setByDsr] = useState([])
+  useEffect(() => {
+    api.get('/admin/staff?limit=200').then((r) => {
+      const d = r.data?.data || r.data
+      setStaffList(d?.staff || d?.staffMembers || [])
+    }).catch(() => {})
+  }, [])
   const PER_PAGE = 25
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true)
     try {
-      const params = new URLSearchParams({ page, limit: PER_PAGE, from: dateFrom, to: dateTo })
+      const params = new URLSearchParams({ page, limit: PER_PAGE, from: dateFrom, to: dateTo, ...(staffId ? { staff_id: staffId } : {}) })
       const res = await api.get(`/admin/transactions?${params}`)
       const d = res.data?.data || res.data
       setTransactions(Array.isArray(d.transactions) ? d.transactions : [])
       setTotalPages(d.totalPages || Math.ceil((d.total || 0) / PER_PAGE))
       setTotal(d.total || 0)
       setTotalAmount(d.total_amount || 0)
+      setByDsr(Array.isArray(d.by_dsr) ? d.by_dsr : [])
     } catch {
       toast.error('Failed to load transactions')
     } finally {
       setLoading(false)
     }
-  }, [page, dateFrom, dateTo])
+  }, [page, dateFrom, dateTo, staffId])
 
   useEffect(() => { fetchTransactions() }, [fetchTransactions])
 
@@ -46,9 +57,9 @@ export default function AdminTransactions() {
       toast.success('Export started!')
     } catch {
       // Fallback: build CSV from current page data
-      const csvHeader = 'Date,Customer,Amount,Method,Reference,Status\n'
+      const csvHeader = 'Date,Customer,DSR,Amount,Method,Reference,Status\n'
       const csvRows = transactions.map(tx =>
-        `"${tx.created_at ? format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm') : ''}","${tx.customer_name || ''}","${tx.amount}","${paymentMethodLabel(tx.payment_method || tx.method)}","${tx.reference || ''}","${tx.status || ''}"`
+        `"${tx.created_at ? format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm') : ''}","${tx.customer_name || ''}","${tx.dsr_name || ''}","${tx.amount}","${paymentMethodLabel(tx.payment_method || tx.method)}","${tx.reference || ''}","${tx.status || ''}"`
       ).join('\n')
       const blob = new Blob([csvHeader + csvRows], { type: 'text/csv' })
       await saveBlob(blob, `transactions_${dateFrom}_${dateTo}.csv`)
@@ -131,6 +142,38 @@ export default function AdminTransactions() {
         </div>
       </div>
 
+      {/* DSR filter */}
+      <div className="mb-4">
+        <label className="block text-xs font-semibold text-gray-600 mb-1.5">DSR (whose customers)</label>
+        <select value={staffId} onChange={(e) => { setStaffId(e.target.value); setPage(1) }}
+          className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm">
+          <option value="">All DSRs</option>
+          {staffList.map((st) => (
+            <option key={st._id || st.id} value={st._id || st.id}>{st.name}{st.staff_id ? ` (${st.staff_id})` : ''}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Money in per DSR, for these dates */}
+      {byDsr.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
+          <p className="text-sm font-bold text-gray-800">Payments by DSR's customers ({dateFrom} to {dateTo})</p>
+          <div className="mt-2 divide-y divide-gray-50">
+            {byDsr.map((d) => (
+              <button key={String(d.staff_id)} type="button"
+                onClick={() => { if (d.is_staff) { setStaffId(staffId === String(d.staff_id) ? '' : String(d.staff_id)); setPage(1) } }}
+                className={`w-full flex items-center justify-between py-2 text-left ${staffId === String(d.staff_id) ? 'bg-orange-50 rounded-xl px-2' : ''}`}>
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">{d.name}</p>
+                  <p className="text-[11px] text-gray-500">{d.count} payment(s) · {d.customers} customer(s){d.is_staff ? ' · tap to see them' : ''}</p>
+                </div>
+                <p className="text-sm font-black text-orange-600">GHS {Number(d.total).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
       ) : transactions.length === 0 ? (
@@ -167,6 +210,7 @@ export default function AdminTransactions() {
                     <p className="text-xs text-gray-500 truncate">
                       {tx.created_at ? format(new Date(tx.created_at), 'dd MMM yyyy, HH:mm') : ''} •{' '}
                       {paymentMethodLabel(tx.payment_method || tx.method)}
+                      {tx.dsr_name ? <> • <span className="font-semibold text-gray-600">DSR {tx.dsr_name}</span></> : ''}
                     </p>
                     {tx.reference && (
                       <p className="text-xs font-mono text-gray-400 truncate">{tx.reference}</p>
