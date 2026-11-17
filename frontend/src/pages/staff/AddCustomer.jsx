@@ -37,7 +37,8 @@ const STEPS = ['Personal Info', 'Photos', 'Address & Income', 'Device & Plan']
 // Every plan runs a fixed 4 months; the customer picks daily or weekly payments.
 // (Same numbers as the server: backend/utils/planTerms.js)
 const PLAN_MONTHS = 4
-const PLAN_PAYMENTS = { daily: 120, weekly: 17 }
+// The deposit counts as the first day/week (same numbers as backend/utils/planTerms.js).
+const PLAN_PAYMENTS = { daily: 119, weekly: 15 }
 
 // Edit mode: a photo already stored for this sale. Ghana Card images are hidden
 // from DSRs for privacy, so they're marked ON_FILE instead of shown.
@@ -1072,7 +1073,7 @@ export default function StaffAddCustomer() {
 
                 {/* Breakdown of the fixed 4-month plan for the chosen frequency */}
                 <div className="p-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm text-gray-700">
-                  <span className="font-semibold">{PLAN_MONTHS} months</span> ={' '}
+                  <span className="font-semibold">{PLAN_MONTHS} months</span> = deposit (first {form.payment_frequency === 'daily' ? 'day' : 'week'}) +{' '}
                   <span className="font-semibold">{PLAN_PAYMENTS[form.payment_frequency]} {form.payment_frequency === 'daily' ? 'daily' : 'weekly'} payments</span>
                   {preview.installmentAmount > 0 && (
                     <> of <span className="font-bold text-orange-600">GHS {preview.installmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></>

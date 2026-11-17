@@ -1,12 +1,12 @@
 /**
  * Hire-purchase plan terms. Every phone is paid off over a fixed 4 months; the
  * customer only chooses how often they pay:
- *   daily  — 120 payments (4 months x ~30 days)
- *   weekly —  17 payments (17 weeks ≈ 4 months)
+ *   daily  — the deposit counts as day 1, then 119 daily payments (120 days ≈ 4 months)
+ *   weekly — the deposit counts as week 1, then 15 weekly payments (16 weeks ≈ 4 months)
  * The balance after the deposit is split evenly across those payments.
  */
 const PLAN_MONTHS = 4;
-const PLAN_PAYMENTS = { daily: 120, weekly: 17 };
+const PLAN_PAYMENTS = { daily: 119, weekly: 15 };
 
 /** { frequency, totalPayments } for an allowed frequency, else null. */
 function planTerms(frequency) {

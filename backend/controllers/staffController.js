@@ -509,7 +509,7 @@ const addCustomerImpl = async (req, res) => {
       });
     }
 
-    // Fixed 4-month plan: 120 daily or 17 weekly payments.
+    // Fixed 4-month plan: deposit (first day/week) + 119 daily or 15 weekly payments.
     const totalPayments = terms.totalPayments;
 
     // Calculate installment amount (round to 2 decimal places)
@@ -792,7 +792,7 @@ const updateSale = async (req, res) => {
     await device.save();
 
     // --- Plan terms (provisional schedule; the real one starts on activation) ---
-    // Fixed 4-month plan: 120 daily or 17 weekly payments.
+    // Fixed 4-month plan: deposit (first day/week) + 119 daily or 15 weekly payments.
     const terms = planTerms(b.payment_frequency || b.frequency || plan.frequency || 'daily');
     if (!terms) return res.status(400).json({ success: false, message: 'Choose daily or weekly payments.' });
     const frequency = terms.frequency;

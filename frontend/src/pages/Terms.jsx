@@ -25,7 +25,7 @@ export default function Terms() {
         </p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Deposit:</strong> paid after we approve your application. The phone is activated once it is paid.</li>
-          <li><strong>Plan length:</strong> 4 months. You choose to pay <strong>daily (120 payments)</strong> or <strong>weekly (17 payments)</strong>.</li>
+          <li><strong>Plan length:</strong> 4 months. The deposit counts as the first day or week; then you pay <strong>daily (119 payments)</strong> or <strong>weekly (15 payments)</strong>.</li>
           <li>The price, deposit, amount per payment and every due date are shown to you before you agree and in your account.</li>
           <li>You may pay ahead or pay the full balance early at any time, with no extra charge.</li>
         </ul>

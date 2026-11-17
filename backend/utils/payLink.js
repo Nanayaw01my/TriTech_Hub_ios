@@ -47,8 +47,9 @@ function amountDue(plan) {
   // Money already paid toward the next unpaid installment (part-payments).
   const financed = Math.max(0, (plan.total_price || 0) - (plan.down_payment || 0));
   const credit = Math.max(0, financed - remaining - (plan.payments_made || 0) * per);
-  // Nothing due yet (paid ahead): suggest one installment.
-  let due = dueItems.length ? dueItems.length * per - credit : per;
+  // Nothing due yet: suggest the rest of the next installment (one whole
+  // installment if nothing was part-paid).
+  let due = dueItems.length ? dueItems.length * per - credit : per - credit;
   if (due <= 0) due = per;
   due = Math.min(remaining, due);
   // Plus any late fees (paid first).
