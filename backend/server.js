@@ -276,6 +276,8 @@ app.use('/api/webhooks', require('./routes/webhook'));
 app.use('/api/app', require('./routes/app'));
 app.use('/api/agent', require('./routes/agent'));
 app.use('/api/pay', require('./routes/pay'));
+// Public API for other systems (API keys from Settings → API keys).
+app.use('/api/v1', require('./routes/publicApi'));
 
 // ─── SERVE REACT FRONTEND ─────────────────────────────────────────────────────
 

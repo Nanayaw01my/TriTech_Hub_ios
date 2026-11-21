@@ -45,7 +45,7 @@ const PaymentSchema = new mongoose.Schema(
       },
       user_role: {
         type: String,
-        enum: ['admin', 'superadmin', 'collector', 'staff', 'customer'],
+        enum: ['admin', 'superadmin', 'collector', 'staff', 'customer', 'api'],
       },
       name: {
         type: String,
@@ -71,6 +71,10 @@ const PaymentSchema = new mongoose.Schema(
     voided_at: { type: Date, default: null },
     voided_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     void_reason: { type: String, trim: true, default: null },
+    // Payment sent by another system through the API: its own reference (so the
+    // same payment sent twice is recorded once) and the API key's name.
+    external_ref: { type: String, trim: true, default: undefined },
+    source: { type: String, trim: true, default: undefined },
     // Cash-up: cash/MoMo collected by staff, marked as handed in to the office.
     cash_received_at: { type: Date, default: null },
     cash_received_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
@@ -100,6 +104,7 @@ PaymentSchema.pre('aggregate', function () {
 /** Was this the down payment? (Older records have no kind: read the note.) */
 PaymentSchema.statics.isDeposit = (p) => p?.kind === 'deposit' || (!p?.kind && /deposit/i.test(p?.notes || ''));
 
+PaymentSchema.index({ external_ref: 1 }, { sparse: true });
 PaymentSchema.index({ customer_id: 1 });
 PaymentSchema.index({ customer_id: 1, payment_date: -1 });
 PaymentSchema.index({ installment_plan_id: 1 });

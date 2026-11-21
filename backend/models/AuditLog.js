@@ -40,6 +40,8 @@ const AuditLogSchema = new mongoose.Schema(
         'customer_note',
         'blacklist_updated',
         'cash_received',
+        'api_key_updated',
+        'api_payment',
       ],
       required: true,
     },

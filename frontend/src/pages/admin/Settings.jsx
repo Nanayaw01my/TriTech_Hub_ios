@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import ApiKeysCard from './ApiKeysCard'
 import BlacklistCard from './BlacklistCard'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
@@ -274,6 +275,7 @@ export default function AdminSettings() {
         {/* SMS check */}
         <SmsTestCard />
         <BlacklistCard />
+        <ApiKeysCard />
 
         {/* Admin accounts */}
         <AdminsCard />

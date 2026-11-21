@@ -39,6 +39,9 @@ const {
   testSms,
   testCompanyAlert,
   getAdminPayLink,
+  listApiKeys,
+  createApiKey,
+  updateApiKey,
   getUnknownPhones,
   reconnectUnknownPhone,
   getCashUp,
@@ -182,6 +185,9 @@ router.post('/devices/:id/return-to-stock', [param('id').isMongoId()], returnDev
 router.post('/devices/:id/unenroll', [param('id').isMongoId()], unenrollDevice);
 router.post('/devices/:id/reconnect', [param('id').isMongoId()], reconnectDevice);
 router.get('/unknown-phones', getUnknownPhones);
+router.get('/api-keys', listApiKeys);
+router.post('/api-keys', createApiKey);
+router.put('/api-keys/:id', [param('id').isMongoId()], updateApiKey);
 router.post('/unknown-phones/:id/reconnect', [param('id').isMongoId()], reconnectUnknownPhone);
 router.post('/customers/:id/remind', [param('id').isMongoId()], sendCustomerReminder);
 router.post('/customers/:id/record-payment', [param('id').isMongoId()], recordAdminPayment);

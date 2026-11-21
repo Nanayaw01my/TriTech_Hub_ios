@@ -1742,6 +1742,53 @@ const setDeviceCost = async (req, res) => {
   }
 };
 
+// ─── API KEYS (for other systems) ─────────────────────────────────────────────
+const ApiKey = require('../models/ApiKey');
+const { hashKey } = require('../middleware/apiKey');
+
+/** GET /api/admin/api-keys */
+const listApiKeys = async (req, res) => {
+  try {
+    const keys = await ApiKey.find().sort({ createdAt: -1 }).populate({ path: 'created_by', select: 'name' }).select('-key_hash').lean();
+    return res.status(200).json({ success: true, data: { keys, scopes: ApiKey.SCOPES } });
+  } catch (error) {
+    logger.error('listApiKeys error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/** POST /api/admin/api-keys { name, scopes } — the key is shown ONCE in the answer. */
+const createApiKey = async (req, res) => {
+  try {
+    const name = String(req.body?.name || '').trim().slice(0, 60);
+    const scopes = (Array.isArray(req.body?.scopes) ? req.body.scopes : []).filter((x) => ApiKey.SCOPES.includes(x));
+    if (!name) return res.status(400).json({ success: false, message: 'Give the key a name (e.g. "Shop system").' });
+    if (!scopes.length) return res.status(400).json({ success: false, message: 'Tick at least one thing this key may do.' });
+    const raw = 'ddsk_' + crypto.randomBytes(24).toString('base64url');
+    const key = await ApiKey.create({ name, scopes, key_hash: hashKey(raw), prefix: raw.slice(0, 12), created_by: req.user._id });
+    await AuditLog.create({ user_id: req.user._id, action: 'api_key_updated', details: { created: name, scopes }, ip_address: req.ip }).catch(() => {});
+    return res.status(201).json({ success: true, message: 'API key created. Copy it now — it will not be shown again.', data: { key: raw, id: key._id } });
+  } catch (error) {
+    logger.error('createApiKey error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/** PUT /api/admin/api-keys/:id { active } — switch a key off (or on again). */
+const updateApiKey = async (req, res) => {
+  try {
+    const key = await ApiKey.findById(req.params.id);
+    if (!key) return res.status(404).json({ success: false, message: 'Key not found.' });
+    key.active = !!req.body?.active;
+    await key.save();
+    await AuditLog.create({ user_id: req.user._id, action: 'api_key_updated', details: { key: key.name, active: key.active }, ip_address: req.ip }).catch(() => {});
+    return res.status(200).json({ success: true, message: key.active ? `${key.name} switched on.` : `${key.name} switched off — it can no longer be used.` });
+  } catch (error) {
+    logger.error('updateApiKey error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── PHONES THE SYSTEM DOESN'T KNOW ───────────────────────────────────────────
 const UnknownPhone = require('../models/UnknownPhone');
 
@@ -3804,6 +3851,9 @@ module.exports = {
   testSms,
   testCompanyAlert,
   getAdminPayLink,
+  listApiKeys,
+  createApiKey,
+  updateApiKey,
   getUnknownPhones,
   reconnectUnknownPhone,
   getCashUp,
