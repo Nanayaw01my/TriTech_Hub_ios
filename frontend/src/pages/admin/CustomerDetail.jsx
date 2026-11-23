@@ -1,5 +1,6 @@
 import { paymentMethodLabel } from '../../utils/paymentMethod'
 import NotesCard from '../../components/NotesCard'
+import PayLinkButton from '../../components/PayLinkButton'
 import TimelineCard from '../../components/TimelineCard'
 import { planMoney } from '../../utils/planMoney'
 import { openPayPage } from '../../utils/openPayPage'
@@ -563,6 +564,7 @@ export default function AdminCustomerDetail() {
               <>
                 <button onClick={() => openPayPage(navigate, id, `/admin/customers/${id}`)}
                   className="w-full py-3 px-4 rounded-xl bg-orange-600 text-white font-bold text-sm">Pay now (MoMo / Card)</button>
+                <PayLinkButton customerId={id} customerName={customer?.full_name} customerPhone={customer?.phone} base="/admin" />
                 <button onClick={() => { setPayAmount(''); setPayOpen(true) }}
                   className="w-full py-3 px-4 rounded-xl bg-green-600 text-white font-semibold text-sm">Record cash / other payment</button>
                 <button onClick={handleSendReminder} disabled={reminderLoading}
@@ -616,6 +618,9 @@ export default function AdminCustomerDetail() {
               </svg>
               Pay now (MoMo / Card)
             </button>
+          )}
+          {plan && ['active', 'defaulted'].includes(plan.status) && (
+            <PayLinkButton customerId={id} customerName={customer?.full_name} customerPhone={customer?.phone} base="/admin" />
           )}
           {plan && ['active', 'defaulted'].includes(plan.status) && (plan.remaining_balance || 0) > 0 && (
             <button

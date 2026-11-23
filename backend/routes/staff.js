@@ -139,6 +139,25 @@ router.post(
   recordCashPayment
 );
 
+// The customer's Pay-now link (to copy / send on WhatsApp) — own customers only.
+router.get('/customers/:id/pay-link', async (req, res) => {
+  try {
+    const Customer = require('../models/Customer');
+    const InstallmentPlan = require('../models/InstallmentPlan');
+    const q = { _id: req.params.id, deleted_at: null };
+    if (req.user.role === 'staff') q.created_by = req.user._id;
+    const c = await Customer.findOne(q).select('_id').lean();
+    if (!c) return res.status(404).json({ success: false, message: 'Customer not found.' });
+    const plan = await InstallmentPlan.findOne({ customer_id: c._id, status: { $in: ['active', 'defaulted'] } }).sort({ createdAt: -1 });
+    if (!plan) return res.status(400).json({ success: false, message: 'This customer has no active plan to pay.' });
+    const { ensurePayLink, amountDue } = require('../utils/payLink');
+    const link = await ensurePayLink(plan);
+    return res.status(200).json({ success: true, data: { token: plan.pay_token, url: `https://${link}`, amount_due: amountDue(plan) } });
+  } catch (e) {
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
 // Notes / follow-ups / customer history — a DSR sees only their own customers.
 const notesApi = require('../utils/customerNotes');
 router.get('/customers/:id/notes', (req, res) => notesApi.listHandler(req, res));

@@ -1,5 +1,6 @@
 import { paymentMethodLabel } from '../../utils/paymentMethod'
 import NotesCard from '../../components/NotesCard'
+import PayLinkButton from '../../components/PayLinkButton'
 import TimelineCard from '../../components/TimelineCard'
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
@@ -602,6 +603,12 @@ export default function StaffCustomerDetail() {
               </svg>
               {plan.status === 'defaulted' ? 'Collect Payment — overdue (MoMo / Card)' : 'Collect Payment (MoMo / Card)'}
             </button>
+          )}
+
+          {canPay && (
+            <div className="mt-2">
+              <PayLinkButton customerId={customer._id} customerName={customer.full_name} customerPhone={customer.phone} base="/staff" />
+            </div>
           )}
 
           {plan.status === 'completed' && (
