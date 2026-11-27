@@ -1969,7 +1969,9 @@ const adjustHandler = (fn, pick) => async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
-const { voidPayment, waiveLateFees, giveExtraDays } = require('../utils/planAdjust');
+const { voidPayment, waiveLateFees, giveExtraDays, refundSale } = require('../utils/planAdjust');
+/** POST /api/admin/customers/:id/refund-sale { reason, remove_customer } */
+const refundSaleHandler = adjustHandler(refundSale, (req) => ({ customerId: req.params.id, reason: req.body?.reason, removeCustomer: !!req.body?.remove_customer }));
 /** POST /api/admin/payments/:id/void { reason } */
 const voidPaymentHandler = adjustHandler(voidPayment, (req) => ({ paymentId: req.params.id, reason: req.body?.reason }));
 /** POST /api/admin/plans/:id/waive-late-fees { amount?, reason } */
@@ -3872,6 +3874,7 @@ module.exports = {
   getFollowUps,
   getTimeline,
   voidPaymentHandler,
+  refundSaleHandler,
   waiveLateFeesHandler,
   extraDaysHandler,
   recordAdminPayment,

@@ -152,4 +152,89 @@ async function giveExtraDays({ planId, days, reason, user, ip }) {
   return { message: `${n} extra day(s) given. Next payment is now due ${d}.${phoneNote(r)}`, plan };
 }
 
-module.exports = { voidPayment, waiveLateFees, giveExtraDays, AdjustError, recomputeProgress, syncPhone };
+/**
+ * Undo a whole sale: the customer gives the phone back and gets their money
+ * back. Every payment of the plan (deposit included) is cancelled, so it leaves
+ * every total, report, cash-up, commission and the API (kept only in the audit
+ * log). The plan is cancelled and the phone goes back to stock ("Awaiting
+ * Activation"). Optionally the customer is also removed from the lists.
+ */
+async function refundSale({ customerId, reason, removeCustomer, user, ip }) {
+  const Customer = require('../models/Customer');
+  const User = require('../models/User');
+  if (!reason || String(reason).trim().length < 3) throw new AdjustError('Give a reason (e.g. customer returned the phone).');
+  const why = String(reason).trim().slice(0, 200);
+  const customer = await Customer.findById(customerId);
+  if (!customer || customer.deleted_at) throw new AdjustError('Customer not found.', 404);
+  const plan = await InstallmentPlan.findOne({ customer_id: customer._id, status: { $in: ['active', 'defaulted', 'repossessed'] } })
+    .sort({ createdAt: -1 });
+  if (!plan) {
+    throw new AdjustError('This customer has no started sale to refund. (If the deposit was never paid, use "Delete customer".)');
+  }
+
+  // Cancel every payment of this sale.
+  const payments = await Payment.find({ installment_plan_id: plan._id });
+  let total = 0; let paystack = 0;
+  const now = new Date();
+  for (const p of payments) {
+    p.voided = true;
+    p.voided_at = now;
+    p.voided_by = user?._id || null;
+    p.void_reason = `Refund & take back: ${why}`.slice(0, 200);
+    await p.save();
+    total += p.amount || 0;
+    if (p.payment_method === 'paystack') paystack += p.amount || 0;
+  }
+  total = round(total); paystack = round(paystack);
+
+  // Close the sale (not counted as a sale or for commission any more).
+  const statusBefore = plan.status;
+  plan.status = 'cancelled';
+  plan.closed_at = now;
+  plan.close_reason = 'refunded';
+  plan.written_off = 0;
+  plan.refunded_total = total;
+  await plan.save();
+
+  // Phone back to stock.
+  let phone = 'none';
+  const device = plan.device_id ? await Device.findById(plan.device_id) : null;
+  if (device && (!device.assigned_to || String(device.assigned_to) === String(customer._id))) {
+    device.assigned_to = null;
+    device.held_by = null;
+    device.held_since = null;
+    device.sold_status = 'available';
+    device.lock_status = 'unlocked';
+    if (!device.agent) device.agent = {};
+    device.agent.desired_lock_state = 'pending_activation';
+    device.agent.paid_until = null;
+    await device.save();
+    phone = 'stock';
+    if (device.agent?.enrolled) {
+      try { await agent.pushCommand(device); } catch { /* applies on next check-in */ }
+    }
+  }
+
+  if (removeCustomer) {
+    await Customer.updateOne({ _id: customer._id }, { $set: { deleted_at: now } });
+    if (customer.user_id) await User.findByIdAndUpdate(customer.user_id, { is_active: false });
+  }
+
+  await AuditLog.create({
+    user_id: user?._id, action: 'sale_refunded', ip_address: ip, target_user_id: customer.user_id || undefined,
+    details: {
+      customer_id: customer._id, customer_name: customer.full_name, plan_id: plan._id, status_before: statusBefore,
+      reason: why, payments_cancelled: payments.length, amount: total, paystack_amount: paystack,
+      device_id: device?._id || null, device_model: device?.model || null, imei: device?.imei || null,
+      phone, customer_removed: !!removeCustomer,
+    },
+  }).catch(() => {});
+
+  const parts = [`Sale refunded: ${payments.length} payment(s), GHS ${total.toLocaleString()} taken off your records.`];
+  parts.push(phone === 'stock' ? ' The phone is back in stock (it shows "Awaiting Activation" until sold again).' : '');
+  if (removeCustomer) parts.push(' The customer was removed from your lists.');
+  if (paystack > 0) parts.push(` GHS ${paystack.toLocaleString()} was paid through Paystack: to send that back, refund it in your Paystack dashboard.`);
+  return { message: parts.join(''), plan, total, paystack };
+}
+
+module.exports = { voidPayment, waiveLateFees, giveExtraDays, refundSale, AdjustError, recomputeProgress, syncPhone };

@@ -70,6 +70,10 @@ export default function AdminCustomerDetail() {
     }
   }
   const [returnModal, setReturnModal] = useState(false)
+  const [refundOpen, setRefundOpen] = useState(false)
+  const [refundReason, setRefundReason] = useState('')
+  const [refundRemove, setRefundRemove] = useState(true)
+  const [refundSaving, setRefundSaving] = useState(false)
   const [returnLoading, setReturnLoading] = useState(false)
 
   const fetchCustomer = async () => {
@@ -203,6 +207,22 @@ export default function AdminCustomerDetail() {
       toast.error(err?.response?.data?.message || 'Repossession failed')
     } finally {
       setRepossessLoading(false)
+    }
+  }
+
+  const handleRefundSale = async () => {
+    if (refundReason.trim().length < 3) { toast.error('Write a reason (e.g. customer returned the phone).'); return }
+    setRefundSaving(true)
+    try {
+      const r = await api.post(`/admin/customers/${id}/refund-sale`, { reason: refundReason.trim(), remove_customer: refundRemove })
+      toast.success(r.data?.message || 'Sale refunded.', { duration: 10000 })
+      setRefundOpen(false)
+      if (refundRemove) navigate('/admin/customers')
+      else fetchCustomer()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not refund the sale.')
+    } finally {
+      setRefundSaving(false)
     }
   }
 
@@ -665,6 +685,14 @@ export default function AdminCustomerDetail() {
               📅 Give extra days
             </button>
           )}
+          {plan && ['active', 'defaulted', 'repossessed'].includes(plan.status) && (
+            <button
+              onClick={() => { setRefundReason(''); setRefundRemove(true); setRefundOpen(true) }}
+              className="w-full py-3 px-4 rounded-xl border-2 border-red-300 bg-red-50 text-red-700 font-semibold text-sm hover:bg-red-100 transition-colors flex items-center gap-2"
+            >
+              ↩️ Refund &amp; take back (undo this sale)
+            </button>
+          )}
           {plan && ['active', 'defaulted'].includes(plan.status) && (
             <button
               onClick={() => setRepossessModal(true)}
@@ -870,6 +898,42 @@ export default function AdminCustomerDetail() {
         confirmText="Return to Stock"
         loading={returnLoading}
       />
+
+      {refundOpen && plan && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4" onClick={() => !refundSaving && setRefundOpen(false)}>
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-black text-gray-900">Refund &amp; take back</h3>
+            <p className="text-sm text-gray-600 mt-2">
+              Use this when {customer?.full_name?.split(' ')[0] || 'the customer'} gives the phone back and you give back their money. It undoes the whole sale:
+            </p>
+            <ul className="text-sm text-gray-700 mt-2 space-y-1 list-disc pl-5">
+              <li>All their payments (GHS {planMoney(plan).totalPaid.toLocaleString()}, deposit included) are taken off your totals, reports, cash-up and commissions.</li>
+              <li>The sale is cancelled: no more reminders, late fees or locks.</li>
+              <li>{device?.model || 'The phone'} goes back to stock and shows "Awaiting Activation" until you sell it again.</li>
+            </ul>
+            <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3 mt-3">
+              Give the money back yourself (cash or MoMo). Money paid through Paystack can be refunded from your Paystack dashboard.
+              Only do this once you have the phone in your hands.
+            </p>
+            <label className="block text-sm font-bold text-gray-800 mt-4 mb-1">Reason</label>
+            <input value={refundReason} onChange={(e) => setRefundReason(e.target.value)} maxLength={200}
+              placeholder="e.g. Customer returned the phone, money refunded"
+              className="w-full px-3 py-3 border border-gray-300 rounded-xl text-sm" />
+            <label className="flex items-start gap-2 mt-3 text-sm text-gray-800">
+              <input type="checkbox" checked={refundRemove} onChange={(e) => setRefundRemove(e.target.checked)} className="mt-0.5 w-4 h-4" />
+              Also remove {customer?.full_name || 'the customer'} from my customer list (they can't log in any more)
+            </label>
+            <div className="grid grid-cols-2 gap-2 mt-5">
+              <button type="button" onClick={() => setRefundOpen(false)} disabled={refundSaving}
+                className="py-3 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm">Cancel</button>
+              <button type="button" onClick={handleRefundSale} disabled={refundSaving}
+                className="py-3 rounded-xl bg-red-600 text-white font-bold text-sm disabled:opacity-60">
+                {refundSaving ? 'Working…' : 'Refund & take back'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Image Viewer */}
       {payOpen && plan && (

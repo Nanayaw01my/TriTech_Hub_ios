@@ -158,9 +158,11 @@ const InstallmentPlanSchema = new mongoose.Schema(
     },
     close_reason: {
       type: String,
-      enum: [null, 'phone_released', 'customer_deleted'],
+      enum: [null, 'phone_released', 'customer_deleted', 'refunded'],
       default: null,
     },
+    // Money given back when the sale was undone ("Refund & take back").
+    refunded_total: { type: Number, default: 0 },
     // Unpaid balance at the moment the plan was closed/cancelled.
     written_off: {
       type: Number,

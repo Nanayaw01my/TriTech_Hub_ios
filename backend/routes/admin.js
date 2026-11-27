@@ -60,6 +60,7 @@ const {
   getFollowUps,
   getTimeline,
   voidPaymentHandler,
+  refundSaleHandler,
   waiveLateFeesHandler,
   extraDaysHandler,
   recordAdminPayment,
@@ -193,6 +194,7 @@ router.post('/customers/:id/remind', [param('id').isMongoId()], sendCustomerRemi
 router.post('/customers/:id/record-payment', [param('id').isMongoId()], recordAdminPayment);
 router.get('/customers/:id/pay-link', [param('id').isMongoId()], getAdminPayLink);
 router.post('/payments/:id/void', [param('id').isMongoId()], voidPaymentHandler);
+router.post('/customers/:id/refund-sale', [param('id').isMongoId()], refundSaleHandler);
 router.get('/sms/balance', getSmsBalance);
 router.get('/customers/:id/notes', [param('id').isMongoId()], listNotes);
 router.post('/customers/:id/notes', [param('id').isMongoId()], addNote);
