@@ -71,7 +71,8 @@ object SyncManager {
             val res = Api.heartbeat(
                 backend, id, secret, Prefs.appliedLockState(c), fix,
                 Prefs.fcmToken(c).ifEmpty { null }, DeviceInfo.imei(c),
-                Prefs.frpStatus(c), Prefs.updateError(c)
+                Prefs.frpStatus(c), Prefs.updateError(c),
+                runCatching { DeviceStatus.collect(c) }.getOrNull()
             )
             val j = res.json
             if (res.ok && j != null) {
@@ -83,6 +84,11 @@ object SyncManager {
                 val desired = j.optString("desired_lock_state", Prefs.desiredLockState(c))
                 Prefs.setDesiredLockState(c, desired)
                 applyDesired(c, desired)
+                // Staff phone: company logo wallpaper (locked). Lifted if not staff.
+                if (desired != "released" && desired != "wipe") {
+                    if (Prefs.isStaffPhone(c)) runCatching { Branding.apply(c, j.optString("brand_logo_url"), Prefs.unlockContact(c)) }
+                    else runCatching { Branding.remove(c) }
+                }
                 // Company FRP accounts (skipped once released — release clears FRP).
                 if (desired != "released" && j.has("frp_accounts")) {
                     val arr = j.optJSONArray("frp_accounts")
@@ -139,6 +145,7 @@ object SyncManager {
     }
 
     private fun applyServerInfo(c: Context, j: JSONObject) {
+        Prefs.setPhoneKind(c, if (j.optString("phone_kind") == "staff") "staff" else "stock")
         j.optString("lock_message").takeIf { it.isNotEmpty() }?.let { Prefs.setLockMessage(c, it) }
         Prefs.setUnlockContact(c, j.optString("unlock_contact"))
         j.optString("business_name").takeIf { it.isNotEmpty() }?.let { Prefs.setBusinessName(c, it) }
@@ -161,6 +168,7 @@ object SyncManager {
             "released" -> release(c)
             "locked" -> lock(c)
             "pending_activation" -> awaitActivation(c)
+            "wipe" -> wipe(c)
             // Don't lift a lock while the payment deadline has passed (the
             // server's own overdue check may not have run yet); it lifts once
             // the server sends a new deadline after payment.
@@ -227,6 +235,16 @@ object SyncManager {
             Prefs.setAppliedLockState(c, "released")
             Log.i(TAG, "Device released to customer")
         }
+    }
+
+    /** Staff phone reported lost/stolen: erase everything (factory reset).
+     *  Only the server's explicit "wipe" order does this. */
+    fun wipe(c: Context) {
+        if (!Policy.isOwner(c) || !Prefs.isStaffPhone(c)) { lock(c); return }
+        ack(c, "wiping") // tell the office first, while the network still works
+        Prefs.setAppliedLockState(c, "wiping")
+        Log.w(TAG, "Remote wipe ordered by the office")
+        Policy.wipe(c)
     }
 
     fun lock(c: Context) {

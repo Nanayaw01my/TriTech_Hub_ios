@@ -29,6 +29,7 @@ import AdminStaff from './pages/admin/Staff'
 import AdminDevices from './pages/admin/Devices'
 import AdminSoldDevices from './pages/admin/SoldDevices'
 import AdminStockEnrollment from './pages/admin/StockEnrollment'
+import AdminStaffPhones from './pages/admin/StaffPhones'
 import AdminActivations from './pages/admin/Activations'
 import AdminTransactions from './pages/admin/Transactions'
 import MoneyCheck from './pages/admin/MoneyCheck'
@@ -157,6 +158,7 @@ function AppRoutes() {
         <Route path="devices" element={<AdminDevices />} />
         <Route path="sold-devices" element={<AdminSoldDevices />} />
         <Route path="stock" element={<AdminStockEnrollment />} />
+        <Route path="staff-phones" element={<AdminStaffPhones />} />
         <Route path="activations" element={<AdminActivations />} />
         <Route path="transactions" element={<AdminTransactions />} />
         <Route path="money-check" element={<MoneyCheck />} />

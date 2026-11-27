@@ -245,6 +245,9 @@ export default function StockEnrollment() {
               <p className="text-sm text-gray-500 mb-4">
                 Scan this <span className="font-semibold">same QR</span> on every phone to add it to your stock.
               </p>
+              <p className="text-xs text-blue-800 bg-blue-50 rounded-xl px-3 py-2 mb-4">
+                This QR is for <strong>phones you sell</strong>. For company phones your staff use, go to <a href="/admin/staff-phones" className="font-bold underline">Staff Phones</a>.
+              </p>
               {!info?.ready && (
                 <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl p-3 mb-4 text-left">
                   The agent app isn’t published yet. Run <span className="font-semibold">Actions → “Build Lock Agent APK”</span>, then redeploy.

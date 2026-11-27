@@ -43,6 +43,8 @@ const AuditLogSchema = new mongoose.Schema(
         'api_key_updated',
         'api_payment',
         'sale_refunded',
+        'staff_phone_wipe',
+        'staff_phone_updated',
       ],
       required: true,
     },

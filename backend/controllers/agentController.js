@@ -13,7 +13,7 @@ const Settings = require('../models/Settings');
 const logger = require('../utils/logger');
 const agent = require('../utils/androidAgent');
 const { mergeDevicesByImei } = require('../utils/deviceMerge');
-const { noteBackOnline, handleDeviceEvent } = require('../utils/tamperWatch');
+const { noteBackOnline, handleDeviceEvent, noteStatus } = require('../utils/tamperWatch');
 
 const POLL_INTERVAL_SECONDS = Number(process.env.AGENT_POLL_SECONDS || 900);
 
@@ -33,6 +33,7 @@ function safeEqual(a, b) {
  */
 async function reconcileWithSale(device) {
   try {
+    if (device.kind === 'staff') return false;
     if (device.agent?.desired_lock_state !== 'pending_activation') return false;
     // A sale may point at a plain copy of this phone (same IMEI) made by
     // duplicate sales — move it onto this real phone first.
@@ -89,6 +90,30 @@ async function lockInfoFor(device) {
   if (!contact && settings?.contact_phone) {
     contact = String(settings.contact_phone).split(/\s*(?:[\/,;|&]|\bor\b|\band\b)\s*/i)[0].trim();
   }
+  // Company phone used by staff: no payments, no deadlines, logo wallpaper.
+  if (device.kind === 'staff') {
+    const base = String(process.env.PUBLIC_BACKEND_URL || agent.config.BACKEND_URL || 'https://dandorsolar.site').replace(/\/+$/, '');
+    const logo = settings?.logo_url && /^https:\/\//i.test(settings.logo_url) ? settings.logo_url : `${base}/logo.png`;
+    const desired = device.agent?.desired_lock_state || 'unlocked';
+    return {
+      ...(agent.agentUpdateInfo() || {}),
+      phone_kind: 'staff',
+      brand_logo_url: logo,
+      pay_url: '',
+      amount_due: 0,
+      frp_accounts: frpAccounts,
+      desired_lock_state: desired,
+      lock_message: `This company phone has been locked by ${agent.config.BUSINESS_NAME}.${contact ? ` Call ${contact} or` : ' Please'} bring it to the office.`,
+      business_name: agent.config.BUSINESS_NAME,
+      unlock_contact: contact,
+      poll_interval: POLL_INTERVAL_SECONDS,
+      // No payment deadline on a staff phone (0 clears any old one). A locked
+      // phone keeps its past deadline so it stays locked offline too.
+      paid_until: desired === 'locked' && device.agent?.paid_until ? new Date(device.agent.paid_until).getTime() : 0,
+      deadman_days: 0,
+    };
+  }
+
   // Pay from the lock screen: the customer's Pay-now page and what's due now.
   let payUrl = '';
   let amountDueNow = 0;
@@ -158,9 +183,37 @@ const enrollOnce = async (req, res) => {
     //  - PER-SALE: a one-time token already attached to a specific Device.
     const settings = await Settings.getSingleton();
     const isStock = settings.stock_enrollment_token && enrollment_token === settings.stock_enrollment_token;
+    // STAFF: the "Staff phone" QR / .bat — a company phone for staff, kept
+    // apart from stock and sales.
+    const isStaff = !isStock && settings.staff_enrollment_token && enrollment_token === settings.staff_enrollment_token;
 
     let device;
-    if (isStock) {
+    if (isStaff) {
+      device = await Device.findOne({ 'agent.device_id': device_id });
+      if (device && device.kind !== 'staff' && device.assigned_to) {
+        return res.status(409).json({ success: false, message: 'This phone is sold to a customer; it cannot become a staff phone.' });
+      }
+      if (!device && imei) {
+        const same = await Device.findOne({ kind: 'staff', imei: String(imei).trim() }).sort({ 'agent.last_heartbeat': -1 });
+        const quiet = !same?.agent?.last_heartbeat || !same.agent.enrolled ||
+          Date.now() - new Date(same.agent.last_heartbeat).getTime() > 24 * 60 * 60 * 1000;
+        if (same && quiet) device = same;
+      }
+      if (!device) {
+        device = new Device({ model: model || 'Android phone', price: 0, imei: imei || undefined, sold_status: 'available', agent: {} });
+      }
+      device.kind = 'staff';
+      device.held_by = null;
+      device.held_since = null;
+      if (!device.agent) device.agent = {};
+      device.agent.wipe_requested_at = null;
+      device.agent.wipe_requested_by = null;
+      if (device.agent.desired_lock_state !== 'locked') {
+        device.agent.desired_lock_state = 'unlocked';
+        device.agent.paid_until = null;
+        device.lock_status = 'unlocked';
+      }
+    } else if (isStock) {
       device = await Device.findOne({ 'agent.device_id': device_id });
       // A factory reset gives the phone a new id, but the IMEI is the same:
       // reuse its existing record instead of creating a duplicate.
@@ -214,8 +267,8 @@ const enrollOnce = async (req, res) => {
     // is still pending. Activation (activatePlan) releases it.
     // An active (deposit-paid) sale on this phone always wins — a newer
     // duplicate sale still awaiting approval must not put it back on hold.
-    let awaiting = !device.assigned_to;
-    if (!awaiting) {
+    let awaiting = !isStaff && device.kind !== 'staff' && !device.assigned_to;
+    if (!awaiting && !isStaff && device.kind !== 'staff') {
       const activePlan = await InstallmentPlan.exists({ device_id: device._id, status: { $in: ['active', 'defaulted'] } });
       if (!activePlan) {
         const plan = await InstallmentPlan.findOne({ device_id: device._id }).sort({ createdAt: -1 }).lean();
@@ -230,12 +283,12 @@ const enrollOnce = async (req, res) => {
 
     await AuditLog.create({
       action: 'agent_enroll',
-      details: { device_id: device._id, agent_device_id: device_id, model: device.model, imei },
+      details: { device_id: device._id, agent_device_id: device_id, model: device.model, imei, kind: device.kind || 'stock' },
       ip_address: req.ip,
     }).catch(() => {});
 
     // Fold any older records of this same phone (same IMEI) into one.
-    if (device.imei) {
+    if (device.imei && device.kind !== 'staff') {
       const kept = await mergeDevicesByImei(device.imei);
       if (kept) device = kept;
     }
@@ -312,7 +365,7 @@ const heartbeat = async (req, res) => {
     const device = await authDevice(req, res);
     if (!device) return;
     const { fcm_token, lock_state, android_version, app_version, lat, lng, accuracy, loc_at, imei,
-      version_code, frp_status, update_error } = req.body || {};
+      version_code, frp_status, update_error, status } = req.body || {};
     if (Number(version_code) > 0) device.agent.version_code = Number(version_code);
     if (typeof frp_status === 'string') device.agent.frp_status = frp_status.slice(0, 40);
     if (update_error !== undefined) device.agent.update_error = update_error ? String(update_error).slice(0, 200) : null;
@@ -320,12 +373,13 @@ const heartbeat = async (req, res) => {
     if (newImei) device.imei = newImei;
     await noteBackOnline(device);
     device.agent.last_heartbeat = new Date();
+    try { await noteStatus(device, status); } catch (e) { logger.warn('[agent] status: %s', e.message); }
     if (fcm_token && fcm_token !== device.agent.fcm_token) device.agent.fcm_token = fcm_token;
     if (android_version) device.agent.android_version = android_version;
     if (app_version) device.agent.app_version = app_version;
     // Trust the agent's report of what it actually applied.
     if (lock_state === 'locked' || lock_state === 'unlocked') device.lock_status = lock_state;
-    if (['pending', 'locked', 'unlocked', 'released', 'release_pending'].includes(lock_state)) {
+    if (['pending', 'locked', 'unlocked', 'released', 'release_pending', 'wiping'].includes(lock_state)) {
       device.agent.applied_state = lock_state;
     }
 
@@ -345,7 +399,7 @@ const heartbeat = async (req, res) => {
     await device.save();
     // First time this phone reports its IMEI: fold any duplicate records into one.
     let current = device;
-    if (newImei) {
+    if (newImei && device.kind !== 'staff') {
       const kept = await mergeDevicesByImei(newImei);
       if (kept && String(kept._id) !== String(device._id)) current = kept;
     }
@@ -388,6 +442,15 @@ const ack = async (req, res) => {
       device.agent.applied_state = applied_state;
       device.agent.last_heartbeat = new Date();
       await device.save();
+    } else if (applied_state === 'wiping') {
+      // A staff phone is erasing itself (remote wipe). Our app goes with it.
+      device.lock_status = 'locked';
+      device.agent.applied_state = 'wiped';
+      device.agent.enrolled = false;
+      device.agent.enrollment_status = 'released';
+      device.agent.last_heartbeat = new Date();
+      await device.save();
+      await AuditLog.create({ action: 'staff_phone_wipe', details: { device_id: device._id, model: device.model, imei: device.imei, confirmed: true } }).catch(() => {});
     } else if (applied_state === 'released') {
       // The phone relinquished Device Owner — it's the customer's now.
       device.lock_status = 'unlocked';
@@ -435,7 +498,7 @@ const trace = async (req, res) => {
     const settings = await Settings.getSingleton();
     // A phone reports its very first step before it has the QR's token, so a
     // missing token is accepted (rate-limited, auto-deleted); a wrong one isn't.
-    const valid = !token || token === settings.stock_enrollment_token ||
+    const valid = !token || token === settings.stock_enrollment_token || token === settings.staff_enrollment_token ||
       await Device.exists({ 'agent.enrollment_token': token });
     if (!valid) return res.status(403).json({ success: false });
     const AgentTrace = require('../models/AgentTrace');

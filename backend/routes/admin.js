@@ -185,6 +185,13 @@ router.delete('/frp/:googleId', removeFrpAccount);
 router.post('/devices/:id/return-to-stock', [param('id').isMongoId()], returnDeviceToStock);
 router.post('/devices/:id/unenroll', [param('id').isMongoId()], unenrollDevice);
 router.post('/devices/:id/reconnect', [param('id').isMongoId()], reconnectDevice);
+// Staff phones (company phones used by staff — not for sale).
+const staffPhones = require('../controllers/staffPhonesController');
+router.get('/staff-phones', staffPhones.listStaffPhones);
+router.get('/staff-phones/computer-script', staffPhones.staffComputerScript);
+router.put('/staff-phones/:id', [param('id').isMongoId()], staffPhones.updateStaffPhone);
+router.post('/staff-phones/:id/wipe', [param('id').isMongoId()], staffPhones.wipeStaffPhone);
+router.post('/staff-phones/:id/cancel-wipe', [param('id').isMongoId()], staffPhones.cancelWipeStaffPhone);
 router.get('/unknown-phones', getUnknownPhones);
 router.get('/api-keys', listApiKeys);
 router.post('/api-keys', createApiKey);

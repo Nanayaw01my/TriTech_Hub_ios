@@ -27,5 +27,6 @@
     <string name="pending_message">Your purchase is being reviewed by %1$s — this phone will unlock automatically as soon as your account is activated.</string>
     <string name="pending_check">Check status</string>
     <string name="pending_still">Not activated yet — please wait, or call us.</string>
+    <string name="lock_still_staff">Still locked. Call the office.</string>
     <string name="lock_still">Still locked — please complete your payment.</string>
 </resources>

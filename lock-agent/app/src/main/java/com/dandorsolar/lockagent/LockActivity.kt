@@ -83,7 +83,7 @@ class LockActivity : AppCompatActivity() {
         } else {
             title.setText(R.string.lock_title)
             msg.text = Prefs.lockMessage(this).ifEmpty { getString(R.string.lock_default_message) }
-            check.setText(R.string.lock_check_again)
+            check.setText(if (Prefs.isStaffPhone(this)) R.string.pending_check else R.string.lock_check_again)
         }
 
         // Pay now (overdue lock only — a sale awaiting activation is paid by the DSR).
@@ -170,7 +170,7 @@ class LockActivity : AppCompatActivity() {
                     finishUnlock()
                 } else {
                     render()
-                    status.setText(if (isAwaiting()) R.string.pending_still else R.string.lock_still)
+                    status.setText(if (isAwaiting()) R.string.pending_still else if (Prefs.isStaffPhone(this)) R.string.lock_still_staff else R.string.lock_still)
                 }
             }
         }.start()

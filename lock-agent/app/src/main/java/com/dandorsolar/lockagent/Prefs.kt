@@ -88,6 +88,19 @@ object Prefs {
     fun updateTriedAt(c: Context): Long = p(c).getLong("upd_tried_at", 0L)
     fun setUpdateTried(c: Context, code: Int, at: Long) =
         p(c).edit().putInt("upd_tried_code", code).putLong("upd_tried_at", at).apply()
+    /** "stock" (a phone for sale) or "staff" (company phone used by staff). */
+    fun phoneKind(c: Context): String = p(c).getString("phone_kind", "stock") ?: "stock"
+    fun setPhoneKind(c: Context, v: String) = p(c).edit().putString("phone_kind", v).apply()
+    fun isStaffPhone(c: Context): Boolean = phoneKind(c) == "staff"
+
+    /** Company logo wallpaper (staff phones): the logo URL downloaded, and what was last applied. */
+    fun brandLogoUrl(c: Context): String = p(c).getString("brand_logo_url", "") ?: ""
+    fun setBrandLogoUrl(c: Context, v: String) = p(c).edit().putString("brand_logo_url", v).apply()
+    fun brandKey(c: Context): String = p(c).getString("brand_key", "") ?: ""
+    fun brandIds(c: Context): String = p(c).getString("brand_ids", "") ?: ""
+    fun setBrandApplied(c: Context, key: String, ids: String) =
+        p(c).edit().putString("brand_key", key).putString("brand_ids", ids).apply()
+
     fun updateError(c: Context): String = p(c).getString("upd_error", "") ?: ""
     fun setUpdateError(c: Context, v: String) = p(c).edit().putString("upd_error", v).apply()
 }

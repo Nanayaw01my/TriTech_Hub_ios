@@ -45,7 +45,9 @@ object Policy {
                 android.Manifest.permission.ACCESS_BACKGROUND_LOCATION,
                 android.Manifest.permission.CALL_PHONE,
                 // Lets the Device Owner read the IMEI, so you can tell phones apart.
-                android.Manifest.permission.READ_PHONE_STATE
+                android.Manifest.permission.READ_PHONE_STATE,
+                // Staff phones: the SIM's phone number (SIM change alerts).
+                android.Manifest.permission.READ_PHONE_NUMBERS
             ).forEach { perm ->
                 dpm.setPermissionGrantState(
                     admin, pkg, perm, DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED
@@ -107,6 +109,17 @@ object Policy {
 
     fun lockNow(c: Context) = runCatching { dpm(c).lockNow() }
 
+    /** Factory-reset the phone (staff phone remote wipe). Company FRP stays on,
+     *  so after the wipe only a company Google account can set it up again. */
+    fun wipe(c: Context) {
+        if (!isOwner(c)) return
+        val dpm = dpm(c)
+        runCatching { dpm.clearUserRestriction(admin(c), UserManager.DISALLOW_FACTORY_RESET) }
+        runCatching {
+            if (Build.VERSION.SDK_INT >= 34) dpm.wipeDevice(0) else dpm.wipeData(0)
+        }.onFailure { Log.e(TAG, "wipe failed: ${it.message}") }
+    }
+
     /**
      * Release the phone to the customer: lift every restriction and relinquish
      * Device Owner, so the phone becomes fully theirs (factory reset re-enabled,
@@ -129,6 +142,7 @@ object Policy {
             runCatching { dpm.setUserControlDisabledPackages(admin, emptyList()) }
         }
         runCatching { dpm.setDeviceOwnerLockScreenInfo(admin, null) }
+        runCatching { dpm.clearUserRestriction(admin, UserManager.DISALLOW_SET_WALLPAPER) }
         runCatching { dpm.setLockTaskPackages(admin, arrayOf()) }
         // Relinquish Device Owner last — after this we lose management powers.
         runCatching { @Suppress("DEPRECATION") dpm.clearDeviceOwnerApp(c.packageName) }
