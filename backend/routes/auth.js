@@ -14,6 +14,22 @@ const {
   updateProfile,
 } = require('../controllers/authController');
 
+// Customer login with an SMS code (no password). Sending is limited per
+// network (many customers share a mobile-data IP) and per number (in the
+// controller); each code allows 5 wrong tries.
+const rateLimit = require('express-rate-limit');
+const { sendCustomerLoginCode, verifyCustomerLoginCode } = require('../controllers/authController');
+const codeSendLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false,
+  message: { success: false, message: 'Too many code requests. Please wait 15 minutes.' },
+});
+const codeCheckLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, max: 40, standardHeaders: true, legacyHeaders: false,
+  message: { success: false, message: 'Too many tries. Please wait 15 minutes.' },
+});
+router.post('/customer-code', codeSendLimiter, sendCustomerLoginCode);
+router.post('/customer-code/verify', codeCheckLimiter, verifyCustomerLoginCode);
+
 /**
  * POST /api/auth/login
  * Login with email/account_number/staff_id + password

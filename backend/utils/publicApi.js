@@ -317,7 +317,7 @@ const recordPayment = wrap(async (req, res) => {
     } else if (b.customer_id && /^[0-9a-fA-F]{24}$/.test(String(b.customer_id))) {
       customer = await Customer.findOne({ _id: b.customer_id, deleted_at: null }).lean();
     } else {
-      throw new BadRequest('Send "account_number" (e.g. DD-100234) or "customer_id".');
+      throw new BadRequest('Send "account_number" (e.g. DBS202600234) or "customer_id".');
     }
     if (!customer) return apiError(res, 404, 'customer_not_found', 'No customer with that account number.');
     const plan = await InstallmentPlan.findOne({ customer_id: customer._id }).sort({ createdAt: -1 }).lean();

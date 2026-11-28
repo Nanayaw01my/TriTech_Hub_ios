@@ -205,4 +205,39 @@ const verifyPayLink = async (req, res) => {
   }
 };
 
-module.exports = { getPayInfo, initPayLink, verifyPayLink };
+/**
+ * POST /api/pay/find { account_number, phone }
+ * "Pay without logging in": the customer types their account number and the
+ * phone number on the account; if both match, they get their Pay-now page.
+ */
+const findPayLink = async (req, res) => {
+  try {
+    const { formatPhone } = require('../utils/sms');
+    const acct = String(req.body?.account_number || '').trim().toUpperCase().replace(/\s+/g, '');
+    const phone = formatPhone(String(req.body?.phone || '').trim());
+    if (!acct || !phone || phone.length !== 12) {
+      return res.status(400).json({ success: false, message: 'Type your account number and phone number.' });
+    }
+    const notFound = () => res.status(404).json({
+      success: false,
+      message: "We couldn't find an account with that number and phone. Check the account number (it starts with DBS) on your receipt or texts.",
+    });
+    const user = await User.findOne({ account_number: acct, role: 'customer' }).select('_id').lean();
+    if (!user) return notFound();
+    const customer = await Customer.findOne({ user_id: user._id, deleted_at: null }).select('_id phone');
+    if (!customer || formatPhone(customer.phone) !== phone) return notFound();
+    const plan = await InstallmentPlan.findOne({ customer_id: customer._id, status: { $in: ['active', 'defaulted'] } }).sort({ createdAt: -1 });
+    if (!plan) {
+      return res.status(400).json({ success: false, message: 'There is nothing to pay on this account right now. If you think this is wrong, call us.' });
+    }
+    const { ensurePayLink } = require('../utils/payLink');
+    const link = await ensurePayLink(plan);
+    if (!link) return res.status(500).json({ success: false, message: 'Could not open your payment page. Try again.' });
+    return res.status(200).json({ success: true, data: { token: plan.pay_token, url: `https://${link}` } });
+  } catch (error) {
+    logger.error('findPayLink error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+  }
+};
+
+module.exports = { getPayInfo, initPayLink, verifyPayLink, findPayLink };

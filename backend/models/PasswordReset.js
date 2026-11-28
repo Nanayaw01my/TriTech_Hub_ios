@@ -27,6 +27,13 @@ const PasswordResetSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // 'reset' = forgot-password code, 'login' = customer SMS login code.
+    // A code only works for what it was sent for.
+    purpose: {
+      type: String,
+      enum: ['reset', 'login'],
+      default: 'reset',
+    },
     // Wrong codes entered; the code is cancelled after 5.
     attempts: {
       type: Number,

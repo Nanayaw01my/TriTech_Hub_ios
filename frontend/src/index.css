@@ -312,3 +312,9 @@ body.keyboard-open .form-action-bar {
 .text-gray-400 {
   color: #6b7280;
 }
+
+/* Inputs inside a labelled box (login page) show focus on the whole box
+   (orange border + ring), so they don't need their own outline. */
+.boxed-input:focus-visible {
+  outline: none !important;
+}

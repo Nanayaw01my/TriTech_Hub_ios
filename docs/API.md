@@ -99,7 +99,7 @@ One sale:
   "status": "active",
   "sold_at": "2026-11-07T10:00:00.000Z",
   "registered_at": "2026-11-06T09:12:00.000Z",
-  "customer": { "id": "6740b9…", "name": "Akosua Mensah", "phone": "0244123456", "account_number": "DD-100234" },
+  "customer": { "id": "6740b9…", "name": "Akosua Mensah", "phone": "0244123456", "account_number": "DBS202600234" },
   "phone": { "model": "samsung SM-A085F", "imei": "351980974800938", "serial_number": null },
   "price": 3850, "deposit": 750, "deposit_paid": true,
   "frequency": "weekly", "installment_amount": 182.36, "total_payments": 17, "payments_made": 0,
@@ -166,7 +166,7 @@ All money received, newest first.
   "id": "6741…", "date": "2026-11-11T18:23:00.000Z", "amount": 100,
   "method": "cash", "kind": "installment", "late_fees_part": 0,
   "reference": null,
-  "customer": { "id": "6740b9…", "name": "Akosua Mensah", "phone": "0244123456", "account_number": "DD-100234" },
+  "customer": { "id": "6740b9…", "name": "Akosua Mensah", "phone": "0244123456", "account_number": "DBS202600234" },
   "sale_id": "6740c1…",
   "dsr": { "id": "673f…", "name": "Wassah Samuel", "staff_id": "DS-0003", "branch": "Madina" },
   "recorded_by": "Daniel Ayamba",
@@ -217,12 +217,12 @@ When a customer pays at the shop's till, send:
 ```bash
 curl -X POST https://dandorsolar.site/api/v1/payments \
   -H "Authorization: Bearer $DD_KEY" -H "Content-Type: application/json" \
-  -d '{ "account_number": "DD-100234", "amount": 182.36, "method": "cash", "reference": "POS-000123", "note": "Paid at Madina shop" }'
+  -d '{ "account_number": "DBS202600234", "amount": 182.36, "method": "cash", "reference": "POS-000123", "note": "Paid at Madina shop" }'
 ```
 
 | Field | Required | |
 |---|---|---|
-| `account_number` | yes (or `customer_id`) | the customer's Dan & Dor account, e.g. `DD-100234` |
+| `account_number` | yes (or `customer_id`) | the customer's Dan & Dor account, e.g. `DBS202600234` |
 | `amount` | yes | GHS; at most what they owe (balance + late fees) |
 | `method` | yes | `cash`, `momo` or `bank` |
 | `reference` | yes | **your own unique id for this payment** (e.g. the till receipt number) |
@@ -235,7 +235,7 @@ Answer (201):
   "success": true,
   "data": {
     "payment_id": "6742…", "amount": 182.36,
-    "customer": { "name": "Akosua Mensah", "account_number": "DD-100234" },
+    "customer": { "name": "Akosua Mensah", "account_number": "DBS202600234" },
     "balance": 2817.64, "late_fees_owed": 0, "payments_made": 1,
     "next_due_date": "2026-11-30T10:00:00.000Z",
     "plan_completed": false, "phone_unlocked": false

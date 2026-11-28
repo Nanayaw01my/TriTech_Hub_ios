@@ -444,7 +444,7 @@ const forgotPasswordSMS = async (req, res) => {
     }
 
     // Invalidate existing OTPs for this phone
-    await PasswordReset.updateMany({ phone: formatted, used: false }, { used: true });
+    await PasswordReset.updateMany({ phone: formatted, used: false, purpose: { $ne: 'login' } }, { used: true });
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -504,6 +504,7 @@ const resetPasswordOTP = async (req, res) => {
     const record = await PasswordReset.findOne({
       phone: formatted,
       used: false,
+      purpose: { $ne: 'login' },
       expires_at: { $gt: new Date() },
     }).sort({ created_at: -1 });
 
@@ -691,4 +692,135 @@ const updateProfile = async (req, res) => {
   }
 };
 
-module.exports = { login, logout, forgotPassword, resetPassword, changePassword, forgotPasswordSMS, resetPasswordOTP, verifyAdminOTP, updateProfile };
+// ─── CUSTOMER LOGIN WITH AN SMS CODE (no password) ───────────────────────────
+
+/** The customer login (role customer, active, not deleted) that uses this phone. */
+async function findCustomerUserByPhone(phone) {
+  const { formatPhone } = require('../utils/sms');
+  const formatted = formatPhone(phone);
+  if (!formatted || formatted.length !== 12) return null;
+  let custs = await Customer.find({ deleted_at: null, phone: { $in: [String(phone).trim(), formatted, '0' + formatted.slice(3)] } })
+    .select('_id user_id phone').sort({ _id: -1 });
+  if (!custs.length) {
+    // Phones are stored encrypted: compare the decrypted numbers.
+    const all = await Customer.find({ deleted_at: null, phone: { $exists: true, $ne: null } }).select('_id user_id phone').sort({ _id: -1 });
+    custs = all.filter((c) => formatPhone(c.phone) === formatted);
+  }
+  for (const c of custs) {
+    if (!c.user_id) continue;
+    const u = await User.findById(c.user_id);
+    if (u && u.role === 'customer' && u.is_active !== false) return u;
+  }
+  return null;
+}
+
+const loginCodeHash = (formatted, code) =>
+  crypto.createHash('sha256').update(`login:${formatted}:${String(code).trim()}`).digest('hex');
+
+/**
+ * POST /api/auth/customer-code { phone }
+ * Text a 6-digit login code to a customer's phone (valid 10 minutes).
+ */
+const sendCustomerLoginCode = async (req, res) => {
+  try {
+    const { formatPhone, sendSMS } = require('../utils/sms');
+    const phone = String(req.body?.phone || '').trim();
+    const formatted = formatPhone(phone);
+    if (!formatted || formatted.length !== 12) {
+      return res.status(400).json({ success: false, message: 'Type your phone number, like 024 412 3456.' });
+    }
+    // One code a minute and 5 an hour per number.
+    const recent = await PasswordReset.find({ phone: formatted, purpose: 'login', created_at: { $gt: new Date(Date.now() - 60 * 60 * 1000) } })
+      .sort({ created_at: -1 }).select('created_at').lean();
+    if (recent[0] && Date.now() - new Date(recent[0].created_at).getTime() < 60 * 1000) {
+      return res.status(429).json({ success: false, message: 'A code was just sent. Wait a minute before asking for another.' });
+    }
+    if (recent.length >= 5) {
+      return res.status(429).json({ success: false, message: 'Too many codes for this number. Try again in an hour, or log in with your account number and password.' });
+    }
+    const user = await findCustomerUserByPhone(phone);
+    if (!user) {
+      logger.info('[login-code] No customer account uses %s.', formatted);
+      return res.status(404).json({
+        success: false,
+        message: 'No customer account uses this number. Use the number you gave when you bought your phone, or log in with your account number and password.',
+      });
+    }
+    await PasswordReset.updateMany({ phone: formatted, purpose: 'login', used: false }, { used: true });
+    const code = String(crypto.randomInt(100000, 1000000));
+    await PasswordReset.create({
+      phone: formatted,
+      purpose: 'login',
+      token: loginCodeHash(formatted, code),
+      expires_at: new Date(Date.now() + 10 * 60 * 1000),
+    });
+    let sent = null;
+    try {
+      sent = await sendSMS(formatted, `Your Dan & Dor Solar login code is ${code}. Valid for 10 minutes. Never share it: our staff will never ask for it.`);
+    } catch (e) {
+      logger.error('[login-code] SMS error: %s', e.message);
+    }
+    if (!sent || (!sent.ok && sent.retry)) {
+      return res.status(502).json({ success: false, message: "We couldn't send the code right now. Try again in a minute, or log in with your account number and password." });
+    }
+    await AuditLog.create({ user_id: user._id, action: 'login', details: { event: 'customer_login_code_sent', phone: formatted }, ip_address: req.ip }).catch(() => {});
+    const shown = `0${formatted.slice(3, 5)} ••• ${formatted.slice(-4)}`;
+    return res.status(200).json({ success: true, message: `Code sent to ${shown}. It is valid for 10 minutes.` });
+  } catch (error) {
+    logger.error('sendCustomerLoginCode error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+  }
+};
+
+/**
+ * POST /api/auth/customer-code/verify { phone, code }
+ * Check the code and log the customer in (same answer as /login).
+ */
+const verifyCustomerLoginCode = async (req, res) => {
+  try {
+    const { formatPhone } = require('../utils/sms');
+    const formatted = formatPhone(String(req.body?.phone || '').trim());
+    const code = String(req.body?.code || '').replace(/\D/g, '');
+    if (!formatted || code.length !== 6) {
+      return res.status(400).json({ success: false, message: 'Type the 6-digit code from the SMS.' });
+    }
+    const record = await PasswordReset.findOne({ phone: formatted, purpose: 'login', used: false, expires_at: { $gt: new Date() } })
+      .sort({ created_at: -1 });
+    if (!record) {
+      return res.status(400).json({ success: false, message: 'This code has expired or was replaced. Ask for a new code.' });
+    }
+    if (record.token !== loginCodeHash(formatted, code)) {
+      record.attempts = (record.attempts || 0) + 1;
+      if (record.attempts >= 5) record.used = true;
+      await record.save();
+      const left = 5 - record.attempts;
+      return res.status(400).json({
+        success: false,
+        message: left > 0 ? `Wrong code. ${left} ${left === 1 ? 'try' : 'tries'} left.` : 'Too many wrong codes. Ask for a new code.',
+      });
+    }
+    record.used = true;
+    await record.save();
+    const user = await findCustomerUserByPhone(formatted);
+    if (!user) return res.status(404).json({ success: false, message: 'No customer account uses this number.' });
+
+    const token = user.generateAuthToken();
+    await AuditLog.create({ user_id: user._id, action: 'login', details: { event: 'customer_sms_login', phone: formatted }, ip_address: req.ip }).catch(() => {});
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful.',
+      data: {
+        token,
+        user: {
+          _id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role,
+          staff_id: user.staff_id, account_number: user.account_number, is_active: user.is_active, created_at: user.created_at,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error('verifyCustomerLoginCode error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+  }
+};
+
+module.exports = { sendCustomerLoginCode, verifyCustomerLoginCode, findCustomerUserByPhone, login, logout, forgotPassword, resetPassword, changePassword, forgotPasswordSMS, resetPasswordOTP, verifyAdminOTP, updateProfile };
