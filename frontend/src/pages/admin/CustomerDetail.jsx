@@ -1,6 +1,7 @@
 import { paymentMethodLabel } from '../../utils/paymentMethod'
 import NotesCard from '../../components/NotesCard'
 import PayLinkButton from '../../components/PayLinkButton'
+import ChangePhoneModal from '../../components/ChangePhoneModal'
 import TimelineCard from '../../components/TimelineCard'
 import { planMoney } from '../../utils/planMoney'
 import { openPayPage } from '../../utils/openPayPage'
@@ -70,6 +71,7 @@ export default function AdminCustomerDetail() {
     }
   }
   const [returnModal, setReturnModal] = useState(false)
+  const [changePhoneOpen, setChangePhoneOpen] = useState(false)
   const [refundOpen, setRefundOpen] = useState(false)
   const [refundReason, setRefundReason] = useState('')
   const [refundRemove, setRefundRemove] = useState(true)
@@ -484,6 +486,14 @@ export default function AdminCustomerDetail() {
               )}
             </div>
             <PhoneScreenRow agent={device.agent} deviceId={device._id} onChanged={fetchCustomer} />
+            {!isCollector && plan && ['active', 'defaulted', 'approved', 'pending'].includes(plan.status) && device.agent?.enrolled &&
+              (!device.agent?.last_heartbeat || Date.now() - new Date(device.agent.last_heartbeat).getTime() > 2 * 24 * 60 * 60 * 1000) && (
+              <p className="text-xs text-blue-900 bg-blue-50 rounded-xl px-3 py-2 mt-1">
+                Is the customer's phone on <strong>Awaiting Activation</strong> or not unlocking? The sale may be linked to the wrong phone
+                (this one hasn't been seen for a while). Compare the IMEI on the customer's box with the one above; if it's different,
+                tap <strong>🔄 Change phone</strong> below and pick the right one.
+              </p>
+            )}
             <div className="flex justify-between items-center pt-0.5">
               <span className="text-gray-500">Lock Agent</span>
               {device.agent?.enrolled ? (
@@ -508,6 +518,11 @@ export default function AdminCustomerDetail() {
                   className="text-xs font-semibold text-green-700 hover:text-green-800"
                 >
                   ✓ Close plan (phone already released)
+                </button>
+              )}
+              {plan && ['pending', 'returned', 'approved', 'active', 'defaulted', 'repossessed'].includes(plan.status) && (
+                <button onClick={() => setChangePhoneOpen(true)} className="text-xs font-semibold text-blue-700 hover:text-blue-800">
+                  🔄 Change phone
                 </button>
               )}
               {device.agent?.enrolled && (
@@ -933,6 +948,10 @@ export default function AdminCustomerDetail() {
             </div>
           </div>
         </div>
+      )}
+
+      {changePhoneOpen && device && (
+        <ChangePhoneModal customerId={id} current={device} onClose={() => setChangePhoneOpen(false)} onDone={fetchCustomer} />
       )}
 
       {/* Image Viewer */}

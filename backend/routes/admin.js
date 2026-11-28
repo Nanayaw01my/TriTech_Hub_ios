@@ -210,6 +210,17 @@ router.get('/follow-ups', getFollowUps);
 router.get('/customers/:id/timeline', [param('id').isMongoId()], getTimeline);
 router.post('/plans/:id/waive-late-fees', [param('id').isMongoId()], waiveLateFeesHandler);
 router.post('/plans/:id/extra-days', [param('id').isMongoId()], extraDaysHandler);
+router.post('/customers/:id/change-phone', [param('id').isMongoId()], async (req, res) => {
+  try {
+    const { changeSalePhone } = require('../utils/changePhone');
+    const out = await changeSalePhone({ customerId: req.params.id, deviceId: req.body?.device_id, user: req.user, ip: req.ip });
+    return res.status(200).json({ success: true, message: out.message });
+  } catch (e) {
+    if (e.status) return res.status(e.status).json({ success: false, message: e.message });
+    require('../utils/logger').error('change-phone error: %s', e.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
 router.post('/customers/:id/repossess', [param('id').isMongoId().withMessage('Invalid customer ID.')], repossessDevice);
 
 // ─── STAFF ────────────────────────────────────────────────────────────────────
