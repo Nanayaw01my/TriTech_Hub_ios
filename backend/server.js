@@ -681,6 +681,10 @@ const startServer = async () => {
     // The old default contact email (from the template) -> the company's.
     await require('./models/Settings').updateMany({ contact_email: 'support@tritech.com' }, { $set: { contact_email: 'support@dandorsolar.site' } })
       .catch(() => {});
+    // Branch names: "BOGOSO" / "bogoso" -> "Bogoso" (one branch in reports).
+    await require('./utils/branch').normalizeAllBranches()
+      .then((n) => { if (n) logger.info('[branch] Tidied %d staff branch name(s).', n); })
+      .catch((e) => logger.warn('[branch] tidy skipped: %s', e.message));
     // The "deposit counts as the first week/day" rule is on hold: if it already
     // ran here, switch those plans back to 17 weekly / 120 daily (once).
     await require('./utils/planTermsMigration').revertPlanTermsIfNeeded()

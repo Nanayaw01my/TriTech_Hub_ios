@@ -514,7 +514,7 @@ const addStaff = async (req, res) => {
  */
 const updateStaff = async (req, res) => {
   try {
-    const allowedFields = ['name', 'phone', 'is_active'];
+    const allowedFields = ['name', 'phone', 'is_active', 'branch'];
     const updates = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) updates[field] = req.body[field];

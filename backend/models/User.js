@@ -61,10 +61,12 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // One spelling per branch: "BOGOSO" and "bogoso" are saved as "Bogoso".
     branch: {
       type: String,
       trim: true,
       default: null,
+      set: (v) => require('../utils/branch').normalizeBranch(v),
     },
     // DSR commission per phone sold (GHS). Also the Paystack split share paid
     // automatically from the deposit when the DSR has payout details set up.

@@ -6,6 +6,7 @@
  *   { success: false, error: { code, message } }                    (errors)
  */
 const InstallmentPlan = require('../models/InstallmentPlan');
+const { normalizeBranch } = require('./branch');
 const Payment = require('../models/Payment');
 const Device = require('../models/Device');
 const Customer = require('../models/Customer');
@@ -108,7 +109,9 @@ async function salesQuery(q) {
   const dsr = await dsrId(q.dsr);
   if (dsr) filter.created_by = dsr;
   if (q.branch) {
-    const ids = await User.find({ role: 'staff', branch: String(q.branch) }).distinct('_id');
+    const want = normalizeBranch(q.branch);
+    const ids = (await User.find({ role: 'staff', branch: { $nin: [null, ''] } }).select('_id branch').lean())
+      .filter((u) => normalizeBranch(u.branch) === want).map((u) => u._id);
     filter.created_by = { $in: ids };
   }
   return filter;
@@ -151,7 +154,7 @@ const salesSummary = wrap(async (req, res) => {
     const dsr = dsrOut(p.created_by);
     const month = (p.activated_at || p.createdAt).toISOString().slice(0, 7);
     const dKey = dsr ? String(dsr.id) : 'office';
-    const bKey = dsr?.branch || (dsr ? 'No branch' : 'Office');
+    const bKey = normalizeBranch(dsr?.branch) || (dsr ? 'No branch' : 'Office');
     planInfo.set(String(p._id), { dKey, bKey });
     for (const row of [
       add(byDsr, dKey, { dsr_id: dsr?.id || null, dsr_name: dsr?.name || 'Office (admin sales)', staff_id: dsr?.staff_id || null, branch: bKey }),
@@ -174,7 +177,7 @@ const salesSummary = wrap(async (req, res) => {
       .populate({ path: 'created_by', select: 'name staff_id branch role' }).lean();
     for (const p of more) {
       const dsr = dsrOut(p.created_by);
-      planInfo.set(String(p._id), { dKey: dsr ? String(dsr.id) : 'office', bKey: dsr?.branch || (dsr ? 'No branch' : 'Office'), dsr });
+      planInfo.set(String(p._id), { dKey: dsr ? String(dsr.id) : 'office', bKey: normalizeBranch(dsr?.branch) || (dsr ? 'No branch' : 'Office'), dsr });
     }
   }
   for (const pay of pays) {

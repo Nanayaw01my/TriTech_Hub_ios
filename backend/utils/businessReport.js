@@ -20,6 +20,8 @@ function range(period) {
 }
 const inRange = (d, { from, to }) => d && (!from || d >= from) && (!to || d < to);
 
+const { normalizeBranch } = require('./branch');
+
 async function businessReport(period = 'month') {
   const rg = range(period);
   const plans = await InstallmentPlan.find({ status: { $in: SOLD } })
@@ -38,7 +40,7 @@ async function businessReport(period = 'month') {
   const now = new Date();
 
   for (const p of plans) {
-    const br = p.created_by?.role === 'staff' ? (p.created_by.branch || 'No branch') : 'Office (admin sales)';
+    const br = p.created_by?.role === 'staff' ? (normalizeBranch(p.created_by.branch) || 'No branch') : 'Office (admin sales)';
     planBranch.set(String(p._id), br);
     const b = row(br);
     // Current position (not limited to the period).

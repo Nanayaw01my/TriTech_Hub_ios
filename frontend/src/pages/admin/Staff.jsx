@@ -418,6 +418,10 @@ export default function AdminStaff() {
             <p className="text-sm text-gray-500 mb-4">A Staff ID will be auto-generated.</p>
 
             <form onSubmit={handleAddStaff} className="space-y-4" noValidate>
+              {/* Pick an existing branch so it's spelled the same (capitals don't matter). */}
+              <datalist id="staff-branches">
+                {[...new Set(staff.map((x) => x.branch).filter(Boolean))].sort().map((b) => <option key={b} value={b} />)}
+              </datalist>
               {[
                 { key: 'name', label: 'Full Name', type: 'text', placeholder: 'Enter full name' },
                 { key: 'email', label: 'Email Address', type: 'email', placeholder: 'staff@example.com' },
@@ -430,6 +434,7 @@ export default function AdminStaff() {
                     type={type}
                     value={form[key]}
                     onChange={(e) => setForm(f => ({ ...f, [key]: e.target.value }))}
+                    list={key === 'branch' ? 'staff-branches' : undefined}
                     placeholder={placeholder}
                     className={`w-full px-4 py-3 border-2 rounded-2xl text-sm focus:outline-none focus:border-orange-500
                       ${errors[key] ? 'border-red-400' : 'border-gray-200'}`}

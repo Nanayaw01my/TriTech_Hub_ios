@@ -8,6 +8,15 @@ import LocationModal from '../../components/LocationModal'
 import ConfirmModal from '../../components/ConfirmModal'
 import { formatDistanceToNow } from 'date-fns'
 
+// "vivo vivo Y17" -> "Vivo Y17", "TECNO TECNO KJ5" -> "Tecno KJ5" (phones report the
+// maker twice). Brand words in capitals are tidied; model codes are left alone.
+function cleanModel(m) {
+  const w = String(m || '').trim().split(/\s+/).filter(Boolean)
+  if (w.length > 1 && w[0].toLowerCase() === w[1].toLowerCase()) w.splice(1, 1)
+  if (w[0] && /^[a-zA-Z]+$/.test(w[0])) w[0] = w[0][0].toUpperCase() + w[0].slice(1).toLowerCase()
+  return w.join(' ') || 'Phone'
+}
+
 // Bulk enrollment: scan ONE QR on every factory-reset phone to fill your
 // enrolled-stock pool, then DSRs pick phones from stock at the point of sale.
 export default function StockEnrollment() {
@@ -28,6 +37,7 @@ export default function StockEnrollment() {
   const [priceInput, setPriceInput] = useState('')
   const [merging, setMerging] = useState(false)
   const [scriptBusy, setScriptBusy] = useState(false)
+  const [sheetTab, setSheetTab] = useState('give') // give | price | cost | back
 
   // Windows file that enrolls a USB-connected phone (when Play Protect blocks the QR).
   const downloadScript = async () => {
@@ -351,7 +361,7 @@ export default function StockEnrollment() {
             )}
             {selecting && (
               <p className="text-xs text-orange-700 bg-orange-50 rounded-xl px-3 py-2 mb-3">
-                Tick phones, then at the bottom either set their selling price or give them to a DSR. Only that DSR will see them when selling, and the price you set is the price they sell at.
+                Tap the phones you want, then choose what to do in the panel at the bottom: give them to a DSR, set the price or cost, or take them back. Only that DSR sees them when selling, at the price you set.
               </p>
             )}
 
@@ -378,7 +388,7 @@ export default function StockEnrollment() {
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-gray-900 text-sm truncate">{d.model}</p>
+                        <p className="font-bold text-gray-900 text-sm truncate">{cleanModel(d.model)}</p>
                         <p className="text-xs text-gray-400 font-mono truncate">
                           {d.imei ? `IMEI ${d.imei}` : d.serial_number ? `SN ${d.serial_number}` : d.device_code ? `ID …${d.device_code}` : '—'}
                           {d.imei && imeiCount[d.imei] > 1 && <span className="ml-1 font-sans font-semibold text-amber-600">· duplicate</span>}
@@ -457,46 +467,104 @@ export default function StockEnrollment() {
         )}
       </div>
 
-      {/* Room so the last phone can scroll above the action bar */}
-      {selecting && <div className="h-56" />}
-      {selecting && (
-        <div className="fixed left-0 right-0 bottom-24 lg:bottom-6 z-40 px-4">
-          <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl border border-gray-200 p-3 flex flex-wrap items-center gap-2">
-            <span className="text-sm font-bold text-gray-800 w-full">{selected.length} selected</span>
-            <input type="number" inputMode="numeric" min="0" value={priceInput}
-              onChange={(e) => setPriceInput(e.target.value)} placeholder="Price GH₵"
-              className="flex-1 min-w-[110px] px-3 py-2 border border-gray-200 rounded-xl text-sm" />
-            <button onClick={setPrice} disabled={assigning || !selected.length}
-              className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-bold disabled:opacity-50">
-              Set price
-            </button>
-            <div className="basis-full h-0" />
-            <input type="number" inputMode="numeric" min="0" value={costInput}
-              onChange={(e) => setCostInput(e.target.value)} placeholder="Cost (what you paid) GH₵"
-              className="flex-1 min-w-[110px] px-3 py-2 border border-gray-200 rounded-xl text-sm" />
-            <button onClick={setCost} disabled={assigning || !selected.length}
-              className="px-4 py-2 rounded-xl border border-gray-300 text-gray-800 text-sm font-bold disabled:opacity-50">
-              Set cost
-            </button>
-            <div className="basis-full h-0" />
-            <select value={giveTo} onChange={(e) => setGiveTo(e.target.value)}
-              className="flex-1 min-w-[140px] px-3 py-2 border border-gray-200 rounded-xl text-sm">
-              <option value="">Choose DSR…</option>
-              {staffList.map((st) => (
-                <option key={st._id} value={st._id}>{st.name}{st.staff_id ? ` (${st.staff_id})` : ''}</option>
-              ))}
-            </select>
-            <button onClick={() => assign(giveTo)} disabled={assigning || !selected.length}
-              className="px-4 py-2 rounded-xl bg-orange-600 text-white text-sm font-bold disabled:opacity-50">
-              {assigning ? '…' : 'Give'}
-            </button>
-            <button onClick={() => assign(null)} disabled={assigning || !selected.length}
-              className="px-3 py-2 rounded-xl border border-gray-200 text-gray-700 text-sm font-semibold disabled:opacity-50">
-              Take back
-            </button>
+      {/* Room so the last phone can scroll above the action panel */}
+      {selecting && <div className="h-80" />}
+      {selecting && (() => {
+        const picked = devices.filter((d) => selected.includes(d._id))
+        const unpriced = picked.filter((d) => !(d.price > 0)).length
+        const holding = devices.reduce((m, d) => {
+          if (!d.assigned && d.held_by?._id) m[d.held_by._id] = (m[d.held_by._id] || 0) + 1
+          return m
+        }, {})
+        const dsr = staffList.find((x) => x._id === giveTo)
+        const n = selected.length
+        const phones = `${n} phone${n === 1 ? '' : 's'}`
+        const initials = (name) => String(name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+        const TABS = [['give', 'Give to DSR'], ['price', 'Price'], ['cost', 'Cost'], ['back', 'Take back']]
+        const bigBtn = 'w-full py-4 rounded-2xl text-white font-extrabold text-base bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-600/30 disabled:opacity-50'
+        return (
+          <div className="fixed left-0 right-0 lg:left-60 bottom-0 z-[45]">
+            <div className="max-w-4xl mx-auto bg-white rounded-t-3xl shadow-[0_-10px_30px_rgba(0,0,0,0.18)] border-t border-gray-100 px-5 pt-2.5 pb-6"
+              style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
+              <div className="w-10 h-1.5 rounded-full bg-gray-200 mx-auto mb-3" aria-hidden="true" />
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-lg font-black text-gray-900">{n ? `${phones} selected` : 'Tap phones to select them'}</p>
+                <button onClick={() => { setSelecting(false); setSelected([]) }} className="text-sm font-bold text-orange-600">Cancel</button>
+              </div>
+              <div className="flex bg-gray-100 rounded-xl p-1 mb-4" role="tablist">
+                {TABS.map(([k, label]) => (
+                  <button key={k} type="button" role="tab" aria-selected={sheetTab === k} onClick={() => setSheetTab(k)}
+                    className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${sheetTab === k ? 'bg-white text-gray-900 shadow' : 'text-gray-500'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {sheetTab === 'give' && (
+                <>
+                  {staffList.length === 0 ? (
+                    <p className="text-sm text-gray-500 mb-3">No DSRs yet. Add them in Staff.</p>
+                  ) : (
+                    <div className="flex gap-2 overflow-x-auto pb-1 mb-3 -mx-1 px-1">
+                      {staffList.map((st) => (
+                        <button key={st._id} type="button" onClick={() => setGiveTo(st._id)}
+                          className={`flex-shrink-0 w-[104px] rounded-2xl border-[1.5px] px-2 py-2.5 text-center transition-colors
+                            ${giveTo === st._id ? 'border-orange-500 bg-orange-50' : 'border-gray-200 bg-white'}`}>
+                          <span className="block w-9 h-9 mx-auto rounded-full bg-orange-100 text-orange-800 font-black text-sm leading-9">{initials(st.name)}</span>
+                          <span className="block text-xs font-bold text-gray-900 mt-1 truncate">{st.name}</span>
+                          <span className="block text-[10px] text-gray-400 font-semibold">{holding[st._id] || 0} phone{(holding[st._id] || 0) === 1 ? '' : 's'} now</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {unpriced > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs text-amber-800 mb-1.5">{unpriced} of these {unpriced === 1 ? 'has' : 'have'} no price. Type the selling price:</p>
+                      <input type="number" inputMode="numeric" min="0" value={priceInput} onChange={(e) => setPriceInput(e.target.value)}
+                        placeholder="Price GH₵" className="w-full px-4 py-3 border-[1.5px] border-gray-200 rounded-2xl text-base" />
+                    </div>
+                  )}
+                  <button onClick={() => assign(giveTo)} disabled={assigning || !n || !giveTo} className={bigBtn}>
+                    {assigning ? 'Giving…' : dsr ? `Give ${phones} to ${dsr.name.split(' ')[0]}` : 'Choose a DSR above'}
+                  </button>
+                </>
+              )}
+
+              {sheetTab === 'price' && (
+                <>
+                  <p className="text-xs text-gray-500 mb-1.5">Selling price for each phone. The DSR sells at this price and can't change it.</p>
+                  <input type="number" inputMode="numeric" min="0" value={priceInput} onChange={(e) => setPriceInput(e.target.value)}
+                    placeholder="Price GH₵" className="w-full px-4 py-3 border-[1.5px] border-gray-200 rounded-2xl text-base mb-3" />
+                  <button onClick={setPrice} disabled={assigning || !n} className={bigBtn}>
+                    {assigning ? 'Saving…' : `Set price for ${phones}`}
+                  </button>
+                </>
+              )}
+
+              {sheetTab === 'cost' && (
+                <>
+                  <p className="text-xs text-gray-500 mb-1.5">What the company paid for each phone (for profit reports). Staff don't see it.</p>
+                  <input type="number" inputMode="numeric" min="0" value={costInput} onChange={(e) => setCostInput(e.target.value)}
+                    placeholder="Cost GH₵" className="w-full px-4 py-3 border-[1.5px] border-gray-200 rounded-2xl text-base mb-3" />
+                  <button onClick={setCost} disabled={assigning || !n} className={bigBtn}>
+                    {assigning ? 'Saving…' : `Save cost for ${phones}`}
+                  </button>
+                </>
+              )}
+
+              {sheetTab === 'back' && (
+                <>
+                  <p className="text-sm text-gray-600 mb-3">Bring {n ? phones : 'the selected phones'} back to the office. The DSR won't see {n === 1 ? 'it' : 'them'} when selling any more.</p>
+                  <button onClick={() => assign(null)} disabled={assigning || !n}
+                    className="w-full py-4 rounded-2xl font-extrabold text-base bg-gray-900 text-white disabled:opacity-50">
+                    {assigning ? 'Working…' : `Take back ${phones}`}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       <LocationModal
         deviceId={locate?.id}
